@@ -1,10 +1,12 @@
 use eframe::{egui::*};
 use eframe::egui;
+use std::time::{Duration, Instant};
 
 //#[derive(Default)]
 pub struct LoopianApp {
-    input_locate: u32,
+    input_locate: usize,
     input_text: String,
+    start_time: Instant,
 }
 
 impl LoopianApp {
@@ -21,6 +23,7 @@ impl LoopianApp {
     const CURSOR_THICKNESS: f32 = 4.0;
 
     const PROMPT_LETTERS: usize = 3;
+    const CURSOR_MAX_LOCATE: usize = 79;
 
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // Start with the default fonts (we will be adding to them rather than replacing them).
@@ -56,9 +59,20 @@ impl LoopianApp {
         Self {
             input_locate: 0,
             input_text: String::new(),
+            start_time: Instant::now(),
         }
     }
     //  for update()
+    fn update_title(ui: &mut egui::Ui) {
+        ui.put(
+            Rect { min: Pos2 {x:395.0, y:2.0}, max: Pos2 {x:505.0, y:47.0},}, //  location
+            Label::new(RichText::new("Loopian")
+                .size(32.0)
+                .color(Color32::WHITE)
+                .family(FontFamily::Proportional)
+            )
+        );
+    }
     fn update_eight_indicator(ui: &mut egui::Ui) {
         for i in 0..4 {
             for j in 0..2 {
@@ -73,14 +87,13 @@ impl LoopianApp {
             }
         }
     }    
-    fn update_title(ui: &mut egui::Ui) {
-        ui.put(
-            Rect { min: Pos2 {x:395.0, y:2.0}, max: Pos2 {x:505.0, y:47.0},}, //  location
-            Label::new(RichText::new("Loopian")
-                .size(32.0)
-                .color(Color32::WHITE)
-                .family(FontFamily::Proportional)
-            )
+    fn update_eight_indicator_text(ui: &mut egui::Ui) {
+        ui.painter().text(
+            Pos2 {x:60.0, y:65.0},
+            Align2::CENTER_CENTER,
+            "key:",
+            FontId::new(16.0, FontFamily::Monospace),
+            Color32::from_rgb(48, 48, 48)
         );
     }
     fn update_scroll_text(ui: &mut egui::Ui) {
@@ -104,14 +117,37 @@ impl LoopianApp {
             );
         }
     }
-    fn command_key(&self, key: &Key) {
-        println!("Key>>{:?}",key);
+    fn command_key(&mut self, key: &Key) {
+        if key == &Key::Enter {
+            self.input_text = "".to_string();
+            self.input_locate = 0;
+            println!("Key>>{:?}",key);
+        }
+        else if key == &Key::Backspace {
+            if self.input_locate > 0 {
+                self.input_locate -= 1;
+                self.input_text.remove(self.input_locate);
+            }
+            println!("Key>>{:?}",key);
+        }
+        else if key == &Key::ArrowLeft {
+            if self.input_locate > 0 {self.input_locate -= 1;}
+            println!("Key>>{:?}",key);
+        }
+        else if key == &Key::ArrowRight {
+            self.input_locate += 1;
+            let maxlen = self.input_text.chars().count();
+            if self.input_locate > maxlen { self.input_locate = maxlen;}
+            println!("Key>>{:?}",key);
+        }
     }
     fn input_letter(&mut self, letters: Vec<&String>) {
-        println!("Letters:{:?}",letters);
-        letters.iter().for_each(|ltr| {self.input_text.push_str(ltr);});
+        if self.input_locate <= Self::CURSOR_MAX_LOCATE {
+            println!("Letters:{:?}",letters);
+            letters.iter().for_each(|ltr| {self.input_text.push_str(ltr);self.input_locate+=1;});    
+        }
     }
-    fn update_input_text(&self, ui: &mut egui::Ui) {
+    fn update_input_text(&mut self, ui: &mut egui::Ui) {
         let ltrcnt = self.input_text.chars().count() + Self::PROMPT_LETTERS;
         // Paint Letter Space
         ui.painter().rect_filled(
@@ -121,18 +157,18 @@ impl LoopianApp {
             Color32::from_rgb(48, 48, 48)     //  color
         );
         // Paint cursor
-        ui.painter().rect_filled(
-            Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN
-                                + Self::LETTER_WIDTH*(ltrcnt as f32)
-                                + 3.25 - 0.25*(ltrcnt as f32), // 謎の調整
-                            y:Self::SPACE_LOWER - Self::CURSOR_MERGIN},
-                   max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN - 1.0
-                                + Self::LETTER_WIDTH*((ltrcnt+1) as f32)
-                                + 3.25 - 0.25*(ltrcnt as f32), // 謎の調整
-                            y:Self::SPACE_LOWER - Self::CURSOR_MERGIN + Self::CURSOR_THICKNESS},},
-            0.0,                              //  curve
-            Color32::from_rgb(160, 160, 160)  //  color
-        );
+        let cursor = self.input_locate + Self::PROMPT_LETTERS;
+        let elapsed_time = self.start_time.elapsed().as_millis();
+        if elapsed_time%500 > 200 {
+            ui.painter().rect_filled(
+                Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + 5.0 + 9.5*(cursor as f32),
+                                y:Self::SPACE_LOWER - Self::CURSOR_MERGIN},
+                       max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + 3.0 + 9.5*((cursor+1) as f32),
+                                y:Self::SPACE_LOWER - Self::CURSOR_MERGIN + Self::CURSOR_THICKNESS},},
+                0.0,                              //  curve
+                Color32::from_rgb(160, 160, 160)  //  color
+            );
+        }
         // Draw Letters
         ui.put( // Prompt
             Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN,
@@ -162,6 +198,9 @@ impl eframe::App for LoopianApp {
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        // repaint 100msec interval
+        ctx.request_repaint_after(Duration::from_millis(100));
+
         //  Get Keyboard Event from Egui::Context
         let evts = ctx.input().events.clone();  
         let mut letters: Vec<&String> = vec![];
@@ -169,14 +208,7 @@ impl eframe::App for LoopianApp {
             match ev {
                 Event::Text(ltr) => letters.push(ltr),
                 Event::Key {key,pressed, modifiers:_} => {
-                    if pressed == &true {
-                        if key == &Key::Enter {self.command_key(key);}
-                        else if key == &Key::Backspace {self.command_key(key);}
-                        else if key == &Key::ArrowDown {self.command_key(key);}
-                        else if key == &Key::ArrowLeft {self.command_key(key);}
-                        else if key == &Key::ArrowRight {self.command_key(key);}
-                        else if key == &Key::ArrowUp {self.command_key(key);}
-                    }
+                    if pressed == &true { self.command_key(key);}
                 },
                 _ => {},
             }
@@ -195,16 +227,9 @@ impl eframe::App for LoopianApp {
 
         // Draw CentralPanel
         CentralPanel::default().frame(my_frame).show(ctx, |ui| {
-            Self::update_eight_indicator(ui);
             Self::update_title(ui);
-
-            ui.painter().text(
-                Pos2 {x:60.0, y:65.0},
-                Align2::CENTER_CENTER,
-                "key:",
-                FontId::new(16.0, FontFamily::Monospace),
-                Color32::from_rgb(48, 48, 48)
-            );
+            Self::update_eight_indicator(ui);
+            Self::update_eight_indicator_text(ui);
 
             //  scroll text
             Self::update_scroll_text(ui);
