@@ -15,8 +15,10 @@ impl LoopianApp {
     const LEFT_MERGIN: f32 = 5.0;
     const LETTER_WIDTH: f32 = 10.0;
 
-    const SPACE_UPPER: f32 = 420.0;
-    const SPACE_LOWER: f32 = 450.0;
+    const SPACE2_UPPER: f32 = 150.0;    // scroll text
+    const SPACE2_LOWER: f32 = 400.0;
+    const SPACE3_UPPER: f32 = 420.0;    // input text
+    const SPACE3_LOWER: f32 = 450.0;
     const UPPER_MERGIN: f32 = 2.0;
     const LOWER_MERGIN: f32 = 3.0;
     const CURSOR_MERGIN: f32 = 6.0;
@@ -98,7 +100,8 @@ impl LoopianApp {
     }
     fn update_scroll_text(ui: &mut egui::Ui) {
         ui.painter().rect_filled(
-            Rect::from_min_max(pos2(30.0, 150.0), pos2(870.0, 400.0)),
+            Rect::from_min_max( pos2(Self::SPACE_LEFT, Self::SPACE2_UPPER),
+                                pos2(Self::SPACE_RIGHT, Self::SPACE2_LOWER)),
             2.0,                              //  curve
             Color32::from_rgb(48, 48, 48)     //  color
         );            
@@ -144,15 +147,19 @@ impl LoopianApp {
     fn input_letter(&mut self, letters: Vec<&String>) {
         if self.input_locate <= Self::CURSOR_MAX_LOCATE {
             println!("Letters:{:?}",letters);
-            letters.iter().for_each(|ltr| {self.input_text.push_str(ltr);self.input_locate+=1;});    
+            letters.iter().for_each(|ltr| {
+                if *ltr==" " {self.input_text.insert_str(self.input_locate,"_");}
+                else         {self.input_text.insert_str(self.input_locate,ltr);}
+                self.input_locate+=1;
+            });
         }
     }
     fn update_input_text(&mut self, ui: &mut egui::Ui) {
         let ltrcnt = self.input_text.chars().count() + Self::PROMPT_LETTERS;
         // Paint Letter Space
         ui.painter().rect_filled(
-            Rect::from_min_max(pos2(Self::SPACE_LEFT,Self::SPACE_UPPER),
-                               pos2(Self::SPACE_RIGHT,Self::SPACE_LOWER)),
+            Rect::from_min_max(pos2(Self::SPACE_LEFT,Self::SPACE3_UPPER),
+                               pos2(Self::SPACE_RIGHT,Self::SPACE3_LOWER)),
             2.0,                              //  curve
             Color32::from_rgb(48, 48, 48)     //  color
         );
@@ -162,9 +169,9 @@ impl LoopianApp {
         if elapsed_time%500 > 200 {
             ui.painter().rect_filled(
                 Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + 5.0 + 9.5*(cursor as f32),
-                                y:Self::SPACE_LOWER - Self::CURSOR_MERGIN},
+                                y:Self::SPACE3_LOWER - Self::CURSOR_MERGIN},
                        max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + 3.0 + 9.5*((cursor+1) as f32),
-                                y:Self::SPACE_LOWER - Self::CURSOR_MERGIN + Self::CURSOR_THICKNESS},},
+                                y:Self::SPACE3_LOWER - Self::CURSOR_MERGIN + Self::CURSOR_THICKNESS},},
                 0.0,                              //  curve
                 Color32::from_rgb(160, 160, 160)  //  color
             );
@@ -172,10 +179,10 @@ impl LoopianApp {
         // Draw Letters
         ui.put( // Prompt
             Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN,
-                              y:Self::SPACE_UPPER + Self::UPPER_MERGIN},
+                              y:Self::SPACE3_UPPER + Self::UPPER_MERGIN},
                    max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN 
                                 + Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32),
-                              y:Self::SPACE_LOWER - Self::LOWER_MERGIN},},
+                              y:Self::SPACE3_LOWER - Self::LOWER_MERGIN},},
             Label::new(RichText::new("R1>")
                 .size(16.0).color(Color32::from_rgb(0,200,200)).family(FontFamily::Monospace))
         );
@@ -183,13 +190,13 @@ impl LoopianApp {
             Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN 
                                 + Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32)
                                 + 3.25 - 0.25*(ltrcnt as f32), // 謎の調整
-                              y:Self::SPACE_UPPER + Self::UPPER_MERGIN},
+                              y:Self::SPACE3_UPPER + Self::UPPER_MERGIN},
                    max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN 
                                 + Self::LETTER_WIDTH*(ltrcnt as f32)
                                 + 3.25 - 0.25*(ltrcnt as f32), // 謎の調整
-                              y:Self::SPACE_LOWER - Self::LOWER_MERGIN},},
+                              y:Self::SPACE3_LOWER - Self::LOWER_MERGIN},},
             Label::new(RichText::new(&self.input_text)
-                .size(16.0).color(Color32::WHITE).family(FontFamily::Monospace))
+                .size(16.0).color(Color32::WHITE).family(FontFamily::Monospace).text_style(TextStyle::Monospace))
         );
     }
 }
