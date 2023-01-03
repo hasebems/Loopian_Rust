@@ -7,13 +7,14 @@ pub struct LoopianApp {
     input_locate: usize,
     input_text: String,
     start_time: Instant,
+    input_lines: Vec<String>,
 }
 
 impl LoopianApp {
     const SPACE_LEFT: f32 = 30.0;
     const SPACE_RIGHT: f32 = 870.0;
     const LEFT_MERGIN: f32 = 5.0;
-    const LETTER_WIDTH: f32 = 10.0;
+    const LETTER_WIDTH: f32 = 9.56;
 
     const SPACE2_UPPER: f32 = 150.0;    // scroll text
     const SPACE2_LOWER: f32 = 400.0;
@@ -62,6 +63,7 @@ impl LoopianApp {
             input_locate: 0,
             input_text: String::new(),
             start_time: Instant::now(),
+            input_lines: Vec::new(),
         }
     }
     //  for update()
@@ -98,20 +100,31 @@ impl LoopianApp {
             Color32::from_rgb(48, 48, 48)
         );
     }
-    fn update_scroll_text(ui: &mut egui::Ui) {
+    fn update_scroll_text(&self, ui: &mut egui::Ui) {
         ui.painter().rect_filled(
             Rect::from_min_max( pos2(Self::SPACE_LEFT, Self::SPACE2_UPPER),
                                 pos2(Self::SPACE_RIGHT, Self::SPACE2_LOWER)),
             2.0,                              //  curve
             Color32::from_rgb(48, 48, 48)     //  color
-        );            
-        let past_text = String::from("Hello, World!");
-        for i in 0..10 {
+        );
+        const LETTER_HEIGHT: f32 = 25.0;
+        let mut max_count = 10;
+        let mut ofs_count = 0;
+        if self.input_lines.len() < 10 {
+            max_count = self.input_lines.len();
+        }
+        else {
+            ofs_count = self.input_lines.len() - 10;
+        }
+        for i in 0..max_count {
+            let past_text = self.input_lines[ofs_count+i].clone();
             let cnt = past_text.chars().count();
             ui.put(
-                Rect { min: Pos2 {x:Self::SPACE_LEFT,  y:150.0+24.0*(i as f32)}, 
-                       max: Pos2 {x:Self::SPACE_LEFT + 10.0*(cnt as f32),
-                                  y:175.0+25.0*(i as f32)},},
+                Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN,
+                                  y:Self::SPACE2_UPPER + LETTER_HEIGHT*(i as f32)}, 
+                       max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN
+                                    + Self::LETTER_WIDTH*(cnt as f32),
+                                  y:Self::SPACE2_UPPER + LETTER_HEIGHT*((i+1) as f32)},},
                 Label::new(RichText::new(&past_text)
                     .size(16.0)
                     .color(Color32::WHITE)
@@ -122,6 +135,7 @@ impl LoopianApp {
     }
     fn command_key(&mut self, key: &Key) {
         if key == &Key::Enter {
+            self.input_lines.push(self.input_text.clone());
             self.input_text = "".to_string();
             self.input_locate = 0;
             println!("Key>>{:?}",key);
@@ -155,7 +169,6 @@ impl LoopianApp {
         }
     }
     fn update_input_text(&mut self, ui: &mut egui::Ui) {
-        let ltrcnt = self.input_text.chars().count() + Self::PROMPT_LETTERS;
         // Paint Letter Space
         ui.painter().rect_filled(
             Rect::from_min_max(pos2(Self::SPACE_LEFT,Self::SPACE3_UPPER),
@@ -177,23 +190,22 @@ impl LoopianApp {
             );
         }
         // Draw Letters
+        let prompt_mergin: f32 = Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32);
         ui.put( // Prompt
             Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN,
                               y:Self::SPACE3_UPPER + Self::UPPER_MERGIN},
-                   max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN 
-                                + Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32),
+                   max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + prompt_mergin,
                               y:Self::SPACE3_LOWER - Self::LOWER_MERGIN},},
             Label::new(RichText::new("R1>")
                 .size(16.0).color(Color32::from_rgb(0,200,200)).family(FontFamily::Monospace))
         );
+        let ltrcnt = self.input_text.chars().count();
+        let input_mergin: f32 = prompt_mergin + 3.25;
         ui.put( // User Input
-            Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN 
-                                + Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32)
-                                + 3.25 - 0.25*(ltrcnt as f32), // 謎の調整
+            Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + input_mergin,
                               y:Self::SPACE3_UPPER + Self::UPPER_MERGIN},
-                   max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN 
-                                + Self::LETTER_WIDTH*(ltrcnt as f32)
-                                + 3.25 - 0.25*(ltrcnt as f32), // 謎の調整
+                   max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + input_mergin
+                                + Self::LETTER_WIDTH*(ltrcnt as f32),
                               y:Self::SPACE3_LOWER - Self::LOWER_MERGIN},},
             Label::new(RichText::new(&self.input_text)
                 .size(16.0).color(Color32::WHITE).family(FontFamily::Monospace).text_style(TextStyle::Monospace))
@@ -239,7 +251,7 @@ impl eframe::App for LoopianApp {
             Self::update_eight_indicator_text(ui);
 
             //  scroll text
-            Self::update_scroll_text(ui);
+            self.update_scroll_text(ui);
 
             //  input text
             self.update_input_text(ui);
