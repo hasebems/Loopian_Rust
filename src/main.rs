@@ -15,13 +15,17 @@ impl LoopianApp {
     const SPACE_RIGHT: f32 = 870.0;
     const LEFT_MERGIN: f32 = 5.0;
     const LETTER_WIDTH: f32 = 9.56;
+    const BLOCK_LENGTH: f32 = 210.0;
+    const NEXT_BLOCK: f32 = 220.0;
 
+    const SPACE1_UPPER: f32 = 50.0;
+    const SPACE1_HEIGHT: f32 = 30.0;
+    const SPACE1_NEXT: f32 = 50.0;
     const SPACE2_UPPER: f32 = 150.0;    // scroll text
     const SPACE2_LOWER: f32 = 400.0;
     const SPACE3_UPPER: f32 = 420.0;    // input text
     const SPACE3_LOWER: f32 = 450.0;
-    const UPPER_MERGIN: f32 = 2.0;
-    const LOWER_MERGIN: f32 = 3.0;
+
     const CURSOR_MERGIN: f32 = 6.0;
     const CURSOR_THICKNESS: f32 = 4.0;
 
@@ -77,28 +81,46 @@ impl LoopianApp {
             )
         );
     }
+    fn text_for_eight_indicator(num: i32) -> String {
+        let indi_txt;
+        match num {
+            0 => indi_txt = "key:",
+            1 => indi_txt = "bpm:",
+            2 => indi_txt = "beat:",
+            4 => indi_txt = "L1:---",
+            5 => indi_txt = "L2:---",
+            6 => indi_txt = "R1:---",
+            7 => indi_txt = "R2:---",
+            _ => indi_txt = "",
+        }
+        indi_txt.to_string()
+    }
     fn update_eight_indicator(ui: &mut egui::Ui) {
         for i in 0..4 {
             for j in 0..2 {
+                let raw: f32 = Self::NEXT_BLOCK*(i as f32);
+                let line: f32 = Self::SPACE1_NEXT*(j as f32);
                 ui.painter().rect_filled(
-                    Rect { min: Pos2 {x:Self::SPACE_LEFT + 220.0*(i as f32),
-                                      y:50.0+50.0*(j as f32)}, 
-                           max: Pos2 {x:210.0+220.0*(i as f32),
-                                      y:80.0+50.0*(j as f32)},}, //  location
+                    Rect { min: Pos2 {x:Self::SPACE_LEFT + raw,
+                                      y:Self::SPACE1_UPPER + line}, 
+                           max: Pos2 {x:Self::BLOCK_LENGTH + raw,
+                                      y:Self::SPACE1_UPPER + Self::SPACE1_HEIGHT + line},}, //  location
                     8.0,                //  curve
                     Color32::from_rgb(180, 180, 180),     //  color
                 );
+                let tx = Self::text_for_eight_indicator(i + j*4);
+                let ltrcnt = tx.chars().count();
+                ui.put(
+                    Rect { min: Pos2 {x:Self::SPACE_LEFT + 10.0 + raw,
+                                      y:Self::SPACE1_UPPER + 2.0 + line},
+                           max: Pos2 {x:Self::SPACE_LEFT + 10.0 + raw + Self::LETTER_WIDTH*(ltrcnt as f32),
+                                      y:Self::SPACE1_UPPER + 27.0 + line},},
+                    Label::new(RichText::new(&tx)
+                        .size(16.0).color(Color32::from_rgb(48,48,48))
+                        .family(FontFamily::Monospace).text_style(TextStyle::Monospace))
+                );
             }
         }
-    }    
-    fn update_eight_indicator_text(ui: &mut egui::Ui) {
-        ui.painter().text(
-            Pos2 {x:60.0, y:65.0},
-            Align2::CENTER_CENTER,
-            "key:",
-            FontId::new(16.0, FontFamily::Monospace),
-            Color32::from_rgb(48, 48, 48)
-        );
     }
     fn update_scroll_text(&self, ui: &mut egui::Ui) {
         ui.painter().rect_filled(
@@ -120,10 +142,9 @@ impl LoopianApp {
             let past_text = self.input_lines[ofs_count+i].clone();
             let cnt = past_text.chars().count();
             ui.put(
-                Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN,
+                Rect { min: Pos2 {x:Self::SPACE_LEFT + 5.0,
                                   y:Self::SPACE2_UPPER + LETTER_HEIGHT*(i as f32)}, 
-                       max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN
-                                    + Self::LETTER_WIDTH*(cnt as f32),
+                       max: Pos2 {x:Self::SPACE_LEFT + 5.0 + Self::LETTER_WIDTH*(cnt as f32),
                                   y:Self::SPACE2_UPPER + LETTER_HEIGHT*((i+1) as f32)},},
                 Label::new(RichText::new(&past_text)
                     .size(16.0)
@@ -181,9 +202,9 @@ impl LoopianApp {
         let elapsed_time = self.start_time.elapsed().as_millis();
         if elapsed_time%500 > 200 {
             ui.painter().rect_filled(
-                Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + 5.0 + 9.5*(cursor as f32),
+                Rect { min: Pos2 {x:Self::SPACE_LEFT + 10.0 + 9.5*(cursor as f32),
                                 y:Self::SPACE3_LOWER - Self::CURSOR_MERGIN},
-                       max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + 3.0 + 9.5*((cursor+1) as f32),
+                       max: Pos2 {x:Self::SPACE_LEFT + 8.0 + 9.5*((cursor+1) as f32),
                                 y:Self::SPACE3_LOWER - Self::CURSOR_MERGIN + Self::CURSOR_THICKNESS},},
                 0.0,                              //  curve
                 Color32::from_rgb(160, 160, 160)  //  color
@@ -192,21 +213,20 @@ impl LoopianApp {
         // Draw Letters
         let prompt_mergin: f32 = Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32);
         ui.put( // Prompt
-            Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN,
-                              y:Self::SPACE3_UPPER + Self::UPPER_MERGIN},
-                   max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + prompt_mergin,
-                              y:Self::SPACE3_LOWER - Self::LOWER_MERGIN},},
+            Rect { min: Pos2 {x:Self::SPACE_LEFT + 5.0,
+                              y:Self::SPACE3_UPPER + 2.0},
+                   max: Pos2 {x:Self::SPACE_LEFT + 5.0 + prompt_mergin,
+                              y:Self::SPACE3_LOWER - 3.0},},
             Label::new(RichText::new("R1>")
                 .size(16.0).color(Color32::from_rgb(0,200,200)).family(FontFamily::Monospace))
         );
         let ltrcnt = self.input_text.chars().count();
         let input_mergin: f32 = prompt_mergin + 3.25;
         ui.put( // User Input
-            Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + input_mergin,
-                              y:Self::SPACE3_UPPER + Self::UPPER_MERGIN},
-                   max: Pos2 {x:Self::SPACE_LEFT + Self::LEFT_MERGIN + input_mergin
-                                + Self::LETTER_WIDTH*(ltrcnt as f32),
-                              y:Self::SPACE3_LOWER - Self::LOWER_MERGIN},},
+            Rect { min: Pos2 {x:Self::SPACE_LEFT + 5.0 + input_mergin,
+                              y:Self::SPACE3_UPPER + 2.0},
+                   max: Pos2 {x:Self::SPACE_LEFT + 5.0 + input_mergin + Self::LETTER_WIDTH*(ltrcnt as f32),
+                              y:Self::SPACE3_LOWER - 3.0},},
             Label::new(RichText::new(&self.input_text)
                 .size(16.0).color(Color32::WHITE).family(FontFamily::Monospace).text_style(TextStyle::Monospace))
         );
@@ -248,7 +268,6 @@ impl eframe::App for LoopianApp {
         CentralPanel::default().frame(my_frame).show(ctx, |ui| {
             Self::update_title(ui);
             Self::update_eight_indicator(ui);
-            Self::update_eight_indicator_text(ui);
 
             //  scroll text
             self.update_scroll_text(ui);
