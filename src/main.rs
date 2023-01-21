@@ -8,7 +8,7 @@ mod cmd;
 use eframe::{egui::*};
 use eframe::egui;
 use std::time::{Duration, Instant};
-use cmd::lpncmd;
+use cmd::cmdparse;
 
 //#[derive(Default)]
 pub struct LoopianApp {
@@ -16,7 +16,7 @@ pub struct LoopianApp {
     input_text: String,
     start_time: Instant,
     input_lines: Vec<String>,
-    cmd: lpncmd::LoopianCmd,
+    cmd: cmdparse::LoopianCmd,
 }
 
 impl LoopianApp {
@@ -77,7 +77,7 @@ impl LoopianApp {
             input_text: String::new(),
             start_time: Instant::now(), // Current Time
             input_lines: Vec::new(),
-            cmd: lpncmd::LoopianCmd::new(),
+            cmd: cmdparse::LoopianCmd::new(),
         }
     }
     //  for update()
@@ -303,4 +303,5 @@ fn main() {
         ..eframe::NativeOptions::default()
     };
     eframe::run_native("Loopian", options, Box::new(|cc| Box::new(LoopianApp::new(cc))));
+    println!("Bye, thank you!");
 }
