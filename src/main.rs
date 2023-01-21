@@ -1,6 +1,14 @@
+//  Created by Hasebe Masahiko on 2022/10/30.
+//  Copyright (c) 2022 Hasebe Masahiko.
+//  Released under the MIT license
+//  https://opensource.org/licenses/mit-license.php
+//
+mod cmd;
+
 use eframe::{egui::*};
 use eframe::egui;
 use std::time::{Duration, Instant};
+use cmd::lpncmd;
 
 //#[derive(Default)]
 pub struct LoopianApp {
@@ -8,12 +16,13 @@ pub struct LoopianApp {
     input_text: String,
     start_time: Instant,
     input_lines: Vec<String>,
+    cmd: lpncmd::LoopianCmd,
 }
 
 impl LoopianApp {
     const SPACE_LEFT: f32 = 30.0;
     const SPACE_RIGHT: f32 = 870.0;
-    const LEFT_MERGIN: f32 = 5.0;
+    const _LEFT_MERGIN: f32 = 5.0;
     const LETTER_WIDTH: f32 = 9.56;
     const BLOCK_LENGTH: f32 = 210.0;
     const NEXT_BLOCK: f32 = 220.0;
@@ -66,8 +75,9 @@ impl LoopianApp {
         Self {
             input_locate: 0,
             input_text: String::new(),
-            start_time: Instant::now(),
+            start_time: Instant::now(), // Current Time
             input_lines: Vec::new(),
+            cmd: lpncmd::LoopianCmd::new(),
         }
     }
     //  for update()
@@ -81,21 +91,21 @@ impl LoopianApp {
             )
         );
     }
-    fn text_for_eight_indicator(num: i32) -> String {
+    fn text_for_eight_indicator(&self, num: i32) -> String {
         let indi_txt;
         match num {
-            0 => indi_txt = "key:",
-            1 => indi_txt = "bpm:",
-            2 => indi_txt = "beat:",
-            4 => indi_txt = "L1:---",
-            5 => indi_txt = "L2:---",
-            6 => indi_txt = "R1:---",
-            7 => indi_txt = "R2:---",
-            _ => indi_txt = "",
+            0 => indi_txt = "key:".to_string() + self.cmd.get_indicator(0),
+            1 => indi_txt = "bpm:".to_string() + self.cmd.get_indicator(1),
+            2 => indi_txt = "beat:".to_string() + self.cmd.get_indicator(2),
+            4 => indi_txt = "L1:".to_string() + self.cmd.get_indicator(3),
+            5 => indi_txt = "L2:".to_string() + self.cmd.get_indicator(4),
+            6 => indi_txt = "R1:".to_string() + self.cmd.get_indicator(5),
+            7 => indi_txt = "R2:".to_string() + self.cmd.get_indicator(6),
+            _ => indi_txt = "".to_string() + self.cmd.get_indicator(7),
         }
-        indi_txt.to_string()
+        indi_txt
     }
-    fn update_eight_indicator(ui: &mut egui::Ui) {
+    fn update_eight_indicator(&self, ui: &mut egui::Ui) {
         for i in 0..4 {
             for j in 0..2 {
                 let raw: f32 = Self::NEXT_BLOCK*(i as f32);
@@ -108,7 +118,7 @@ impl LoopianApp {
                     8.0,                //  curve
                     Color32::from_rgb(180, 180, 180),     //  color
                 );
-                let tx = Self::text_for_eight_indicator(i + j*4);
+                let tx = self.text_for_eight_indicator(i + j*4);
                 let ltrcnt = tx.chars().count();
                 ui.put(
                     Rect { min: Pos2 {x:Self::SPACE_LEFT + 10.0 + raw,
@@ -141,6 +151,7 @@ impl LoopianApp {
         for i in 0..max_count {
             let past_text = self.input_lines[ofs_count+i].clone();
             let cnt = past_text.chars().count();
+            let txt_color = if i%2==0 {Color32::WHITE} else {Color32::from_rgb(255,0,255)};
             ui.put(
                 Rect { min: Pos2 {x:Self::SPACE_LEFT + 5.0,
                                   y:Self::SPACE2_UPPER + LETTER_HEIGHT*(i as f32)}, 
@@ -148,7 +159,7 @@ impl LoopianApp {
                                   y:Self::SPACE2_UPPER + LETTER_HEIGHT*((i+1) as f32)},},
                 Label::new(RichText::new(&past_text)
                     .size(16.0)
-                    .color(Color32::WHITE)
+                    .color(txt_color)
                     .family(FontFamily::Monospace)
                 )
             );
@@ -156,32 +167,38 @@ impl LoopianApp {
     }
     fn command_key(&mut self, key: &Key) {
         if key == &Key::Enter {
+            if self.input_text.len() == 0 {return;}
             self.input_lines.push(self.input_text.clone());
-            self.input_text = "".to_string();
-            self.input_locate = 0;
-            println!("Key>>{:?}",key);
+            if let Some(answer) = self.cmd.set_and_responce(&self.input_text) {
+                self.input_lines.push(answer.clone());
+                self.input_text = "".to_string();
+                self.input_locate = 0;
+            }
+            else {  // The end of the App
+                std::process::exit(0);
+            }
         }
         else if key == &Key::Backspace {
             if self.input_locate > 0 {
                 self.input_locate -= 1;
                 self.input_text.remove(self.input_locate);
             }
-            println!("Key>>{:?}",key);
+            //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowLeft {
             if self.input_locate > 0 {self.input_locate -= 1;}
-            println!("Key>>{:?}",key);
+            //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowRight {
             self.input_locate += 1;
             let maxlen = self.input_text.chars().count();
             if self.input_locate > maxlen { self.input_locate = maxlen;}
-            println!("Key>>{:?}",key);
+            //println!("Key>>{:?}",key);
         }
     }
     fn input_letter(&mut self, letters: Vec<&String>) {
         if self.input_locate <= Self::CURSOR_MAX_LOCATE {
-            println!("Letters:{:?}",letters);
+            //println!("Letters:{:?}",letters);
             letters.iter().for_each(|ltr| {
                 if *ltr==" " {self.input_text.insert_str(self.input_locate,"_");}
                 else         {self.input_text.insert_str(self.input_locate,ltr);}
@@ -267,7 +284,7 @@ impl eframe::App for LoopianApp {
         // Draw CentralPanel
         CentralPanel::default().frame(my_frame).show(ctx, |ui| {
             Self::update_title(ui);
-            Self::update_eight_indicator(ui);
+            self.update_eight_indicator(ui);
 
             //  scroll text
             self.update_scroll_text(ui);
