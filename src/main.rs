@@ -4,11 +4,15 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 mod cmd;
+mod elapse;
 
 use eframe::{egui::*};
 use eframe::egui;
 use std::time::{Duration, Instant};
+use std::thread;
+use std::sync::mpsc;
 use cmd::cmdparse;
+use crate::elapse::elapse_stack::ElapseStack;
 
 //#[derive(Default)]
 pub struct LoopianApp {
@@ -42,6 +46,26 @@ impl LoopianApp {
     const CURSOR_MAX_LOCATE: usize = 79;
 
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        //  create new thread & channel
+        let (txtxt, rxtxt) = mpsc::channel();
+        let (txui, rxui) = mpsc::channel();
+        thread::spawn(move || {
+            let mut est = ElapseStack::new(txui);
+            loop {
+                if est.periodic(rxtxt.try_recv()) {break;}
+            }
+        });
+
+        Self::init_font(cc);
+        Self {
+            input_locate: 0,
+            input_text: String::new(),
+            start_time: Instant::now(), // Current Time
+            input_lines: Vec::new(),
+            cmd: cmdparse::LoopianCmd::new(txtxt, rxui),
+        }
+    }
+    fn init_font(cc: &eframe::CreationContext<'_>) {
         // Start with the default fonts (we will be adding to them rather than replacing them).
         let mut fonts = FontDefinitions::default();
 
@@ -71,14 +95,6 @@ impl LoopianApp {
 
         // Tell egui to use these fonts:
         cc.egui_ctx.set_fonts(fonts);
-
-        Self {
-            input_locate: 0,
-            input_text: String::new(),
-            start_time: Instant::now(), // Current Time
-            input_lines: Vec::new(),
-            cmd: cmdparse::LoopianCmd::new(),
-        }
     }
     //  for update()
     fn update_title(ui: &mut egui::Ui) {
@@ -97,11 +113,12 @@ impl LoopianApp {
             0 => indi_txt = "key:".to_string() + self.cmd.get_indicator(0),
             1 => indi_txt = "bpm:".to_string() + self.cmd.get_indicator(1),
             2 => indi_txt = "beat:".to_string() + self.cmd.get_indicator(2),
-            4 => indi_txt = "L1:".to_string() + self.cmd.get_indicator(3),
-            5 => indi_txt = "L2:".to_string() + self.cmd.get_indicator(4),
-            6 => indi_txt = "R1:".to_string() + self.cmd.get_indicator(5),
-            7 => indi_txt = "R2:".to_string() + self.cmd.get_indicator(6),
-            _ => indi_txt = "".to_string() + self.cmd.get_indicator(7),
+            4 => indi_txt = "L1:".to_string() + self.cmd.get_indicator(4),
+            5 => indi_txt = "L2:".to_string() + self.cmd.get_indicator(5),
+            6 => indi_txt = "R1:".to_string() + self.cmd.get_indicator(6),
+            7 => indi_txt = "R2:".to_string() + self.cmd.get_indicator(7),
+            3 => indi_txt = self.cmd.get_indicator(3).to_string(),
+            _ => indi_txt = "".to_string(),
         }
         indi_txt
     }
