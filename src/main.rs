@@ -109,7 +109,7 @@ impl LoopianApp {
             )
         );
     }
-    fn text_for_eight_indicator(&self, num: i32) -> String {
+    fn text_for_eight_indicator(&mut self, num: i32) -> String {
         let indi_txt;
         match num {
             0 => indi_txt = "key:".to_string() + self.cmd.get_indicator(0),
@@ -124,7 +124,7 @@ impl LoopianApp {
         }
         indi_txt
     }
-    fn update_eight_indicator(&self, ui: &mut egui::Ui) {
+    fn update_eight_indicator(&mut self, ui: &mut egui::Ui) {
         for i in 0..4 {
             for j in 0..2 {
                 let raw: f32 = Self::NEXT_BLOCK*(i as f32);

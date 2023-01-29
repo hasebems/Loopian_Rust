@@ -14,23 +14,29 @@ use super::midi::MidiTx;
 //  2. Timing/Tempo の生成とtick管理
 //  3. MIDI Out の生成と管理
 pub struct ElapseStack {
-    _ui_hndr: mpsc::Sender<String>,
+    ui_hndr: mpsc::Sender<String>,
     mdx: MidiTx,
     start_time: Instant,
     count: u32,
 }
 
 impl ElapseStack {
-    pub fn new(_ui_hndr: mpsc::Sender<String>) -> Option<Self> {
+    pub fn new(ui_hndr: mpsc::Sender<String>) -> Option<Self> {
         match MidiTx::connect() {
             Ok(c)   => Some(Self {
-                _ui_hndr,
+                ui_hndr,
                 mdx: c,
                 start_time: Instant::now(),
                 count: 0,
             }),
             Err(_e) => None,
         } 
+    }
+    fn send_msg_to_ui(&self, msg: &str) {
+        match self.ui_hndr.send(msg.to_string()) {
+            Err(e) => println!("Something happened on MPSC! {}",e),
+            _ => {},
+        }
     }
     pub fn periodic(&mut self, msg: Result<String, TryRecvError>) -> bool {
         let mut end = false;
@@ -49,6 +55,7 @@ impl ElapseStack {
             self.count += 1;
             if self.count%2 == 1 {
                 self.mdx.midi_out(0x90,0x40,0x60);
+                self.send_msg_to_ui(&self.count.to_string());
             }
             else {
                 self.mdx.midi_out(0x80,0x40,0x40);

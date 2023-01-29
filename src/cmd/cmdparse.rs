@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use std::sync::mpsc;
+use std::sync::mpsc::TryRecvError;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -12,24 +13,49 @@ use std::sync::mpsc;
 pub struct LoopianCmd {
     indicator: Vec<String>,
     msg_hndr: mpsc::Sender<String>,
-    _ui_hndr: mpsc::Receiver<String>,
+    ui_hndr: mpsc::Receiver<String>,
 }
 
 impl LoopianCmd {
-    pub fn new(msg_hndr: mpsc::Sender<String>, _ui_hndr: mpsc::Receiver<String>) -> Self {
+    const MAX_INDICATOR: u32 = 8;
+
+    pub fn new(msg_hndr: mpsc::Sender<String>, ui_hndr: mpsc::Receiver<String>) -> Self {
         let mut indc: Vec<String> = Vec::new();
-        for _ in 0..8 {indc.push("---".to_string());}
+        for _ in 0..Self::MAX_INDICATOR {indc.push("---".to_string());}
         indc[3] = "1 : 1 : 000".to_string();
         Self {
             indicator: indc,
             msg_hndr,
-            _ui_hndr,
+            ui_hndr,
         }
     }
-    pub fn get_indicator(&self, num: usize) -> &str {&self.indicator[num]}
+    fn read_from_ui_hndr(&mut self) {
+        loop {
+            match self.ui_hndr.try_recv() {
+                Ok(mut uitxt)  => {
+                    if let Some(letter) = uitxt.chars().nth(0) {
+                        let ind_num = letter.to_digit(10).unwrap();
+                        let len = uitxt.chars().count();
+                        if len >= 2 {
+                            let txt = uitxt.split_off(1);
+                            if ind_num < Self::MAX_INDICATOR {
+                                self.indicator[ind_num as usize] = txt;
+                            }
+                        }
+                    }
+                },
+                Err(TryRecvError::Disconnected) => break,// Wrong!
+                Err(TryRecvError::Empty) => break,
+            }
+        }
+    }
+    pub fn get_indicator(&mut self, num: usize) -> &str {
+        self.read_from_ui_hndr();
+        &self.indicator[num]
+    }
     fn send_msg_to_elapse(&self, msg: &str) {
         match self.msg_hndr.send(msg.to_string()) {
-            Err(e) => println!("Something happened! {}",e),
+            Err(e) => println!("Something happened on MPSC! {}",e),
             _ => {},
         }
     }

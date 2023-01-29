@@ -39,7 +39,7 @@ impl MidiTx {
         };
         match driver.connect(out_port, "loopian_tx") {
             Ok(c) => Ok(Self {connection: Box::new(c),}),
-            Err(_e) => return Err("Connection Failed!: {}".into()),
+            Err(_e) => return Err("Connection Failed!".into()),
         }
     }
     pub fn midi_out(&mut self, status: u8, dt1: u8, dt2: u8) {
