@@ -34,11 +34,12 @@ impl LoopianCmd {
         }
     }
     fn letter_p(&self, input_text: &str) -> Option<String> {
-        if &input_text[0..4] == "play" {
+        let len = input_text.chars().count();
+        if len >= 4 && &input_text[0..4] == "play" {
             // play
             self.send_msg_to_elapse("play");
             Some("Phrase has started!".to_string())
-        } else if &input_text[0..5] == "panic" {
+        } else if len >= 5 && &input_text[0..5] == "panic" {
             // panic
             Some("Phrase has started!".to_string())
         } else {
