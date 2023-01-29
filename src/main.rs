@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 use std::thread;
 use std::sync::mpsc;
 use cmd::cmdparse;
-use crate::elapse::elapse_stack::ElapseStack;
+use elapse::elapse_stack::ElapseStack;
 
 //#[derive(Default)]
 pub struct LoopianApp {
@@ -50,9 +50,11 @@ impl LoopianApp {
         let (txtxt, rxtxt) = mpsc::channel();
         let (txui, rxui) = mpsc::channel();
         thread::spawn(move || {
-            let mut est = ElapseStack::new(txui);
-            loop {
-                if est.periodic(rxtxt.try_recv()) {break;}
+            match ElapseStack::new(txui) {
+                Some(mut est) => {
+                    loop { if est.periodic(rxtxt.try_recv()) {break;}}
+                },
+                None => {println!("Play System does't work")},
             }
         });
 
@@ -268,8 +270,11 @@ impl LoopianApp {
 }
 
 impl eframe::App for LoopianApp {
-    fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
-
+    fn on_close_event(&mut self) -> bool {
+        println!("App will end!");
+        thread::sleep(Duration::from_millis(500));
+        true
+    }
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         // repaint 100msec interval
         ctx.request_repaint_after(Duration::from_millis(100));

@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 eframe = "0.20.1"
 device_query = "1.1.0"
+midir = "0.9.1"
