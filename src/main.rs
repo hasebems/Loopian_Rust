@@ -5,6 +5,7 @@
 //
 mod cmd;
 mod elapse;
+mod lpnlib;
 
 use eframe::{egui::*};
 use eframe::egui;
@@ -12,7 +13,7 @@ use std::time::{Duration, Instant};
 use std::thread;
 use std::sync::mpsc;
 use cmd::cmdparse;
-use elapse::elapse_stack::ElapseStack;
+use elapse::stack_elapse::ElapseStack;
 
 //#[derive(Default)]
 pub struct LoopianApp {

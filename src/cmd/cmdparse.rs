@@ -67,7 +67,17 @@ impl LoopianCmd {
             Some("Phrase has started!".to_string())
         } else if len >= 5 && &input_text[0..5] == "panic" {
             // panic
-            Some("Phrase has started!".to_string())
+            Some("All Sound Off!".to_string())
+        } else {
+            Some("what?".to_string())
+        }
+    }
+    fn letter_s(&self, input_text: &str) -> Option<String> {
+        let len = input_text.chars().count();
+        if len >= 4 && &input_text[0..4] == "stop" {
+            // stop
+            self.send_msg_to_elapse("stop");
+            Some("Phrase has stopped!".to_string())
         } else {
             Some("what?".to_string())
         }
@@ -92,7 +102,7 @@ impl LoopianCmd {
         //else if first_letter == "l" {self.letter_l(input_text)}
         else if first_letter == "p" {self.letter_p(input_text)}
         //else if first_letter == "r" {self.letter_r(input_text)}
-        //else if first_letter == "s" {self.letter_s(input_text)}
+        else if first_letter == "s" {self.letter_s(input_text)}
         //else if first_letter == "m" {self.letter_m(input_text)}
         else                        {Some("what?".to_string())}
     }
