@@ -76,8 +76,8 @@ impl TickGen {
             self.tick_for_onemsr/tick_for_beat)
     }
     pub fn get_tick_for_onemsr(&self) -> u32 {self.tick_for_onemsr}
-    pub fn get_bpm(&self) -> u32 {0}
-    pub fn get_beat(&self) -> Beat {Beat(4,4)}
+    pub fn get_bpm(&self) -> u32 {self.bpm}
+    pub fn get_beat(&self) -> Beat {self.beat}
     fn calc_crnt_tick(&self) -> u32 {
         let diff = self.crnt_time - self.bpm_start_time;
         let elapsed_tick = ((DEFAULT_TICK_FOR_QUARTER as f32)*(self.bpm as f32)*diff.as_secs_f32())/60.0;

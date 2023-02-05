@@ -4,7 +4,9 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 
+#[derive(Copy, Clone, PartialEq)]
 pub struct Beat(pub u32, pub u32); // 分子/分母
+
 pub const DEFAULT_TICK_FOR_QUARTER: u32 = 480;
 pub const DEFAULT_TICK_FOR_ONE_MEASURE: u32 = 1920;  // 480 * 4
 
