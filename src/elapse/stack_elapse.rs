@@ -99,13 +99,7 @@ impl ElapseStack {
         self.destroy_finished_elps();
 
         //  for GUI
-        let elapse_time = self.crnt_time-self.display_time;
-        if elapse_time > Duration::from_millis(50) {
-            self.display_time = self.crnt_time;
-            let (m,b,t,_c) = self.tg.get_tick();
-            let beat_disp = "3".to_owned() + &m.to_string() + " : " + &b.to_string() + " : " + &t.to_string();
-            self.send_msg_to_ui(&beat_disp);
-        }
+        self.update_gui();
 
         return false
     }
@@ -128,52 +122,54 @@ impl ElapseStack {
         else if msg == "play" {self.start();}
         else if msg == "stop" {self.stop();}
     }
-    fn insert_proper_locate(mut playable: Vec<Rc<RefCell<dyn Elapse>>>, elps: Rc<RefCell<dyn Elapse>>)
-      -> Vec<Rc<RefCell<dyn Elapse>>> {
-        let (msr, tick) = elps.borrow().next();
-        for i in 0..playable.len() {
-            let (msrx, tickx) = playable[i].borrow().next();
-            if (msr == msrx &&
-                ((tick == tickx && playable[i].borrow().prio() > elps.borrow().prio()) || tick < tickx)) ||
-               msr < msrx {
-                playable.insert(i, elps);
-                break;
-            }
-        }
-        playable
-    }
     fn pick_out_playable(&self, crnt_msr: i32, crnt_tick: u32) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
         for elps in self.elapse_vec.iter() {
             let (msr, tick) = elps.borrow().next();
             if (msr == crnt_msr && tick <= crnt_tick) || msr < crnt_msr {
                 // 現在のタイミングより前のイベントがあれば
-                if playable.len() == 0 {playable.push(Rc::clone(&elps));}
+                if playable.len() == 0 {
+                    // playable にまだ何も無ければ、普通に push
+                    playable.push(Rc::clone(&elps));
+                }
                 else {
-                    playable = ElapseStack::insert_proper_locate(playable, Rc::clone(&elps));
+                    // playable に、時間順になるように挿入
+                    for (i, one_plabl) in playable.iter().enumerate() {
+                        let (msrx, tickx) = one_plabl.borrow().next();
+                        if (msr < msrx) || 
+                           ((msr == msrx) &&
+                            ((tick < tickx) ||
+                             (tick == tickx && one_plabl.borrow().prio() > elps.borrow().prio()))){
+                            playable.insert(i, Rc::clone(&elps));
+                            break;
+                        }
+                    }
                 }
             }
         }
         playable
     }
     fn destroy_finished_elps(&mut self) {
-        let mut max_elps = self.elapse_vec.len();
-        let mut removed_num: i32 = -1;
-        while removed_num < max_elps as i32 {
-            removed_num = -1;
-            for i in 0..max_elps {
-                if self.elapse_vec[i].borrow().destroy_me() {
+        loop {
+            let mut removed_num: i32 = -1;
+            for (i, elps) in self.elapse_vec.iter().enumerate() {
+                if elps.borrow().destroy_me() {
                     self.elapse_vec.remove(i);
                     removed_num = i as i32;
                     break;
                 }
             }
             if removed_num == -1 {break;}
-            max_elps = self.elapse_vec.len();
         }
     }
-
-
+    fn update_gui(&mut self) {
+        if self.crnt_time-self.display_time > Duration::from_millis(50) {
+            self.display_time = self.crnt_time;
+            let (m,b,t,_c) = self.tg.get_tick();
+            let beat_disp = "3".to_owned() + &m.to_string() + " : " + &b.to_string() + " : " + &t.to_string();
+            self.send_msg_to_ui(&beat_disp);
+        }
+    }
     /*let et = crnt_time-self.start_time;
             if et > Duration::from_secs(1) {
                 self.start_time = crnt_time;
