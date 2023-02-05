@@ -4,6 +4,18 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 
+// Timing Priority(pri) 数値が小さいほど優先度が高い（同じtickなら先に再生される）
+pub const PRI_NONE: u32 = 1000;
+pub const PRI_PART: u32 = 100;
+pub const PRI_CHORD: u32 = 200;
+pub const PRI_LOOP: u32 = 300;
+pub const PRI_NOTE: u32 = 400;
+pub const PRI_DMPR: u32 = 500;
+
+pub const PART_ID_OFS: u32 = 0x10000;
+pub const LOOP_ID_OFS: u32 = 0x20000;
+pub const NOTE_ID_OFS: u32 = 0x30000;
+
 pub trait Elapse {
     fn id(&self) -> u32;            // id を得る
     fn prio(&self) -> u32;          // priority を得る
