@@ -25,6 +25,7 @@ pub struct ElapseStack {
     start_time: Instant,
     crnt_time: Instant,
     count: u32,
+    bpm_stock: u32,
     during_play: bool,
     display_time: Instant,
     tg: TickGen,
@@ -45,6 +46,7 @@ impl ElapseStack {
                     start_time: Instant::now(),
                     crnt_time: Instant::now(),
                     count: 0,
+                    bpm_stock: 120,
                     during_play: false,
                     display_time: Instant::now(),
                     tg: TickGen::new(),
@@ -82,7 +84,9 @@ impl ElapseStack {
             // change beat event
 
             // change bpm event
-
+            if self.bpm_stock != self.tg.get_bpm() {
+                self.tg.change_bpm_event(self.bpm_stock);
+            }
             // fine
         }
 
@@ -116,11 +120,21 @@ impl ElapseStack {
     fn stop(&mut self) {
         self.during_play = false;
     }
+    fn setting_cmnd(&mut self, msg: &str) {
+        if &msg[0..4] == "bpm=" {
+            self.bpm_stock = msg[4..].parse::<u32>().unwrap();
+        }
+    }
+    fn set_phrase(&mut self, _msg: &str) {}
+    fn set_composition(&mut self, _msg: &str) {}
     fn parse_msg(&mut self, msg: String) {
         println!("msg is {}", msg);
         if msg == "start" {self.start();}
         else if msg == "play" {self.start();}
         else if msg == "stop" {self.stop();}
+        else if &msg[0..3] == "set" {self.setting_cmnd(&msg[3..]);}
+        else if &msg[0..3] == "phr" {self.set_phrase(&msg[3..]);}
+        else if &msg[0..3] == "cmp" {self.set_composition(&msg[3..]);}
     }
     fn pick_out_playable(&self, crnt_msr: i32, crnt_tick: u32) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
@@ -165,9 +179,14 @@ impl ElapseStack {
     fn update_gui(&mut self) {
         if self.crnt_time-self.display_time > Duration::from_millis(50) {
             self.display_time = self.crnt_time;
+            // tick
             let (m,b,t,_c) = self.tg.get_tick();
             let beat_disp = "3".to_owned() + &m.to_string() + " : " + &b.to_string() + " : " + &t.to_string();
             self.send_msg_to_ui(&beat_disp);
+            // bpm
+            let bpm_num = self.tg.get_bpm();
+            let bpm_disp = "1".to_owned() + &bpm_num.to_string();
+            self.send_msg_to_ui(&bpm_disp);
         }
     }
     /*let et = crnt_time-self.start_time;

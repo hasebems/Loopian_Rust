@@ -78,6 +78,10 @@ impl LoopianCmd {
             // stop
             self.send_msg_to_elapse("stop");
             Some("Phrase has stopped!".to_string())
+        } else if len >= 3 && &input_text[0..3] == "set" {
+            // set
+            self.send_msg_to_elapse(&("set".to_string()+&input_text[4..]));
+            Some("BPM has changed!".to_string())
         } else {
             Some("what?".to_string())
         }
