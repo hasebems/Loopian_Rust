@@ -6,6 +6,8 @@
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
 use std::time::{Instant, Duration};
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use super::tickgen::TickGen;
 use super::midi::MidiTx;
@@ -26,7 +28,7 @@ pub struct ElapseStack {
     during_play: bool,
     display_time: Instant,
     tg: TickGen,
-    elapseVec: Vec<Box<dyn Elapse>>,
+    elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>,
 }
 
 impl ElapseStack {
@@ -34,8 +36,8 @@ impl ElapseStack {
         match MidiTx::connect() {
             Ok(c)   => {
                 let mut vp = Vec::new();
-                for _ in 0..MAX_PART_COUNT {
-                    vp.push(Part::new())
+                for i in 0..MAX_PART_COUNT {
+                    vp.push(Part::new(i as u32))
                 }
                 Some(Self {
                     ui_hndr,
@@ -46,14 +48,19 @@ impl ElapseStack {
                     during_play: false,
                     display_time: Instant::now(),
                     tg: TickGen::new(),
-                    elapseVec: vp,
+                    elapse_vec: vp,
                 })
             }
             Err(_e) => None,
         } 
     }
-    pub fn add_elapse(&mut self, elps: Box<dyn Elapse>) {
-        self.elapseVec.push(elps);
+    pub fn add_elapse(&mut self, elps: Rc<RefCell<dyn Elapse>>) {
+        self.elapse_vec.push(elps);
+    }
+    pub fn del_elapse(&mut self, search_id: u32) {
+        if let Some(remove_index) = self.elapse_vec.iter().position(|x| x.borrow().id() == search_id) {
+            self.elapse_vec.remove(remove_index);
+        }
     }
     pub fn periodic(&mut self, msg: Result<String, TryRecvError>) -> bool {
         self.crnt_time = Instant::now();
@@ -79,21 +86,17 @@ impl ElapseStack {
             // fine
         }
 
-        loop {
-            /*let et = crnt_time-self.start_time;
-            if et > Duration::from_secs(1) {
-                self.start_time = crnt_time;
-                self.count += 1;
-                if self.count%2 == 1 {
-                    self.mdx.midi_out(0x90,0x40,0x60);
-                    self.send_msg_to_ui(&self.count.to_string());
-                }
-                else {
-                    self.mdx.midi_out(0x80,0x40,0x40);
-                }
-            }*/
-            break;
+        // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
+        let playable = self.pick_out_playable(crnt_msr_tick.msr, crnt_msr_tick.tick);
+        if playable.len() != 0 {
+            // 再生 obj. をリスト順にコール
+            for elps in playable {
+                elps.borrow_mut().process(crnt_msr_tick.msr, crnt_msr_tick.tick);
+            }
         }
+
+        // remove ended obj
+        self.destroy_finished_elps();
 
         //  for GUI
         let elapse_time = self.crnt_time-self.display_time;
@@ -125,4 +128,62 @@ impl ElapseStack {
         else if msg == "play" {self.start();}
         else if msg == "stop" {self.stop();}
     }
+    fn insert_proper_locate(mut playable: Vec<Rc<RefCell<dyn Elapse>>>, elps: Rc<RefCell<dyn Elapse>>)
+      -> Vec<Rc<RefCell<dyn Elapse>>> {
+        let (msr, tick) = elps.borrow().next();
+        for i in 0..playable.len() {
+            let (msrx, tickx) = playable[i].borrow().next();
+            if (msr == msrx &&
+                ((tick == tickx && playable[i].borrow().prio() > elps.borrow().prio()) || tick < tickx)) ||
+               msr < msrx {
+                playable.insert(i, elps);
+                break;
+            }
+        }
+        playable
+    }
+    fn pick_out_playable(&self, crnt_msr: i32, crnt_tick: u32) -> Vec<Rc<RefCell<dyn Elapse>>> {
+        let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
+        for elps in self.elapse_vec.iter() {
+            let (msr, tick) = elps.borrow().next();
+            if (msr == crnt_msr && tick <= crnt_tick) || msr < crnt_msr {
+                // 現在のタイミングより前のイベントがあれば
+                if playable.len() == 0 {playable.push(Rc::clone(&elps));}
+                else {
+                    playable = ElapseStack::insert_proper_locate(playable, Rc::clone(&elps));
+                }
+            }
+        }
+        playable
+    }
+    fn destroy_finished_elps(&mut self) {
+        let mut max_elps = self.elapse_vec.len();
+        let mut removed_num: i32 = -1;
+        while removed_num < max_elps as i32 {
+            removed_num = -1;
+            for i in 0..max_elps {
+                if self.elapse_vec[i].borrow().destroy_me() {
+                    self.elapse_vec.remove(i);
+                    removed_num = i as i32;
+                    break;
+                }
+            }
+            if removed_num == -1 {break;}
+            max_elps = self.elapse_vec.len();
+        }
+    }
+
+
+    /*let et = crnt_time-self.start_time;
+            if et > Duration::from_secs(1) {
+                self.start_time = crnt_time;
+                self.count += 1;
+                if self.count%2 == 1 {
+                    self.mdx.midi_out(0x90,0x40,0x60);
+                    self.send_msg_to_ui(&self.count.to_string());
+                }
+                else {
+                    self.mdx.midi_out(0x80,0x40,0x40);
+                }
+            }*/
 }
