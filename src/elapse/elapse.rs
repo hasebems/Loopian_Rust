@@ -3,6 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use super::tickgen::CrntMsrTick;
 
 // Timing Priority(pri) 数値が小さいほど優先度が高い（同じtickなら先に再生される）
 pub const PRI_NONE: u32 = 1000;
@@ -23,6 +24,6 @@ pub trait Elapse {
     fn start(&mut self);            // User による start/play 時にコールされる
     fn stop(&mut self);             // User による stop 時にコールされる
     fn fine(&mut self);             // User による fine があった次の小節先頭でコールされる
-    fn process(&mut self, msr: i32, tick: u32);    // 再生 msr/tick に達したらコールされる
+    fn process(&mut self, crnt_: &CrntMsrTick);    // 再生 msr/tick に達したらコールされる
     fn destroy_me(&self) -> bool;   // 自クラスが役割を終えた時に True を返す
 }

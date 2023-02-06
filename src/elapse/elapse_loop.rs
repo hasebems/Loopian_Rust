@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::elapse::{PRI_LOOP, LOOP_ID_OFS, Elapse};
+use super::tickgen::CrntMsrTick;
 
 pub struct Loop {
     id: u32,
@@ -25,7 +26,7 @@ impl Elapse for Loop {
     fn fine(&mut self) {        // User による fine があった次の小節先頭でコールされる
 
     }
-    fn process(&mut self, msr: i32, tick: u32) {    // 再生 msr/tick に達したらコールされる
+    fn process(&mut self, crnt_: &CrntMsrTick) {    // 再生 msr/tick に達したらコールされる
 
     }
     fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す

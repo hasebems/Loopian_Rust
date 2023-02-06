@@ -9,7 +9,7 @@ use std::time::{Instant, Duration};
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use super::tickgen::TickGen;
+use super::tickgen::{TickGen, CrntMsrTick};
 use super::midi::MidiTx;
 use super::elapse::Elapse;
 use super::elapse_part::Part;
@@ -90,12 +90,15 @@ impl ElapseStack {
             // fine
         }
 
-        // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
-        let playable = self.pick_out_playable(crnt_msr_tick.msr, crnt_msr_tick.tick);
-        if playable.len() != 0 {
-            // 再生 obj. をリスト順にコール
+        loop {
+            // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
+            let playable = self.pick_out_playable(&crnt_msr_tick);
+            if playable.len() == 0 {
+                break;
+            }
+            // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
             for elps in playable {
-                elps.borrow_mut().process(crnt_msr_tick.msr, crnt_msr_tick.tick);
+                elps.borrow_mut().process(&crnt_msr_tick);
             }
         }
 
@@ -136,11 +139,11 @@ impl ElapseStack {
         else if &msg[0..3] == "phr" {self.set_phrase(&msg[3..]);}
         else if &msg[0..3] == "cmp" {self.set_composition(&msg[3..]);}
     }
-    fn pick_out_playable(&self, crnt_msr: i32, crnt_tick: u32) -> Vec<Rc<RefCell<dyn Elapse>>> {
+    fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
         for elps in self.elapse_vec.iter() {
             let (msr, tick) = elps.borrow().next();
-            if (msr == crnt_msr && tick <= crnt_tick) || msr < crnt_msr {
+            if (msr == crnt_.msr && tick <= crnt_.tick) || msr < crnt_.msr {
                 // 現在のタイミングより前のイベントがあれば
                 if playable.len() == 0 {
                     // playable にまだ何も無ければ、普通に push

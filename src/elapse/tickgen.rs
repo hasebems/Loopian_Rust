@@ -21,6 +21,7 @@ pub struct TickGen {
 pub struct CrntMsrTick {
     pub msr: i32,
     pub tick: u32,
+    pub tick_for_onemsr: u32,
     pub new_msr: bool,
 }
 
@@ -65,6 +66,7 @@ impl TickGen {
         CrntMsrTick {
             msr: self.crnt_msr,
             tick: self.crnt_tick_inmsr,
+            tick_for_onemsr: self.tick_for_onemsr,
             new_msr: self.crnt_msr != former_msr,
         }
     }
