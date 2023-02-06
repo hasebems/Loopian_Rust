@@ -5,6 +5,8 @@
 //
 use std::rc::Rc;
 use std::cell::RefCell;
+
+use crate::lpnlib;
 use super::elapse::{PRI_PART, PART_ID_OFS, Elapse};
 use super::elapse_loop::Loop;
 use super::tickgen::CrntMsrTick;
@@ -13,28 +15,17 @@ pub struct Part {
     id: u32,
     priority: u32,
 
+    keynote: u8,
+    base_note: u8,
     first_measure_num: i32,
     next_msr: i32,
     next_tick: u32,
     max_loop_msr: u32,
-    //loop_elps: Loop,
+    whole_tick: u32,
+    loop_elps: Option<Loop>,
 
     state_reserve: bool,
     sync_next_msr_flag: bool,
-
-/*
-    self.loop_obj = None
-    left_part = 1-(num%nlib.FIRST_NORMAL_PART)//nlib.MAX_LEFT_PART # left なら 1, でなければ 0
-    self.keynote = 0
-    self.base_note = nlib.DEFAULT_NOTE_NUMBER - 12*left_part
-    self.max_loop_msr = 0   // whole_tick と同時生成
-    self.whole_tick = 0     // max_loop_msr と同時生成
-    self.sync_next_msr_flag = False
-    self.state_reserve = False
-    self.seqdt_part = None
-    self.cb_handler = None
-    self.handler_owner = None
-*/
 }
 
 impl Elapse for Part {
@@ -61,25 +52,25 @@ impl Elapse for Part {
             if crnt_.msr == 0 {
                 // 今回 start したとき
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
             }
             else if self.max_loop_msr == 0 {
                 // データのない状態で start し、今回初めて指定された時
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
             }
             else if self.max_loop_msr != 0 &&
               (crnt_.msr - self.first_measure_num)%(self.max_loop_msr as i32) == 0 {
                 // 前小節にて Loop Obj が終了した時
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
             }
             else if self.max_loop_msr != 0 && self.sync_next_msr_flag {
                 // sync コマンドによる強制リセット
                 self.state_reserve = false;
                 self.sync_next_msr_flag = false;
                 //self.est.del_obj(self.loop_elps);
-                self.new_loop(crnt_.msr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
             }
             else {
                 // 現在の Loop Obj が終了していない時
@@ -89,7 +80,7 @@ impl Elapse for Part {
         else if self.max_loop_msr != 0 &&
           (crnt_.msr - self.first_measure_num)%(self.max_loop_msr as i32) == 0 {
                 // 同じ Loop.Obj を生成する
-                self.new_loop(crnt_.msr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
         }
         // 毎小節の頭で process() がコール
         self.next_msr = crnt_.msr + 1
@@ -101,19 +92,49 @@ impl Elapse for Part {
 
 impl Part {
     pub fn new(num: u32) -> Rc<RefCell<dyn Elapse>> {
+        // left なら 1, でなければ 0
+        let left_part = 1-(num%(lpnlib::FIRST_PHRASE_PART as u32))/(lpnlib::MAX_LEFT_PART as u32);
         Rc::new(RefCell::new(Self {
-            id: self::PART_ID_OFS+num,
+            id: PART_ID_OFS+num,
             priority: PRI_PART,
+            keynote: 0,
+            base_note: lpnlib::DEFAULT_NOTE_NUMBER - 12*(left_part as u8),
             first_measure_num: 0,
             next_msr: 0,
             next_tick: 0,
             max_loop_msr: 0,
-            //loop_elps: Loop::new(0),
+            whole_tick: 0,     // max_loop_msr と同時生成
+            loop_elps: None,
             state_reserve: false,
             sync_next_msr_flag: false,
         }))
     }
-    fn new_loop(&self, msr: i32) {
+    fn new_loop(&mut self, msr: i32, tick_for_onemsr: u32) {
+        // 新たに Loop Obj.を生成
+        self.first_measure_num = msr;    // 計測開始の更新
+        //self.whole_tick, elm, ana = self.seqdt_part.get_final(msr)
 
+        // その時の beat 情報で、whole_tick を loop_measure に換算
+        let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
+        self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
+
+        //self.update_loop_for_gui(); // for 8indicator
+        if self.whole_tick == 0 {
+            self.state_reserve = true; // 次小節冒頭で呼ばれるように
+            self.loop_elps = None;
+            return;
+        }
+
+        let part_num = self.id - PART_ID_OFS;
+        if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
+            //self.loop_elps = phrlp.PhraseLoop(self.est, self.md, msr, elm, ana,  \
+            //    self.keynote, self.whole_tick, part_num);
+            //self.est.add_obj(self.loop_elps);
+        }
+        else {
+            //self.loop_elps = phrlp.CompositionLoop(self.est, self.md, msr, elm, ana, \
+            //    self.keynote, self.whole_tick, part_num);
+            //self.est.add_obj_in_front(self.loop_elps);
+        }
     }
 }
