@@ -8,7 +8,7 @@ use std::cell::RefCell;
 
 use crate::lpnlib;
 use super::elapse::{PRI_PART, PART_ID_OFS, Elapse};
-use super::elapse_loop::Loop;
+use super::elapse_loop::{Loop, PhraseLoop, CompositionLoop};
 use super::tickgen::CrntMsrTick;
 
 pub struct Part {
@@ -22,7 +22,7 @@ pub struct Part {
     next_tick: u32,
     max_loop_msr: u32,
     whole_tick: u32,
-    loop_elps: Option<Loop>,
+    loop_elps: Option<Rc<RefCell<dyn Elapse>>>,
 
     state_reserve: bool,
     sync_next_msr_flag: bool,
@@ -127,12 +127,16 @@ impl Part {
 
         let part_num = self.id - PART_ID_OFS;
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            //self.loop_elps = phrlp.PhraseLoop(self.est, self.md, msr, elm, ana,  \
+            let lp: Rc<RefCell<PhraseLoop>> = Loop::new(part_num);
+            self.loop_elps = Some(lp);
+            //    self.est, self.md, msr, elm, ana,  \
             //    self.keynote, self.whole_tick, part_num);
             //self.est.add_obj(self.loop_elps);
         }
         else {
-            //self.loop_elps = phrlp.CompositionLoop(self.est, self.md, msr, elm, ana, \
+            let lp: Rc<RefCell<CompositionLoop>> = Loop::new(part_num);
+            self.loop_elps = Some(lp);
+            //    self.est, self.md, msr, elm, ana, \
             //    self.keynote, self.whole_tick, part_num);
             //self.est.add_obj_in_front(self.loop_elps);
         }
