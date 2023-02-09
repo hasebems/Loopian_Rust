@@ -10,6 +10,7 @@ use crate::lpnlib;
 use super::elapse::{PRI_PART, PART_ID_OFS, Elapse};
 use super::elapse_loop::{Loop, PhraseLoop, CompositionLoop};
 use super::tickgen::CrntMsrTick;
+use super::stack_elapse::ElapseStack;
 
 pub struct Part {
     id: u32,
@@ -46,31 +47,34 @@ impl Elapse for Part {
     fn fine(&mut self) {        // User による fine があった次の小節先頭でコールされる
 
     }
-    fn process(&mut self, crnt_: &CrntMsrTick) {    // 再生 msr/tick に達したらコールされる
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         if self.state_reserve {
             // 前小節にて phrase/pattern 指定された時
             if crnt_.msr == 0 {
                 // 今回 start したとき
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
             }
             else if self.max_loop_msr == 0 {
                 // データのない状態で start し、今回初めて指定された時
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
             }
             else if self.max_loop_msr != 0 &&
               (crnt_.msr - self.first_measure_num)%(self.max_loop_msr as i32) == 0 {
                 // 前小節にて Loop Obj が終了した時
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
             }
             else if self.max_loop_msr != 0 && self.sync_next_msr_flag {
                 // sync コマンドによる強制リセット
                 self.state_reserve = false;
                 self.sync_next_msr_flag = false;
-                //self.est.del_obj(self.loop_elps);
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
+                if let Some(lp) = &self.loop_elps {
+                    estk.del_elapse(lp.borrow().id());
+                    self.loop_elps = None;
+                }
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
             }
             else {
                 // 現在の Loop Obj が終了していない時
@@ -80,7 +84,7 @@ impl Elapse for Part {
         else if self.max_loop_msr != 0 &&
           (crnt_.msr - self.first_measure_num)%(self.max_loop_msr as i32) == 0 {
                 // 同じ Loop.Obj を生成する
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr);
+                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
         }
         // 毎小節の頭で process() がコール
         self.next_msr = crnt_.msr + 1
@@ -109,7 +113,7 @@ impl Part {
             sync_next_msr_flag: false,
         }))
     }
-    fn new_loop(&mut self, msr: i32, tick_for_onemsr: u32) {
+    fn new_loop(&mut self, msr: i32, tick_for_onemsr: u32, estk: &mut ElapseStack) {
         // 新たに Loop Obj.を生成
         self.first_measure_num = msr;    // 計測開始の更新
         //self.whole_tick, elm, ana = self.seqdt_part.get_final(msr)
@@ -127,18 +131,18 @@ impl Part {
 
         let part_num = self.id - PART_ID_OFS;
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            let lp: Rc<RefCell<PhraseLoop>> = Loop::new(part_num);
-            self.loop_elps = Some(lp);
+            let lp: Rc<RefCell<dyn Elapse>> = PhraseLoop::new(part_num);
+            self.loop_elps = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana,  \
             //    self.keynote, self.whole_tick, part_num);
-            //self.est.add_obj(self.loop_elps);
+            estk.add_elapse(lp);
         }
         else {
-            let lp: Rc<RefCell<CompositionLoop>> = Loop::new(part_num);
-            self.loop_elps = Some(lp);
+            let lp: Rc<RefCell<dyn Elapse>> = CompositionLoop::new(part_num);
+            self.loop_elps = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana, \
             //    self.keynote, self.whole_tick, part_num);
-            //self.est.add_obj_in_front(self.loop_elps);
+            estk.add_elapse(lp);
         }
     }
 }

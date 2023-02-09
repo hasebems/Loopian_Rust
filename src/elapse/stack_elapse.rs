@@ -98,7 +98,7 @@ impl ElapseStack {
             }
             // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
             for elps in playable {
-                elps.borrow_mut().process(&crnt_msr_tick);
+                elps.borrow_mut().process(&crnt_msr_tick, self);
             }
         }
 
