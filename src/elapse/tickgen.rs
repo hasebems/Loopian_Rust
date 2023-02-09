@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use std::time::Instant;
-use crate::lpnlib::{Beat, DEFAULT_TICK_FOR_ONE_MEASURE, DEFAULT_TICK_FOR_QUARTER};
+use crate::lpnlib::{Beat, DEFAULT_TICK_FOR_ONE_MEASURE, DEFAULT_TICK_FOR_QUARTER, DEFAULT_BPM};
 
 pub struct TickGen {
     bpm: u32,
@@ -28,7 +28,7 @@ pub struct CrntMsrTick {
 impl TickGen {
     pub fn new() -> Self {
         Self {
-            bpm: 120,
+            bpm: DEFAULT_BPM,
             beat: Beat(4,4),
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
             origin_time: Instant::now(),
