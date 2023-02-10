@@ -131,18 +131,22 @@ impl Part {
 
         let part_num = self.id - PART_ID_OFS;
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            let lp: Rc<RefCell<dyn Elapse>> = PhraseLoop::new(part_num);
+            let lp: Rc<RefCell<dyn Elapse>> = PhraseLoop::new(part_num, self.keynote);
             self.loop_elps = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana,  \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
         }
         else {
-            let lp: Rc<RefCell<dyn Elapse>> = CompositionLoop::new(part_num);
+            let lp: Rc<RefCell<dyn Elapse>> = CompositionLoop::new(part_num, self.keynote);
             self.loop_elps = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana, \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
         }
+    }
+    pub fn change_key(&mut self, knt: u8) {
+        self.keynote = knt;          // 0-11
+        self.state_reserve = true;
     }
 }

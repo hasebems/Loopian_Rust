@@ -9,11 +9,11 @@ use std::time::{Instant, Duration};
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use crate::lpnlib;
 use super::tickgen::{TickGen, CrntMsrTick};
 use super::midi::MidiTx;
 use super::elapse::Elapse;
 use super::elapse_part::Part;
-use crate::lpnlib::MAX_PART_COUNT;
 
 //  ElapseStack の責務
 //  1. Elapse Object の生成と集約
@@ -37,7 +37,7 @@ impl ElapseStack {
         match MidiTx::connect() {
             Ok(c)   => {
                 let mut vp = Vec::new();
-                for i in 0..MAX_PART_COUNT {
+                for i in 0..lpnlib::MAX_PART_COUNT {
                     vp.push(Part::new(i as u32))
                 }
                 Some(Self {
@@ -64,11 +64,11 @@ impl ElapseStack {
             self.elapse_vec.remove(remove_index);
         }
     }
-    pub fn periodic(&mut self, msg: Result<String, TryRecvError>) -> bool {
+    pub fn periodic(&mut self, msg: Result<Vec<u16>, TryRecvError>) -> bool {
         self.crnt_time = Instant::now();
         match msg {
             Ok(n)  => {
-                if n == "quit" {return true;}
+                if n[0] == lpnlib::MSG_QUIT {return true;}
                 else {self.parse_msg(n);}
             },
             Err(TryRecvError::Disconnected) => return true,// Wrong!
@@ -123,21 +123,21 @@ impl ElapseStack {
     fn stop(&mut self) {
         self.during_play = false;
     }
-    fn setting_cmnd(&mut self, msg: &str) {
-        if &msg[0..4] == "bpm=" {
-            self.bpm_stock = msg[4..].parse::<u32>().unwrap();
+    fn setting_cmnd(&mut self, msg: Vec<u16>) {
+        if msg[1] == lpnlib::MSG2_BPM {
+            self.bpm_stock = msg[2] as u32;
         }
     }
-    fn set_phrase(&mut self, _msg: &str) {}
-    fn set_composition(&mut self, _msg: &str) {}
-    fn parse_msg(&mut self, msg: String) {
-        println!("msg is {}", msg);
-        if msg == "start" {self.start();}
-        else if msg == "play" {self.start();}
-        else if msg == "stop" {self.stop();}
-        else if &msg[0..3] == "set" {self.setting_cmnd(&msg[3..]);}
-        else if &msg[0..3] == "phr" {self.set_phrase(&msg[3..]);}
-        else if &msg[0..3] == "cmp" {self.set_composition(&msg[3..]);}
+    fn set_phrase(&mut self, _msg: Vec<u16>) {}
+    fn set_composition(&mut self, _msg: Vec<u16>) {}
+    fn parse_msg(&mut self, msg: Vec<u16>) {
+        println!("msg is {:?}", msg);
+        if msg[0] == lpnlib::MSG_START {self.start();}
+        else if msg[0] == lpnlib::MSG_START {self.start();}
+        else if msg[0] == lpnlib::MSG_STOP {self.stop();}
+        else if msg[0] == lpnlib::MSG_SET {self.setting_cmnd(msg);}
+        //else if &msg[0..3] == "phr" {self.set_phrase(&msg[3..]);}
+        //else if &msg[0..3] == "cmp" {self.set_composition(&msg[3..]);}
     }
     fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();

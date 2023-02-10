@@ -6,13 +6,14 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use crate::lpnlib;
 use super::elapse::{PRI_LOOP, LOOP_ID_OFS, Elapse};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 
 //---------------------------------------------------------
 pub trait Loop: Elapse {
-    fn new(num: u32) -> Rc<RefCell<Self>>;
+    fn new(num: u32, knt:u8) -> Rc<RefCell<Self>>;
     fn calc_serial_tick(&self, msr: i32, tick: u32) -> u32;
 }
 
@@ -20,6 +21,18 @@ pub trait Loop: Elapse {
 pub struct PhraseLoop {
     id: u32,
     priority: u32,
+
+    //phrase_dt:
+    //analys_dt:
+    keynote: u8,
+    part_num: u32,    // 親パートの番号
+    play_counter: u32,
+    next_tick_in_phrase: u32,
+    last_note: u8,
+
+    // for super's member
+    next_msr: i32,
+    whole_tick: u32,
 }
 impl Elapse for PhraseLoop {
     fn id(&self) -> u32 {self.id}         // id を得る
@@ -44,10 +57,19 @@ impl Elapse for PhraseLoop {
     }
 }
 impl Loop for PhraseLoop {
-    fn new(num: u32) -> Rc<RefCell<Self>> {
+    fn new(num: u32, knt: u8) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: LOOP_ID_OFS+num,
             priority: PRI_LOOP,
+            keynote: knt,
+            part_num: num,    // 親パートの番号
+            play_counter: 0,
+            next_tick_in_phrase: 0,
+            last_note: lpnlib::NO_NOTE,
+        
+            // for super's member
+            next_msr: 0,
+            whole_tick: 0,
         }))
     }
     fn calc_serial_tick(&self, msr: i32, tick: u32) -> u32 {return 0;}
@@ -82,7 +104,7 @@ impl Elapse for CompositionLoop {
 }
 
 impl Loop for CompositionLoop {
-    fn new(num: u32) -> Rc<RefCell<Self>> {
+    fn new(num: u32, knt:u8) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: LOOP_ID_OFS+num,
             priority: PRI_LOOP,

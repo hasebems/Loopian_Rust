@@ -48,12 +48,12 @@ impl LoopianApp {
 
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         //  create new thread & channel
-        let (txtxt, rxtxt) = mpsc::channel();
+        let (txmsg, rxmsg) = mpsc::channel();
         let (txui, rxui) = mpsc::channel();
         thread::spawn(move || {
             match ElapseStack::new(txui) {
                 Some(mut est) => {
-                    loop { if est.periodic(rxtxt.try_recv()) {break;}}
+                    loop { if est.periodic(rxmsg.try_recv()) {break;}}
                 },
                 None => {println!("Play System does't work")},
             }
@@ -65,7 +65,7 @@ impl LoopianApp {
             input_text: String::new(),
             start_time: Instant::now(), // Current Time
             input_lines: Vec::new(),
-            cmd: cmdparse::LoopianCmd::new(txtxt, rxui),
+            cmd: cmdparse::LoopianCmd::new(txmsg, rxui),
         }
     }
     fn init_font(cc: &eframe::CreationContext<'_>) {

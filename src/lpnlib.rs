@@ -31,4 +31,14 @@ pub const MAX_PART_COUNT: usize = MAX_COMPOSITION_PART+MAX_PHRASE_PART+1;
 //=====================
 pub const DEFAULT_BPM: u32 = 100;
 pub const DEFAULT_NOTE_NUMBER: u8 = 60;    // C4
+pub const NO_NOTE: u8 = 255;
 pub const DEFAULT_VEL: u8 = 100;
+
+//=====================
+// UI->ELPS Message
+//=====================
+pub const MSG_QUIT: u16 = 0xffff;
+pub const MSG_START: u16 = 0xfff0;
+pub const MSG_STOP: u16 = 0xfff8;
+pub const MSG_SET:  u16 = 0xfff9;
+pub const MSG2_BPM:  u16 = 0x0001;

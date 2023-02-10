@@ -3,8 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use std::sync::mpsc;
-use std::sync::mpsc::TryRecvError;
+use crate::lpnlib;
+use std::sync::{mpsc, mpsc::*};
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -12,14 +12,14 @@ use std::sync::mpsc::TryRecvError;
 //  3. eguiに返事を返す
 pub struct LoopianCmd {
     indicator: Vec<String>,
-    msg_hndr: mpsc::Sender<String>,
+    msg_hndr: mpsc::Sender<Vec<u16>>,
     ui_hndr: mpsc::Receiver<String>,
 }
 
 impl LoopianCmd {
     const MAX_INDICATOR: u32 = 8;
 
-    pub fn new(msg_hndr: mpsc::Sender<String>, ui_hndr: mpsc::Receiver<String>) -> Self {
+    pub fn new(msg_hndr: mpsc::Sender<Vec<u16>>, ui_hndr: mpsc::Receiver<String>) -> Self {
         let mut indc: Vec<String> = Vec::new();
         for _ in 0..Self::MAX_INDICATOR {indc.push("---".to_string());}
         indc[3] = "1 : 1 : 000".to_string();
@@ -53,8 +53,8 @@ impl LoopianCmd {
         self.read_from_ui_hndr();
         &self.indicator[num]
     }
-    fn send_msg_to_elapse(&self, msg: &str) {
-        match self.msg_hndr.send(msg.to_string()) {
+    fn send_msg_to_elapse(&self, msg: Vec<u16>) {
+        match self.msg_hndr.send(msg) {
             Err(e) => println!("Something happened on MPSC! {}",e),
             _ => {},
         }
@@ -63,7 +63,7 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "play" {
             // play
-            self.send_msg_to_elapse("play");
+            self.send_msg_to_elapse(vec![lpnlib::MSG_START]);
             Some("Phrase has started!".to_string())
         } else if len >= 5 && &input_text[0..5] == "panic" {
             // panic
@@ -76,11 +76,12 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "stop" {
             // stop
-            self.send_msg_to_elapse("stop");
+            self.send_msg_to_elapse(vec![lpnlib::MSG_STOP]);
             Some("Phrase has stopped!".to_string())
         } else if len >= 3 && &input_text[0..3] == "set" {
             // set
-            self.send_msg_to_elapse(&("set".to_string()+&input_text[4..]));
+            self.send_msg_to_elapse(
+                vec![lpnlib::MSG_SET, input_text[4..].parse::<u16>().unwrap()]);
             Some("BPM has changed!".to_string())
         } else {
             Some("what?".to_string())
@@ -91,7 +92,7 @@ impl LoopianCmd {
         let first_letter = &input_text[0..1];
         if first_letter == "q" {
             if &input_text[..] == "quit" {
-                self.send_msg_to_elapse("quit");
+                self.send_msg_to_elapse(vec![lpnlib::MSG_QUIT]);
                 None    //  The End of the App
             }
             else {Some("what?".to_string())}
