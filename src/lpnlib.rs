@@ -7,8 +7,14 @@
 #[derive(Copy, Clone, PartialEq)]
 pub struct Beat(pub u32, pub u32); // 分子/分母
 
-pub const DEFAULT_TICK_FOR_QUARTER: u32 = 480;
-pub const DEFAULT_TICK_FOR_ONE_MEASURE: u32 = 1920;  // 480 * 4
+pub const DEFAULT_TICK_FOR_QUARTER: i32 = 480;
+pub const DEFAULT_TICK_FOR_ONE_MEASURE: i32 = 1920;  // 480 * 4
+
+pub const END_OF_DATA: i32 = -1;
+pub const FULL: i32 = 10000;
+pub const ALL_PART: u16 = 0xffff;
+pub const KEEP: u16 = 0;
+pub const CANCEL: u16 = 0xffff;
 
 //=====================
 // part count
@@ -38,7 +44,17 @@ pub const DEFAULT_VEL: u8 = 100;
 // UI->ELPS Message
 //=====================
 pub const MSG_QUIT: u16 = 0xffff;
-pub const MSG_START: u16 = 0xfff0;
+pub const MSG_START:u16 = 0xfff0;
 pub const MSG_STOP: u16 = 0xfff8;
 pub const MSG_SET:  u16 = 0xfff9;
-pub const MSG2_BPM:  u16 = 0x0001;
+ pub const MSG2_BPM: u16 = 0x0001;
+pub const MSG_PHR:  u16 = 0x1000;
+pub const MSG_CMP:  u16 = 0x2000;
+
+pub const TICK: usize = 0;
+pub const TYPE: usize = 1;
+pub const TYPE_NOTE: u16 = 0x0001;
+pub const TYPE_DAMPER: u16 = 0x0002;
+pub const DURATION: usize = 2;
+pub const NOTE: usize = 3;
+pub const VELOCITY: usize = 4;

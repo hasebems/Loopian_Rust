@@ -20,9 +20,9 @@ pub struct Part {
     base_note: u8,
     first_measure_num: i32,
     next_msr: i32,
-    next_tick: u32,
-    max_loop_msr: u32,
-    whole_tick: u32,
+    next_tick: i32,
+    max_loop_msr: i32,
+    whole_tick: i32,
     loop_elps: Option<Rc<RefCell<dyn Elapse>>>,
 
     state_reserve: bool,
@@ -32,7 +32,7 @@ pub struct Part {
 impl Elapse for Part {
     fn id(&self) -> u32 {self.id}           // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, u32) {    // 次に呼ばれる小節番号、Tick数を返す
+    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
         (0,0)
     }
     fn start(&mut self) {      // User による start/play 時にコールされる
@@ -61,7 +61,7 @@ impl Elapse for Part {
                 self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
             }
             else if self.max_loop_msr != 0 &&
-              (crnt_.msr - self.first_measure_num)%(self.max_loop_msr as i32) == 0 {
+              (crnt_.msr - self.first_measure_num)%(self.max_loop_msr) == 0 {
                 // 前小節にて Loop Obj が終了した時
                 self.state_reserve = false;
                 self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
@@ -82,9 +82,9 @@ impl Elapse for Part {
             }
         }
         else if self.max_loop_msr != 0 &&
-          (crnt_.msr - self.first_measure_num)%(self.max_loop_msr as i32) == 0 {
-                // 同じ Loop.Obj を生成する
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
+          (crnt_.msr - self.first_measure_num)%(self.max_loop_msr) == 0 {
+            // 同じ Loop.Obj を生成する
+            self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
         }
         // 毎小節の頭で process() がコール
         self.next_msr = crnt_.msr + 1
@@ -113,7 +113,7 @@ impl Part {
             sync_next_msr_flag: false,
         }))
     }
-    fn new_loop(&mut self, msr: i32, tick_for_onemsr: u32, estk: &mut ElapseStack) {
+    fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack) {
         // 新たに Loop Obj.を生成
         self.first_measure_num = msr;    // 計測開始の更新
         //self.whole_tick, elm, ana = self.seqdt_part.get_final(msr)
@@ -131,14 +131,14 @@ impl Part {
 
         let part_num = self.id - PART_ID_OFS;
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            let lp: Rc<RefCell<dyn Elapse>> = PhraseLoop::new(part_num, self.keynote);
+            let lp: Rc<RefCell<dyn Elapse>> = PhraseLoop::new(part_num, self.keynote, msr);
             self.loop_elps = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana,  \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
         }
         else {
-            let lp: Rc<RefCell<dyn Elapse>> = CompositionLoop::new(part_num, self.keynote);
+            let lp: Rc<RefCell<dyn Elapse>> = CompositionLoop::new(part_num, self.keynote, msr);
             self.loop_elps = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana, \
             //    self.keynote, self.whole_tick, part_num);

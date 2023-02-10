@@ -15,7 +15,7 @@ pub struct Note {
 impl Elapse for Note {
     fn id(&self) -> u32 {self.id}         // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, u32) {    // 次に呼ばれる小節番号、Tick数を返す
+    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
         (0,0)
     }
     fn start(&mut self) {      // User による start/play 時にコールされる

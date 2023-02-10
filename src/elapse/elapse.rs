@@ -21,7 +21,7 @@ pub const NOTE_ID_OFS: u32 = 0x30000;
 pub trait Elapse {
     fn id(&self) -> u32;            // id を得る
     fn prio(&self) -> u32;          // priority を得る
-    fn next(&self) -> (i32, u32);   // 次に呼ばれる小節番号、Tick数を返す
+    fn next(&self) -> (i32, i32);   // 次に呼ばれる小節番号、Tick数を返す
     fn start(&mut self);            // User による start/play 時にコールされる
     fn stop(&mut self);             // User による stop 時にコールされる
     fn fine(&mut self);             // User による fine があった次の小節先頭でコールされる
