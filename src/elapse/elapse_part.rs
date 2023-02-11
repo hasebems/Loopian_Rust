@@ -131,14 +131,14 @@ impl Part {
 
         let part_num = self.id - PART_ID_OFS;
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            let lp: Rc<RefCell<dyn Elapse>> = PhraseLoop::new(part_num, self.keynote, msr);
+            let lp: Rc<RefCell<dyn Elapse>> = PhraseLoop::new(self.id, self.keynote, msr);
             self.loop_elps = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana,  \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
         }
         else {
-            let lp: Rc<RefCell<dyn Elapse>> = CompositionLoop::new(part_num, self.keynote, msr);
+            let lp: Rc<RefCell<dyn Elapse>> = CompositionLoop::new(self.id, self.keynote, msr);
             self.loop_elps = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana, \
             //    self.keynote, self.whole_tick, part_num);

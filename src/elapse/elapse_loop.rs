@@ -7,26 +7,36 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use crate::lpnlib;
-use super::elapse::{PRI_LOOP, LOOP_ID_OFS, Elapse};
+//use super::elapse::{PRI_LOOP, LOOP_ID_OFS, Elapse};
+use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 
 //---------------------------------------------------------
 pub trait Loop: Elapse {
     fn new(num: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>>;
-    fn calc_serial_tick(&self, crnt_: &CrntMsrTick) -> i32;
-    fn gen_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32);
+    fn destroy(&self) -> bool;
+    fn set_destroy(&mut self);
+    fn first_msr_num(&self) -> i32;
+    fn calc_serial_tick(&self, crnt_: &CrntMsrTick) -> i32 {
+        (crnt_.msr - self.first_msr_num())*crnt_.tick_for_onemsr + crnt_.tick
+    }
+    fn gen_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {
+        let tick = srtick%crnt_.tick_for_onemsr;
+        let msr = self.first_msr_num() + srtick/crnt_.tick_for_onemsr;
+        (msr, tick)
+    }
 }
 
 //---------------------------------------------------------
 pub struct PhraseLoop {
     id: u32,
     priority: u32,
+    part_id: u32,    // 親パートのID
 
     phrase_dt: Option<Vec<Vec<u16>>>,
     //analys_dt:
     keynote: u8,
-    part_num: u32,    // 親パートの番号
     play_counter: usize,
     next_tick_in_phrase: i32,
     last_note: u8,
@@ -47,12 +57,9 @@ impl Elapse for PhraseLoop {
     fn start(&mut self) {      // User による start/play 時にコールされる
 
     }
-    fn stop(&mut self) {        // User による stop 時にコールされる
-
-    }
-    fn fine(&mut self) {        // User による fine があった次の小節先頭でコールされる
-
-    }
+    fn stop(&mut self) {self.set_destroy();} // User による stop 時にコールされる
+    fn fine(&mut self) {self.set_destroy();} // User による fine があった次の小節先頭でコールされる
+    fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let elapsed_tick = self.calc_serial_tick(crnt_);
         if elapsed_tick > self.whole_tick {
@@ -75,22 +82,18 @@ impl Elapse for PhraseLoop {
             }
         }
     }
-    fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す
-        self.destroy
-    }
 }
 impl Loop for PhraseLoop {
-    fn new(num: u32, knt: u8, msr: i32) -> Rc<RefCell<Self>> {
+    fn new(pid: u32, knt: u8, msr: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: LOOP_ID_OFS+num,
+            id: LOOP_ID_OFS+(pid - PART_ID_OFS),
             priority: PRI_LOOP,
+            part_id: pid,
             phrase_dt: None,
             keynote: knt,
-            part_num: num,    // 親パートの番号
             play_counter: 0,
             next_tick_in_phrase: 0,
             last_note: lpnlib::NO_NOTE,
-        
             // for super's member
             whole_tick: 0,
             destroy: false,
@@ -99,18 +102,17 @@ impl Loop for PhraseLoop {
             next_tick: 0,
         }))
     }
-    fn calc_serial_tick(&self, crnt_: &CrntMsrTick) -> i32 {
-        (crnt_.msr - self.first_msr_num)*crnt_.tick_for_onemsr + crnt_.tick
-    }
-    fn gen_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {
-        let tick = srtick%crnt_.tick_for_onemsr;
-        let msr = self.first_msr_num + srtick/crnt_.tick_for_onemsr;
-        (msr, tick)
-    }
+    fn destroy(&self) -> bool {self.destroy}
+    fn set_destroy(&mut self) {self.destroy = true;}
+    fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl PhraseLoop {
-    fn note_event(&self, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
+    fn note_event(&self, estk: &mut ElapseStack, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
         // phr: ['note', tick, duration, note, velocity]
+        let comp_loop_id: u32 = self.part_id - PART_ID_OFS - (lpnlib::MAX_USER_PART as u32) + LOOP_ID_OFS;
+        if let Some(comp) = estk.get_elapse(comp_loop_id) {
+            
+        }
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut max_ev = 0;
@@ -131,7 +133,7 @@ impl PhraseLoop {
                         //estk.add_obj(elpn.Damper(self.est, self.md, phr, msr, tick))
                     }
                     else if phr[trace][lpnlib::TYPE] == lpnlib::TYPE_NOTE {
-                        self.note_event(phr[trace].clone(), next_tick, msr, tick);
+                        self.note_event(estk, phr[trace].clone(), next_tick, msr, tick);
                     }
                 }
                 else {break;}
@@ -150,6 +152,21 @@ impl PhraseLoop {
 pub struct CompositionLoop {
     id: u32,
     priority: u32,
+    part_id: u32,    // 親パートのID
+
+    comp_dt: Option<Vec<Vec<u16>>>,
+    //analys_dt:
+    keynote: u8,
+    play_counter: usize,
+    next_tick_in_comp: i32,
+//    last_note: u8,
+
+    // for super's member
+    whole_tick: i32,
+    destroy: bool,
+    first_msr_num: i32,
+    next_msr: i32,   //   次に呼ばれる小節番号が保持される
+    next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl Elapse for CompositionLoop {
     fn id(&self) -> u32 {self.id}         // id を得る
@@ -160,27 +177,63 @@ impl Elapse for CompositionLoop {
     fn start(&mut self) {      // User による start/play 時にコールされる
 
     }
-    fn stop(&mut self) {        // User による stop 時にコールされる
-
-    }
-    fn fine(&mut self) {        // User による fine があった次の小節先頭でコールされる
-
-    }
+    fn stop(&mut self) {self.set_destroy();} // User による stop 時にコールされる
+    fn fine(&mut self) {self.set_destroy();} // User による fine があった次の小節先頭でコールされる
+    fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+        let elapsed_tick = self.calc_serial_tick(crnt_);
+        if elapsed_tick > self.whole_tick {
+            self.next_msr = lpnlib::FULL;
+            self.destroy = true;
+            return
+        }
 
-    }
-    fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す
-        false
+        if elapsed_tick >= self.next_tick_in_comp {
+            let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
+            if next_tick == lpnlib::END_OF_DATA {
+                // Composition Loop はイベントが終わっても、コード情報が終了するまで Loop が存在するようにしておく
+                while self.whole_tick - self.next_tick_in_comp >= crnt_.tick_for_onemsr {
+                    self.next_tick_in_comp += crnt_.tick_for_onemsr;
+                    self.next_msr += 1;
+                }
+                self.next_tick_in_comp = self.whole_tick;
+                self.next_tick = crnt_.tick_for_onemsr;
+            }
+            else {
+                self.next_tick_in_comp = next_tick;
+                let (next_msr, next_tick) = self.gen_msr_tick(crnt_, self.next_tick_in_comp);
+                self.next_msr = next_msr;
+                self.next_tick = next_tick;
+            }
+        }
     }
 }
-
 impl Loop for CompositionLoop {
-    fn new(num: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>> {
+    fn new(pid: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: LOOP_ID_OFS+num,
+            id: LOOP_ID_OFS+(pid - PART_ID_OFS),
             priority: PRI_LOOP,
+            part_id: pid,
+            comp_dt: None,
+            //analys_dt:
+            keynote: knt,
+            play_counter: 0,
+            next_tick_in_comp: 0,
+        
+            // for super's member
+            whole_tick: 0,
+            destroy: false,
+            first_msr_num: msr,
+            next_msr: 0,   //   次に呼ばれる小節番号が保持される
+            next_tick: 0,
         }))
     }
-    fn calc_serial_tick(&self, crnt_: &CrntMsrTick) -> i32 {0}
-    fn gen_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {(0,0)}
+    fn destroy(&self) -> bool {self.destroy}
+    fn set_destroy(&mut self) {self.destroy = true;}
+    fn first_msr_num(&self) -> i32 {self.first_msr_num}
+}
+impl CompositionLoop {
+    fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
+        0
+    }
 }

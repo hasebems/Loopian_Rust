@@ -37,7 +37,7 @@ impl ElapseStack {
         match MidiTx::connect() {
             Ok(c)   => {
                 let mut vp = Vec::new();
-                for i in 0..lpnlib::MAX_PART_COUNT {
+                for i in 0..lpnlib::ALL_PART_COUNT {
                     vp.push(Part::new(i as u32))
                 }
                 Some(Self {
@@ -63,6 +63,13 @@ impl ElapseStack {
         if let Some(remove_index) = self.elapse_vec.iter().position(|x| x.borrow().id() == search_id) {
             self.elapse_vec.remove(remove_index);
         }
+    }
+    pub fn get_elapse(&mut self, search_id: u32) -> Option<Rc<RefCell<dyn Elapse>>> {
+        if let Some(index) = self.elapse_vec.iter().position(|x| x.borrow().id() == search_id) {
+            let elps = Rc::clone(&self.elapse_vec[index]);
+            Some(elps)
+        }
+        else {None}
     }
     pub fn periodic(&mut self, msg: Result<Vec<u16>, TryRecvError>) -> bool {
         self.crnt_time = Instant::now();
