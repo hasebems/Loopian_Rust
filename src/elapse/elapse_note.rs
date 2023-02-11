@@ -3,6 +3,9 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use super::elapse::{PRI_NOTE, NOTE_ID_OFS, Elapse};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
@@ -36,10 +39,11 @@ impl Elapse for Note {
 }
 
 impl Note {
-    pub fn new(num: u32) -> Self {
-        Self {
+    pub fn new(num: u32, estk: &mut ElapseStack, ev: &Vec<u16>, msr: i32, tick: i32)
+      -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Self {
             id: NOTE_ID_OFS+num,
             priority: PRI_NOTE,
-        }
+        }))
     }
 }

@@ -11,6 +11,7 @@ use crate::lpnlib;
 use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
+use super::elapse_note::Note;
 
 //---------------------------------------------------------
 pub trait Loop: Elapse {
@@ -105,7 +106,7 @@ impl Loop for PhraseLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl PhraseLoop {
-    fn note_event(&self, estk: &mut ElapseStack, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
+    fn note_event(&self, estk: &mut ElapseStack, trace: usize, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
         // phr: ['note', tick, duration, note, velocity]
         // <<DoItLater>>
         //let linked_part_id: u32 = self.part_id - (lpnlib::MAX_USER_PART as u32);
@@ -114,6 +115,8 @@ impl PhraseLoop {
         //        let (root, trans_tbl) = linked_comp.borrow().get_translation();
         //    }
         //}
+        let nt: Rc<RefCell<dyn Elapse>> = Note::new(trace as u32, estk, &ev, msr, tick);
+        estk.add_elapse(Rc::clone(&nt));
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut max_ev = 0;
@@ -135,7 +138,7 @@ impl PhraseLoop {
                         //estk.add_obj(elpn.Damper(self.est, self.md, phr, msr, tick))
                     }
                     else if phr[trace][lpnlib::TYPE] == lpnlib::TYPE_NOTE {
-                        self.note_event(estk, phr[trace].clone(), next_tick, msr, tick);
+                        self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
                     }
                 }
                 else {break;}
