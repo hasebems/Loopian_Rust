@@ -107,12 +107,13 @@ impl Loop for PhraseLoop {
 impl PhraseLoop {
     fn note_event(&self, estk: &mut ElapseStack, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
         // phr: ['note', tick, duration, note, velocity]
-        let linked_part_id: u32 = self.part_id - (lpnlib::MAX_USER_PART as u32);
-        if let Some(linked_part) = estk.get_part(linked_part_id) {
-            if let Some(linked_comp) = linked_part.borrow().get_comp() {
-                let (root, trans_tbl) = linked_comp.borrow().get_translation();
-            }
-        }
+        // <<DoItLater>>
+        //let linked_part_id: u32 = self.part_id - (lpnlib::MAX_USER_PART as u32);
+        //if let Some(linked_part) = estk.get_part(linked_part_id) {
+        //    if let Some(linked_comp) = linked_part.borrow().get_comp() {
+        //        let (root, trans_tbl) = linked_comp.borrow().get_translation();
+        //    }
+        //}
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut max_ev = 0;
@@ -129,6 +130,7 @@ impl PhraseLoop {
                 if next_tick <= elapsed_tick {
                     let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                     if phr[trace][lpnlib::TYPE] == lpnlib::TYPE_DAMPER {
+                        //<<DoItLater>>
                         // phr: ['damper', duration, tick, value]
                         //estk.add_obj(elpn.Damper(self.est, self.md, phr, msr, tick))
                     }
@@ -159,8 +161,7 @@ pub struct CompositionLoop {
     keynote: u8,
     play_counter: usize,
     next_tick_in_comp: i32,
-//    last_note: u8,
-
+    // for Composition
     chord_name: String,
     root: u8,
     translation_tbl: Vec<Vec<i32>>,
@@ -239,8 +240,8 @@ impl Loop for CompositionLoop {
 }
 impl CompositionLoop {
     pub fn get_translation(&self) -> (u8, Vec<u32>) {(0, vec![0,1,2,3,4,5,6,7,8,9,10,11])}
-    fn reset_note_translation(&mut self) {}
-    fn prepare_note_translation(&mut self, cd: Vec<u16>) {}
+    fn reset_note_translation(&mut self) {/*<<DoItLater>>*/}
+    fn prepare_note_translation(&mut self, cd: Vec<u16>) {/*<<DoItLater>>*/}
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut max_ev: usize = 0;
         let mut trace: usize = self.play_counter;

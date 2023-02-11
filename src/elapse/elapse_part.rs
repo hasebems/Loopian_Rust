@@ -42,12 +42,8 @@ impl Elapse for Part {
         self.next_tick = 0;
         self.state_reserve = true;
     }
-    fn stop(&mut self) {        // User による stop 時にコールされる
-
-    }
-    fn fine(&mut self) {        // User による fine があった次の小節先頭でコールされる
-
-    }
+    fn stop(&mut self) {}        // User による stop 時にコールされる
+    fn fine(&mut self) {}        // User による fine があった次の小節先頭でコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         if self.state_reserve {
             // 前小節にて phrase/pattern 指定された時
@@ -122,6 +118,7 @@ impl Part {
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack) {
         // 新たに Loop Obj.を生成
         self.first_measure_num = msr;    // 計測開始の更新
+        //<<DoItLater>>
         //self.whole_tick, elm, ana = self.seqdt_part.get_final(msr)
 
         // その時の beat 情報で、whole_tick を loop_measure に換算
@@ -140,6 +137,7 @@ impl Part {
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
             let lp = PhraseLoop::new(self.id, self.keynote, msr);
             self.loop_phrase = Some(Rc::clone(&lp));
+            //<<DoItLater>> 引数の追加
             //    self.est, self.md, msr, elm, ana,  \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
@@ -147,6 +145,7 @@ impl Part {
         else {
             let lp = CompositionLoop::new(self.id, self.keynote, msr);
             self.loop_comp = Some(Rc::clone(&lp));
+            //<<DoItLater>> 引数の追加
             //    self.est, self.md, msr, elm, ana, \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);

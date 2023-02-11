@@ -94,13 +94,13 @@ impl ElapseStack {
         //  新tick計算
         let crnt_msr_tick = self.tg.get_crnt_msr_tick(self.crnt_time);
         if crnt_msr_tick.new_msr {  // 小節を跨いだ場合
-            // change beat event
+            // change beat event //<<DoItLater>>
 
             // change bpm event
             if self.bpm_stock != self.tg.get_bpm() {
                 self.tg.change_bpm_event(self.bpm_stock);
             }
-            // fine
+            // fine //<<DoItLater>>
         }
 
         loop {
@@ -203,6 +203,7 @@ impl ElapseStack {
             let bpm_num = self.tg.get_bpm();
             let bpm_disp = "1".to_owned() + &bpm_num.to_string();
             self.send_msg_to_ui(&bpm_disp);
+            //<<DoItLater>> その他の表示
         }
     }
     /*let et = crnt_time-self.start_time;
