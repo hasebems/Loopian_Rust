@@ -23,7 +23,8 @@ pub struct Part {
     next_tick: i32,
     max_loop_msr: i32,
     whole_tick: i32,
-    loop_elps: Option<Rc<RefCell<dyn Elapse>>>,
+    loop_comp: Option<Rc<RefCell<CompositionLoop>>>,
+    loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
 
     state_reserve: bool,
     sync_next_msr_flag: bool,
@@ -70,9 +71,13 @@ impl Elapse for Part {
                 // sync コマンドによる強制リセット
                 self.state_reserve = false;
                 self.sync_next_msr_flag = false;
-                if let Some(lp) = &self.loop_elps {
+                if let Some(lp) = &self.loop_phrase {
                     estk.del_elapse(lp.borrow().id());
-                    self.loop_elps = None;
+                    self.loop_phrase = None;
+                }
+                if let Some(lp) = &self.loop_comp {
+                    estk.del_elapse(lp.borrow().id());
+                    self.loop_comp = None;
                 }
                 self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
             }
@@ -95,7 +100,7 @@ impl Elapse for Part {
 }
 
 impl Part {
-    pub fn new(num: u32) -> Rc<RefCell<dyn Elapse>> {
+    pub fn new(num: u32) -> Rc<RefCell<Part>> {
         // left なら 1, でなければ 0
         let left_part = 1-(num%(lpnlib::FIRST_PHRASE_PART as u32))/(lpnlib::MAX_LEFT_PART as u32);
         Rc::new(RefCell::new(Self {
@@ -108,7 +113,8 @@ impl Part {
             next_tick: 0,
             max_loop_msr: 0,
             whole_tick: 0,     // max_loop_msr と同時生成
-            loop_elps: None,
+            loop_comp: None,
+            loop_phrase: None,
             state_reserve: false,
             sync_next_msr_flag: false,
         }))
@@ -125,21 +131,22 @@ impl Part {
         //self.update_loop_for_gui(); // for 8indicator
         if self.whole_tick == 0 {
             self.state_reserve = true; // 次小節冒頭で呼ばれるように
-            self.loop_elps = None;
+            self.loop_phrase = None;
+            self.loop_comp = None;
             return;
         }
 
         let part_num = self.id - PART_ID_OFS;
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            let lp: Rc<RefCell<dyn Elapse>> = PhraseLoop::new(self.id, self.keynote, msr);
-            self.loop_elps = Some(Rc::clone(&lp));
+            let lp = PhraseLoop::new(self.id, self.keynote, msr);
+            self.loop_phrase = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana,  \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
         }
         else {
-            let lp: Rc<RefCell<dyn Elapse>> = CompositionLoop::new(self.id, self.keynote, msr);
-            self.loop_elps = Some(Rc::clone(&lp));
+            let lp = CompositionLoop::new(self.id, self.keynote, msr);
+            self.loop_comp = Some(Rc::clone(&lp));
             //    self.est, self.md, msr, elm, ana, \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
@@ -148,5 +155,11 @@ impl Part {
     pub fn change_key(&mut self, knt: u8) {
         self.keynote = knt;          // 0-11
         self.state_reserve = true;
+    }
+    pub fn get_comp(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
+        match &self.loop_comp {
+            Some(lc) => Some(Rc::clone(&lc)),
+            None => None,
+        }
     }
 }

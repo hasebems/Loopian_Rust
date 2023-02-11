@@ -29,7 +29,8 @@ pub struct ElapseStack {
     during_play: bool,
     display_time: Instant,
     tg: TickGen,
-    elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>,
+    part_vec: Vec<Rc<RefCell<Part>>>,           // Part Instance が繋がれた Vec
+    elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>,   // dyn Elapse Instance が繋がれた Vec
 }
 
 impl ElapseStack {
@@ -37,8 +38,12 @@ impl ElapseStack {
         match MidiTx::connect() {
             Ok(c)   => {
                 let mut vp = Vec::new();
+                let mut velps = Vec::new();
                 for i in 0..lpnlib::ALL_PART_COUNT {
-                    vp.push(Part::new(i as u32))
+                    // 同じ Part を part_vec, elapse_vec 両方に繋げる
+                    let pt = Part::new(i as u32);
+                    vp.push(Rc::clone(&pt));
+                    velps.push(pt as Rc<RefCell<dyn Elapse>>);
                 }
                 Some(Self {
                     ui_hndr,
@@ -50,7 +55,8 @@ impl ElapseStack {
                     during_play: false,
                     display_time: Instant::now(),
                     tg: TickGen::new(),
-                    elapse_vec: vp,
+                    part_vec: vp,
+                    elapse_vec: velps,
                 })
             }
             Err(_e) => None,
@@ -64,10 +70,10 @@ impl ElapseStack {
             self.elapse_vec.remove(remove_index);
         }
     }
-    pub fn get_elapse(&mut self, search_id: u32) -> Option<Rc<RefCell<dyn Elapse>>> {
-        if let Some(index) = self.elapse_vec.iter().position(|x| x.borrow().id() == search_id) {
-            let elps = Rc::clone(&self.elapse_vec[index]);
-            Some(elps)
+    pub fn get_part(&mut self, id: u32) -> Option<Rc<RefCell<Part>>> {
+        if let Some(index) = self.part_vec.iter().position(|x| x.borrow().id() == id) {
+            let part = Rc::clone(&self.part_vec[index]);
+            Some(part)
         }
         else {None}
     }

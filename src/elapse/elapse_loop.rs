@@ -52,11 +52,9 @@ impl Elapse for PhraseLoop {
     fn id(&self) -> u32 {self.id}         // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
     fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
-        (0,0)
+        (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {      // User による start/play 時にコールされる
-
-    }
+    fn start(&mut self) {}      // User による start/play 時にコールされる
     fn stop(&mut self) {self.set_destroy();} // User による stop 時にコールされる
     fn fine(&mut self) {self.set_destroy();} // User による fine があった次の小節先頭でコールされる
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
@@ -109,9 +107,11 @@ impl Loop for PhraseLoop {
 impl PhraseLoop {
     fn note_event(&self, estk: &mut ElapseStack, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
         // phr: ['note', tick, duration, note, velocity]
-        let comp_loop_id: u32 = self.part_id - PART_ID_OFS - (lpnlib::MAX_USER_PART as u32) + LOOP_ID_OFS;
-        if let Some(comp) = estk.get_elapse(comp_loop_id) {
-            
+        let linked_part_id: u32 = self.part_id - (lpnlib::MAX_USER_PART as u32);
+        if let Some(linked_part) = estk.get_part(linked_part_id) {
+            if let Some(linked_comp) = linked_part.borrow().get_comp() {
+                let (root, trans_tbl) = linked_comp.borrow().get_translation();
+            }
         }
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
@@ -161,6 +161,10 @@ pub struct CompositionLoop {
     next_tick_in_comp: i32,
 //    last_note: u8,
 
+    chord_name: String,
+    root: u8,
+    translation_tbl: Vec<Vec<i32>>,
+
     // for super's member
     whole_tick: i32,
     destroy: bool,
@@ -172,11 +176,9 @@ impl Elapse for CompositionLoop {
     fn id(&self) -> u32 {self.id}         // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
     fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
-        (0,0)
+        (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {      // User による start/play 時にコールされる
-
-    }
+    fn start(&mut self) {}    // User による start/play 時にコールされる
     fn stop(&mut self) {self.set_destroy();} // User による stop 時にコールされる
     fn fine(&mut self) {self.set_destroy();} // User による fine があった次の小節先頭でコールされる
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
@@ -219,13 +221,16 @@ impl Loop for CompositionLoop {
             keynote: knt,
             play_counter: 0,
             next_tick_in_comp: 0,
-        
+
+            chord_name: "".to_string(),
+            root: 0,
+            translation_tbl: Vec::new(),
             // for super's member
             whole_tick: 0,
             destroy: false,
             first_msr_num: msr,
             next_msr: 0,   //   次に呼ばれる小節番号が保持される
-            next_tick: 0,
+            next_tick: 0,        
         }))
     }
     fn destroy(&self) -> bool {self.destroy}
@@ -233,7 +238,34 @@ impl Loop for CompositionLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl CompositionLoop {
+    pub fn get_translation(&self) -> (u8, Vec<u32>) {(0, vec![0,1,2,3,4,5,6,7,8,9,10,11])}
+    fn reset_note_translation(&mut self) {}
+    fn prepare_note_translation(&mut self, cd: Vec<u16>) {}
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
-        0
+        let mut max_ev: usize = 0;
+        let mut trace: usize = self.play_counter;
+        let mut next_tick: i32 = 0;
+        loop {
+            if let Some(comp) = &self.comp_dt {
+                max_ev = comp.len();
+                if max_ev <= trace {
+                    next_tick = lpnlib::END_OF_DATA;   // means sequence finished
+                    break
+                }
+                next_tick = comp[trace][lpnlib::TICK] as i32;
+                if next_tick <= elapsed_tick {
+                    self.prepare_note_translation(comp[trace].clone());
+                }
+                else {break;}
+                trace += 1;
+            }
+            else {
+                // データを持っていない
+                self.reset_note_translation();
+                return lpnlib::END_OF_DATA;
+            }
+        }
+        self.play_counter = trace;
+        next_tick
     }
 }
