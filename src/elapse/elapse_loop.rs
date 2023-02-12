@@ -32,7 +32,6 @@ pub trait Loop: Elapse {
 pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
-    part_id: u32,    // 親パートのID
 
     phrase_dt: Option<Vec<Vec<u16>>>,
     //analys_dt:
@@ -86,7 +85,6 @@ impl Loop for PhraseLoop {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_LOOP,
-            part_id: pid,
             phrase_dt: None,
             keynote: knt,
             play_counter: 0,
@@ -108,8 +106,7 @@ impl PhraseLoop {
     fn note_event(&self, estk: &mut ElapseStack, trace: usize, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
         // phr: ['note', tick, duration, note, velocity]
         // <<DoItLater>>
-        //let linked_part_id: u32 = self.part_id - (lpnlib::MAX_USER_PART as u32);
-        //if let Some(linked_part) = estk.get_part(linked_part_id) {
+        //if let Some(linked_part) = estk.get_part(self.id.pid) {
         //    if let Some(linked_comp) = linked_part.borrow().get_comp() {
         //        let (root, trans_tbl) = linked_comp.borrow().get_translation();
         //    }
@@ -153,7 +150,6 @@ impl PhraseLoop {
 pub struct CompositionLoop {
     id: ElapseId,
     priority: u32,
-    part_id: u32,    // 親パートのID
 
     comp_dt: Option<Vec<Vec<u16>>>,
     //analys_dt:
@@ -215,7 +211,6 @@ impl Loop for CompositionLoop {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_LOOP,
-            part_id: pid,
             comp_dt: None,
             //analys_dt:
             keynote: knt,
