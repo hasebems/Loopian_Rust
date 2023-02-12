@@ -77,6 +77,12 @@ impl ElapseStack {
         }
         else {None}
     }
+    pub fn send_sp_cmnd(&mut self, msg: ElapseMsg, dt: u8) {
+        let vec_copy = self.elapse_vec.clone();
+        for elps in vec_copy.iter() {
+            elps.borrow_mut().rcv_sp(msg, dt, self);
+        }
+    }
     pub fn periodic(&mut self, msg: Result<Vec<u16>, TryRecvError>) -> bool {
         self.crnt_time = Instant::now();
         match msg {
@@ -123,6 +129,21 @@ impl ElapseStack {
 
         return false
     }
+    pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
+        self.mdx.midi_out(status, data1, data2);
+        /*let et = crnt_time-self.start_time;
+        if et > Duration::from_secs(1) {
+            self.start_time = crnt_time;
+            self.count += 1;
+            if self.count%2 == 1 {
+                self.mdx.midi_out(0x90,0x40,0x60);
+                self.send_msg_to_ui(&self.count.to_string());
+            }
+            else {
+                self.mdx.midi_out(0x80,0x40,0x40);
+            }
+        }*/
+    }
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {
             Err(e) => println!("Something happened on MPSC! {}",e),
@@ -132,9 +153,15 @@ impl ElapseStack {
     fn start(&mut self) {
         self.during_play = true;
         self.tg.start(self.crnt_time);
+        for elps in self.elapse_vec.iter() {
+            elps.borrow_mut().start();
+        }
     }
     fn stop(&mut self) {
         self.during_play = false;
+        for elps in self.elapse_vec.iter() {
+            elps.borrow_mut().stop();
+        }
     }
     fn setting_cmnd(&mut self, msg: Vec<u16>) {
         if msg[1] == lpnlib::MSG2_BPM {
@@ -206,16 +233,4 @@ impl ElapseStack {
             //<<DoItLater>> その他の表示
         }
     }
-    /*let et = crnt_time-self.start_time;
-            if et > Duration::from_secs(1) {
-                self.start_time = crnt_time;
-                self.count += 1;
-                if self.count%2 == 1 {
-                    self.mdx.midi_out(0x90,0x40,0x60);
-                    self.send_msg_to_ui(&self.count.to_string());
-                }
-                else {
-                    self.mdx.midi_out(0x80,0x40,0x40);
-                }
-            }*/
 }

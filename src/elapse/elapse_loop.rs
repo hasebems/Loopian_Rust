@@ -56,6 +56,7 @@ impl Elapse for PhraseLoop {
     fn start(&mut self) {}      // User による start/play 時にコールされる
     fn stop(&mut self) {self.set_destroy();} // User による stop 時にコールされる
     fn fine(&mut self) {self.set_destroy();} // User による fine があった次の小節先頭でコールされる
+    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8, estk: &mut ElapseStack) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let elapsed_tick = self.calc_serial_tick(crnt_);
@@ -177,6 +178,7 @@ impl Elapse for CompositionLoop {
     fn start(&mut self) {}    // User による start/play 時にコールされる
     fn stop(&mut self) {self.set_destroy();} // User による stop 時にコールされる
     fn fine(&mut self) {self.set_destroy();} // User による fine があった次の小節先頭でコールされる
+    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8, estk: &mut ElapseStack) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let elapsed_tick = self.calc_serial_tick(crnt_);

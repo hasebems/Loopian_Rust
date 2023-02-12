@@ -91,6 +91,7 @@ impl Elapse for Part {
         // 毎小節の頭で process() がコール
         self.next_msr = crnt_.msr + 1
     }
+    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8, estk: &mut ElapseStack) {}
     fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す
         false
     }
