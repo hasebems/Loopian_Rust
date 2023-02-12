@@ -6,17 +6,17 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use super::elapse::{PRI_NOTE, NOTE_ID_OFS, Elapse};
+use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 
 pub struct Note {
-    id: u32,
+    id: ElapseId,
     priority: u32,
 }
 
 impl Elapse for Note {
-    fn id(&self) -> u32 {self.id}         // id を得る
+    fn id(&self) -> ElapseId {self.id}     // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
     fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
         (0,0)
@@ -39,10 +39,10 @@ impl Elapse for Note {
 }
 
 impl Note {
-    pub fn new(num: u32, estk: &mut ElapseStack, ev: &Vec<u16>, msr: i32, tick: i32)
+    pub fn new(sid: u32, pid: u32, estk: &mut ElapseStack, ev: &Vec<u16>, msr: i32, tick: i32)
       -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: NOTE_ID_OFS+num,
+            id: ElapseId {pid, sid, elps_type: ElapseType::TpNote,},
             priority: PRI_NOTE,
         }))
     }

@@ -7,13 +7,13 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use crate::lpnlib;
-use super::elapse::{PRI_PART, PART_ID_OFS, Elapse};
+use super::elapse::*;
 use super::elapse_loop::{Loop, PhraseLoop, CompositionLoop};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 
 pub struct Part {
-    id: u32,
+    id: ElapseId,
     priority: u32,
 
     keynote: u8,
@@ -25,13 +25,14 @@ pub struct Part {
     whole_tick: i32,
     loop_comp: Option<Rc<RefCell<CompositionLoop>>>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
+    loop_cntr: u32,
 
     state_reserve: bool,
     sync_next_msr_flag: bool,
 }
 
 impl Elapse for Part {
-    fn id(&self) -> u32 {self.id}           // id を得る
+    fn id(&self) -> ElapseId {self.id}           // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
     fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
         (0,0)
@@ -99,8 +100,9 @@ impl Part {
     pub fn new(num: u32) -> Rc<RefCell<Part>> {
         // left なら 1, でなければ 0
         let left_part = 1-(num%(lpnlib::FIRST_PHRASE_PART as u32))/(lpnlib::MAX_LEFT_PART as u32);
+        let new_id = ElapseId {pid:0, sid:num, elps_type: ElapseType::TpPart,};
         Rc::new(RefCell::new(Self {
-            id: PART_ID_OFS+num,
+            id: new_id,
             priority: PRI_PART,
             keynote: 0,
             base_note: lpnlib::DEFAULT_NOTE_NUMBER - 12*(left_part as u8),
@@ -111,6 +113,7 @@ impl Part {
             whole_tick: 0,     // max_loop_msr と同時生成
             loop_comp: None,
             loop_phrase: None,
+            loop_cntr: 1,
             state_reserve: false,
             sync_next_msr_flag: false,
         }))
@@ -133,22 +136,24 @@ impl Part {
             return;
         }
 
-        let part_num = self.id - PART_ID_OFS;
+        let part_num = self.id.sid;
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            let lp = PhraseLoop::new(self.id, self.keynote, msr);
+            let lp = PhraseLoop::new(self.loop_cntr, part_num, self.keynote, msr);
             self.loop_phrase = Some(Rc::clone(&lp));
             //<<DoItLater>> 引数の追加
             //    self.est, self.md, msr, elm, ana,  \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
+            self.loop_cntr += 1;
         }
         else {
-            let lp = CompositionLoop::new(self.id, self.keynote, msr);
+            let lp = CompositionLoop::new(self.loop_cntr, part_num, self.keynote, msr);
             self.loop_comp = Some(Rc::clone(&lp));
             //<<DoItLater>> 引数の追加
             //    self.est, self.md, msr, elm, ana, \
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
+            self.loop_cntr += 1;
         }
     }
     pub fn change_key(&mut self, knt: u8) {

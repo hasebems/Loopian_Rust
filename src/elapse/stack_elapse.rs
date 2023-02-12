@@ -12,7 +12,7 @@ use std::cell::RefCell;
 use crate::lpnlib;
 use super::tickgen::{TickGen, CrntMsrTick};
 use super::midi::MidiTx;
-use super::elapse::Elapse;
+use super::elapse::*;
 use super::elapse_part::Part;
 
 //  ElapseStack の責務
@@ -65,12 +65,12 @@ impl ElapseStack {
     pub fn add_elapse(&mut self, elps: Rc<RefCell<dyn Elapse>>) {
         self.elapse_vec.push(elps);
     }
-    pub fn del_elapse(&mut self, search_id: u32) {
+    pub fn del_elapse(&mut self, search_id: ElapseId) {
         if let Some(remove_index) = self.elapse_vec.iter().position(|x| x.borrow().id() == search_id) {
             self.elapse_vec.remove(remove_index);
         }
     }
-    pub fn get_part(&mut self, id: u32) -> Option<Rc<RefCell<Part>>> {
+    pub fn get_part(&mut self, id: ElapseId) -> Option<Rc<RefCell<Part>>> {
         if let Some(index) = self.part_vec.iter().position(|x| x.borrow().id() == id) {
             let part = Rc::clone(&self.part_vec[index]);
             Some(part)

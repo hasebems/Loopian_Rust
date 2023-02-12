@@ -14,12 +14,25 @@ pub const PRI_LOOP: u32 = 300;
 pub const PRI_NOTE: u32 = 400;
 pub const PRI_DMPR: u32 = 500;
 
-pub const PART_ID_OFS: u32 = 0x10000;
-pub const LOOP_ID_OFS: u32 = 0x20000;
-pub const NOTE_ID_OFS: u32 = 0x30000;
+#[derive(Debug,PartialEq,Eq,Copy,Clone)]
+pub enum ElapseType {
+    TpNone,
+    TpPart,
+    TpPhraseLoop,
+    TpCompositionLoop,
+    TpNote,
+    TpDamper,
+}
+
+#[derive(Debug,PartialEq,Eq,Copy,Clone)]
+pub struct ElapseId {
+    pub pid: u32,   // parent
+    pub sid: u32,   // self
+    pub elps_type: ElapseType,
+}
 
 pub trait Elapse {
-    fn id(&self) -> u32;            // id を得る
+    fn id(&self) -> ElapseId;       // id を得る
     fn prio(&self) -> u32;          // priority を得る
     fn next(&self) -> (i32, i32);   // 次に呼ばれる小節番号、Tick数を返す
     fn start(&mut self);            // User による start/play 時にコールされる

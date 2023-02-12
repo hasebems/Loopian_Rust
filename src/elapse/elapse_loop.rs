@@ -7,7 +7,6 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use crate::lpnlib;
-//use super::elapse::{PRI_LOOP, LOOP_ID_OFS, Elapse};
 use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
@@ -15,7 +14,7 @@ use super::elapse_note::Note;
 
 //---------------------------------------------------------
 pub trait Loop: Elapse {
-    fn new(num: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>>;
+    fn new(sid: u32, pid: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>>;
     fn destroy(&self) -> bool;
     fn set_destroy(&mut self);
     fn first_msr_num(&self) -> i32;
@@ -31,7 +30,7 @@ pub trait Loop: Elapse {
 
 //---------------------------------------------------------
 pub struct PhraseLoop {
-    id: u32,
+    id: ElapseId,
     priority: u32,
     part_id: u32,    // 親パートのID
 
@@ -50,7 +49,7 @@ pub struct PhraseLoop {
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl Elapse for PhraseLoop {
-    fn id(&self) -> u32 {self.id}         // id を得る
+    fn id(&self) -> ElapseId {self.id}     // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
     fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
@@ -83,9 +82,9 @@ impl Elapse for PhraseLoop {
     }
 }
 impl Loop for PhraseLoop {
-    fn new(pid: u32, knt: u8, msr: i32) -> Rc<RefCell<Self>> {
+    fn new(sid: u32, pid: u32, knt: u8, msr: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: LOOP_ID_OFS+(pid - PART_ID_OFS),
+            id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_LOOP,
             part_id: pid,
             phrase_dt: None,
@@ -115,16 +114,15 @@ impl PhraseLoop {
         //        let (root, trans_tbl) = linked_comp.borrow().get_translation();
         //    }
         //}
-        let nt: Rc<RefCell<dyn Elapse>> = Note::new(trace as u32, estk, &ev, msr, tick);
+        let nt: Rc<RefCell<dyn Elapse>> = Note::new(trace as u32, self.id.sid, estk, &ev, msr, tick);
         estk.add_elapse(Rc::clone(&nt));
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
-        let mut max_ev = 0;
-        let mut trace: usize = self.play_counter;
         let mut next_tick: i32 = lpnlib::END_OF_DATA;
-        loop {
-            if let Some(phr) = &self.phrase_dt {
-                max_ev = phr.len();
+        let mut trace: usize = self.play_counter;
+        if let Some(phr) = &self.phrase_dt {
+            let max_ev = phr.len();
+            loop {
                 next_tick = phr[trace][lpnlib::TICK] as i32;
                 if max_ev <= trace {
                     next_tick = lpnlib::END_OF_DATA;   // means sequence finished
@@ -144,9 +142,7 @@ impl PhraseLoop {
                 else {break;}
                 trace += 1;
             }
-            else {break;}
         }
-
         self.play_counter = trace;
         return next_tick;
     }
@@ -155,7 +151,7 @@ impl PhraseLoop {
 
 //---------------------------------------------------------
 pub struct CompositionLoop {
-    id: u32,
+    id: ElapseId,
     priority: u32,
     part_id: u32,    // 親パートのID
 
@@ -177,7 +173,7 @@ pub struct CompositionLoop {
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl Elapse for CompositionLoop {
-    fn id(&self) -> u32 {self.id}         // id を得る
+    fn id(&self) -> ElapseId {self.id}     // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
     fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
@@ -215,9 +211,9 @@ impl Elapse for CompositionLoop {
     }
 }
 impl Loop for CompositionLoop {
-    fn new(pid: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>> {
+    fn new(sid: u32, pid: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: LOOP_ID_OFS+(pid - PART_ID_OFS),
+            id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_LOOP,
             part_id: pid,
             comp_dt: None,
@@ -246,12 +242,11 @@ impl CompositionLoop {
     fn reset_note_translation(&mut self) {/*<<DoItLater>>*/}
     fn prepare_note_translation(&mut self, cd: Vec<u16>) {/*<<DoItLater>>*/}
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
-        let mut max_ev: usize = 0;
         let mut trace: usize = self.play_counter;
         let mut next_tick: i32 = 0;
         loop {
             if let Some(comp) = &self.comp_dt {
-                max_ev = comp.len();
+                let max_ev: usize = comp.len();
                 if max_ev <= trace {
                     next_tick = lpnlib::END_OF_DATA;   // means sequence finished
                     break
