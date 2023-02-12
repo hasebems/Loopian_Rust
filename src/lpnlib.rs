@@ -49,8 +49,10 @@ pub const MSG_START:u16 = 0xfff0;
 pub const MSG_STOP: u16 = 0xfff8;
 pub const MSG_SET:  u16 = 0xfff9;
 pub const MSG2_BPM: u16 = 0x0001;
-pub const MSG_PHR:  u16 = 0x1000;
-pub const MSG_CMP:  u16 = 0x2000;
+
+pub const MSG_PART_MASK: u16 = 0xfff0;
+pub const MSG_PHR:  u16 = 0x1000;   // 1桁目にパート番号
+pub const MSG_CMP:  u16 = 0x2000;   // 1桁目にパート番号
 
 pub const TYPE: usize = 0;
 pub const TYPE_ID: u16 = 0xf000;

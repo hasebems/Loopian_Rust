@@ -14,7 +14,6 @@ use super::elapse_note::Note;
 
 //---------------------------------------------------------
 pub trait Loop: Elapse {
-    fn new(sid: u32, pid: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>>;
     fn destroy(&self) -> bool;
     fn set_destroy(&mut self);
     fn first_msr_num(&self) -> i32;
@@ -33,7 +32,7 @@ pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
 
-    phrase_dt: Option<Vec<Vec<u16>>>,
+    phrase_dt: Vec<Vec<u16>>,
     //analys_dt:
     keynote: u8,
     play_counter: usize,
@@ -82,28 +81,28 @@ impl Elapse for PhraseLoop {
     }
 }
 impl Loop for PhraseLoop {
-    fn new(sid: u32, pid: u32, knt: u8, msr: i32) -> Rc<RefCell<Self>> {
+    fn destroy(&self) -> bool {self.destroy}
+    fn set_destroy(&mut self) {self.destroy = true;}
+    fn first_msr_num(&self) -> i32 {self.first_msr_num}
+}
+impl PhraseLoop {
+    pub fn new(sid: u32, pid: u32, knt: u8, msr: i32, msg: Vec<Vec<u16>>) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_LOOP,
-            phrase_dt: None,
+            phrase_dt: msg,
             keynote: knt,
             play_counter: 0,
             next_tick_in_phrase: 0,
             last_note: lpnlib::NO_NOTE,
             // for super's member
-            whole_tick: 0,
+            whole_tick: 1920,
             destroy: false,
             first_msr_num: msr,
             next_msr: 0,
             next_tick: 0,
         }))
     }
-    fn destroy(&self) -> bool {self.destroy}
-    fn set_destroy(&mut self) {self.destroy = true;}
-    fn first_msr_num(&self) -> i32 {self.first_msr_num}
-}
-impl PhraseLoop {
     fn note_event(&self, estk: &mut ElapseStack, trace: usize, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
         // phr: ['note', tick, duration, note, velocity]
         // <<DoItLater>>
@@ -118,29 +117,29 @@ impl PhraseLoop {
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut next_tick: i32 = lpnlib::END_OF_DATA;
         let mut trace: usize = self.play_counter;
-        if let Some(phr) = &self.phrase_dt {
-            let max_ev = phr.len();
-            loop {
-                next_tick = phr[trace][lpnlib::TICK] as i32;
-                if max_ev <= trace {
-                    next_tick = lpnlib::END_OF_DATA;   // means sequence finished
-                    break;
-                }
-                if next_tick <= elapsed_tick {
-                    let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                    if phr[trace][lpnlib::TYPE] == lpnlib::TYPE_DAMPER {
-                        //<<DoItLater>>
-                        // phr: ['damper', duration, tick, value]
-                        //estk.add_obj(elpn.Damper(self.est, self.md, phr, msr, tick))
-                    }
-                    else if phr[trace][lpnlib::TYPE] == lpnlib::TYPE_NOTE {
-                        self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
-                    }
-                }
-                else {break;}
-                trace += 1;
+        let phr = self.phrase_dt.to_vec();
+        let max_ev = self.phrase_dt.len();
+        loop {
+            next_tick = phr[trace][lpnlib::TICK] as i32;
+            if max_ev <= trace {
+                next_tick = lpnlib::END_OF_DATA;   // means sequence finished
+                break;
             }
+            if next_tick <= elapsed_tick {
+                let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
+                if phr[trace][lpnlib::TYPE] == lpnlib::TYPE_DAMPER {
+                    //<<DoItLater>>
+                    // phr: ['damper', duration, tick, value]
+                    //estk.add_obj(elpn.Damper(self.est, self.md, phr, msr, tick))
+                }
+                else if self.phrase_dt[trace][lpnlib::TYPE] == lpnlib::TYPE_NOTE {
+                    self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
+                }
+            }
+            else {break;}
+            trace += 1;
         }
+
         self.play_counter = trace;
         return next_tick;
     }
@@ -209,7 +208,12 @@ impl Elapse for CompositionLoop {
     }
 }
 impl Loop for CompositionLoop {
-    fn new(sid: u32, pid: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>> {
+    fn destroy(&self) -> bool {self.destroy}
+    fn set_destroy(&mut self) {self.destroy = true;}
+    fn first_msr_num(&self) -> i32 {self.first_msr_num}
+}
+impl CompositionLoop {
+    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_LOOP,
@@ -230,11 +234,6 @@ impl Loop for CompositionLoop {
             next_tick: 0,        
         }))
     }
-    fn destroy(&self) -> bool {self.destroy}
-    fn set_destroy(&mut self) {self.destroy = true;}
-    fn first_msr_num(&self) -> i32 {self.first_msr_num}
-}
-impl CompositionLoop {
     pub fn get_translation(&self) -> (u8, Vec<u32>) {(0, vec![0,1,2,3,4,5,6,7,8,9,10,11])}
     fn reset_note_translation(&mut self) {/*<<DoItLater>>*/}
     fn prepare_note_translation(&mut self, cd: Vec<u16>) {/*<<DoItLater>>*/}

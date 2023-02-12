@@ -87,6 +87,18 @@ impl LoopianCmd {
             Some("what?".to_string())
         }
     }
+    fn letter_a(&self, input_text: &str) -> Option<String> {
+        let len = input_text.chars().count();
+        if len >= 2 && &input_text[0..2] == "aa" {
+            self.send_msg_to_elapse(vec![lpnlib::MSG_PHR,lpnlib::TYPE_NOTE,0,480,64,100]);
+            Some("Test Phrase1".to_string())
+        } else if len >= 2 && &input_text[0..2] == "ab" {
+            self.send_msg_to_elapse(vec![lpnlib::MSG_PHR,lpnlib::TYPE_NOTE,0,480,64,100,lpnlib::TYPE_NOTE,0,480,68,100]);
+            Some("Test Phrase2".to_string())
+        } else {
+            Some("what?".to_string())
+        }
+    }
     pub fn set_and_responce(&mut self, input_text: &str) -> Option<String> {
         println!("Set Text: {}",input_text);
         let first_letter = &input_text[0..1];
@@ -100,7 +112,7 @@ impl LoopianCmd {
         //<<DoItLater>>
         //else if first_letter == "[" {self.letter_bracket(input_text)}
         //else if first_letter == "{" {self.letter_brace(input_text)}
-        //else if first_letter == "a" {self.letter_a(input_text)}
+        else if first_letter == "a" {self.letter_a(input_text)}
         //else if first_letter == "b" {self.letter_b(input_text)}
         //else if first_letter == "c" {self.letter_c(input_text)}
         //else if first_letter == "f" {self.letter_f(input_text)}

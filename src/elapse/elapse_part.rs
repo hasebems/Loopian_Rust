@@ -26,6 +26,7 @@ pub struct Part {
     loop_comp: Option<Rc<RefCell<CompositionLoop>>>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     loop_cntr: u32,
+    new_data_stock: Option<Vec<Vec<u16>>>,
 
     state_reserve: bool,
     sync_next_msr_flag: bool,
@@ -115,9 +116,23 @@ impl Part {
             loop_comp: None,
             loop_phrase: None,
             loop_cntr: 1,
+            new_data_stock: None,
             state_reserve: false,
             sync_next_msr_flag: false,
         }))
+    }
+    pub fn change_key(&mut self, knt: u8) {
+        self.keynote = knt;          // 0-11
+        self.state_reserve = true;
+    }
+    pub fn get_comp(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
+        match &self.loop_comp {
+            Some(lc) => Some(Rc::clone(&lc)),
+            None => None,
+        }
+    }
+    pub fn rcv_msg(&mut self, msg: Vec<Vec<u16>>) {
+        self.new_data_stock = Some(msg);
     }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack) {
         // 新たに Loop Obj.を生成
@@ -139,13 +154,16 @@ impl Part {
 
         let part_num = self.id.sid;
         if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            let lp = PhraseLoop::new(self.loop_cntr, part_num, self.keynote, msr);
-            self.loop_phrase = Some(Rc::clone(&lp));
-            //<<DoItLater>> 引数の追加
-            //    self.est, self.md, msr, elm, ana,  \
-            //    self.keynote, self.whole_tick, part_num);
-            estk.add_elapse(lp);
-            self.loop_cntr += 1;
+            if let Some(phr) = &self.new_data_stock {
+                let lp = PhraseLoop::new(self.loop_cntr, part_num, self.keynote,
+                    msr, phr.to_vec());
+                self.loop_phrase = Some(Rc::clone(&lp));
+                //<<DoItLater>> 引数の追加
+                //    self.est, self.md, msr, elm, ana,  \
+                //    self.keynote, self.whole_tick, part_num);
+                estk.add_elapse(lp);
+                self.loop_cntr += 1;
+            }
         }
         else {
             let lp = CompositionLoop::new(self.loop_cntr, part_num, self.keynote, msr);
@@ -155,16 +173,6 @@ impl Part {
             //    self.keynote, self.whole_tick, part_num);
             estk.add_elapse(lp);
             self.loop_cntr += 1;
-        }
-    }
-    pub fn change_key(&mut self, knt: u8) {
-        self.keynote = knt;          // 0-11
-        self.state_reserve = true;
-    }
-    pub fn get_comp(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
-        match &self.loop_comp {
-            Some(lc) => Some(Rc::clone(&lc)),
-            None => None,
         }
     }
 }

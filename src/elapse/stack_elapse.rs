@@ -8,6 +8,7 @@ use std::sync::mpsc::TryRecvError;
 use std::time::{Instant, Duration};
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::vec::Vec;
 
 use crate::lpnlib;
 use super::tickgen::{TickGen, CrntMsrTick};
@@ -100,6 +101,7 @@ impl ElapseStack {
         //  新tick計算
         let crnt_msr_tick = self.tg.get_crnt_msr_tick(self.crnt_time);
         if crnt_msr_tick.new_msr {  // 小節を跨いだ場合
+            println!("New measure!");
             // change beat event //<<DoItLater>>
 
             // change bpm event
@@ -168,14 +170,31 @@ impl ElapseStack {
             self.bpm_stock = msg[2] as u32;
         }
     }
-    fn set_phrase(&mut self, _msg: Vec<u16>) {}
-    fn set_composition(&mut self, _msg: Vec<u16>) {}
+    fn phrase(&mut self, msg: Vec<u16>) {
+        // message の２次元化
+        let part_num: usize = (msg[0] & !lpnlib::MSG_PART_MASK) as usize;
+        let mut phr_vec: Vec<Vec<u16>> = Vec::new();
+        let mut msg_cnt: usize = 0;
+        let msg_size = msg.len();
+        loop {
+            let mut vtmp: Vec<u16> = Vec::new();
+            for i in 0..5 {
+                vtmp.push(msg[1+i+msg_cnt*5]);
+            }
+            phr_vec.push(vtmp);
+            msg_cnt += 1;
+            if msg_size <= 1+msg_cnt*5 {break;}
+        }
+        self.part_vec[part_num+4].borrow_mut().rcv_msg(phr_vec);
+    }
+    fn composition(&mut self, _msg: Vec<u16>) {}
     fn parse_msg(&mut self, msg: Vec<u16>) {
-        println!("msg is {:?}", msg);
+        println!("msg is {:?}", msg[0]);
         if msg[0] == lpnlib::MSG_START {self.start();}
         else if msg[0] == lpnlib::MSG_START {self.start();}
         else if msg[0] == lpnlib::MSG_STOP {self.stop();}
         else if msg[0] == lpnlib::MSG_SET {self.setting_cmnd(msg);}
+        else if (msg[0] & lpnlib::MSG_PART_MASK) == lpnlib::MSG_PHR {self.phrase(msg);}
         //else if &msg[0..3] == "phr" {self.set_phrase(&msg[3..]);}
         //else if &msg[0..3] == "cmp" {self.set_composition(&msg[3..]);}
     }
