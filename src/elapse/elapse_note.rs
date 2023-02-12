@@ -68,9 +68,8 @@ impl Elapse for Note {
             }
         }
     }
-    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8, estk: &mut ElapseStack) {
+    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8) {
         match msg {
-            ElapseMsg::MsgNoteOff => self.note_off(estk),
             ElapseMsg::MsgNoSameNoteOff => {
                 if self.real_note == msg_data {
                     self.noteoff_enable = false;
@@ -100,14 +99,14 @@ impl Note {
             next_tick: tick,
         }))
     }
-    fn cancel_same_noteoff(&mut self, estk: &mut ElapseStack, note_num: u8) {
+    fn cancel_same_noteoff(&mut self, estk: &ElapseStack, note_num: u8) {
         estk.send_sp_cmnd(ElapseMsg::MsgNoSameNoteOff, note_num);
     }
     fn note_on(&mut self, estk: &mut ElapseStack) {
         let num = self.note_num + self.keynote;
         self.real_note = Note::note_limit(num, 0, 127);
         //if self.est.pianoteq_mode {
-            self.cancel_same_noteoff(estk, self.real_note);
+        //    self.cancel_same_noteoff(estk, self.real_note);
         //}
         self.noteoff_enable = true; // 上で false にされるので
         estk.midi_out(0x90, self.real_note, self.velocity);

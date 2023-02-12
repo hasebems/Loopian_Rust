@@ -36,7 +36,7 @@ impl Elapse for Part {
     fn id(&self) -> ElapseId {self.id}           // id を得る
     fn prio(&self) -> u32 {self.priority}  // priority を得る
     fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
-        (0,0)
+        (self.next_msr, self.next_tick)
     }
     fn start(&mut self) {      // User による start/play 時にコールされる
         self.first_measure_num = 0;
@@ -92,7 +92,7 @@ impl Elapse for Part {
         // 毎小節の頭で process() がコール
         self.next_msr = crnt_.msr + 1
     }
-    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8, estk: &mut ElapseStack) {}
+    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8) {}
     fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す
         false
     }
@@ -132,29 +132,34 @@ impl Part {
         }
     }
     pub fn rcv_msg(&mut self, msg: Vec<Vec<u16>>) {
+        println!("Msg: {:?}", msg);
         self.new_data_stock = Some(msg);
     }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack) {
         // 新たに Loop Obj.を生成
-        self.first_measure_num = msr;    // 計測開始の更新
-        //<<DoItLater>>
-        //self.whole_tick, elm, ana = self.seqdt_part.get_final(msr)
+        if let Some(phr) = &self.new_data_stock {
+            println!("New Loop!");
+            self.first_measure_num = msr;    // 計測開始の更新
 
-        // その時の beat 情報で、whole_tick を loop_measure に換算
-        let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
-        self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
+            //<<DoItLater>>
+            // 新しい data から、whole_tick, ana データを取得
+            //elm, ana = self.seqdt_part.get_final(msr)
+            self.whole_tick = 1;
 
-        //self.update_loop_for_gui(); // for 8indicator
-        if self.whole_tick == 0 {
-            self.state_reserve = true; // 次小節冒頭で呼ばれるように
-            self.loop_phrase = None;
-            self.loop_comp = None;
-            return;
-        }
+            // その時の beat 情報で、whole_tick を loop_measure に換算
+            let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
+            self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
 
-        let part_num = self.id.sid;
-        if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-            if let Some(phr) = &self.new_data_stock {
+            //self.update_loop_for_gui(); // for 8indicator
+            if self.whole_tick == 0 {
+                self.state_reserve = true; // 次小節冒頭で呼ばれるように
+                self.loop_phrase = None;
+                self.loop_comp = None;
+                return;
+            }
+
+            let part_num = self.id.sid;
+            if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
                 let lp = PhraseLoop::new(self.loop_cntr, part_num, self.keynote,
                     msr, phr.to_vec());
                 self.loop_phrase = Some(Rc::clone(&lp));
@@ -164,15 +169,15 @@ impl Part {
                 estk.add_elapse(lp);
                 self.loop_cntr += 1;
             }
-        }
-        else {
-            let lp = CompositionLoop::new(self.loop_cntr, part_num, self.keynote, msr);
-            self.loop_comp = Some(Rc::clone(&lp));
-            //<<DoItLater>> 引数の追加
-            //    self.est, self.md, msr, elm, ana, \
-            //    self.keynote, self.whole_tick, part_num);
-            estk.add_elapse(lp);
-            self.loop_cntr += 1;
+            else {
+                let lp = CompositionLoop::new(self.loop_cntr, part_num, self.keynote, msr);
+                self.loop_comp = Some(Rc::clone(&lp));
+                //<<DoItLater>> 引数の追加
+                //    self.est, self.md, msr, elm, ana, \
+                //    self.keynote, self.whole_tick, part_num);
+                estk.add_elapse(lp);
+                self.loop_cntr += 1;
+            }
         }
     }
 }

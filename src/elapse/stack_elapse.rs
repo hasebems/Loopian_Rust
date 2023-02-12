@@ -78,10 +78,10 @@ impl ElapseStack {
         }
         else {None}
     }
-    pub fn send_sp_cmnd(&mut self, msg: ElapseMsg, dt: u8) {
+    pub fn send_sp_cmnd(&self, msg: ElapseMsg, dt: u8) {
         let vec_copy = self.elapse_vec.clone();
         for elps in vec_copy.iter() {
-            elps.borrow_mut().rcv_sp(msg, dt, self);
+            elps.borrow_mut().rcv_sp(msg, dt);
         }
     }
     pub fn periodic(&mut self, msg: Result<Vec<u16>, TryRecvError>) -> bool {

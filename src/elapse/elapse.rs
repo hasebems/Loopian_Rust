@@ -45,7 +45,7 @@ pub trait Elapse {
     fn start(&mut self);            // User による start/play 時にコールされる
     fn stop(&mut self);             // User による stop 時にコールされる
     fn fine(&mut self);             // User による fine があった次の小節先頭でコールされる
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack);         // 再生 msr/tick に達したらコールされる
-    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8, estk: &mut ElapseStack); // 特定 elapse に message を送る
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack); // 再生 msr/tick に達したらコールされる
+    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8); // 特定 elapse に message を送る
     fn destroy_me(&self) -> bool;   // 自クラスが役割を終えた時に True を返す
 }
