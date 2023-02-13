@@ -77,7 +77,7 @@ impl TickGen {
             self.crnt_tick_inmsr%tick_for_beat,       // tick
             self.tick_for_onemsr/tick_for_beat)
     }
-    pub fn get_tick_for_onemsr(&self) -> i32 {self.tick_for_onemsr}
+    //pub fn get_tick_for_onemsr(&self) -> i32 {self.tick_for_onemsr}
     pub fn get_bpm(&self) -> u32 {self.bpm}
     pub fn get_beat(&self) -> Beat {self.beat}
     fn calc_crnt_tick(&self) -> i32 {

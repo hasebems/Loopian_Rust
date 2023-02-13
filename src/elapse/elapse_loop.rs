@@ -53,8 +53,8 @@ impl Elapse for PhraseLoop {
         (self.next_msr, self.next_tick)
     }
     fn start(&mut self) {}      // User による start/play 時にコールされる
-    fn stop(&mut self) {self.set_destroy();} // User による stop 時にコールされる
-    fn fine(&mut self) {self.set_destroy();} // User による fine があった次の小節先頭でコールされる
+    fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
+    fn fine(&mut self, _estk: &mut ElapseStack) {} // User による fine があった次の小節先頭でコールされる
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
@@ -115,7 +115,7 @@ impl PhraseLoop {
         estk.add_elapse(Rc::clone(&nt));
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
-        let mut next_tick: i32 = lpnlib::END_OF_DATA;
+        let mut next_tick: i32;
         let mut trace: usize = self.play_counter;
         let phr = self.phrase_dt.to_vec();
         let max_ev = self.phrase_dt.len();
@@ -175,8 +175,8 @@ impl Elapse for CompositionLoop {
         (self.next_msr, self.next_tick)
     }
     fn start(&mut self) {}    // User による start/play 時にコールされる
-    fn stop(&mut self) {self.set_destroy();} // User による stop 時にコールされる
-    fn fine(&mut self) {self.set_destroy();} // User による fine があった次の小節先頭でコールされる
+    fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
+    fn fine(&mut self, _estk: &mut ElapseStack) {} // User による fine があった次の小節先頭でコールされる
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる

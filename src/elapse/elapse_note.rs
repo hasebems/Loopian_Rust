@@ -34,16 +34,14 @@ impl Elapse for Note {
         (self.next_msr, self.next_tick)
     }
     fn start(&mut self) {}      // User による start/play 時にコールされる
-    fn stop(&mut self) {        // User による stop 時にコールされる
+    fn stop(&mut self, estk: &mut ElapseStack) {        // User による stop 時にコールされる
         if self.noteon_started {
-            // <<DoItLater>>
-            //self.note_off();
+            self.note_off(estk);
         }
     }
-    fn fine(&mut self) {        // User による fine があった次の小節先頭でコールされる
+    fn fine(&mut self, estk: &mut ElapseStack) {        // User による fine があった次の小節先頭でコールされる
         if self.noteon_started {
-            // <<DoItLater>>
-            //self.note_off();
+            self.note_off(estk);
         }
     }
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
@@ -99,14 +97,11 @@ impl Note {
             next_tick: tick,
         }))
     }
-    fn cancel_same_noteoff(&mut self, estk: &ElapseStack, note_num: u8) {
-        estk.send_sp_cmnd(ElapseMsg::MsgNoSameNoteOff, note_num);
-    }
     fn note_on(&mut self, estk: &mut ElapseStack) {
         let num = self.note_num + self.keynote;
         self.real_note = Note::note_limit(num, 0, 127);
         //if self.est.pianoteq_mode {
-        //    self.cancel_same_noteoff(estk, self.real_note);
+            estk.register_sp_cmnd(ElapseMsg::MsgNoSameNoteOff, self.real_note, self.id());
         //}
         self.noteoff_enable = true; // 上で false にされるので
         estk.midi_out(0x90, self.real_note, self.velocity);

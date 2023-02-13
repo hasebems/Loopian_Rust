@@ -44,8 +44,8 @@ impl Elapse for Part {
         self.next_tick = 0;
         self.state_reserve = true;
     }
-    fn stop(&mut self) {}        // User による stop 時にコールされる
-    fn fine(&mut self) {}        // User による fine があった次の小節先頭でコールされる
+    fn stop(&mut self, estk: &mut ElapseStack) {}        // User による stop 時にコールされる
+    fn fine(&mut self, estk: &mut ElapseStack) {}        // User による fine があった次の小節先頭でコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         if self.state_reserve {
             // 前小節にて phrase/pattern 指定された時
@@ -134,6 +134,7 @@ impl Part {
     pub fn rcv_msg(&mut self, msg: Vec<Vec<u16>>) {
         println!("Msg: {:?}", msg);
         self.new_data_stock = Some(msg);
+        self.state_reserve = true;
     }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack) {
         // 新たに Loop Obj.を生成

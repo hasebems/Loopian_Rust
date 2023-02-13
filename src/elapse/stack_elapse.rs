@@ -32,6 +32,7 @@ pub struct ElapseStack {
     tg: TickGen,
     part_vec: Vec<Rc<RefCell<Part>>>,           // Part Instance が繋がれた Vec
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>,   // dyn Elapse Instance が繋がれた Vec
+    registered_cmnd: Vec<(ElapseMsg, u8, ElapseId)>,
 }
 
 impl ElapseStack {
@@ -58,6 +59,7 @@ impl ElapseStack {
                     tg: TickGen::new(),
                     part_vec: vp,
                     elapse_vec: velps,
+                    registered_cmnd: Vec::new(),
                 })
             }
             Err(_e) => None,
@@ -78,11 +80,8 @@ impl ElapseStack {
         }
         else {None}
     }
-    pub fn send_sp_cmnd(&self, msg: ElapseMsg, dt: u8) {
-        let vec_copy = self.elapse_vec.clone();
-        for elps in vec_copy.iter() {
-            elps.borrow_mut().rcv_sp(msg, dt);
-        }
+    pub fn register_sp_cmnd(&mut self, msg: ElapseMsg, dt: u8, id: ElapseId) {
+        self.registered_cmnd.push((msg, dt, id));
     }
     pub fn periodic(&mut self, msg: Result<Vec<u16>, TryRecvError>) -> bool {
         self.crnt_time = Instant::now();
@@ -100,7 +99,8 @@ impl ElapseStack {
 
         //  新tick計算
         let crnt_msr_tick = self.tg.get_crnt_msr_tick(self.crnt_time);
-        if crnt_msr_tick.new_msr {  // 小節を跨いだ場合
+        if crnt_msr_tick.new_msr { 
+            // 小節先頭
             println!("New measure!");
             // change beat event //<<DoItLater>>
 
@@ -122,6 +122,9 @@ impl ElapseStack {
                 elps.borrow_mut().process(&crnt_msr_tick, self);
             }
         }
+
+        // registered sp command
+        self.call_registered_cmnd();      
 
         // remove ended obj
         self.destroy_finished_elps();
@@ -161,8 +164,9 @@ impl ElapseStack {
     }
     fn stop(&mut self) {
         self.during_play = false;
-        for elps in self.elapse_vec.iter() {
-            elps.borrow_mut().stop();
+        let stop_vec = self.elapse_vec.to_vec();
+        for elps in stop_vec.iter() {
+            elps.borrow_mut().stop(self);
         }
     }
     fn setting_cmnd(&mut self, msg: Vec<u16>) {
@@ -224,6 +228,18 @@ impl ElapseStack {
             }
         }
         playable
+    }
+    fn call_registered_cmnd(&mut self) {
+        for reg in &self.registered_cmnd {
+            println!("registered cmnd!");
+            let (msg, dt, rmv_id) = *reg;
+            for elps in self.elapse_vec.iter() {
+                if elps.borrow().id() != rmv_id {
+                    elps.borrow_mut().rcv_sp(msg, dt);
+                }
+            }
+        }
+        self.registered_cmnd = Vec::new(); // Initialize
     }
     fn destroy_finished_elps(&mut self) {
         loop {
