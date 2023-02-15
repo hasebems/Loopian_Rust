@@ -5,6 +5,7 @@
 //
 use crate::lpnlib;
 use std::sync::{mpsc, mpsc::*};
+use super::cmdstkseq::*;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -14,6 +15,8 @@ pub struct LoopianCmd {
     indicator: Vec<String>,
     msg_hndr: mpsc::Sender<Vec<u16>>,
     ui_hndr: mpsc::Receiver<String>,
+    input_part: usize,
+    gendt: SeqDataStock,
 }
 
 impl LoopianCmd {
@@ -27,6 +30,8 @@ impl LoopianCmd {
             indicator: indc,
             msg_hndr,
             ui_hndr,
+            input_part: lpnlib::RIGHT1,
+            gendt: SeqDataStock::new(),
         }
     }
     fn read_from_ui_hndr(&mut self) {
@@ -59,6 +64,9 @@ impl LoopianCmd {
             _ => {},
         }
     }
+    fn set_raw_phrase(&self, input_text: &str) -> bool {
+        self.gendt.set_raw_phrase(self.input_part, input_text.to_string())
+    }
     fn letter_p(&self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "play" {
@@ -87,6 +95,13 @@ impl LoopianCmd {
             Some("what?".to_string())
         }
     }
+    fn letter_bracket(&self, input_text: &str) -> Option<String> {
+        if self.set_raw_phrase(input_text) {
+            Some("Set Phrase!".to_string())
+        } else {
+            Some("what?".to_string())
+        }
+    }
     fn letter_a(&self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
         if len >= 2 && &input_text[0..2] == "aa" {
@@ -110,7 +125,7 @@ impl LoopianCmd {
             else {Some("what?".to_string())}
         }
         //<<DoItLater>>
-        //else if first_letter == "[" {self.letter_bracket(input_text)}
+        else if first_letter == "[" {self.letter_bracket(input_text)}
         //else if first_letter == "{" {self.letter_brace(input_text)}
         else if first_letter == "a" {self.letter_a(input_text)}
         //else if first_letter == "b" {self.letter_b(input_text)}
