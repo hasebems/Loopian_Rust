@@ -64,7 +64,7 @@ impl LoopianCmd {
             _ => {},
         }
     }
-    fn set_raw_phrase(&self, input_text: &str) -> bool {
+    fn set_raw_phrase(&mut self, input_text: &str) -> bool {
         self.gendt.set_raw_phrase(self.input_part, input_text.to_string())
     }
     fn letter_p(&self, input_text: &str) -> Option<String> {
@@ -95,7 +95,7 @@ impl LoopianCmd {
             Some("what?".to_string())
         }
     }
-    fn letter_bracket(&self, input_text: &str) -> Option<String> {
+    fn letter_bracket(&mut self, input_text: &str) -> Option<String> {
         if self.set_raw_phrase(input_text) {
             Some("Set Phrase!".to_string())
         } else {

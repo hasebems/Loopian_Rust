@@ -66,3 +66,12 @@ pub const TICK: usize = 1;
 pub const DURATION: usize = 2;
 pub const NOTE: usize = 3;
 pub const VELOCITY: usize = 4;
+
+//=====================
+// Enum
+//=====================
+#[derive(Debug,PartialEq,Eq,Copy,Clone)]
+pub enum InputMode {
+    Fixed,  // 階名のオクターブ位置は固定。絶対位置を指定
+    Closer, // 次の階名は近い方のオクターブを選択。遠い方を指示する場合、+/-を使う。
+}
