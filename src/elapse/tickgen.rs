@@ -40,7 +40,7 @@ impl TickGen {
             crnt_time: Instant::now(),
         }
     }
-    pub fn change_beat_event(&mut self, tick_for_onemsr: i32, beat: Beat) {
+    pub fn _change_beat_event(&mut self, tick_for_onemsr: i32, beat: Beat) {
         self.tick_for_onemsr = tick_for_onemsr;
         self.beat = beat;
         self.beat_start_msr = self.crnt_msr;
@@ -79,7 +79,7 @@ impl TickGen {
     }
     //pub fn get_tick_for_onemsr(&self) -> i32 {self.tick_for_onemsr}
     pub fn get_bpm(&self) -> u32 {self.bpm}
-    pub fn get_beat(&self) -> Beat {self.beat}
+    pub fn _get_beat(&self) -> Beat {self.beat}
     fn calc_crnt_tick(&self) -> i32 {
         let diff = self.crnt_time - self.bpm_start_time;
         let elapsed_tick = ((DEFAULT_TICK_FOR_QUARTER as f32)*(self.bpm as f32)*diff.as_secs_f32())/60.0;

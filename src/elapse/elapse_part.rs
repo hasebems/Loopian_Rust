@@ -8,7 +8,7 @@ use std::cell::RefCell;
 
 use crate::lpnlib;
 use super::elapse::*;
-use super::elapse_loop::{Loop, PhraseLoop, CompositionLoop};
+use super::elapse_loop::{PhraseLoop, CompositionLoop};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 
@@ -17,7 +17,7 @@ pub struct Part {
     priority: u32,
 
     keynote: u8,
-    base_note: u8,
+    _base_note: u8,
     first_measure_num: i32,
     next_msr: i32,
     next_tick: i32,
@@ -44,8 +44,8 @@ impl Elapse for Part {
         self.next_tick = 0;
         self.state_reserve = true;
     }
-    fn stop(&mut self, estk: &mut ElapseStack) {}        // User による stop 時にコールされる
-    fn fine(&mut self, estk: &mut ElapseStack) {}        // User による fine があった次の小節先頭でコールされる
+    fn stop(&mut self, _estk: &mut ElapseStack) {}        // User による stop 時にコールされる
+    fn fine(&mut self, _estk: &mut ElapseStack) {}        // User による fine があった次の小節先頭でコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         if self.state_reserve {
             // 前小節にて phrase/pattern 指定された時
@@ -92,7 +92,7 @@ impl Elapse for Part {
         // 毎小節の頭で process() がコール
         self.next_msr = crnt_.msr + 1
     }
-    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8) {}
+    fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す
         false
     }
@@ -107,7 +107,7 @@ impl Part {
             id: new_id,
             priority: PRI_PART,
             keynote: 0,
-            base_note: lpnlib::DEFAULT_NOTE_NUMBER - 12*(left_part as u8),
+            _base_note: lpnlib::DEFAULT_NOTE_NUMBER - 12*(left_part as u8),
             first_measure_num: 0,
             next_msr: 0,
             next_tick: 0,
@@ -121,11 +121,11 @@ impl Part {
             sync_next_msr_flag: false,
         }))
     }
-    pub fn change_key(&mut self, knt: u8) {
+    pub fn _change_key(&mut self, knt: u8) {
         self.keynote = knt;          // 0-11
         self.state_reserve = true;
     }
-    pub fn get_comp(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
+    pub fn _get_comp(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
         match &self.loop_comp {
             Some(lc) => Some(Rc::clone(&lc)),
             None => None,

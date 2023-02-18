@@ -80,7 +80,7 @@ impl Elapse for Note {
 }
 
 impl Note {
-    pub fn new(sid: u32, pid: u32, estk: &mut ElapseStack, ev: &Vec<u16>, msr: i32, tick: i32)
+    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &Vec<u16>, msr: i32, tick: i32)
       -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpNote,},

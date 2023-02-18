@@ -23,9 +23,9 @@ use super::elapse_part::Part;
 pub struct ElapseStack {
     ui_hndr: mpsc::Sender<String>,
     mdx: MidiTx,
-    start_time: Instant,
+    _start_time: Instant,
     crnt_time: Instant,
-    count: u32,
+    _count: u32,
     bpm_stock: u32,
     during_play: bool,
     display_time: Instant,
@@ -50,9 +50,9 @@ impl ElapseStack {
                 Some(Self {
                     ui_hndr,
                     mdx: c,
-                    start_time: Instant::now(),
+                    _start_time: Instant::now(),
                     crnt_time: Instant::now(),
-                    count: 0,
+                    _count: 0,
                     bpm_stock: 120,
                     during_play: false,
                     display_time: Instant::now(),
@@ -73,7 +73,7 @@ impl ElapseStack {
             self.elapse_vec.remove(remove_index);
         }
     }
-    pub fn get_part(&mut self, id: ElapseId) -> Option<Rc<RefCell<Part>>> {
+    pub fn _get_part(&mut self, id: ElapseId) -> Option<Rc<RefCell<Part>>> {
         if let Some(index) = self.part_vec.iter().position(|x| x.borrow().id() == id) {
             let part = Rc::clone(&self.part_vec[index]);
             Some(part)
@@ -191,7 +191,7 @@ impl ElapseStack {
         }
         self.part_vec[part_num+4].borrow_mut().rcv_msg(phr_vec);
     }
-    fn composition(&mut self, _msg: Vec<u16>) {}
+    fn _composition(&mut self, _msg: Vec<u16>) {}
     fn parse_msg(&mut self, msg: Vec<u16>) {
         println!("msg is {:?}", msg[0]);
         if msg[0] == lpnlib::MSG_START {self.start();}

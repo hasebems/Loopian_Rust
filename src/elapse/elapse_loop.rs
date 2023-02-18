@@ -34,10 +34,10 @@ pub struct PhraseLoop {
 
     phrase_dt: Vec<Vec<u16>>,
     //analys_dt:
-    keynote: u8,
+    _keynote: u8,
     play_counter: usize,
     next_tick_in_phrase: i32,
-    last_note: u8,
+    _last_note: u8,
 
     // for super's member
     whole_tick: i32,
@@ -91,10 +91,10 @@ impl PhraseLoop {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_LOOP,
             phrase_dt: msg,
-            keynote: knt,
+            _keynote: knt,
             play_counter: 0,
             next_tick_in_phrase: 0,
-            last_note: lpnlib::NO_NOTE,
+            _last_note: lpnlib::NO_NOTE,
             // for super's member
             whole_tick: 1920,
             destroy: false,
@@ -103,7 +103,7 @@ impl PhraseLoop {
             next_tick: 0,
         }))
     }
-    fn note_event(&self, estk: &mut ElapseStack, trace: usize, ev: Vec<u16>, next_tick: i32, msr: i32, tick: i32) {
+    fn note_event(&self, estk: &mut ElapseStack, trace: usize, ev: Vec<u16>, _next_tick: i32, msr: i32, tick: i32) {
         // phr: ['note', tick, duration, note, velocity]
         // <<DoItLater>>
         //if let Some(linked_part) = estk.get_part(self.id.pid) {
@@ -153,13 +153,13 @@ pub struct CompositionLoop {
 
     comp_dt: Option<Vec<Vec<u16>>>,
     //analys_dt:
-    keynote: u8,
+    _keynote: u8,
     play_counter: usize,
     next_tick_in_comp: i32,
     // for Composition
-    chord_name: String,
-    root: u8,
-    translation_tbl: Vec<Vec<i32>>,
+    _chord_name: String,
+    _root: u8,
+    _translation_tbl: Vec<Vec<i32>>,
 
     // for super's member
     whole_tick: i32,
@@ -219,13 +219,13 @@ impl CompositionLoop {
             priority: PRI_LOOP,
             comp_dt: None,
             //analys_dt:
-            keynote: knt,
+            _keynote: knt,
             play_counter: 0,
             next_tick_in_comp: 0,
 
-            chord_name: "".to_string(),
-            root: 0,
-            translation_tbl: Vec::new(),
+            _chord_name: "".to_string(),
+            _root: 0,
+            _translation_tbl: Vec::new(),
             // for super's member
             whole_tick: 0,
             destroy: false,
@@ -234,12 +234,12 @@ impl CompositionLoop {
             next_tick: 0,        
         }))
     }
-    pub fn get_translation(&self) -> (u8, Vec<u32>) {(0, vec![0,1,2,3,4,5,6,7,8,9,10,11])}
+    pub fn _get_translation(&self) -> (u8, Vec<u32>) {(0, vec![0,1,2,3,4,5,6,7,8,9,10,11])}
     fn reset_note_translation(&mut self) {/*<<DoItLater>>*/}
-    fn prepare_note_translation(&mut self, cd: Vec<u16>) {/*<<DoItLater>>*/}
-    fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
+    fn prepare_note_translation(&mut self, _cd: Vec<u16>) {/*<<DoItLater>>*/}
+    fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut trace: usize = self.play_counter;
-        let mut next_tick: i32 = 0;
+        let mut next_tick: i32;
         loop {
             if let Some(comp) = &self.comp_dt {
                 let max_ev: usize = comp.len();

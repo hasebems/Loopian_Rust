@@ -7,21 +7,21 @@ use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 
 // Timing Priority(pri) 数値が小さいほど優先度が高い（同じtickなら先に再生される）
-pub const PRI_NONE: u32 = 1000;
+pub const _PRI_NONE: u32 = 1000;
 pub const PRI_PART: u32 = 100;
-pub const PRI_CHORD: u32 = 200;
+pub const _PRI_CHORD: u32 = 200;
 pub const PRI_LOOP: u32 = 300;
 pub const PRI_NOTE: u32 = 400;
-pub const PRI_DMPR: u32 = 500;
+pub const _PRI_DMPR: u32 = 500;
 
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum ElapseType {
-    TpNone,
+    _TpNone,
     TpPart,
     TpPhraseLoop,
     TpCompositionLoop,
     TpNote,
-    TpDamper,
+    _TpDamper,
 }
 
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]

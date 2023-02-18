@@ -39,18 +39,18 @@ impl SeqDataStock {
     }
 }
 pub struct PhraseDataStock {
-    part_num: usize,
-    input_mode: lpnlib::InputMode,
+    _part_num: usize,
+    _input_mode: lpnlib::InputMode,
     note_value: u8,
     raw: String,
     cmpl_nt: Vec<String>,
     cmpl_ex: Vec<String>,
 }
 impl PhraseDataStock {
-    pub fn new(part_num: usize, input_mode: lpnlib::InputMode) -> Self {
+    pub fn new(_part_num: usize, _input_mode: lpnlib::InputMode) -> Self {
         Self {
-            part_num,
-            input_mode,
+            _part_num,
+            _input_mode,
             note_value: 0,
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
@@ -88,7 +88,7 @@ pub struct CompositionDataStock {
 
 }
 impl CompositionDataStock {
-    pub fn new() -> Self {
+    pub fn _new() -> Self {
         Self {
 
         }
