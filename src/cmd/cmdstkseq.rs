@@ -43,7 +43,8 @@ pub struct PhraseDataStock {
     input_mode: lpnlib::InputMode,
     note_value: u8,
     raw: String,
-    cmpl: Vec<u16>,
+    cmpl_nt: Vec<String>,
+    cmpl_ex: Vec<String>,
 }
 impl PhraseDataStock {
     pub fn new(part_num: usize, input_mode: lpnlib::InputMode) -> Self {
@@ -52,7 +53,8 @@ impl PhraseDataStock {
             input_mode,
             note_value: 0,
             raw: "".to_string(),
-            cmpl: vec![0],
+            cmpl_nt: vec!["".to_string()],
+            cmpl_ex: vec!["".to_string()],
         }
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
@@ -65,7 +67,8 @@ impl PhraseDataStock {
             return false
         }
         else {
-            self.cmpl = cmpl;
+            self.cmpl_nt = cmpl[0].clone();
+            self.cmpl_ex = cmpl[1].clone();
             self.note_value = note_value;
         }
 
