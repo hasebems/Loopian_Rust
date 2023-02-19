@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib;
-use super::cmdtxt2seq::*;
+use super::txt2seq::*;
 
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
@@ -87,6 +87,9 @@ impl PhraseDataStock {
     }
     pub fn set_recombined(&mut self) {
         // 3.recombined data
+
+
+
         // 4.analysed data
         // 5.humanized data
             // Add Filters 

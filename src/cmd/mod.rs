@@ -1,3 +1,3 @@
 pub mod cmdparse;
-pub mod cmdstkseq;
-pub mod cmdtxt2seq;
+pub mod seq_stock;
+pub mod txt2seq;

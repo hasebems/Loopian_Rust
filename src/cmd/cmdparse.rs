@@ -5,8 +5,8 @@
 //
 use crate::lpnlib;
 use std::sync::{mpsc, mpsc::*};
-use super::cmdstkseq::*;
-use super::cmdtxt2seq::TextParse;
+use super::seq_stock::*;
+use super::txt2seq::TextParse;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
