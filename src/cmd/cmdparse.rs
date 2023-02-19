@@ -6,6 +6,7 @@
 use crate::lpnlib;
 use std::sync::{mpsc, mpsc::*};
 use super::cmdstkseq::*;
+use super::cmdtxt2seq::TextParse;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -64,8 +65,48 @@ impl LoopianCmd {
             _ => {},
         }
     }
-    fn set_raw_phrase(&mut self, input_text: &str) -> bool {
-        self.gendt.set_raw_phrase(self.input_part, input_text.to_string())
+    fn parse_set_command(&mut self, input_text: &str) -> String {
+        let cmnd = &input_text[4..];
+        let len = cmnd.chars().count();
+        if len > 4 && &cmnd[0..4] == "bpm=" {
+            match cmnd[4..].parse::<u16>() {
+                Ok(msg) => {
+                    self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BPM, msg]);
+                    "BPM has changed!".to_string()
+                },
+                Err(_e) => {
+                    println!("{:?}",_e);
+                    "Number is wrong.".to_string()
+                },
+            }
+        }
+        else if len > 5 && &cmnd[0..5] == "beat=" {
+            let beat = &cmnd[5..];
+            let numvec = TextParse::split_by_slash(beat.to_string());
+            match (numvec[0].parse::<u16>(), numvec[1].parse::<u16>()) {
+                (Ok(up),Ok(low)) => {
+                    self.gendt.change_beat(up, low);
+                    self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BEAT, up, low]);
+                    "Beat has changed!".to_string()
+                },
+                _ => "Number is wrong.".to_string()
+            }
+        }
+        else if len > 4 && &cmnd[0..4] == "key=" {
+            "what?".to_string()
+        }
+        else if len > 4 && &cmnd[0..4] == "oct=" {
+            "what?".to_string()
+        }
+        else if len > 6 && &cmnd[0..6] == "input=" {
+            "what?".to_string()
+        }
+        else if len > 9 && &cmnd[0..9] == "samenote=" {
+            "what?".to_string()
+        }
+        else {
+            "what?".to_string()
+        }
     }
     fn letter_p(&self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
@@ -80,7 +121,7 @@ impl LoopianCmd {
             Some("what?".to_string())
         }
     }
-    fn letter_s(&self, input_text: &str) -> Option<String> {
+    fn letter_s(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "stop" {
             // stop
@@ -88,15 +129,14 @@ impl LoopianCmd {
             Some("Phrase has stopped!".to_string())
         } else if len >= 3 && &input_text[0..3] == "set" {
             // set
-            self.send_msg_to_elapse(
-                vec![lpnlib::MSG_SET, input_text[4..].parse::<u16>().unwrap()]);
-            Some("BPM has changed!".to_string())
+            let responce = self.parse_set_command(input_text);
+            Some(responce)
         } else {
             Some("what?".to_string())
         }
     }
     fn letter_bracket(&mut self, input_text: &str) -> Option<String> {
-        if self.set_raw_phrase(input_text) {
+        if self.gendt.set_raw_phrase(self.input_part, input_text.to_string()) {
             Some("Set Phrase!".to_string())
         } else {
             Some("what?".to_string())

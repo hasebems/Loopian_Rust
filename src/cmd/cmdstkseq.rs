@@ -12,6 +12,8 @@ pub struct SeqDataStock {
     pdt: [Option<Box<PhraseDataStock>>; lpnlib::MAX_USER_PART],
     _cdt: [Option<Box<CompositionDataStock>>; lpnlib::MAX_USER_PART],
     input_mode: lpnlib::InputMode,
+    tick_for_onemsr: i32,
+    tick_for_onebeat: i32,
 }
 impl SeqDataStock {
     pub fn new() -> Self {
@@ -19,6 +21,8 @@ impl SeqDataStock {
             pdt: Default::default(),
             _cdt: Default::default(),
             input_mode: lpnlib::InputMode::Closer,
+            tick_for_onemsr: lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE,
+            tick_for_onebeat: lpnlib::DEFAULT_TICK_FOR_QUARTER,
         }
     }
     pub fn set_raw_phrase(&mut self, part: usize, input_text: String) -> bool {
@@ -36,6 +40,11 @@ impl SeqDataStock {
     }
     pub fn _set_recombined(&self) {
 
+    }
+    pub fn change_beat(&mut self, beat_count: u16, base_note: u16) {
+        println!("beat: {}/{}",beat_count, base_note);
+        self.tick_for_onemsr = lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE*(beat_count as i32)/(base_note as i32);
+        self.tick_for_onebeat = lpnlib::DEFAULT_TICK_FOR_QUARTER*4/(base_note as i32);
     }
 }
 pub struct PhraseDataStock {

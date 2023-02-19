@@ -98,18 +98,6 @@ impl TextParse {
         }
         fill
     }
-    fn split_by_comma(txt: String) -> Vec<String> {
-        let mut splited: Vec<String> = Vec::new();
-        let mut old_locate: usize = 0;
-        for (i, ltr) in txt.chars().enumerate() {
-            if ltr == ',' {
-                splited.push((&txt[old_locate..i]).to_string());
-                old_locate = i+1;
-            }
-        }
-        splited.push((&txt[old_locate..txt.len()]).to_string());
-        splited
-    }
     fn expand_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
         let mut new_vec = nv.clone();
         let mut repeat_start: usize = nv.len();
@@ -172,5 +160,34 @@ impl TextParse {
             }
         }
         (new_vec, no_exist)
+    }
+    //=========================================================================
+    pub fn _recombine_to_internal_format() {
+
+    }
+    //=========================================================================
+    fn split_by_comma(txt: String) -> Vec<String> {
+        let mut splited: Vec<String> = Vec::new();
+        let mut old_locate: usize = 0;
+        for (i, ltr) in txt.chars().enumerate() {
+            if ltr == ',' {
+                splited.push((&txt[old_locate..i]).to_string());
+                old_locate = i+1;
+            }
+        }
+        splited.push((&txt[old_locate..txt.len()]).to_string());
+        splited
+    }
+    pub fn split_by_slash(txt: String) -> Vec<String> {
+        let mut splited: Vec<String> = Vec::new();
+        let mut old_locate: usize = 0;
+        for (i, ltr) in txt.chars().enumerate() {
+            if ltr == '/' {
+                splited.push((&txt[old_locate..i]).to_string());
+                old_locate = i+1;
+            }
+        }
+        splited.push((&txt[old_locate..txt.len()]).to_string());
+        splited
     }
 }

@@ -48,24 +48,25 @@ pub const _DEFAULT_VEL: u8 = 100;
 //=====================
 // UI->ELPS Message
 //=====================
-pub const MSG_QUIT: u16 = 0xffff;
-pub const MSG_START:u16 = 0xfff0;
-pub const MSG_STOP: u16 = 0xfff8;
-pub const MSG_SET:  u16 = 0xfff9;
-pub const MSG2_BPM: u16 = 0x0001;
+pub const MSG_QUIT: u16     = 0xffff;
+pub const MSG_START:u16     = 0xfff0;
+pub const MSG_STOP: u16     = 0xfff8;
+pub const MSG_SET:  u16     = 0xfff9;
+pub const MSG2_BPM: u16     = 0x0001;
+pub const MSG2_BEAT: u16    = 0x0002;
 
 pub const MSG_PART_MASK: u16 = 0xfff0;
-pub const MSG_PHR:  u16 = 0x1000;   // 1桁目にパート番号
-pub const _MSG_CMP:  u16 = 0x2000;   // 1桁目にパート番号
+pub const MSG_PHR: u16      = 0x1000;   // 1桁目にパート番号
+pub const _MSG_CMP: u16     = 0x2000;   // 1桁目にパート番号
 
-pub const TYPE: usize = 0;
-pub const _TYPE_ID: u16 = 0xf000;
-pub const TYPE_NOTE: u16 = 0xf001;
-pub const TYPE_DAMPER: u16 = 0xf002;
-pub const TICK: usize = 1;
-pub const DURATION: usize = 2;
-pub const NOTE: usize = 3;
-pub const VELOCITY: usize = 4;
+pub const TYPE: usize       = 0;
+pub const _TYPE_ID: u16     = 0xf000;
+pub const TYPE_NOTE: u16    = 0xf001;
+pub const TYPE_DAMPER: u16  = 0xf002;
+pub const TICK: usize       = 1;
+pub const DURATION: usize   = 2;
+pub const NOTE: usize       = 3;
+pub const VELOCITY: usize   = 4;
 
 //=====================
 // Enum
