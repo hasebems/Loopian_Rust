@@ -27,8 +27,9 @@ impl SeqDataStock {
     }
     pub fn set_raw_phrase(&mut self, part: usize, input_text: String) -> bool {
         if part < lpnlib::MAX_USER_PART {
-            let mut pd = Box::new(PhraseDataStock::new(part, self.input_mode));
+            let mut pd = Box::new(PhraseDataStock::new(part));
             if pd.set_raw(input_text) {
+                pd.set_recombined(self.input_mode, self.tick_for_onemsr);
                 self.pdt[part] = Some(pd);
                 return true
             }
@@ -48,19 +49,17 @@ impl SeqDataStock {
     }
 }
 pub struct PhraseDataStock {
-    _part_num: usize,
-    _input_mode: lpnlib::InputMode,
-    note_value: u8,
+    part_num: usize,
+    oct_setting: i32,
     raw: String,
     cmpl_nt: Vec<String>,
     cmpl_ex: Vec<String>,
 }
 impl PhraseDataStock {
-    pub fn new(_part_num: usize, _input_mode: lpnlib::InputMode) -> Self {
+    pub fn new(part_num: usize) -> Self {
         Self {
-            _part_num,
-            _input_mode,
-            note_value: 0,
+            part_num,
+            oct_setting: 0,
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
@@ -71,23 +70,24 @@ impl PhraseDataStock {
         self.raw = input_text.clone();
 
         // 2.complement data
-        let (cmpl, note_value) = TextParse::complement_phrase(input_text);
+        let cmpl = TextParse::complement_phrase(input_text);
         if cmpl.len() <= 1 {
             return false
         }
         else {
             self.cmpl_nt = cmpl[0].clone();
             self.cmpl_ex = cmpl[1].clone();
-            self.note_value = note_value;
         }
-
-        // 3-5.recombined data        
-        self.set_recombined();
         true
     }
-    pub fn set_recombined(&mut self) {
-        // 3.recombined data
+    pub fn set_recombined(&mut self, input_mode: lpnlib::InputMode, tick_for_onemsr: i32) {
+        //self.input_mode = input_mode;
+        //self.tick_for_onemsr = tick_for_onemsr;
 
+        // 3.recombined data
+        let (_whole_tick, _generated) = TextParse::recombine_to_internal_format(
+            &self.cmpl_nt, &self.cmpl_ex, input_mode,
+            self.oct_setting, tick_for_onemsr);
 
 
         // 4.analysed data

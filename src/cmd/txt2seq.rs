@@ -3,10 +3,11 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use crate::lpnlib;
 
 pub struct TextParse {}
 impl TextParse {
-    pub fn complement_phrase(input_text: String) -> ([Vec<String>;2], u8) {
+    pub fn complement_phrase(input_text: String) -> [Vec<String>;2] {
         // 1. [] を抜き出し、２つ分の brackets を Vec に入れて戻す
         let (ni, ne) = TextParse::divide_brackets(input_text);
 
@@ -34,7 +35,7 @@ impl TextParse {
         let nevec = TextParse::split_by_comma(ne);
 
         println!("complement_phrase: {:?} exp: {:?}",nvec,nevec);
-        return ([nvec,nevec], 0);
+        return [nvec,nevec];
     }
     fn divide_brackets(input_text: String) -> (String, String) {
         let mut note_info: Vec<String> = Vec::new();
@@ -162,8 +163,61 @@ impl TextParse {
         (new_vec, no_exist)
     }
     //=========================================================================
-    pub fn _recombine_to_internal_format() {
+    fn get_exp_info(expvec: &Vec<String>) -> (i32, &Vec<String>) {
+        (100, expvec)
+    }
+    fn break_up_nt_dur_vel(oct_setting: i32, note_text: String, last_nt: i32, _imd: lpnlib::InputMode)
+      -> (u8, bool, i32, i32, u8, i32) {
+        (0,true,0,0,0,0)
+    }
+    fn get_real_dur(base_dur: i32, dur_info: i32, tick_for_onemsr: i32) -> i32 {
+        0
+    }
+    fn trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
+        0
+    }
+    fn add_note(rcmb: Vec<u16>, tick: i32, notes: u8, note_dur: i32, last_vel: u8) -> Vec<u16> {rcmb}
+    pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: lpnlib::InputMode,
+      oct_setting: i32, tick_for_onemsr: i32) -> (i32, Vec<u16>) {
+        let max_read_ptr = ntvec.len();
+        let (exp_vel, exp_others) = TextParse::get_exp_info(expvec);
+        let mut read_ptr = 0;
+        let mut last_nt: i32 = 0;
+        let mut tick: i32 = 0;
+        let mut msr: i32 = 1;
+        let mut rcmb: Vec<u16> = Vec::new();
 
+        while read_ptr < max_read_ptr {
+            let note_text = ntvec[read_ptr].clone();
+
+            let (notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
+              = TextParse::break_up_nt_dur_vel(oct_setting, note_text, last_nt, imd);
+
+            if nt <= 127 {last_nt = nt;}    // 次回の音程の上下判断のため
+            let next_msr_tick = tick_for_onemsr*msr;
+            if tick < next_msr_tick {
+                let real_dur = TextParse::get_real_dur(base_dur, dur_cnt,
+                    next_msr_tick - tick);
+
+                // duration
+                let note_dur = TextParse::trans_dur(real_dur, exp_others);
+    
+                // velocity
+                let mut last_vel: i32 = exp_vel + diff_vel as i32;
+                if last_vel > 127 {last_vel = 127;}
+                else if last_vel < 1 {last_vel = 1;}
+
+                // add to recombined data
+                rcmb = TextParse::add_note(rcmb, tick, notes, note_dur, last_vel as u8);
+                tick += real_dur;
+            }
+            if mes_end {// 小節線があった場合
+                tick = next_msr_tick;
+                msr += 1;
+            }
+            read_ptr += 1;  // out from repeat
+        }
+        (tick, rcmb)
     }
     //=========================================================================
     fn split_by_comma(txt: String) -> Vec<String> {
