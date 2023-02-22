@@ -15,7 +15,7 @@ impl TextParse {
         let nf = TextParse::fill_omitted_note_data(ni);
 
         // 3. , で分割
-        let mut nvec = TextParse::split_by_comma(nf);
+        let mut nvec = TextParse::split_by(',', nf);
 
         // 4. < >*n を展開
         loop {
@@ -32,7 +32,7 @@ impl TextParse {
         }
 
         // 6. Expression を , で分割
-        let nevec = TextParse::split_by_comma(ne);
+        let nevec = TextParse::split_by(',', ne);
 
         println!("complement_phrase: {:?} exp: {:?}",nvec,nevec);
         return [nvec,nevec];
@@ -163,35 +163,21 @@ impl TextParse {
         (new_vec, no_exist)
     }
     //=========================================================================
-    fn get_exp_info(expvec: &Vec<String>) -> (i32, &Vec<String>) {
-        (100, expvec)
-    }
-    fn break_up_nt_dur_vel(oct_setting: i32, note_text: String, last_nt: i32, _imd: lpnlib::InputMode)
-      -> (u8, bool, i32, i32, u8, i32) {
-        (0,true,0,0,0,0)
-    }
-    fn get_real_dur(base_dur: i32, dur_info: i32, tick_for_onemsr: i32) -> i32 {
-        0
-    }
-    fn trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
-        0
-    }
-    fn add_note(rcmb: Vec<u16>, tick: i32, notes: u8, note_dur: i32, last_vel: u8) -> Vec<u16> {rcmb}
     pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: lpnlib::InputMode,
-      oct_setting: i32, tick_for_onemsr: i32) -> (i32, Vec<u16>) {
+      oct_setting: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<u16>>) {
         let max_read_ptr = ntvec.len();
-        let (exp_vel, exp_others) = TextParse::get_exp_info(expvec);
+        let (exp_vel, exp_others) = TextParse::get_exp_info(expvec.clone());
         let mut read_ptr = 0;
-        let mut last_nt: i32 = 0;
+        let mut last_nt: u8 = 0;
         let mut tick: i32 = 0;
         let mut msr: i32 = 1;
-        let mut rcmb: Vec<u16> = Vec::new();
+        let mut rcmb: Vec<Vec<u16>> = Vec::new();
 
         while read_ptr < max_read_ptr {
             let note_text = ntvec[read_ptr].clone();
 
             let (notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
-              = TextParse::break_up_nt_dur_vel(oct_setting, note_text, last_nt, imd);
+              = TextParse::break_up_nt_dur_vel(note_text, oct_setting, last_nt, imd);
 
             if nt <= 127 {last_nt = nt;}    // 次回の音程の上下判断のため
             let next_msr_tick = tick_for_onemsr*msr;
@@ -200,7 +186,7 @@ impl TextParse {
                     next_msr_tick - tick);
 
                 // duration
-                let note_dur = TextParse::trans_dur(real_dur, exp_others);
+                let note_dur = TextParse::trans_dur(real_dur, &exp_others);
     
                 // velocity
                 let mut last_vel: i32 = exp_vel + diff_vel as i32;
@@ -208,7 +194,7 @@ impl TextParse {
                 else if last_vel < 1 {last_vel = 1;}
 
                 // add to recombined data
-                rcmb = TextParse::add_note(rcmb, tick, notes, note_dur, last_vel as u8);
+                rcmb = TextParse::add_note(rcmb, tick, notes, note_dur, last_vel as u16);
                 tick += real_dur;
             }
             if mes_end {// 小節線があった場合
@@ -219,12 +205,304 @@ impl TextParse {
         }
         (tick, rcmb)
     }
+    fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
+        let mut vel = lpnlib::END_OF_DATA;
+        let mut retvec = expvec.clone();
+        for (i, txt) in expvec.iter().enumerate() {
+            vel = TextParse::convert_exp2vel(txt);
+            if vel != lpnlib::END_OF_DATA {
+                retvec.remove(i);
+                break;
+            }
+        }
+        (vel, retvec)
+    }
+    fn break_up_nt_dur_vel(note_text: String, oct_setting: i32, last_nt: u8, imd: lpnlib::InputMode)
+      -> (Vec<u8>, bool, u16, u16, u8, u8) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
+
+        //  小節線のチェック
+        let mut mes_end = false;
+        let mut ntext1 = note_text.clone();
+        if note_text.chars().last().unwrap_or(' ') == '|' { // 小節最後のイベント
+            mes_end = true;
+            ntext1.pop();
+        }
+
+        //  duration 情報、 Velocity 情報の抽出
+        let (ntext3, base_dur, dur_cnt) = TextParse::gen_dur_info(ntext1);
+        let (ntext4, diff_vel) = TextParse::gen_diff_vel(ntext3);
+        let notes_vec: Vec<String> = TextParse::split_by_by('=', '_', ntext4);
+
+        let mut notes: Vec<u8> = Vec::new();
+        let mut doremi = 0;
+        for nt in notes_vec.iter() {    // 同時発音
+            if imd == lpnlib::InputMode::Fixed {
+                doremi = TextParse::convert_doremi_fixed(nt.to_string());
+            }
+            else if imd == lpnlib::InputMode::Closer {
+                doremi = TextParse::convert_doremi_closer(nt.to_string(), last_nt);
+            }
+            let mut base_pitch = oct_setting as u8 + doremi;
+            if base_pitch >= lpnlib::MAX_NOTE_NUMBER {base_pitch = lpnlib::MAX_NOTE_NUMBER;}
+            notes.push(base_pitch);
+        }
+        (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi)
+    }
+    fn gen_dur_info(nt: String) -> (String, u16, u16) {
+        // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
+        // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
+        let mut excnt = 0;
+        for (i, ltr) in nt.chars().enumerate() {
+            if ltr == '+' || ltr == '-' {continue;}
+            else {
+                excnt = i;
+                break;
+            }
+        }
+        let mut ntext = nt[excnt..].to_string();
+        let mut base_dur = lpnlib::KEEP;
+        let mut dur_cnt: u16 = 1;
+
+        //  タイなどの音価を解析し、dur_cnt を確定
+        let txtlen = ntext.len(); 
+        if txtlen > 0 {
+            if ntext.chars().nth(txtlen-1).unwrap_or(' ') == 'o' {
+                base_dur = lpnlib::LAST;
+                ntext.pop();
+            }
+            else {
+                loop {
+                    let length = ntext.len();
+                    if length == 0 {break;}
+                    let ltr = ntext.chars().nth(length).unwrap_or(' ');
+                    if ltr == '.' || ltr == '~' {
+                        dur_cnt += 1;
+                        ntext.pop();
+                    }
+                    else {break;}
+                }
+            }
+        }
+
+        //  基準音価を解析し、base_dur を確定 
+        let txtlen = ntext.len();
+        if txtlen > 0 {
+            let mut triplet: u16 = 0;
+            let mut idx = 1;
+            let mut fst_ltr = ntext.chars().nth(0).unwrap_or(' ');
+            if fst_ltr == '3' || fst_ltr == '5' {
+                triplet = fst_ltr as u16;
+                fst_ltr = ntext.chars().nth(1).unwrap_or(' ');
+            }
+            if fst_ltr == '\'' {
+                if ntext.chars().nth(2).unwrap_or(' ') == '\"' {
+                    base_dur = 60;
+                    idx = 2;
+                }
+                else {base_dur = 240;}
+            }
+            else if fst_ltr == '\"' {base_dur = 120;}
+            else if fst_ltr == 'q' {base_dur = 480;}
+            else if fst_ltr == 'h' {base_dur = 960;}
+            else {idx = 0;}
+            if triplet != 0 {
+                base_dur = base_dur*2/triplet;
+                idx = 2;
+            }
+            ntext = ntext[idx..].to_string();
+        }
+
+        //  +- を戻す
+        if excnt != 0 {
+            ntext = nt[0..excnt].to_string() + &ntext;
+        }
+        (ntext, base_dur, dur_cnt)
+    }
+    fn gen_diff_vel(nt: String) -> (String, u8) {
+        let mut ntext = nt;
+        let mut diff_vel = 0;
+        let mut last_ltr = ntext.chars().nth(ntext.len()-1).unwrap_or(' ');
+        while last_ltr == '^' {
+            diff_vel += 10;
+            ntext.pop();
+            last_ltr = ntext.chars().nth(ntext.len()-1).unwrap_or(' ');
+        }
+        while last_ltr == '%' {
+            diff_vel -= 20;
+            ntext.pop();
+            last_ltr = ntext.chars().nth(ntext.len()-1).unwrap_or(' ');
+        }
+        (ntext, diff_vel)
+    }
+    fn get_real_dur(base_dur: u16, dur_cnt: u16, rest_tick: i32) -> i32 {
+        if base_dur == lpnlib::LAST {
+            rest_tick
+        }
+        else if base_dur == lpnlib::KEEP {
+            (base_dur*dur_cnt) as i32
+        }
+        else {
+            (base_dur*dur_cnt) as i32
+        }
+    }
+    fn trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
+        let mut return_dur = real_dur;
+        if exp_others.iter().any(|x| x=="stacc") {
+            return_dur = real_dur/2;
+        }
+        if return_dur > 40 {  // 一律 duration 40 を引く
+            return_dur - 40
+        }
+        else {return_dur}
+    }
+    fn add_note(rcmb: Vec<Vec<u16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: u16) -> Vec<Vec<u16>> {
+        let mut return_rcmb = rcmb.clone();
+        if notes.len() != 0 {
+            for note in notes.iter() {
+                if *note == lpnlib::REST {
+                    continue;
+                }
+                else if *note == lpnlib::NO_NOTE {
+                    continue;
+                    // python で、前の入力が '=' による和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
+                    // とコメントがあったが、処理内容不明
+                /*  same_tick = generated[-1][1]
+                    cnt = 0
+                    while True:
+                        if len(generated) <= cnt: break
+                        cnt += 1
+                        if generated[-cnt][1] == same_tick:
+                            generated[-cnt][2] += real_dur
+                        else: break */
+                }
+                else {
+                    let nt_data: Vec<u16> = 
+                        vec![lpnlib::TYPE_NOTE, note_dur as u16, tick as u16, *note as u16, last_vel];
+                        return_rcmb.push(nt_data);
+                }
+            }
+        }
+        else {println!("Error!")}
+        return_rcmb
+    }
     //=========================================================================
-    fn split_by_comma(txt: String) -> Vec<String> {
+    fn convert_doremi_closer(doremi: String, last_nt: u8) -> u8 {
+        if doremi.len() == 0 {return lpnlib::NO_NOTE;}
+        let mut last_doremi = last_nt as i32;
+        while last_doremi >= 12 {last_doremi -= 12;}
+        while last_doremi < 0 {last_doremi += 12;}
+
+        let mut oct_pitch = 0;
+        let mut pure_doremi = String::from("");
+        for (i, ltr) in doremi.chars().enumerate() {
+            if ltr == 'x' {return lpnlib::REST;}
+            else if ltr == '+' {oct_pitch += 12;}
+            else if ltr == '-' {oct_pitch -= 12;}
+            else {
+                pure_doremi = doremi[i..].to_string();
+                break;
+            }
+        }
+
+        let mut base_note = 0;
+        if pure_doremi.len() != 0 {
+            match pure_doremi.chars().nth(0).unwrap_or(' ') {
+                'd' => base_note += 0,
+                'r' => base_note += 2,
+                'm' => base_note += 4,
+                'f' => base_note += 5,
+                's' => base_note += 7,
+                'l' => base_note += 9,
+                't' => base_note += 11,
+                _   => {return lpnlib::NO_NOTE;},
+            }
+        }
+        else {return lpnlib::NO_NOTE;}
+        pure_doremi.remove(0);
+
+        if pure_doremi.len() != 0 {
+            match pure_doremi.chars().nth(0).unwrap_or(' ') {
+                'i' => base_note += 1,
+                'a' => base_note -= 1,
+                _   => (),
+            }
+        }
+
+        let mut base_pitch: i32 = 0;
+        let last_nt32 = last_nt as i32;
+        if oct_pitch == 0 { // +/- が書かれていない場合
+            let mut diff = base_note - last_doremi;
+            if diff < 0 {diff += 12;}
+            if diff > 6 {base_pitch = last_nt32+diff-12;}
+            else {base_pitch = last_nt32+diff;}
+        }
+        else if oct_pitch > 0 { // + 書かれている場合
+            while base_note - last_nt32 >= 12 {base_note -= 12;}
+            while base_note - last_nt32 <= oct_pitch - 12 {base_note += 12;}
+            base_pitch = base_note;
+        }
+        else {  // - 書かれている場合
+            while base_note - last_nt32 <= -12 {base_note += 12;}
+            while base_note - last_nt32 >= oct_pitch + 12 {base_note -= 12;}
+            base_pitch = base_note;
+        }
+        base_pitch as u8
+    }
+    fn convert_doremi_fixed(doremi: String) -> u8 {
+        if doremi.len() == 0 {return lpnlib::NO_NOTE;}
+        let mut base_pitch: i32 = 0;
+        let mut pure_doremi = String::from("");
+        for (i, ltr) in doremi.chars().enumerate() {
+            if ltr == 'x' {return lpnlib::REST;}
+            else if ltr == '+' {base_pitch += 12;}
+            else if ltr == '-' {base_pitch -= 12;}
+            else {
+                pure_doremi = doremi[i..].to_string();
+                break;
+            }
+        }
+        if pure_doremi.len() != 0 {
+            match pure_doremi.chars().nth(0).unwrap_or(' ') {
+                'd' => base_pitch += 0,
+                'r' => base_pitch += 2,
+                'm' => base_pitch += 4,
+                'f' => base_pitch += 5,
+                's' => base_pitch += 7,
+                'l' => base_pitch += 9,
+                't' => base_pitch += 11,
+                _   => {return lpnlib::NO_NOTE;},
+            }
+        }
+        else {return lpnlib::NO_NOTE;}
+
+        if pure_doremi.len() > 1 {
+            match pure_doremi.chars().nth(1).unwrap_or(' ') {
+                'i' => base_pitch += 1,
+                'a' => base_pitch -= 1,
+                _   => ()
+            }
+        }
+        base_pitch as u8
+    }
+    fn convert_exp2vel(vel_text: &str) -> i32 {
+        match vel_text {
+            "ff" => 127,
+            "f"  => 114,
+            "mf" => 100,
+            "mp" => 84,
+            "p"  => 64,
+            "pp" => 48,
+            "ppp"   => 24,
+            "pppp"  => 12,
+            "ppppp" => 1,
+            _    => lpnlib::END_OF_DATA,
+        }
+    }
+    pub fn split_by(splitter: char, txt: String) -> Vec<String> {
         let mut splited: Vec<String> = Vec::new();
         let mut old_locate: usize = 0;
         for (i, ltr) in txt.chars().enumerate() {
-            if ltr == ',' {
+            if ltr == splitter {
                 splited.push((&txt[old_locate..i]).to_string());
                 old_locate = i+1;
             }
@@ -232,11 +510,11 @@ impl TextParse {
         splited.push((&txt[old_locate..txt.len()]).to_string());
         splited
     }
-    pub fn split_by_slash(txt: String) -> Vec<String> {
+    pub fn split_by_by(sp1: char, sp2: char, txt: String) -> Vec<String> {
         let mut splited: Vec<String> = Vec::new();
         let mut old_locate: usize = 0;
         for (i, ltr) in txt.chars().enumerate() {
-            if ltr == '/' {
+            if ltr == sp1 || ltr == sp2 {
                 splited.push((&txt[old_locate..i]).to_string());
                 old_locate = i+1;
             }

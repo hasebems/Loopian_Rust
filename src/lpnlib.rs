@@ -13,7 +13,8 @@ pub const DEFAULT_TICK_FOR_ONE_MEASURE: i32 = 1920;  // 480 * 4
 pub const END_OF_DATA: i32 = -1;
 pub const FULL: i32 = 10000;
 pub const _ALL_PART: u16 = 0xffff;
-pub const _KEEP: u16 = 0;
+pub const KEEP: u16 = 0;
+pub const LAST: u16 = 0x8000;
 pub const _CANCEL: u16 = 0xffff;
 
 //=====================
@@ -42,12 +43,23 @@ pub const ALL_PART_COUNT: usize = MAX_COMPOSITION_PART+MAX_PHRASE_PART+1;
 //=====================
 pub const DEFAULT_BPM: u32 = 100;
 pub const DEFAULT_NOTE_NUMBER: u8 = 60;    // C4
+pub const MAX_NOTE_NUMBER: u8 = 127;
 pub const NO_NOTE: u8 = 255;
+pub const REST: u8 = 254;
 pub const _DEFAULT_VEL: u8 = 100;
 
 //=====================
 // UI->ELPS Message
 //=====================
+//  MSG1st   |  2nd        |  3rd  |
+//------------------------------------
+// MSG_QUIT  | --
+// MSG_START | --
+// MSG_STOP  | --
+// MSG_SET   | MSG2_BPM    |[bpm]| --
+//           | MSG2_BEAT   |[up]|[low]| --
+// MSG_PHR   |[whole_tick] |( TYPE | TICK | DURATION | NOTE | VELOCITY )*n
+// MSG_CMP   |[whole_tick] |
 pub const MSG_QUIT: u16     = 0xffff;
 pub const MSG_START:u16     = 0xfff0;
 pub const MSG_STOP: u16     = 0xfff8;
@@ -73,6 +85,6 @@ pub const VELOCITY: usize   = 4;
 //=====================
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum InputMode {
-    _Fixed,  // 階名のオクターブ位置は固定。絶対位置を指定
+    Fixed,  // 階名のオクターブ位置は固定。絶対位置を指定
     Closer, // 次の階名は近い方のオクターブを選択。遠い方を指示する場合、+/-を使う。
 }

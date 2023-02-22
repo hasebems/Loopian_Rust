@@ -82,7 +82,7 @@ impl LoopianCmd {
         }
         else if len > 5 && &cmnd[0..5] == "beat=" {
             let beat = &cmnd[5..];
-            let numvec = TextParse::split_by_slash(beat.to_string());
+            let numvec = TextParse::split_by('/', beat.to_string());
             match (numvec[0].parse::<u16>(), numvec[1].parse::<u16>()) {
                 (Ok(up),Ok(low)) => {
                     self.gendt.change_beat(up, low);

@@ -54,6 +54,7 @@ pub struct PhraseDataStock {
     raw: String,
     cmpl_nt: Vec<String>,
     cmpl_ex: Vec<String>,
+    rcmb: Vec<Vec<u16>>,
 }
 impl PhraseDataStock {
     pub fn new(part_num: usize) -> Self {
@@ -63,6 +64,7 @@ impl PhraseDataStock {
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
+            rcmb: Vec::new(),
         }
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
@@ -85,9 +87,10 @@ impl PhraseDataStock {
         //self.tick_for_onemsr = tick_for_onemsr;
 
         // 3.recombined data
-        let (_whole_tick, _generated) = TextParse::recombine_to_internal_format(
+        let (_whole_tick, rcmb) = TextParse::recombine_to_internal_format(
             &self.cmpl_nt, &self.cmpl_ex, input_mode,
             self.oct_setting, tick_for_onemsr);
+        self.rcmb = rcmb;
 
 
         // 4.analysed data
