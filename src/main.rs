@@ -22,6 +22,7 @@ pub struct LoopianApp {
     start_time: Instant,
     input_lines: Vec<String>,
     cmd: cmdparse::LoopianCmd,
+    history: usize,
 }
 
 impl LoopianApp {
@@ -66,6 +67,7 @@ impl LoopianApp {
             start_time: Instant::now(), // Current Time
             input_lines: Vec::new(),
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui),
+            history: 0,
         }
     }
     fn init_font(cc: &eframe::CreationContext<'_>) {
@@ -193,6 +195,7 @@ impl LoopianApp {
                 self.input_lines.push(answer.clone());
                 self.input_text = "".to_string();
                 self.input_locate = 0;
+                self.history = self.input_lines.len();
             }
             else {  // The end of the App
                 std::process::exit(0);
@@ -215,13 +218,29 @@ impl LoopianApp {
             if self.input_locate > maxlen { self.input_locate = maxlen;}
             //println!("Key>>{:?}",key);
         }
+        else if key == &Key::ArrowUp {
+            let max_count = self.input_lines.len();
+            if self.history >= 2 {self.history -= 2;}
+            if max_count > 0 && self.history < max_count {
+                self.input_text = self.input_lines[self.history].clone();
+            }
+        }
+        else if key == &Key::ArrowDown {
+            let max_count = self.input_lines.len();
+            if self.history < max_count {self.history += 2;}
+            if max_count > 0 && self.history < max_count {
+                self.input_text = self.input_lines[self.history].clone();
+            }
+            else if self.history >= max_count {
+                self.input_text = "".to_string();
+            }
+        }
     }
     fn input_letter(&mut self, letters: Vec<&String>) {
         if self.input_locate <= Self::CURSOR_MAX_LOCATE {
             //println!("Letters:{:?}",letters);
             letters.iter().for_each(|ltr| {
-                if *ltr==" " {self.input_text.insert_str(self.input_locate,"_");}
-                else         {self.input_text.insert_str(self.input_locate,ltr);}
+                self.input_text.insert_str(self.input_locate,ltr);
                 self.input_locate+=1;
             });
         }
@@ -250,7 +269,8 @@ impl LoopianApp {
         // Draw Letters
         let prompt_mergin: f32 = Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32);
         ui.put( // Prompt
-            Rect { min: Pos2 {x:Self::SPACE_LEFT + 5.0,
+            Rect { 
+                   min: Pos2 {x:Self::SPACE_LEFT + 5.0,
                               y:Self::SPACE3_UPPER + 2.0},
                    max: Pos2 {x:Self::SPACE_LEFT + 5.0 + prompt_mergin,
                               y:Self::SPACE3_LOWER - 3.0},},
@@ -259,14 +279,17 @@ impl LoopianApp {
         );
         let ltrcnt = self.input_text.chars().count();
         let input_mergin: f32 = prompt_mergin + 3.25;
-        ui.put( // User Input
-            Rect { min: Pos2 {x:Self::SPACE_LEFT + 5.0 + input_mergin,
-                              y:Self::SPACE3_UPPER + 2.0},
-                   max: Pos2 {x:Self::SPACE_LEFT + 5.0 + input_mergin + Self::LETTER_WIDTH*(ltrcnt as f32),
-                              y:Self::SPACE3_LOWER - 3.0},},
-            Label::new(RichText::new(&self.input_text)
-                .size(16.0).color(Color32::WHITE).family(FontFamily::Monospace).text_style(TextStyle::Monospace))
-        );
+        for i in 0..ltrcnt {    // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
+            ui.put( // User Input
+                Rect { 
+                    min: Pos2 {x:Self::SPACE_LEFT + 5.0 + input_mergin + Self::LETTER_WIDTH*(i as f32),
+                               y:Self::SPACE3_UPPER + 2.0},
+                    max: Pos2 {x:Self::SPACE_LEFT + 5.0 + input_mergin + Self::LETTER_WIDTH*((i+1) as f32),
+                               y:Self::SPACE3_LOWER - 3.0},},
+                Label::new(RichText::new(&self.input_text[i..i+1])
+                    .size(16.0).color(Color32::WHITE).family(FontFamily::Monospace).text_style(TextStyle::Monospace))
+            );
+        }
     }
 }
 

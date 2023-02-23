@@ -233,7 +233,7 @@ impl ElapseStack {
     }
     fn call_registered_cmnd(&mut self) {
         for reg in &self.registered_cmnd {
-            println!("registered cmnd!");
+            //println!("registered cmnd!");
             let (msg, dt, rmv_id) = *reg;
             for elps in self.elapse_vec.iter() {
                 if elps.borrow().id() != rmv_id {

@@ -45,7 +45,6 @@ impl SeqDataStock {
     }
 }
 pub struct PhraseDataStock {
-    part_num: usize,
     oct_setting: i32,
     raw: String,
     cmpl_nt: Vec<String>,
@@ -56,7 +55,6 @@ pub struct PhraseDataStock {
 impl Default for PhraseDataStock {
     fn default() -> Self {
         Self {
-            part_num: 0,
             oct_setting: 0,
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
