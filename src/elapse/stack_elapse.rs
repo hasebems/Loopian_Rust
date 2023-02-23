@@ -257,15 +257,15 @@ impl ElapseStack {
         }
     }
     fn update_gui(&mut self) {
-        if self.crnt_time-self.display_time > Duration::from_millis(50) {
+        if self.crnt_time-self.display_time > Duration::from_millis(20) {
             self.display_time = self.crnt_time;
             // tick
             let (m,b,t,_c) = self.tg.get_tick();
-            let beat_disp = "3".to_owned() + &m.to_string() + " : " + &b.to_string() + " : " + &t.to_string();
+            let beat_disp = format!("3{} : {} : {:>03}",m,b,t);
             self.send_msg_to_ui(&beat_disp);
             // bpm
             let bpm_num = self.tg.get_bpm();
-            let bpm_disp = "1".to_owned() + &bpm_num.to_string();
+            let bpm_disp = format!("1{}",bpm_num);
             self.send_msg_to_ui(&bpm_disp);
             //<<DoItLater>> その他の表示
         }

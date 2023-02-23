@@ -142,15 +142,19 @@ impl LoopianApp {
                 );
                 let tx = self.text_for_eight_indicator(i + j*4);
                 let ltrcnt = tx.chars().count();
-                ui.put(
-                    Rect { min: Pos2 {x:Self::SPACE_LEFT + 10.0 + raw,
-                                      y:Self::SPACE1_UPPER + 2.0 + line},
-                           max: Pos2 {x:Self::SPACE_LEFT + 10.0 + raw + Self::LETTER_WIDTH*(ltrcnt as f32),
-                                      y:Self::SPACE1_UPPER + 27.0 + line},},
-                    Label::new(RichText::new(&tx)
-                        .size(16.0).color(Color32::from_rgb(48,48,48))
-                        .family(FontFamily::Monospace).text_style(TextStyle::Monospace))
-                );
+                for i in 0..ltrcnt {
+                    ui.put(Rect {
+                        min: Pos2 {
+                            x:Self::SPACE_LEFT + 10.0 + raw + Self::LETTER_WIDTH*(i as f32),
+                            y:Self::SPACE1_UPPER + 2.0 + line},
+                        max: Pos2 {
+                            x:Self::SPACE_LEFT + 10.0 + raw + Self::LETTER_WIDTH*((i+1) as f32),
+                            y:Self::SPACE1_UPPER + 27.0 + line},},
+                        Label::new(RichText::new(&tx[i..i+1])
+                            .size(16.0).color(Color32::from_rgb(48,48,48))
+                            .family(FontFamily::Monospace).text_style(TextStyle::Monospace))
+                    );
+                }
             }
         }
     }
