@@ -137,6 +137,11 @@ impl LoopianCmd {
     }
     fn letter_bracket(&mut self, input_text: &str) -> Option<String> {
         if self.gendt.set_raw_phrase(self.input_part, input_text.to_string()) {
+            let mut msg: Vec<u16> = vec![lpnlib::MSG_PHR+self.input_part as u16];
+            let pdstk = self.gendt.get_pdstk(self.input_part);
+            let mut pdt: Vec<u16> = pdstk.get_final();
+            msg.append(&mut pdt);
+            self.send_msg_to_elapse(msg);
             Some("Set Phrase!".to_string())
         } else {
             Some("what?".to_string())

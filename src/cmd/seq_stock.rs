@@ -9,7 +9,7 @@ use super::txt2seq::*;
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
 pub struct SeqDataStock {
-    pdt: [Option<Box<PhraseDataStock>>; lpnlib::MAX_USER_PART],
+    pdt: [PhraseDataStock; lpnlib::MAX_USER_PART],
     _cdt: [Option<Box<CompositionDataStock>>; lpnlib::MAX_USER_PART],
     input_mode: lpnlib::InputMode,
     tick_for_onemsr: i32,
@@ -25,12 +25,11 @@ impl SeqDataStock {
             tick_for_onebeat: lpnlib::DEFAULT_TICK_FOR_QUARTER,
         }
     }
+    pub fn get_pdstk(&self, part: usize) -> &PhraseDataStock {&self.pdt[part]}
     pub fn set_raw_phrase(&mut self, part: usize, input_text: String) -> bool {
         if part < lpnlib::MAX_USER_PART {
-            let mut pd = Box::new(PhraseDataStock::new(part));
-            if pd.set_raw(input_text) {
-                pd.set_recombined(self.input_mode, self.tick_for_onemsr);
-                self.pdt[part] = Some(pd);
+            if self.pdt[part].set_raw(input_text) {
+                self.pdt[part].set_recombined(self.input_mode, self.tick_for_onemsr);
                 return true
             }
         }
@@ -38,9 +37,6 @@ impl SeqDataStock {
     }
     pub fn _set_raw_composition(&self, _part: usize, _input_text: String) -> bool {
         false
-    }
-    pub fn _set_recombined(&self) {
-
     }
     pub fn change_beat(&mut self, beat_count: u16, base_note: u16) {
         println!("beat: {}/{}",beat_count, base_note);
@@ -55,17 +51,28 @@ pub struct PhraseDataStock {
     cmpl_nt: Vec<String>,
     cmpl_ex: Vec<String>,
     rcmb: Vec<Vec<u16>>,
+    whole_tick: i32,
 }
-impl PhraseDataStock {
-    pub fn new(part_num: usize) -> Self {
+impl Default for PhraseDataStock {
+    fn default() -> Self {
         Self {
-            part_num,
+            part_num: 0,
             oct_setting: 0,
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
             rcmb: Vec::new(),
+            whole_tick: 0,
         }
+    }
+}
+impl PhraseDataStock {
+    pub fn get_final(&self) -> Vec<u16> {
+        let mut ret_rcmb: Vec<u16> = vec![self.whole_tick as u16];
+        for ev in self.rcmb.iter() {
+            ret_rcmb.append(&mut ev.clone());
+        }
+        ret_rcmb
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
         // 1.raw
@@ -87,11 +94,11 @@ impl PhraseDataStock {
         //self.tick_for_onemsr = tick_for_onemsr;
 
         // 3.recombined data
-        let (_whole_tick, rcmb) = TextParse::recombine_to_internal_format(
+        let (whole_tick, rcmb) = TextParse::recombine_to_internal_format(
             &self.cmpl_nt, &self.cmpl_ex, input_mode,
             self.oct_setting, tick_for_onemsr);
         self.rcmb = rcmb;
-
+        self.whole_tick = whole_tick;
 
         // 4.analysed data
         // 5.humanized data

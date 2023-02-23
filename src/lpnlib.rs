@@ -13,8 +13,8 @@ pub const DEFAULT_TICK_FOR_ONE_MEASURE: i32 = 1920;  // 480 * 4
 pub const END_OF_DATA: i32 = -1;
 pub const FULL: i32 = 10000;
 pub const _ALL_PART: u16 = 0xffff;
-pub const KEEP: u16 = 0;
-pub const LAST: u16 = 0x8000;
+pub const KEEP: i32 = 0;
+pub const LAST: i32 = 10000;
 pub const _CANCEL: u16 = 0xffff;
 
 //=====================
@@ -42,11 +42,12 @@ pub const ALL_PART_COUNT: usize = MAX_COMPOSITION_PART+MAX_PHRASE_PART+1;
 // default value
 //=====================
 pub const DEFAULT_BPM: u32 = 100;
-pub const DEFAULT_NOTE_NUMBER: u8 = 60;    // C4
-pub const MAX_NOTE_NUMBER: u8 = 127;
+pub const DEFAULT_NOTE_NUMBER: u8 = 60;     // C4
+pub const MAX_NOTE_NUMBER: u8 = 108;        // C8
+pub const MIN_NOTE_NUMBER: u8 = 21;         // A0
 pub const NO_NOTE: u8 = 255;
 pub const REST: u8 = 254;
-pub const _DEFAULT_VEL: u8 = 100;
+pub const DEFAULT_VEL: u8 = 100;
 
 //=====================
 // UI->ELPS Message
@@ -70,15 +71,19 @@ pub const MSG2_BEAT: u16    = 0x0002;
 pub const MSG_PART_MASK: u16 = 0xfff0;
 pub const MSG_PHR: u16      = 0x1000;   // 1桁目にパート番号
 pub const _MSG_CMP: u16     = 0x2000;   // 1桁目にパート番号
+pub const MSG_PHR_HEADER: usize = 2;
 
 pub const TYPE: usize       = 0;
 pub const _TYPE_ID: u16     = 0xf000;
 pub const TYPE_NOTE: u16    = 0xf001;
-pub const TYPE_DAMPER: u16  = 0xf002;
+pub const TYPE_NOTE_SIZE: usize = 5;
 pub const TICK: usize       = 1;
 pub const DURATION: usize   = 2;
 pub const NOTE: usize       = 3;
 pub const VELOCITY: usize   = 4;
+
+pub const TYPE_DAMPER: u16  = 0xf002;
+
 
 //=====================
 // Enum

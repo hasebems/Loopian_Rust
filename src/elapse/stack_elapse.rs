@@ -177,19 +177,21 @@ impl ElapseStack {
     fn phrase(&mut self, msg: Vec<u16>) {
         // message の２次元化
         let part_num: usize = (msg[0] & !lpnlib::MSG_PART_MASK) as usize;
+        let whole_tick: u16 = msg[1];
         let mut phr_vec: Vec<Vec<u16>> = Vec::new();
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
+            let index = |x, cnt| {x+lpnlib::MSG_PHR_HEADER+cnt*lpnlib::TYPE_NOTE_SIZE};
             let mut vtmp: Vec<u16> = Vec::new();
-            for i in 0..5 {
-                vtmp.push(msg[1+i+msg_cnt*5]);
+            for i in 0..lpnlib::TYPE_NOTE_SIZE {
+                vtmp.push(msg[index(i,msg_cnt)]);
             }
             phr_vec.push(vtmp);
             msg_cnt += 1;
-            if msg_size <= 1+msg_cnt*5 {break;}
+            if msg_size <= index(0,msg_cnt) {break;}
         }
-        self.part_vec[part_num+4].borrow_mut().rcv_msg(phr_vec);
+        self.part_vec[part_num+4].borrow_mut().rcv_msg(phr_vec, whole_tick);
     }
     fn _composition(&mut self, _msg: Vec<u16>) {}
     fn parse_msg(&mut self, msg: Vec<u16>) {

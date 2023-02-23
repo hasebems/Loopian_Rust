@@ -27,6 +27,7 @@ pub struct Part {
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     loop_cntr: u32,
     new_data_stock: Option<Vec<Vec<u16>>>,
+    whole_tick_stock: u16,
 
     state_reserve: bool,
     sync_next_msr_flag: bool,
@@ -117,6 +118,7 @@ impl Part {
             loop_phrase: None,
             loop_cntr: 1,
             new_data_stock: None,
+            whole_tick_stock: 0,
             state_reserve: false,
             sync_next_msr_flag: false,
         }))
@@ -131,10 +133,11 @@ impl Part {
             None => None,
         }
     }
-    pub fn rcv_msg(&mut self, msg: Vec<Vec<u16>>) {
+    pub fn rcv_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
         println!("Msg: {:?}", msg);
         self.new_data_stock = Some(msg);
         self.state_reserve = true;
+        self.whole_tick_stock = whole_tick;
     }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack) {
         // 新たに Loop Obj.を生成
@@ -143,9 +146,9 @@ impl Part {
             self.first_measure_num = msr;    // 計測開始の更新
 
             //<<DoItLater>>
-            // 新しい data から、whole_tick, ana データを取得
+            // 新しい data から、ana データを取得
             //elm, ana = self.seqdt_part.get_final(msr)
-            self.whole_tick = 1;
+            self.whole_tick = self.whole_tick_stock as i32;
 
             // その時の beat 情報で、whole_tick を loop_measure に換算
             let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};

@@ -171,14 +171,16 @@ impl TextParse {
         let mut last_nt: u8 = 0;
         let mut tick: i32 = 0;
         let mut msr: i32 = 1;
+        let mut base_dur: i32 = lpnlib::DEFAULT_TICK_FOR_QUARTER;
         let mut rcmb: Vec<Vec<u16>> = Vec::new();
 
         while read_ptr < max_read_ptr {
             let note_text = ntvec[read_ptr].clone();
 
-            let (notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
-              = TextParse::break_up_nt_dur_vel(note_text, oct_setting, last_nt, imd);
+            let (notes, mes_end, bdur, dur_cnt, diff_vel, nt)
+              = TextParse::break_up_nt_dur_vel(note_text, oct_setting, last_nt, base_dur, imd);
 
+            base_dur = bdur;
             if nt <= 127 {last_nt = nt;}    // 次回の音程の上下判断のため
             let next_msr_tick = tick_for_onemsr*msr;
             if tick < next_msr_tick {
@@ -203,6 +205,7 @@ impl TextParse {
             }
             read_ptr += 1;  // out from repeat
         }
+        println!("recombined_phrase: {:?} whole_tick: {:?}",rcmb,tick);
         (tick, rcmb)
     }
     fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
@@ -215,10 +218,11 @@ impl TextParse {
                 break;
             }
         }
+        if vel == lpnlib::END_OF_DATA {vel=lpnlib::DEFAULT_VEL as i32;}
         (vel, retvec)
     }
-    fn break_up_nt_dur_vel(note_text: String, oct_setting: i32, last_nt: u8, imd: lpnlib::InputMode)
-      -> (Vec<u8>, bool, u16, u16, u8, u8) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
+    fn break_up_nt_dur_vel(note_text: String, oct_setting: i32, last_nt: u8, bdur: i32, imd: lpnlib::InputMode)
+      -> (Vec<u8>, bool, i32, u16, u8, u8) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
 
         //  小節線のチェック
         let mut mes_end = false;
@@ -229,26 +233,27 @@ impl TextParse {
         }
 
         //  duration 情報、 Velocity 情報の抽出
-        let (ntext3, base_dur, dur_cnt) = TextParse::gen_dur_info(ntext1);
+        let (ntext3, base_dur, dur_cnt) = TextParse::gen_dur_info(ntext1, bdur);
         let (ntext4, diff_vel) = TextParse::gen_diff_vel(ntext3);
         let notes_vec: Vec<String> = TextParse::split_by_by('=', '_', ntext4);
 
         let mut notes: Vec<u8> = Vec::new();
-        let mut doremi = 0;
+        let mut doremi: i32 = 0;
         for nt in notes_vec.iter() {    // 同時発音
             if imd == lpnlib::InputMode::Fixed {
                 doremi = TextParse::convert_doremi_fixed(nt.to_string());
             }
             else if imd == lpnlib::InputMode::Closer {
-                doremi = TextParse::convert_doremi_closer(nt.to_string(), last_nt);
+                doremi = TextParse::convert_doremi_closer(nt.to_string(), last_nt as i32);
             }
-            let mut base_pitch = oct_setting as u8 + doremi;
-            if base_pitch >= lpnlib::MAX_NOTE_NUMBER {base_pitch = lpnlib::MAX_NOTE_NUMBER;}
-            notes.push(base_pitch);
+            let mut base_pitch: i32 = oct_setting*12 + lpnlib::DEFAULT_NOTE_NUMBER as i32 + doremi as i32;
+            if base_pitch >= lpnlib::MAX_NOTE_NUMBER as i32 {base_pitch = lpnlib::MAX_NOTE_NUMBER as i32;}
+            else if base_pitch < lpnlib::MIN_NOTE_NUMBER as i32 {base_pitch = lpnlib::MIN_NOTE_NUMBER as i32;}
+            notes.push(base_pitch as u8);
         }
-        (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi)
+        (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi as u8)
     }
-    fn gen_dur_info(nt: String) -> (String, u16, u16) {
+    fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, u16) {
         // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
         // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
         let mut excnt = 0;
@@ -260,7 +265,7 @@ impl TextParse {
             }
         }
         let mut ntext = nt[excnt..].to_string();
-        let mut base_dur = lpnlib::KEEP;
+        let mut base_dur = bdur;
         let mut dur_cnt: u16 = 1;
 
         //  タイなどの音価を解析し、dur_cnt を確定
@@ -274,7 +279,7 @@ impl TextParse {
                 loop {
                     let length = ntext.len();
                     if length == 0 {break;}
-                    let ltr = ntext.chars().nth(length).unwrap_or(' ');
+                    let ltr = ntext.chars().nth(length-1).unwrap_or(' ');
                     if ltr == '.' || ltr == '~' {
                         dur_cnt += 1;
                         ntext.pop();
@@ -306,7 +311,7 @@ impl TextParse {
             else if fst_ltr == 'h' {base_dur = 960;}
             else {idx = 0;}
             if triplet != 0 {
-                base_dur = base_dur*2/triplet;
+                base_dur = base_dur*2/triplet as i32;
                 idx = 2;
             }
             ntext = ntext[idx..].to_string();
@@ -334,15 +339,15 @@ impl TextParse {
         }
         (ntext, diff_vel)
     }
-    fn get_real_dur(base_dur: u16, dur_cnt: u16, rest_tick: i32) -> i32 {
+    fn get_real_dur(base_dur: i32, dur_cnt: u16, rest_tick: i32) -> i32 {
         if base_dur == lpnlib::LAST {
             rest_tick
         }
         else if base_dur == lpnlib::KEEP {
-            (base_dur*dur_cnt) as i32
+            base_dur*dur_cnt as i32
         }
         else {
-            (base_dur*dur_cnt) as i32
+            base_dur*dur_cnt as i32
         }
     }
     fn trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
@@ -377,7 +382,7 @@ impl TextParse {
                 }
                 else {
                     let nt_data: Vec<u16> = 
-                        vec![lpnlib::TYPE_NOTE, note_dur as u16, tick as u16, *note as u16, last_vel];
+                        vec![lpnlib::TYPE_NOTE, tick as u16, note_dur as u16, *note as u16, last_vel];
                         return_rcmb.push(nt_data);
                 }
             }
@@ -386,16 +391,16 @@ impl TextParse {
         return_rcmb
     }
     //=========================================================================
-    fn convert_doremi_closer(doremi: String, last_nt: u8) -> u8 {
-        if doremi.len() == 0 {return lpnlib::NO_NOTE;}
-        let mut last_doremi = last_nt as i32;
+    fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
+        if doremi.len() == 0 {return lpnlib::NO_NOTE as i32;}
+        let mut last_doremi = last_nt;
         while last_doremi >= 12 {last_doremi -= 12;}
         while last_doremi < 0 {last_doremi += 12;}
 
         let mut oct_pitch = 0;
         let mut pure_doremi = String::from("");
         for (i, ltr) in doremi.chars().enumerate() {
-            if ltr == 'x' {return lpnlib::REST;}
+            if ltr == 'x' {return lpnlib::REST as i32;}
             else if ltr == '+' {oct_pitch += 12;}
             else if ltr == '-' {oct_pitch -= 12;}
             else {
@@ -414,10 +419,10 @@ impl TextParse {
                 's' => base_note += 7,
                 'l' => base_note += 9,
                 't' => base_note += 11,
-                _   => {return lpnlib::NO_NOTE;},
+                _   => {return lpnlib::NO_NOTE as i32;},
             }
         }
-        else {return lpnlib::NO_NOTE;}
+        else {return lpnlib::NO_NOTE as i32;}
         pure_doremi.remove(0);
 
         if pure_doremi.len() != 0 {
@@ -428,32 +433,31 @@ impl TextParse {
             }
         }
 
-        let mut base_pitch: i32 = 0;
-        let last_nt32 = last_nt as i32;
+        let base_pitch: i32;
         if oct_pitch == 0 { // +/- が書かれていない場合
             let mut diff = base_note - last_doremi;
             if diff < 0 {diff += 12;}
-            if diff > 6 {base_pitch = last_nt32+diff-12;}
-            else {base_pitch = last_nt32+diff;}
+            if diff > 6 {base_pitch = last_nt+diff-12;}
+            else {base_pitch = last_nt+diff;}
         }
         else if oct_pitch > 0 { // + 書かれている場合
-            while base_note - last_nt32 >= 12 {base_note -= 12;}
-            while base_note - last_nt32 <= oct_pitch - 12 {base_note += 12;}
+            while base_note - last_nt >= 12 {base_note -= 12;}
+            while base_note - last_nt <= oct_pitch - 12 {base_note += 12;}
             base_pitch = base_note;
         }
         else {  // - 書かれている場合
-            while base_note - last_nt32 <= -12 {base_note += 12;}
-            while base_note - last_nt32 >= oct_pitch + 12 {base_note -= 12;}
+            while base_note - last_nt <= -12 {base_note += 12;}
+            while base_note - last_nt >= oct_pitch + 12 {base_note -= 12;}
             base_pitch = base_note;
         }
-        base_pitch as u8
+        base_pitch
     }
-    fn convert_doremi_fixed(doremi: String) -> u8 {
-        if doremi.len() == 0 {return lpnlib::NO_NOTE;}
+    fn convert_doremi_fixed(doremi: String) -> i32 {
+        if doremi.len() == 0 {return lpnlib::NO_NOTE as i32;}
         let mut base_pitch: i32 = 0;
         let mut pure_doremi = String::from("");
         for (i, ltr) in doremi.chars().enumerate() {
-            if ltr == 'x' {return lpnlib::REST;}
+            if ltr == 'x' {return lpnlib::REST as i32;}
             else if ltr == '+' {base_pitch += 12;}
             else if ltr == '-' {base_pitch -= 12;}
             else {
@@ -470,10 +474,10 @@ impl TextParse {
                 's' => base_pitch += 7,
                 'l' => base_pitch += 9,
                 't' => base_pitch += 11,
-                _   => {return lpnlib::NO_NOTE;},
+                _   => {return lpnlib::NO_NOTE as i32;},
             }
         }
-        else {return lpnlib::NO_NOTE;}
+        else {return lpnlib::NO_NOTE as i32;}
 
         if pure_doremi.len() > 1 {
             match pure_doremi.chars().nth(1).unwrap_or(' ') {
@@ -482,7 +486,7 @@ impl TextParse {
                 _   => ()
             }
         }
-        base_pitch as u8
+        base_pitch
     }
     fn convert_exp2vel(vel_text: &str) -> i32 {
         match vel_text {
