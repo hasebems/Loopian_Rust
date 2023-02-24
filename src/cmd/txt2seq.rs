@@ -168,7 +168,7 @@ impl TextParse {
         let max_read_ptr = ntvec.len();
         let (exp_vel, exp_others) = TextParse::get_exp_info(expvec.clone());
         let mut read_ptr = 0;
-        let mut last_nt: u8 = 0;
+        let mut last_nt: i32 = 0;
         let mut tick: i32 = 0;
         let mut msr: i32 = 1;
         let mut base_dur: i32 = lpnlib::DEFAULT_TICK_FOR_QUARTER;
@@ -177,11 +177,11 @@ impl TextParse {
         while read_ptr < max_read_ptr {
             let note_text = ntvec[read_ptr].clone();
 
-            let (notes, mes_end, bdur, dur_cnt, diff_vel, nt)
+            let (notes, mes_end, bdur, dur_cnt, diff_vel, lnt)
               = TextParse::break_up_nt_dur_vel(note_text, oct_setting, last_nt, base_dur, imd);
-
             base_dur = bdur;
-            if nt <= 127 {last_nt = nt;}    // 次回の音程の上下判断のため
+            last_nt = lnt;    // 次回の音程の上下判断のため
+
             let next_msr_tick = tick_for_onemsr*msr;
             if tick < next_msr_tick {
                 let real_dur = TextParse::get_real_dur(base_dur, dur_cnt,
@@ -191,7 +191,7 @@ impl TextParse {
                 let note_dur = TextParse::trans_dur(real_dur, &exp_others);
     
                 // velocity
-                let mut last_vel: i32 = exp_vel + diff_vel as i32;
+                let mut last_vel: i32 = exp_vel + diff_vel;
                 if last_vel > 127 {last_vel = 127;}
                 else if last_vel < 1 {last_vel = 1;}
 
@@ -221,8 +221,8 @@ impl TextParse {
         if vel == lpnlib::END_OF_DATA {vel=lpnlib::DEFAULT_VEL as i32;}
         (vel, retvec)
     }
-    fn break_up_nt_dur_vel(note_text: String, oct_setting: i32, last_nt: u8, bdur: i32, imd: lpnlib::InputMode)
-      -> (Vec<u8>, bool, i32, i32, u8, u8) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
+    fn break_up_nt_dur_vel(note_text: String, oct_setting: i32, last_nt: i32, bdur: i32, imd: lpnlib::InputMode)
+      -> (Vec<u8>, bool, i32, i32, i32, i32) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
 
         //  小節線のチェック
         let mut mes_end = false;
@@ -244,14 +244,14 @@ impl TextParse {
                 doremi = TextParse::convert_doremi_fixed(nt.to_string());
             }
             else if imd == lpnlib::InputMode::Closer {
-                doremi = TextParse::convert_doremi_closer(nt.to_string(), last_nt as i32);
+                doremi = TextParse::convert_doremi_closer(nt.to_string(), last_nt);
             }
-            let mut base_pitch: i32 = oct_setting*12 + lpnlib::DEFAULT_NOTE_NUMBER as i32 + doremi as i32;
+            let mut base_pitch: i32 = oct_setting*12 + lpnlib::DEFAULT_NOTE_NUMBER as i32 + doremi;
             if base_pitch >= lpnlib::MAX_NOTE_NUMBER as i32 {base_pitch = lpnlib::MAX_NOTE_NUMBER as i32;}
             else if base_pitch < lpnlib::MIN_NOTE_NUMBER as i32 {base_pitch = lpnlib::MIN_NOTE_NUMBER as i32;}
             notes.push(base_pitch as u8);
         }
-        (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi as u8)
+        (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi)
     }
     fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
@@ -323,7 +323,7 @@ impl TextParse {
         }
         (ntext, base_dur, dur_cnt)
     }
-    fn gen_diff_vel(nt: String) -> (String, u8) {
+    fn gen_diff_vel(nt: String) -> (String, i32) {
         let mut ntext = nt;
         let mut diff_vel = 0;
         let mut last_ltr = ntext.chars().nth(ntext.len()-1).unwrap_or(' ');
