@@ -134,7 +134,7 @@ impl Part {
         }
     }
     pub fn rcv_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
-        println!("Msg: {:?}", msg);
+        //println!("Msg: {:?}", msg);
         self.new_data_stock = Some(msg);
         self.state_reserve = true;
         self.whole_tick_stock = whole_tick;
@@ -164,8 +164,8 @@ impl Part {
 
             let part_num = self.id.sid;
             if part_num >= lpnlib::FIRST_PHRASE_PART as u32 {
-                let lp = PhraseLoop::new(self.loop_cntr, part_num, self.keynote,
-                    msr, phr.to_vec());
+                let lp = PhraseLoop::new(self.loop_cntr, part_num, 
+                    self.keynote, msr, phr.to_vec(), self.whole_tick);
                 self.loop_phrase = Some(Rc::clone(&lp));
                 //<<DoItLater>> 引数の追加
                 //    self.est, self.md, msr, elm, ana,  \
@@ -174,7 +174,8 @@ impl Part {
                 self.loop_cntr += 1;
             }
             else {
-                let lp = CompositionLoop::new(self.loop_cntr, part_num, self.keynote, msr);
+                let lp = CompositionLoop::new(self.loop_cntr, part_num, 
+                    self.keynote, msr, self.whole_tick);
                 self.loop_comp = Some(Rc::clone(&lp));
                 //<<DoItLater>> 引数の追加
                 //    self.est, self.md, msr, elm, ana, \

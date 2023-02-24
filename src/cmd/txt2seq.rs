@@ -222,7 +222,7 @@ impl TextParse {
         (vel, retvec)
     }
     fn break_up_nt_dur_vel(note_text: String, oct_setting: i32, last_nt: u8, bdur: i32, imd: lpnlib::InputMode)
-      -> (Vec<u8>, bool, i32, u16, u8, u8) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
+      -> (Vec<u8>, bool, i32, i32, u8, u8) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
 
         //  小節線のチェック
         let mut mes_end = false;
@@ -253,7 +253,7 @@ impl TextParse {
         }
         (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi as u8)
     }
-    fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, u16) {
+    fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
         // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
         let mut excnt = 0;
@@ -266,13 +266,13 @@ impl TextParse {
         }
         let mut ntext = nt[excnt..].to_string();
         let mut base_dur = bdur;
-        let mut dur_cnt: u16 = 1;
+        let mut dur_cnt: i32 = 1;
 
         //  タイなどの音価を解析し、dur_cnt を確定
         let txtlen = ntext.len(); 
         if txtlen > 0 {
             if ntext.chars().nth(txtlen-1).unwrap_or(' ') == 'o' {
-                base_dur = lpnlib::LAST;
+                dur_cnt = lpnlib::LAST;
                 ntext.pop();
             }
             else {
@@ -339,8 +339,8 @@ impl TextParse {
         }
         (ntext, diff_vel)
     }
-    fn get_real_dur(base_dur: i32, dur_cnt: u16, rest_tick: i32) -> i32 {
-        if base_dur == lpnlib::LAST {
+    fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
+        if dur_cnt == lpnlib::LAST {
             rest_tick
         }
         else if base_dur == lpnlib::KEEP {

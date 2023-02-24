@@ -86,7 +86,7 @@ impl Loop for PhraseLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl PhraseLoop {
-    pub fn new(sid: u32, pid: u32, knt: u8, msr: i32, msg: Vec<Vec<u16>>) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, knt: u8, msr: i32, msg: Vec<Vec<u16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_LOOP,
@@ -96,7 +96,7 @@ impl PhraseLoop {
             next_tick_in_phrase: 0,
             _last_note: lpnlib::NO_NOTE,
             // for super's member
-            whole_tick: 1920,
+            whole_tick,
             destroy: false,
             first_msr_num: msr,
             next_msr: 0,
@@ -141,7 +141,7 @@ impl PhraseLoop {
         }
 
         self.play_counter = trace;
-        return next_tick;
+        next_tick
     }
 }
 
@@ -213,7 +213,7 @@ impl Loop for CompositionLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl CompositionLoop {
-    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_LOOP,
@@ -227,7 +227,7 @@ impl CompositionLoop {
             _root: 0,
             _translation_tbl: Vec::new(),
             // for super's member
-            whole_tick: 0,
+            whole_tick,
             destroy: false,
             first_msr_num: msr,
             next_msr: 0,   //   次に呼ばれる小節番号が保持される
