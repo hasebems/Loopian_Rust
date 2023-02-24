@@ -23,7 +23,7 @@ pub struct Part {
     next_tick: i32,
     max_loop_msr: i32,
     whole_tick: i32,
-    loop_comp: Option<Rc<RefCell<CompositionLoop>>>,
+    loop_cmps: Option<Rc<RefCell<CompositionLoop>>>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     loop_cntr: u32,
     new_data_stock: Option<Vec<Vec<u16>>>,
@@ -74,9 +74,9 @@ impl Elapse for Part {
                     estk.del_elapse(lp.borrow().id());
                     self.loop_phrase = None;
                 }
-                if let Some(lp) = &self.loop_comp {
+                if let Some(lp) = &self.loop_cmps {
                     estk.del_elapse(lp.borrow().id());
-                    self.loop_comp = None;
+                    self.loop_cmps = None;
                 }
                 self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
             }
@@ -114,7 +114,7 @@ impl Part {
             next_tick: 0,
             max_loop_msr: 0,
             whole_tick: 0,     // max_loop_msr と同時生成
-            loop_comp: None,
+            loop_cmps: None,
             loop_phrase: None,
             loop_cntr: 1,
             new_data_stock: None,
@@ -127,8 +127,8 @@ impl Part {
         self.keynote = knt;          // 0-11
         self.state_reserve = true;
     }
-    pub fn _get_comp(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
-        match &self.loop_comp {
+    pub fn _get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
+        match &self.loop_cmps {
             Some(lc) => Some(Rc::clone(&lc)),
             None => None,
         }
@@ -158,7 +158,7 @@ impl Part {
             if self.whole_tick == 0 {
                 self.state_reserve = true; // 次小節冒頭で呼ばれるように
                 self.loop_phrase = None;
-                self.loop_comp = None;
+                self.loop_cmps = None;
                 return;
             }
 
@@ -176,7 +176,7 @@ impl Part {
             else {
                 let lp = CompositionLoop::new(self.loop_cntr, part_num, 
                     self.keynote, msr, self.whole_tick);
-                self.loop_comp = Some(Rc::clone(&lp));
+                self.loop_cmps = Some(Rc::clone(&lp));
                 //<<DoItLater>> 引数の追加
                 //    self.est, self.md, msr, elm, ana, \
                 //    self.keynote, self.whole_tick, part_num);

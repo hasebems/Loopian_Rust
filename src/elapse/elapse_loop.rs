@@ -151,11 +151,11 @@ pub struct CompositionLoop {
     id: ElapseId,
     priority: u32,
 
-    comp_dt: Option<Vec<Vec<u16>>>,
+    cmps_dt: Option<Vec<Vec<u16>>>,
     //analys_dt:
     _keynote: u8,
     play_counter: usize,
-    next_tick_in_comp: i32,
+    next_tick_in_cmps: i32,
     // for Composition
     _chord_name: String,
     _root: u8,
@@ -187,20 +187,20 @@ impl Elapse for CompositionLoop {
             return
         }
 
-        if elapsed_tick >= self.next_tick_in_comp {
+        if elapsed_tick >= self.next_tick_in_cmps {
             let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
             if next_tick == lpnlib::END_OF_DATA {
                 // Composition Loop はイベントが終わっても、コード情報が終了するまで Loop が存在するようにしておく
-                while self.whole_tick - self.next_tick_in_comp >= crnt_.tick_for_onemsr {
-                    self.next_tick_in_comp += crnt_.tick_for_onemsr;
+                while self.whole_tick - self.next_tick_in_cmps >= crnt_.tick_for_onemsr {
+                    self.next_tick_in_cmps += crnt_.tick_for_onemsr;
                     self.next_msr += 1;
                 }
-                self.next_tick_in_comp = self.whole_tick;
+                self.next_tick_in_cmps = self.whole_tick;
                 self.next_tick = crnt_.tick_for_onemsr;
             }
             else {
-                self.next_tick_in_comp = next_tick;
-                let (next_msr, next_tick) = self.gen_msr_tick(crnt_, self.next_tick_in_comp);
+                self.next_tick_in_cmps = next_tick;
+                let (next_msr, next_tick) = self.gen_msr_tick(crnt_, self.next_tick_in_cmps);
                 self.next_msr = next_msr;
                 self.next_tick = next_tick;
             }
@@ -217,11 +217,11 @@ impl CompositionLoop {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_LOOP,
-            comp_dt: None,
+            cmps_dt: None,
             //analys_dt:
             _keynote: knt,
             play_counter: 0,
-            next_tick_in_comp: 0,
+            next_tick_in_cmps: 0,
 
             _chord_name: "".to_string(),
             _root: 0,
@@ -241,15 +241,15 @@ impl CompositionLoop {
         let mut trace: usize = self.play_counter;
         let mut next_tick: i32;
         loop {
-            if let Some(comp) = &self.comp_dt {
-                let max_ev: usize = comp.len();
+            if let Some(cmps) = &self.cmps_dt {
+                let max_ev: usize = cmps.len();
                 if max_ev <= trace {
                     next_tick = lpnlib::END_OF_DATA;   // means sequence finished
                     break
                 }
-                next_tick = comp[trace][lpnlib::TICK] as i32;
+                next_tick = cmps[trace][lpnlib::TICK] as i32;
                 if next_tick <= elapsed_tick {
-                    self.prepare_note_translation(comp[trace].clone());
+                    self.prepare_note_translation(cmps[trace].clone());
                 }
                 else {break;}
                 trace += 1;

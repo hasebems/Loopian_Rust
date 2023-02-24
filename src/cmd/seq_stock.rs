@@ -4,13 +4,13 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib;
-use super::txt2seq::*;
+use super::txt2seq_phr::*;
 
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
 pub struct SeqDataStock {
     pdt: [PhraseDataStock; lpnlib::MAX_USER_PART],
-    _cdt: [Option<Box<CompositionDataStock>>; lpnlib::MAX_USER_PART],
+    _cdt: [CompositionDataStock; lpnlib::MAX_USER_PART],
     input_mode: lpnlib::InputMode,
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
@@ -107,8 +107,8 @@ impl PhraseDataStock {
 pub struct CompositionDataStock {
 
 }
-impl CompositionDataStock {
-    pub fn _new() -> Self {
+impl Default for CompositionDataStock {
+    fn default() -> Self {
         Self {
 
         }
