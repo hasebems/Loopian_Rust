@@ -5,6 +5,7 @@
 //
 use crate::lpnlib;
 use super::txt2seq_phr::*;
+use super::txt2seq_cmps::*;
 
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
@@ -14,6 +15,7 @@ pub struct SeqDataStock {
     input_mode: lpnlib::InputMode,
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
+    bpm: u16,
 }
 impl SeqDataStock {
     pub fn new() -> Self {
@@ -23,13 +25,14 @@ impl SeqDataStock {
             input_mode: lpnlib::InputMode::Closer,
             tick_for_onemsr: lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE,
             tick_for_onebeat: lpnlib::DEFAULT_TICK_FOR_QUARTER,
+            bpm: 120
         }
     }
     pub fn get_pdstk(&self, part: usize) -> &PhraseDataStock {&self.pdt[part]}
     pub fn set_raw_phrase(&mut self, part: usize, input_text: String) -> bool {
         if part < lpnlib::MAX_USER_PART {
             if self.pdt[part].set_raw(input_text) {
-                self.pdt[part].set_recombined(self.input_mode, self.tick_for_onemsr);
+                self.pdt[part].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
                 return true
             }
         }
@@ -42,6 +45,16 @@ impl SeqDataStock {
         println!("beat: {}/{}",beat_count, base_note);
         self.tick_for_onemsr = lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE*(beat_count as i32)/(base_note as i32);
         self.tick_for_onebeat = lpnlib::DEFAULT_TICK_FOR_QUARTER*4/(base_note as i32);
+        self.recombine_phr_all();
+    }
+    pub fn change_bpm(&mut self, bpm: u16) {
+        self.bpm = bpm;
+        self.recombine_phr_all();
+    }
+    fn recombine_phr_all(&mut self) {
+        for pd in self.pdt.iter_mut() {
+            pd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+        }
     }
 }
 pub struct PhraseDataStock {
@@ -87,9 +100,8 @@ impl PhraseDataStock {
         }
         true
     }
-    pub fn set_recombined(&mut self, input_mode: lpnlib::InputMode, tick_for_onemsr: i32) {
-        //self.input_mode = input_mode;
-        //self.tick_for_onemsr = tick_for_onemsr;
+    pub fn set_recombined(&mut self, input_mode: lpnlib::InputMode, bpm: u16, tick_for_onemsr: i32) {
+        if self.cmpl_nt == [""] {return}
 
         // 3.recombined data
         let (whole_tick, rcmb) = TextParse::recombine_to_internal_format(
@@ -99,9 +111,10 @@ impl PhraseDataStock {
         self.whole_tick = whole_tick;
 
         // 4.analysed data
+
         // 5.humanized data
-            // Add Filters 
-            //               
+        self.rcmb = TextParse::beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
+        println!("final_phrase: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
     }
 }
 pub struct CompositionDataStock {
@@ -109,6 +122,7 @@ pub struct CompositionDataStock {
 }
 impl Default for CompositionDataStock {
     fn default() -> Self {
+        TextParseCmps::something_todo();
         Self {
 
         }

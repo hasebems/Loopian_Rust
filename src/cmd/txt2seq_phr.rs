@@ -205,7 +205,6 @@ impl TextParse {
             }
             read_ptr += 1;  // out from repeat
         }
-        println!("recombined_phrase: {:?} whole_tick: {:?}",rcmb,tick);
         (tick, rcmb)
     }
     fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
@@ -389,6 +388,54 @@ impl TextParse {
         }
         else {println!("Error!")}
         return_rcmb
+    }
+    //=========================================================================
+    pub fn beat_filter(rcmb_org: &Vec<Vec<u16>>, bpm: u16, tick_for_onemsr: i32) -> Vec<Vec<u16>> {
+        const EFFECT: u16 = 20;     // bigger(1..100), stronger
+        const MIN_BPM: u16 = 60;
+        const MIN_AVILABLE_VELO: u16 = 30;
+        const TICK_4_4: f32 = (lpnlib::DEFAULT_TICK_FOR_QUARTER*4) as f32;
+        const TICK_3_4: f32 = (lpnlib::DEFAULT_TICK_FOR_QUARTER*3) as f32;
+        const TICK_1BT: f32 = lpnlib::DEFAULT_TICK_FOR_QUARTER as f32;
+        let mut rcmb = rcmb_org.clone();
+        if bpm < MIN_BPM {return rcmb;}
+        println!("Filter BPM: {}",bpm);
+
+        // 純粋な四拍子、三拍子のみ対応
+        let base_bpm: u16 = (bpm - MIN_BPM)*EFFECT/100;
+        if tick_for_onemsr == TICK_4_4 as i32 {
+            for dt in rcmb.iter_mut() {
+                let tm: f32 = (dt[lpnlib::TICK] as f32 % TICK_4_4)/TICK_1BT;
+                if tm == 0.0 {
+                    dt[lpnlib::VELOCITY] += base_bpm;
+                }
+                else if tm == 2.0 {
+                    dt[lpnlib::VELOCITY] += base_bpm/4;
+                }
+                else {
+                    if dt[lpnlib::VELOCITY] > base_bpm/4 + MIN_AVILABLE_VELO {
+                        dt[lpnlib::VELOCITY] -= base_bpm/4;
+                    }
+                }
+            }
+        }
+        else if tick_for_onemsr == TICK_3_4 as i32 {
+            for dt in rcmb.iter_mut() {
+                let tm: f32 = (dt[lpnlib::TICK] as f32 % TICK_3_4)/TICK_1BT;
+                if tm == 0.0 {
+                    dt[lpnlib::VELOCITY] += base_bpm;
+                }
+                else if tm == 1.0 {
+                    dt[lpnlib::VELOCITY] += base_bpm/4;
+                }
+                else {
+                    if dt[lpnlib::VELOCITY] > base_bpm/4 + MIN_AVILABLE_VELO {
+                        dt[lpnlib::VELOCITY] -= base_bpm/4;
+                    }
+                }
+            }
+        }
+        rcmb
     }
     //=========================================================================
     fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {

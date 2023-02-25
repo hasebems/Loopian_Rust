@@ -65,13 +65,27 @@ impl LoopianCmd {
             _ => {},
         }
     }
+    fn send_phrase_to_elapse(&self, part: usize) {
+        let pdstk = self.gendt.get_pdstk(part);
+        let mut pdt: Vec<u16> = pdstk.get_final();
+        if pdt.len() > 1 {
+            let mut msg: Vec<u16> = vec![lpnlib::MSG_PHR+self.input_part as u16];
+            msg.append(&mut pdt);
+            self.send_msg_to_elapse(msg);
+        }
+        else {println!("Part {}: No Data!",part)}
+    }
     fn parse_set_command(&mut self, input_text: &str) -> String {
         let cmnd = &input_text[4..];
         let len = cmnd.chars().count();
         if len > 4 && &cmnd[0..4] == "bpm=" {
             match cmnd[4..].parse::<u16>() {
                 Ok(msg) => {
+                    self.gendt.change_bpm(msg);
                     self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BPM, msg]);
+                    for i in 0..lpnlib::MAX_USER_PART {
+                        self.send_phrase_to_elapse(i);
+                    }
                     "BPM has changed!".to_string()
                 },
                 Err(_e) => {
@@ -87,6 +101,9 @@ impl LoopianCmd {
                 (Ok(up),Ok(low)) => {
                     self.gendt.change_beat(up, low);
                     self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BEAT, up, low]);
+                    for i in 0..lpnlib::MAX_USER_PART {
+                        self.send_phrase_to_elapse(i);
+                    }
                     "Beat has changed!".to_string()
                 },
                 _ => "Number is wrong.".to_string()
@@ -137,11 +154,7 @@ impl LoopianCmd {
     }
     fn letter_bracket(&mut self, input_text: &str) -> Option<String> {
         if self.gendt.set_raw_phrase(self.input_part, input_text.to_string()) {
-            let mut msg: Vec<u16> = vec![lpnlib::MSG_PHR+self.input_part as u16];
-            let pdstk = self.gendt.get_pdstk(self.input_part);
-            let mut pdt: Vec<u16> = pdstk.get_final();
-            msg.append(&mut pdt);
-            self.send_msg_to_elapse(msg);
+            self.send_phrase_to_elapse(self.input_part);
             Some("Set Phrase!".to_string())
         } else {
             Some("what?".to_string())
