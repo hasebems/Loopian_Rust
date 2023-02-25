@@ -160,6 +160,14 @@ impl LoopianCmd {
             Some("what?".to_string())
         }
     }
+    fn letter_brace(&mut self, input_text: &str) -> Option<String> {
+        if self.gendt.set_raw_composition(self.input_part, input_text.to_string()) {
+            //self.send_phrase_to_elapse(self.input_part);
+            Some("Set Composition!".to_string())
+        } else {
+            Some("what?".to_string())
+        }
+    }
     fn letter_a(&self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
         if len >= 2 && &input_text[0..2] == "aa" {
@@ -184,7 +192,7 @@ impl LoopianCmd {
         }
         //<<DoItLater>>
         else if first_letter == "[" {self.letter_bracket(input_text)}
-        //else if first_letter == "{" {self.letter_brace(input_text)}
+        else if first_letter == "{" {self.letter_brace(input_text)}
         else if first_letter == "a" {self.letter_a(input_text)}
         //else if first_letter == "b" {self.letter_b(input_text)}
         //else if first_letter == "c" {self.letter_c(input_text)}

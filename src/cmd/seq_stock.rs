@@ -11,7 +11,7 @@ use super::txt2seq_cmps::*;
 //  入力された Phrase/Composition Data の変換と保持
 pub struct SeqDataStock {
     pdt: [PhraseDataStock; lpnlib::MAX_USER_PART],
-    _cdt: [CompositionDataStock; lpnlib::MAX_USER_PART],
+    cdt: [CompositionDataStock; lpnlib::MAX_USER_PART],
     input_mode: lpnlib::InputMode,
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
@@ -21,7 +21,7 @@ impl SeqDataStock {
     pub fn new() -> Self {
         Self {
             pdt: Default::default(),
-            _cdt: Default::default(),
+            cdt: Default::default(),
             input_mode: lpnlib::InputMode::Closer,
             tick_for_onemsr: lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE,
             tick_for_onebeat: lpnlib::DEFAULT_TICK_FOR_QUARTER,
@@ -38,7 +38,13 @@ impl SeqDataStock {
         }
         false
     }
-    pub fn _set_raw_composition(&self, _part: usize, _input_text: String) -> bool {
+    pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
+        if part < lpnlib::MAX_USER_PART {
+            if self.cdt[part].set_raw(input_text) {
+                self.cdt[part].set_recombined(self.tick_for_onemsr);
+                return true
+            }
+        }
         false
     }
     pub fn change_beat(&mut self, beat_count: u16, base_note: u16) {
@@ -118,13 +124,47 @@ impl PhraseDataStock {
     }
 }
 pub struct CompositionDataStock {
-
+    raw: String,
+    cmpl: Vec<String>,
+    rcmb: Vec<Vec<u16>>,
+    whole_tick: i32,
 }
 impl Default for CompositionDataStock {
     fn default() -> Self {
         TextParseCmps::something_todo();
         Self {
-
+            raw: "".to_string(),
+            cmpl: vec!["".to_string()],
+            rcmb: Vec::new(),
+            whole_tick: 0,
         }
     }    
+}
+impl CompositionDataStock {
+    pub fn _get_final(&self) -> Vec<u16> {
+        let ret_rcmb: Vec<u16> = vec![self.whole_tick as u16];
+        ret_rcmb
+    }
+    pub fn set_raw(&mut self, input_text: String) -> bool {
+        // 1.raw
+        self.raw = input_text.clone();
+
+        // 2.complement data
+        let cmpl = TextParseCmps::complement_phrase(input_text);
+        if cmpl.len() <= 1 {
+            return false
+        }
+        else {
+            self.cmpl = cmpl.clone();
+        }
+        true
+    }
+    pub fn set_recombined(&mut self, tick_for_onemsr: i32) {
+        if self.cmpl == [""] {return}
+
+        // 3.recombined data
+        let (whole_tick, rcmb) = TextParseCmps::recombine_to_internal_format(&self.cmpl, tick_for_onemsr);
+        self.rcmb = rcmb;
+        self.whole_tick = whole_tick;
+    }
 }
