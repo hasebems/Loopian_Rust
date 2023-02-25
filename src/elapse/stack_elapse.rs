@@ -26,7 +26,7 @@ pub struct ElapseStack {
     _start_time: Instant,
     crnt_time: Instant,
     _count: u32,
-    bpm_stock: u32,
+    bpm_stock: u16,
     during_play: bool,
     display_time: Instant,
     tg: TickGen,
@@ -53,7 +53,7 @@ impl ElapseStack {
                     _start_time: Instant::now(),
                     crnt_time: Instant::now(),
                     _count: 0,
-                    bpm_stock: 120,
+                    bpm_stock: lpnlib::DEFAULT_BPM,
                     during_play: false,
                     display_time: Instant::now(),
                     tg: TickGen::new(),
@@ -171,7 +171,7 @@ impl ElapseStack {
     }
     fn setting_cmnd(&mut self, msg: Vec<u16>) {
         if msg[1] == lpnlib::MSG2_BPM {
-            self.bpm_stock = msg[2] as u32;
+            self.bpm_stock = msg[2];
         }
     }
     fn phrase(&mut self, msg: Vec<u16>) {

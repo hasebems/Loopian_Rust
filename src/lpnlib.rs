@@ -41,7 +41,7 @@ pub const ALL_PART_COUNT: usize = MAX_COMPOSITION_PART+MAX_PHRASE_PART+1;
 //=====================
 // default value
 //=====================
-pub const DEFAULT_BPM: u32 = 100;
+pub const DEFAULT_BPM: u16 = 100;
 pub const DEFAULT_NOTE_NUMBER: u8 = 60;     // C4
 pub const MAX_NOTE_NUMBER: u8 = 108;        // C8
 pub const MIN_NOTE_NUMBER: u8 = 21;         // A0

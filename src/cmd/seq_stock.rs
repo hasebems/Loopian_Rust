@@ -25,7 +25,7 @@ impl SeqDataStock {
             input_mode: lpnlib::InputMode::Closer,
             tick_for_onemsr: lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE,
             tick_for_onebeat: lpnlib::DEFAULT_TICK_FOR_QUARTER,
-            bpm: 120
+            bpm: lpnlib::DEFAULT_BPM,
         }
     }
     pub fn get_pdstk(&self, part: usize) -> &PhraseDataStock {&self.pdt[part]}
