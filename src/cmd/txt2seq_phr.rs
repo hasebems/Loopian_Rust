@@ -300,14 +300,14 @@ impl TextParse {
             }
             if fst_ltr == '\'' {
                 if ntext.chars().nth(2).unwrap_or(' ') == '\"' {
-                    base_dur = 60;
+                    base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER/8;
                     idx = 2;
                 }
-                else {base_dur = 240;}
+                else {base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER/2;}
             }
-            else if fst_ltr == '\"' {base_dur = 120;}
-            else if fst_ltr == 'q' {base_dur = 480;}
-            else if fst_ltr == 'h' {base_dur = 960;}
+            else if fst_ltr == '\"' {base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER/4;}
+            else if fst_ltr == 'q' {base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER;}
+            else if fst_ltr == 'h' {base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER*2;}
             else {idx = 0;}
             if triplet != 0 {
                 base_dur = base_dur*2/triplet as i32;
@@ -399,7 +399,6 @@ impl TextParse {
         const TICK_1BT: f32 = lpnlib::DEFAULT_TICK_FOR_QUARTER as f32;
         let mut rcmb = rcmb_org.clone();
         if bpm < MIN_BPM {return rcmb;}
-        println!("Filter BPM: {}",bpm);
 
         // 純粋な四拍子、三拍子のみ対応
         let base_bpm: u16 = (bpm - MIN_BPM)*EFFECT/100;
