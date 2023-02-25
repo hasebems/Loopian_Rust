@@ -125,7 +125,8 @@ impl PhraseDataStock {
 }
 pub struct CompositionDataStock {
     raw: String,
-    cmpl: Vec<String>,
+    cmpl_cd: Vec<String>,
+    cmpl_ex: Vec<String>,
     rcmb: Vec<Vec<u16>>,
     whole_tick: i32,
 }
@@ -134,7 +135,8 @@ impl Default for CompositionDataStock {
         TextParseCmps::something_todo();
         Self {
             raw: "".to_string(),
-            cmpl: vec!["".to_string()],
+            cmpl_cd: vec!["".to_string()],
+            cmpl_ex: vec!["".to_string()],
             rcmb: Vec::new(),
             whole_tick: 0,
         }
@@ -150,20 +152,18 @@ impl CompositionDataStock {
         self.raw = input_text.clone();
 
         // 2.complement data
-        let cmpl = TextParseCmps::complement_phrase(input_text);
-        if cmpl.len() <= 1 {
-            return false
-        }
-        else {
-            self.cmpl = cmpl.clone();
-        }
-        true
+        let cmpl = TextParseCmps::complement_composition(input_text);
+        self.cmpl_cd = cmpl[0].clone();
+        self.cmpl_ex = cmpl[1].clone();
+        if self.cmpl_cd == [""] {false}
+        else {true}
     }
     pub fn set_recombined(&mut self, tick_for_onemsr: i32) {
-        if self.cmpl == [""] {return}
+        if self.cmpl_cd == [""] {return}
 
         // 3.recombined data
-        let (whole_tick, rcmb) = TextParseCmps::recombine_to_internal_format(&self.cmpl, tick_for_onemsr);
+        let (whole_tick, rcmb) = 
+            TextParseCmps::recombine_to_internal_format(&self.cmpl_cd, tick_for_onemsr);
         self.rcmb = rcmb;
         self.whole_tick = whole_tick;
     }
