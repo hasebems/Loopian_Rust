@@ -103,9 +103,13 @@ SeqDataStock <-- ElapseStack
 
 - Elapse Object は、Elapse Stack Class(estk) で管理される
     - estk は Elapse Object をリストに繋げる
-    - periodic() で各 Elapse Object の periodic() をコールする
+    - periodic() で各 Elapse Object の process() をコールする
         - 各 Elapse Object は、next_tick, next_msr で次回に呼ばれるタイミングを返す
         - next_tick/next_msr の値に準じて、estk は順序通りに Elapse Object をコール
+    - estk が Elapse Object をコールしてメッセージを送る、という流れが基本
+        - Elapse Object が、逆流してメッセージを流したいとき、estk へのポインタは保持できないので、process() の引数の 
+          estk で処理を完結させる
+        - 末端の Elapse Object から全体の Object にメッセージを送る機能追加 register_sp_cmnd() 
 
 
 ### Text Parse処理の考え方
@@ -142,7 +146,6 @@ SeqDataStock <-- ElapseStack
     - composition が入力されたら、「再構成」からやり直し(set_recombined())
     - bpm/beat/key/oct が変わったら、「再構成」からやり直し
     - 再生中に Loop がひとまわりするたびに「分散」処理を行う(get_final())
-- 実際の MIDI 出力はさらに、バッファに積まれ、latency の時間の後に出力される
 
 - Pedalデータは各パートの Loop 冒頭に以下の処理を行う
     - コード情報があれば、ペダルを踏む
@@ -221,10 +224,24 @@ SeqDataStock <-- ElapseStack
 - さらなる humanized アルゴリズムの追加
 - Load/Save機能、Auto Load/Play機能
 
+## Rust 化の順番
+- とりあえずテキスト入力で音が鳴る(2023/2/23)
+- humanized 対応
+- Composition のテキスト変換
+- Chord情報の再生
+- Analyzed対応
+- Chord情報による音程変換
+- Part切替
+- Beat/Key切替
+- 8 indicator 全表示
+- Rondamized 対応
+- Log File対応
+- fine 対応
+- rit 対応
+
 ## loopian 計画
 - loopian を使った動画制作
 - loopian::dev によるリアルタイム演奏
-- rust に書き換える
 
 ### 動画作成
 - QuickTime Player で新規画面収録
