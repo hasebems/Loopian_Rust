@@ -85,7 +85,63 @@ impl TextParseCmps {
         lpnlib::split_by(',', fill)
     }
     //=========================================================================
-    pub fn recombine_to_internal_format(_comp: &Vec<String>, _tick_for_onemsr: i32) -> (i32, Vec<Vec<u16>>) {
-        (0, vec![vec![0]])
+    pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_for_onebeat: i32)
+      -> (i32, Vec<Vec<u16>>) {
+        if comp.len() == 0 {
+            return (0, vec![vec![0]]);
+        }
+        let btcnt = tick_for_onemsr/tick_for_onebeat;
+        let max_read_ptr = comp.len();
+        let mut read_ptr = 0;
+        let mut tick: i32 = 0;
+        let mut msr: i32 = 0;
+        let mut rcmb: Vec<Vec<u16>> = Vec::new();
+        let mut same_chord: String = "x".to_string();
+
+        while read_ptr < max_read_ptr {
+            let (chord, dur) = TextParseCmps::divide_chord_info(comp[read_ptr].clone(), btcnt);
+            if tick < tick_for_onemsr*msr {
+                if same_chord != chord {
+                    same_chord = chord.clone();
+                    let (root, table) = TextParseCmps::convert_chord_to_num(chord);
+                    rcmb.push(vec![tick as u16, root, table]);
+                }
+                tick += tick_for_onebeat;
+            }
+            if dur == btcnt {
+                tick = tick_for_onemsr*msr;
+                same_chord = "x".to_string();
+                msr += 1;
+            }
+            read_ptr += 1;  // out from repeat
+        }        
+
+        tick = msr*tick_for_onemsr;
+        (tick, rcmb)
+    }
+    fn divide_chord_info(mut chord: String, btcnt: i32) -> (String, i32) {
+        let mut dur: i32 = 1;
+        let mut ltr_count = chord.len();
+        if ltr_count == 0 {
+            return (chord, dur);
+        }
+
+        let mut last_ltr = chord.chars().last().unwrap_or(' ');
+        if last_ltr == '|' {
+            dur =  btcnt;
+            chord = chord[0..ltr_count-1].to_string();
+        }
+        else {
+            while ltr_count >= 1 && last_ltr == '.' {
+                dur += 1;
+                chord = chord[0..ltr_count-1].to_string();
+                last_ltr = chord.chars().last().unwrap_or(' ');
+                ltr_count = chord.len();
+            }
+        }
+        (chord, dur)
+    }
+    fn convert_chord_to_num(_chord: String) -> (u16, u16) {
+        (0,0)
     }
 }

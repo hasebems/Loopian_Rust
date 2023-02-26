@@ -41,7 +41,7 @@ impl SeqDataStock {
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
         if part < lpnlib::MAX_USER_PART {
             if self.cdt[part].set_raw(input_text) {
-                self.cdt[part].set_recombined(self.tick_for_onemsr);
+                self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
                 return true
             }
         }
@@ -164,12 +164,12 @@ impl CompositionDataStock {
         println!("complement_composition: {:?} exp: {:?}",cmpl[0],cmpl[1]);
         true
     }
-    pub fn set_recombined(&mut self, tick_for_onemsr: i32) {
+    pub fn set_recombined(&mut self, tick_for_onemsr: i32, tick_for_onebeat: i32) {
         if self.cmpl_cd == [""] {return}
 
         // 3.recombined data
         let (whole_tick, rcmb) = 
-            TextParseCmps::recombine_to_internal_format(&self.cmpl_cd, tick_for_onemsr);
+            TextParseCmps::recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_onebeat);
         self.rcmb = rcmb;
         self.whole_tick = whole_tick;
         println!("final_composition: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
