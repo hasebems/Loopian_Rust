@@ -6,7 +6,6 @@
 use crate::lpnlib;
 use std::sync::{mpsc, mpsc::*};
 use super::seq_stock::*;
-use super::txt2seq_phr::TextParse;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -96,7 +95,7 @@ impl LoopianCmd {
         }
         else if len > 5 && &cmnd[0..5] == "beat=" {
             let beat = &cmnd[5..];
-            let numvec = TextParse::split_by('/', beat.to_string());
+            let numvec = lpnlib::split_by('/', beat.to_string());
             match (numvec[0].parse::<u16>(), numvec[1].parse::<u16>()) {
                 (Ok(up),Ok(low)) => {
                     self.gendt.change_beat(up, low);
