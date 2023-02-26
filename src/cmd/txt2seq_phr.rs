@@ -36,7 +36,6 @@ impl TextParse {
         ne.clone().retain(|c| !c.is_whitespace());  // space を削除
         let nevec = lpnlib::split_by(',', ne);
 
-        println!("complement_phrase: {:?} exp: {:?}",nvec,nevec);
         return [nvec,nevec];
     }
     fn divide_brackets(input_text: String) -> (String, String) {

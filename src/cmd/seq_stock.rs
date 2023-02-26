@@ -98,12 +98,14 @@ impl PhraseDataStock {
         // 2.complement data
         let cmpl = TextParse::complement_phrase(input_text);
         if cmpl.len() <= 1 {
+            println!("Phrase input failed!");
             return false
         }
         else {
             self.cmpl_nt = cmpl[0].clone();
             self.cmpl_ex = cmpl[1].clone();
         }
+        println!("complement_phrase: {:?} exp: {:?}",cmpl[0],cmpl[1]);
         true
     }
     pub fn set_recombined(&mut self, input_mode: lpnlib::InputMode, bpm: u16, tick_for_onemsr: i32) {
@@ -155,8 +157,12 @@ impl CompositionDataStock {
         let cmpl = TextParseCmps::complement_composition(input_text);
         self.cmpl_cd = cmpl[0].clone();
         self.cmpl_ex = cmpl[1].clone();
-        if self.cmpl_cd == [""] {false}
-        else {true}
+        if self.cmpl_cd == [""] {
+            println!("Phrase input failed!");
+            return false;
+        }
+        println!("complement_composition: {:?} exp: {:?}",cmpl[0],cmpl[1]);
+        true
     }
     pub fn set_recombined(&mut self, tick_for_onemsr: i32) {
         if self.cmpl_cd == [""] {return}
@@ -166,5 +172,6 @@ impl CompositionDataStock {
             TextParseCmps::recombine_to_internal_format(&self.cmpl_cd, tick_for_onemsr);
         self.rcmb = rcmb;
         self.whole_tick = whole_tick;
+        println!("final_composition: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
     }
 }
