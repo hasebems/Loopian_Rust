@@ -5,6 +5,86 @@
 //
 use crate::lpnlib;
 
+const ROOT_NAME: [&'static str; 7] = ["I","II","III","IV","V","VI","VII"];
+struct ChordTable {
+    name: &'static str,
+    table: &'static [i32],
+}
+const CHORD_TABLE: [ChordTable; 39] = [
+    ChordTable {name:   "thru",     table:  &THRU,},
+    ChordTable {name:   "O",        table:  &THRU,},
+    ChordTable {name:   "_",        table:  &MAJOR,},
+    ChordTable {name:   "_m",       table:  &MINOR,},
+    ChordTable {name:   "_7",       table:  &M7TH,},
+    ChordTable {name:   "_6",       table:  &MAJ6TH,},
+    ChordTable {name:   "_m7",      table:  &MIN7TH,},
+    ChordTable {name:   "_M7",      table:  &MAJ7TH,},
+    ChordTable {name:   "_maj7",    table:  &MAJ7TH,},
+    ChordTable {name:   "_add9",    table:  &ADD9TH,},
+
+    ChordTable {name:   "_9",       table:  &M9TH,},
+    ChordTable {name:   "_m9",      table:  &MIN9TH,},
+    ChordTable {name:   "_M9",      table:  &MAJ9TH,},
+    ChordTable {name:   "_maj9",    table:  &MAJ9TH,},
+    ChordTable {name:   "_+5",      table:  &AUG5TH,},
+    ChordTable {name:   "_aug",     table:  &AUG5TH,},
+    ChordTable {name:   "_7+5",     table:  &AUG7TH,},
+    ChordTable {name:   "_aug7",    table:  &AUG7TH,},
+    ChordTable {name:   "_7-9",     table:  &M7MNS9,},
+    ChordTable {name:   "_7+9",     table:  &M7PLS9,},
+
+    ChordTable {name:   "_dim",     table:  &DIM,},
+    ChordTable {name:   "_m7-5",    table:  &MIN7M5,},
+    ChordTable {name:   "_sus4",    table:  &SUS4,},
+    ChordTable {name:   "_7sus4",   table:  &M7SUS4,},
+    ChordTable {name:   "_ion",     table:  &IONIAN,},
+    ChordTable {name:   "_dor",     table:  &DORIAN,},
+    ChordTable {name:   "_lyd",     table:  &LYDIAN,},
+    ChordTable {name:   "_mix",     table:  &MIXOLYDIAN,},
+    ChordTable {name:   "_aeo",     table:  &AEOLIAN,},
+    ChordTable {name:   "diatonic",     table:  &IONIAN,},
+
+    ChordTable {name:   "dorian",       table:  &DORIAN,},
+    ChordTable {name:   "lydian",       table:  &LYDIAN,},
+    ChordTable {name:   "mixolydian",   table:  &MIXOLYDIAN,},
+    ChordTable {name:   "aeolian",      table:  &AEOLIAN,},
+    ChordTable {name:   "comdim",       table:  &COMDIM,},
+    ChordTable {name:   "pentatonic",   table:  &PENTATONIC,},
+    ChordTable {name:   "blues",        table:  &BLUES,},
+    ChordTable {name:   "Err",          table:  &ERR,},
+    ChordTable {name:   "None",         table:  &NONE,},
+];
+
+const THRU:   [i32; 12] = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11];
+const MAJOR:  [i32; 3]  = [0,  4,  7];
+const MINOR:  [i32; 3]  = [0,  3,  7];
+const M7TH:   [i32; 4]  = [0, 4, 7, 10];
+const MAJ6TH: [i32; 4]  = [0, 4, 7, 9];
+const MIN7TH: [i32; 4]  = [0, 3, 7, 10];
+const MAJ7TH: [i32; 4]  = [0, 4, 7, 11];
+const ADD9TH: [i32; 4]  = [0, 2, 4, 7];
+const M9TH:   [i32; 5]  = [0, 2, 4, 7, 10];
+const MIN9TH: [i32; 5]  = [0, 2, 3, 7, 10];
+const MAJ9TH: [i32; 5]  = [0, 2, 4, 7, 11];
+const AUG5TH: [i32; 3]  = [0, 4, 8];
+const AUG7TH: [i32; 4]  = [0, 4, 8, 10];
+const M7MNS9: [i32; 5]  = [0, 1, 4, 7, 10];
+const M7PLS9: [i32; 5]  = [0, 3, 4, 7, 10];
+const DIM:    [i32; 4]  = [0, 3, 6, 9];
+const MIN7M5: [i32; 4]  = [0, 3, 6, 10];
+const SUS4:   [i32; 3]  = [0, 5, 7];
+const M7SUS4: [i32; 4]  = [0, 5, 7, 10];
+const IONIAN: [i32; 7]  = [0, 2, 4, 5, 7, 9, 11]; // Ionian
+const DORIAN: [i32; 7]  = [0, 2, 3, 5, 7, 9, 10]; // Dorian
+const LYDIAN: [i32; 7]  = [0, 2, 4, 6, 7, 9, 11]; // Lydian
+const MIXOLYDIAN: [i32; 7]  = [0, 2, 4, 5, 7, 9, 10]; // Mixolydian
+const AEOLIAN:[i32; 7]  = [0, 2, 3, 5, 7, 8, 10]; // Aeolian
+const COMDIM: [i32; 8]  = [0, 2, 3, 5, 6, 8, 9, 11];
+const PENTATONIC:[i32; 5] = [0, 2, 4, 7, 9];
+const BLUES:  [i32; 6]  = [0, 3, 5, 6, 7, 10];
+const ERR:    [i32; 1]  = [0];
+const NONE:   [i32; 2]  = [1000, 1001];  // if more than 127, no sound by limit
+
 pub struct TextParseCmps {}
 impl TextParseCmps {
     pub fn something_todo(){}
@@ -141,7 +221,35 @@ impl TextParseCmps {
         }
         (chord, dur)
     }
-    fn convert_chord_to_num(_chord: String) -> (u16, u16) {
-        (0,0)
+    fn convert_chord_to_num(chord: String) -> (u16, u16) {
+        let root: u16;
+        let kind: String;
+        let first_three: String = chord[0..3].to_string();
+
+        //  Root
+        if first_three == ROOT_NAME[2] {root=2; kind=chord[3..].to_string();}
+        else if first_three == ROOT_NAME[6] {root=6; kind=chord[3..].to_string();}
+        else {
+            let first_two: String = chord[0..2].to_string();
+            if first_two == ROOT_NAME[1] {root=1; kind=chord[2..].to_string();}
+            else if first_two == ROOT_NAME[3] {root=3; kind=chord[2..].to_string();}
+            else if first_two == ROOT_NAME[5] {root=5; kind=chord[2..].to_string();}
+            else {
+                let first_ltr: char = chord.chars().nth(0).unwrap_or(' ');
+                if first_ltr == 'I' {root=0; kind=chord[1..].to_string();}
+                else if first_ltr == 'V' {root=4; kind=chord[1..].to_string();}
+                else {return (lpnlib::CANCEL, 0);}
+            }
+        }
+
+        //  Table
+        let mut table: u16 = 0;
+        for (i, tp) in CHORD_TABLE.iter().enumerate() {
+            if tp.name == kind {
+                table = i as u16;
+                break;
+            }
+        }
+        (root, table)
     }
 }

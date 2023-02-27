@@ -15,7 +15,7 @@ pub const FULL: i32 = 10000;
 pub const _ALL_PART: u16 = 0xffff;
 pub const KEEP: i32 = 0;
 pub const LAST: i32 = 10000;
-pub const _CANCEL: u16 = 0xffff;
+pub const CANCEL: u16 = 0xffff;
 
 //=====================
 // part count
@@ -82,7 +82,12 @@ pub const DURATION: usize   = 2;
 pub const NOTE: usize       = 3;
 pub const VELOCITY: usize   = 4;
 
-pub const TYPE_DAMPER: u16  = 0xf002;
+pub const TYPE_CHORD: u16   = 0xf002;
+pub const TYPE_CHORD_SIZE: usize = 4;
+pub const CD_ROOT: usize    = 2;
+pub const CD_TABLE: usize   = 3; 
+
+pub const TYPE_DAMPER: u16  = 0xf003;
 
 
 //=====================
