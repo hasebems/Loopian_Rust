@@ -87,10 +87,23 @@ const NONE:   [i32; 2]  = [1000, 1001];  // if more than 127, no sound by limit
 
 pub struct TextParseCmps {}
 impl TextParseCmps {
-    pub fn something_todo(){}
+    pub fn _get_table(num: usize) -> &'static [i32] {
+        CHORD_TABLE[num].table
+    }
+    pub fn get_table_num(kind: &str) -> u16 {
+        let mut table: u16 = 0;
+        for (i, tp) in CHORD_TABLE.iter().enumerate() {
+            if tp.name == kind {
+                table = i as u16;
+                break;
+            }
+        }
+        table
+    }
     pub fn complement_composition(input_text: String) -> [Vec<String>;2] {
         // 1. {} を抜き出し、２つ分の brackets を Vec に入れて戻す
         let (cd, ce) = TextParseCmps::divide_brace(input_text);
+        println!("{:?}",cd);
 
         // 2. 重複補填と ',' で分割
         let cmps_vec = TextParseCmps::fill_omitted_chord_data(cd);
@@ -132,7 +145,7 @@ impl TextParseCmps {
     fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
         //  省略を thru で補填
         const NO_CHORD: &str = "thru";
-        let mut end_flag: bool = false;
+        let mut end_flag: bool = true;
         let mut fill: String = "".to_string();
         let mut chord: String = NO_CHORD.to_string();
         for ltr in cmps.chars() {
@@ -158,6 +171,10 @@ impl TextParseCmps {
                 }
             }
         }
+        if chord != "" {
+            fill += &chord;
+        }
+
         // space を削除
         fill.retain(|c| !c.is_whitespace());
 
@@ -174,7 +191,7 @@ impl TextParseCmps {
         let max_read_ptr = comp.len();
         let mut read_ptr = 0;
         let mut tick: i32 = 0;
-        let mut msr: i32 = 0;
+        let mut msr: i32 = 1;
         let mut rcmb: Vec<Vec<u16>> = Vec::new();
         let mut same_chord: String = "x".to_string();
 
@@ -186,7 +203,7 @@ impl TextParseCmps {
                     let (root, table) = TextParseCmps::convert_chord_to_num(chord);
                     rcmb.push(vec![tick as u16, root, table]);
                 }
-                tick += tick_for_onebeat;
+                tick += tick_for_onebeat*dur;
             }
             if dur == btcnt {
                 tick = tick_for_onemsr*msr;
@@ -222,34 +239,31 @@ impl TextParseCmps {
         (chord, dur)
     }
     fn convert_chord_to_num(chord: String) -> (u16, u16) {
-        let root: u16;
-        let kind: String;
-        let first_three: String = chord[0..3].to_string();
+        let mut root: u16 = lpnlib::CANCEL;
+        let mut kind: &str = "";
+        let length = chord.len();
 
         //  Root
-        if first_three == ROOT_NAME[2] {root=2; kind=chord[3..].to_string();}
-        else if first_three == ROOT_NAME[6] {root=6; kind=chord[3..].to_string();}
-        else {
+        if length >= 3 {
+            let first_three: String = chord[0..3].to_string();
+            if first_three == ROOT_NAME[2] {root=2; kind=&chord[3..];}
+            else if first_three == ROOT_NAME[6] {root=6; kind=&chord[3..];}
+        }
+        if length >= 2 && root == lpnlib::CANCEL {
             let first_two: String = chord[0..2].to_string();
-            if first_two == ROOT_NAME[1] {root=1; kind=chord[2..].to_string();}
-            else if first_two == ROOT_NAME[3] {root=3; kind=chord[2..].to_string();}
-            else if first_two == ROOT_NAME[5] {root=5; kind=chord[2..].to_string();}
-            else {
-                let first_ltr: char = chord.chars().nth(0).unwrap_or(' ');
-                if first_ltr == 'I' {root=0; kind=chord[1..].to_string();}
-                else if first_ltr == 'V' {root=4; kind=chord[1..].to_string();}
-                else {return (lpnlib::CANCEL, 0);}
-            }
+            if first_two == ROOT_NAME[1] {root=1; kind=&chord[2..];}
+            else if first_two == ROOT_NAME[3] {root=3; kind=&chord[2..];}
+            else if first_two == ROOT_NAME[5] {root=5; kind=&chord[2..];}
+        }
+        if length >= 1 && root == lpnlib::CANCEL {
+            let first_ltr: char = chord.chars().nth(0).unwrap_or(' ');
+            if first_ltr == 'I' {root=0; kind=&chord[1..];}
+            else if first_ltr == 'V' {root=4; kind=&chord[1..];}
+            else {return (lpnlib::CANCEL, 0);}
         }
 
         //  Table
-        let mut table: u16 = 0;
-        for (i, tp) in CHORD_TABLE.iter().enumerate() {
-            if tp.name == kind {
-                table = i as u16;
-                break;
-            }
-        }
+        let table = TextParseCmps::get_table_num(kind);
         (root, table)
     }
 }

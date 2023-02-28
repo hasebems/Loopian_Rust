@@ -29,6 +29,7 @@ impl SeqDataStock {
         }
     }
     pub fn get_pdstk(&self, part: usize) -> &PhraseDataStock {&self.pdt[part]}
+    pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {&self.cdt[part]}
     pub fn set_raw_phrase(&mut self, part: usize, input_text: String) -> bool {
         if part < lpnlib::MAX_USER_PART {
             if self.pdt[part].set_raw(input_text) {
@@ -134,7 +135,6 @@ pub struct CompositionDataStock {
 }
 impl Default for CompositionDataStock {
     fn default() -> Self {
-        TextParseCmps::something_todo();
         Self {
             raw: "".to_string(),
             cmpl_cd: vec!["".to_string()],
@@ -145,8 +145,11 @@ impl Default for CompositionDataStock {
     }    
 }
 impl CompositionDataStock {
-    pub fn _get_final(&self) -> Vec<u16> {
-        let ret_rcmb: Vec<u16> = vec![self.whole_tick as u16];
+    pub fn get_final(&self) -> Vec<u16> {
+        let mut ret_rcmb: Vec<u16> = vec![self.whole_tick as u16];
+        for ev in self.rcmb.iter() {
+            ret_rcmb.append(&mut ev.clone());
+        }
         ret_rcmb
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
@@ -158,7 +161,7 @@ impl CompositionDataStock {
         self.cmpl_cd = cmpl[0].clone();
         self.cmpl_ex = cmpl[1].clone();
         if self.cmpl_cd == [""] {
-            println!("Phrase input failed!");
+            println!("Composition input failed!");
             return false;
         }
         println!("complement_composition: {:?} exp: {:?}",cmpl[0],cmpl[1]);

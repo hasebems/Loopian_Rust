@@ -52,15 +52,15 @@ pub const DEFAULT_VEL: u8 = 100;
 //=====================
 // UI->ELPS Message
 //=====================
-//  MSG1st   |  2nd        |  3rd  |
+//  MSG1st      |  2nd        |  3rd  |
 //------------------------------------
-// MSG_QUIT  | --
-// MSG_START | --
-// MSG_STOP  | --
-// MSG_SET   | MSG2_BPM    |[bpm]| --
-//           | MSG2_BEAT   |[up]|[low]| --
-// MSG_PHR   |[whole_tick] |( TYPE | TICK | DURATION | NOTE | VELOCITY )*n
-// MSG_CMP   |[whole_tick] |
+// MSG_QUIT     | --          |
+// MSG_START    | --          |
+// MSG_STOP     | --          |
+// MSG_SET      | MSG2_BPM    |[bpm]| --
+//              | MSG2_BEAT   |[up]|[low]| --
+// MSG_PHR+part |[whole_tick] |( TYPE | TICK | DURATION | NOTE | VELOCITY )*n
+// MSG_CMP+part |[whole_tick] |( TYPE | TICK | ROOT | TABLE )*n
 pub const MSG_QUIT: u16     = 0xffff;
 pub const MSG_START:u16     = 0xfff0;
 pub const MSG_STOP: u16     = 0xfff8;
@@ -70,7 +70,7 @@ pub const MSG2_BEAT: u16    = 0x0002;
 
 pub const MSG_PART_MASK: u16 = 0xfff0;
 pub const MSG_PHR: u16      = 0x1000;   // 1桁目にパート番号
-pub const _MSG_CMP: u16     = 0x2000;   // 1桁目にパート番号
+pub const MSG_CMP: u16     = 0x2000;   // 1桁目にパート番号
 pub const MSG_PHR_HEADER: usize = 2;
 
 pub const TYPE: usize       = 0;

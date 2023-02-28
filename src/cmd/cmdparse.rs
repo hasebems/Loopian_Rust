@@ -74,6 +74,16 @@ impl LoopianCmd {
         }
         else {println!("Part {}: No Data!",part)}
     }
+    fn send_composition_to_elapse(&self, part: usize) {
+        let cdstk = self.gendt.get_cdstk(part);
+        let mut cdt: Vec<u16> = cdstk.get_final();
+        if cdt.len() > 1 {
+            let mut msg: Vec<u16> = vec![lpnlib::MSG_CMP+self.input_part as u16];
+            msg.append(&mut cdt);
+            self.send_msg_to_elapse(msg);
+        }
+        else {println!("Part {}: No Data!",part)}
+    }
     fn parse_set_command(&mut self, input_text: &str) -> String {
         let cmnd = &input_text[4..];
         let len = cmnd.chars().count();
@@ -161,7 +171,7 @@ impl LoopianCmd {
     }
     fn letter_brace(&mut self, input_text: &str) -> Option<String> {
         if self.gendt.set_raw_composition(self.input_part, input_text.to_string()) {
-            //self.send_phrase_to_elapse(self.input_part);
+            self.send_composition_to_elapse(self.input_part);
             Some("Set Composition!".to_string())
         } else {
             Some("what?".to_string())
