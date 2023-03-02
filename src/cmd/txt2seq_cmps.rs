@@ -100,20 +100,22 @@ impl TextParseCmps {
         }
         table
     }
-    pub fn complement_composition(input_text: String) -> [Vec<String>;2] {
+    pub fn complement_composition(input_text: String) -> Option<[Vec<String>;2]> {
         // 1. {} を抜き出し、２つ分の brackets を Vec に入れて戻す
-        let (cd, ce) = TextParseCmps::divide_brace(input_text);
-        println!("{:?}",cd);
+        if let Some((cd, ce)) = TextParseCmps::divide_brace(input_text){
+            println!("{:?}",cd);
 
-        // 2. 重複補填と ',' で分割
-        let cmps_vec = TextParseCmps::fill_omitted_chord_data(cd);
+            // 2. 重複補填と ',' で分割
+            let cmps_vec = TextParseCmps::fill_omitted_chord_data(cd);
 
-        // 3. Expression を ',' で分割
-        let ex_vec = lpnlib::split_by(',', ce);
+            // 3. Expression を ',' で分割
+            let ex_vec = lpnlib::split_by(',', ce);
 
-        [cmps_vec, ex_vec]
+            Some([cmps_vec, ex_vec])
+        }
+        else {None}
     }
-    pub fn divide_brace(input_text: String) -> (String, String) {
+    pub fn divide_brace(input_text: String) -> Option<(String, String)> {
         let mut cmps_info: Vec<String> = Vec::new();
 
         // {} のセットを抜き出し、中身を cmps_info に入れる
@@ -133,14 +135,12 @@ impl TextParseCmps {
 
         let blk_cnt = cmps_info.len();
         if blk_cnt >= 2 {
-            (cmps_info[0].clone(), cmps_info[1].clone())
+            Some((cmps_info[0].clone(), cmps_info[1].clone()))
         }
         else if blk_cnt == 1 {
-            (cmps_info[0].clone(), "".to_string())
+            Some((cmps_info[0].clone(), "".to_string()))
         }
-        else {
-            ("".to_string(), "".to_string())
-        }
+        else {None}
     }
     fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
         //  省略を thru で補填
@@ -201,7 +201,7 @@ impl TextParseCmps {
                 if same_chord != chord {
                     same_chord = chord.clone();
                     let (root, table) = TextParseCmps::convert_chord_to_num(chord);
-                    rcmb.push(vec![tick as u16, root, table]);
+                    rcmb.push(vec![lpnlib::TYPE_CHORD, tick as u16, root, table]);
                 }
                 tick += tick_for_onebeat*dur;
             }

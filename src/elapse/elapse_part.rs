@@ -97,7 +97,7 @@ impl PhrLoopManager {
         estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成
         if let Some(phr) = &self.new_data_stock {
-            println!("New Loop!");
+            println!("New Phrase Loop!");
             self.first_msr_num = msr;    // 計測開始の更新
 
             //<<DoItLater>>
@@ -205,8 +205,8 @@ impl CmpsLoopManager {
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32,
         estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成
-        if let Some(_cmps) = &self.new_data_stock {
-            println!("New Loop!");
+        if let Some(cmps) = &self.new_data_stock {
+            println!("New Composition Loop!");
             self.first_msr_num = msr;    // 計測開始の更新
 
             //<<DoItLater>>
@@ -226,7 +226,7 @@ impl CmpsLoopManager {
             }
 
             let lp = CompositionLoop::new(self.loop_cntr, pbp.part_num, 
-                pbp.keynote, msr, self.whole_tick);
+                pbp.keynote, msr, cmps.to_vec(), self.whole_tick);
             self.loop_cmps = Some(Rc::clone(&lp));
             //<<DoItLater>> 引数の追加
             //    self.est, self.md, msr, elm, ana, \

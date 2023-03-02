@@ -157,15 +157,16 @@ impl CompositionDataStock {
         self.raw = input_text.clone();
 
         // 2.complement data
-        let cmpl = TextParseCmps::complement_composition(input_text);
-        self.cmpl_cd = cmpl[0].clone();
-        self.cmpl_ex = cmpl[1].clone();
-        if self.cmpl_cd == [""] {
-            println!("Composition input failed!");
-            return false;
+        if let Some(cmpl) = TextParseCmps::complement_composition(input_text){
+            self.cmpl_cd = cmpl[0].clone();
+            self.cmpl_ex = cmpl[1].clone();
+            println!("complement_composition: {:?} exp: {:?}",cmpl[0],cmpl[1]);
+            true
         }
-        println!("complement_composition: {:?} exp: {:?}",cmpl[0],cmpl[1]);
-        true
+        else {
+            println!("Composition input failed!");
+            false
+        }
     }
     pub fn set_recombined(&mut self, tick_for_onemsr: i32, tick_for_onebeat: i32) {
         if self.cmpl_cd == [""] {return}

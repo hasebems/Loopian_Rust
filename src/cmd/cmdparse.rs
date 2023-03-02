@@ -70,6 +70,7 @@ impl LoopianCmd {
         if pdt.len() > 1 {
             let mut msg: Vec<u16> = vec![lpnlib::MSG_PHR+self.input_part as u16];
             msg.append(&mut pdt);
+            //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
         }
         else {println!("Part {}: No Data!",part)}
@@ -80,6 +81,7 @@ impl LoopianCmd {
         if cdt.len() > 1 {
             let mut msg: Vec<u16> = vec![lpnlib::MSG_CMP+self.input_part as u16];
             msg.append(&mut cdt);
+            //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
         }
         else {println!("Part {}: No Data!",part)}

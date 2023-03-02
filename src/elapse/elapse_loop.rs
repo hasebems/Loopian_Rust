@@ -151,7 +151,7 @@ pub struct CompositionLoop {
     id: ElapseId,
     priority: u32,
 
-    cmps_dt: Option<Vec<Vec<u16>>>,
+    cmps_dt: Vec<Vec<u16>>,
     //analys_dt:
     _keynote: u8,
     play_counter: usize,
@@ -213,11 +213,11 @@ impl Loop for CompositionLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl CompositionLoop {
-    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, whole_tick: i32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<Vec<u16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_LOOP,
-            cmps_dt: None,
+            cmps_dt: msg,
             //analys_dt:
             _keynote: knt,
             play_counter: 0,
@@ -235,30 +235,29 @@ impl CompositionLoop {
         }))
     }
     pub fn _get_translation(&self) -> (u8, Vec<u32>) {(0, vec![0,1,2,3,4,5,6,7,8,9,10,11])}
-    fn reset_note_translation(&mut self) {/*<<DoItLater>>*/}
-    fn prepare_note_translation(&mut self, _cd: Vec<u16>) {/*<<DoItLater>>*/}
+    fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
+    fn prepare_note_translation(&mut self, cd: Vec<u16>) {
+        /*<<DoItLater>>*/
+        if cd[lpnlib::TYPE] == lpnlib::TYPE_CHORD {
+            println!("Chord Data: {}, {}, {}",cd[lpnlib::TYPE], cd[lpnlib::CD_ROOT], cd[lpnlib::CD_TABLE]);
+        }
+    }
     fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut trace: usize = self.play_counter;
         let mut next_tick: i32;
+        let cmps = self.cmps_dt.to_vec();
         loop {
-            if let Some(cmps) = &self.cmps_dt {
-                let max_ev: usize = cmps.len();
-                if max_ev <= trace {
-                    next_tick = lpnlib::END_OF_DATA;   // means sequence finished
-                    break
-                }
-                next_tick = cmps[trace][lpnlib::TICK] as i32;
-                if next_tick <= elapsed_tick {
-                    self.prepare_note_translation(cmps[trace].clone());
-                }
-                else {break;}
-                trace += 1;
+            let max_ev: usize = cmps.len();
+            if max_ev <= trace {
+                next_tick = lpnlib::END_OF_DATA;   // means sequence finished
+                break
             }
-            else {
-                // データを持っていない
-                self.reset_note_translation();
-                return lpnlib::END_OF_DATA;
+            next_tick = cmps[trace][lpnlib::TICK] as i32;
+            if next_tick <= elapsed_tick {
+                self.prepare_note_translation(cmps[trace].clone());
             }
+            else {break;}
+            trace += 1;
         }
         self.play_counter = trace;
         next_tick
