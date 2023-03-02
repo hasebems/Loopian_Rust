@@ -182,7 +182,7 @@ impl ElapseStack {
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
-            let index = |x, cnt| {x+lpnlib::MSG_PHR_HEADER+cnt*lpnlib::TYPE_NOTE_SIZE};
+            let index = |x, cnt| {x+lpnlib::MSG_HEADER+cnt*lpnlib::TYPE_NOTE_SIZE};
             let mut vtmp: Vec<u16> = Vec::new();
             for i in 0..lpnlib::TYPE_NOTE_SIZE {
                 vtmp.push(msg[index(i,msg_cnt)]);
@@ -191,9 +191,27 @@ impl ElapseStack {
             msg_cnt += 1;
             if msg_size <= index(0,msg_cnt) {break;}
         }
-        self.part_vec[part_num+4].borrow_mut().rcv_msg(phr_vec, whole_tick);
+        self.part_vec[part_num].borrow_mut().rcv_phr_msg(phr_vec, whole_tick);
     }
-    fn _composition(&mut self, _msg: Vec<u16>) {}
+    fn composition(&mut self, msg: Vec<u16>) {
+        // message の２次元化
+        let part_num: usize = (msg[0] & !lpnlib::MSG_PART_MASK) as usize;
+        let whole_tick: u16 = msg[1];
+        let mut cmps_vec: Vec<Vec<u16>> = Vec::new();
+        let mut msg_cnt: usize = 0;
+        let msg_size = msg.len();
+        loop {
+            let index = |x, cnt| {x+lpnlib::MSG_HEADER+cnt*lpnlib::TYPE_CHORD_SIZE};
+            let mut vtmp: Vec<u16> = Vec::new();
+            for i in 0..lpnlib::TYPE_CHORD_SIZE {
+                vtmp.push(msg[index(i,msg_cnt)]);
+            }
+            cmps_vec.push(vtmp);
+            msg_cnt += 1;
+            if msg_size <= index(0,msg_cnt) {break;}
+        }
+        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(cmps_vec, whole_tick);
+    }
     fn parse_msg(&mut self, msg: Vec<u16>) {
         println!("msg is {:?}", msg[0]);
         if msg[0] == lpnlib::MSG_START {self.start();}
@@ -201,8 +219,7 @@ impl ElapseStack {
         else if msg[0] == lpnlib::MSG_STOP {self.stop();}
         else if msg[0] == lpnlib::MSG_SET {self.setting_cmnd(msg);}
         else if (msg[0] & lpnlib::MSG_PART_MASK) == lpnlib::MSG_PHR {self.phrase(msg);}
-        //else if &msg[0..3] == "phr" {self.set_phrase(&msg[3..]);}
-        //else if &msg[0..3] == "cmp" {self.set_composition(&msg[3..]);}
+        else if (msg[0] & lpnlib::MSG_PART_MASK) == lpnlib::MSG_CMP {self.composition(msg);}
     }
     fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
