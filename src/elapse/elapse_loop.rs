@@ -12,7 +12,9 @@ use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 use super::elapse_note::Note;
 
-//---------------------------------------------------------
+//*******************************************************************
+//          Loop Struct
+//*******************************************************************
 pub trait Loop: Elapse {
     fn destroy(&self) -> bool;
     fn set_destroy(&mut self);
@@ -27,7 +29,9 @@ pub trait Loop: Elapse {
     }
 }
 
-//---------------------------------------------------------
+//*******************************************************************
+//          Phrase Loop Struct
+//*******************************************************************
 pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
@@ -146,7 +150,9 @@ impl PhraseLoop {
 }
 
 
-//---------------------------------------------------------
+//*******************************************************************
+//          Composition Loop Struct
+//*******************************************************************
 pub struct CompositionLoop {
     id: ElapseId,
     priority: u32,
@@ -157,9 +163,10 @@ pub struct CompositionLoop {
     play_counter: usize,
     next_tick_in_cmps: i32,
     // for Composition
-    _chord_name: String,
-    _root: u8,
-    _translation_tbl: Vec<Vec<i32>>,
+    chord_name: String,
+    root: u16,
+    translation_tbl: u16,
+    already_end: bool,
 
     // for super's member
     whole_tick: i32,
@@ -181,30 +188,26 @@ impl Elapse for CompositionLoop {
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let elapsed_tick = self.calc_serial_tick(crnt_);
-        if elapsed_tick > self.whole_tick {
+        if elapsed_tick >= self.whole_tick { // =をつけないと、loop終了直後の小節頭で無限ループになる
             self.next_msr = lpnlib::FULL;
             self.destroy = true;
             return
         }
 
-        if elapsed_tick >= self.next_tick_in_cmps {
+        if !self.already_end && elapsed_tick >= self.next_tick_in_cmps {
             let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
             if next_tick == lpnlib::END_OF_DATA {
-                // Composition Loop はイベントが終わっても、コード情報が終了するまで Loop が存在するようにしておく
-                while self.whole_tick - self.next_tick_in_cmps >= crnt_.tick_for_onemsr {
-                    self.next_tick_in_cmps += crnt_.tick_for_onemsr;
-                    self.next_msr += 1;
-                }
+                self.already_end = true;
                 self.next_tick_in_cmps = self.whole_tick;
-                self.next_tick = crnt_.tick_for_onemsr;
             }
             else {
                 self.next_tick_in_cmps = next_tick;
-                let (next_msr, next_tick) = self.gen_msr_tick(crnt_, self.next_tick_in_cmps);
-                self.next_msr = next_msr;
-                self.next_tick = next_tick;
             }
+            let (next_msr, next_tick) = self.gen_msr_tick(crnt_, self.next_tick_in_cmps);
+            self.next_msr = next_msr;
+            self.next_tick = next_tick;
         }
+        assert!(self.next_msr > crnt_.msr);
     }
 }
 impl Loop for CompositionLoop {
@@ -223,9 +226,11 @@ impl CompositionLoop {
             play_counter: 0,
             next_tick_in_cmps: 0,
 
-            _chord_name: "".to_string(),
-            _root: 0,
-            _translation_tbl: Vec::new(),
+            chord_name: "".to_string(),
+            root: 0,
+            translation_tbl: 0,
+            already_end: false,
+
             // for super's member
             whole_tick,
             destroy: false,
@@ -239,7 +244,21 @@ impl CompositionLoop {
     fn prepare_note_translation(&mut self, cd: Vec<u16>) {
         /*<<DoItLater>>*/
         if cd[lpnlib::TYPE] == lpnlib::TYPE_CHORD {
-            println!("Chord Data: {}, {}, {}",cd[lpnlib::TYPE], cd[lpnlib::CD_ROOT], cd[lpnlib::CD_TABLE]);
+            self.root = cd[lpnlib::CD_ROOT];
+            self.translation_tbl = cd[lpnlib::CD_TABLE];
+
+            let tbl_num: usize = self.translation_tbl as usize;
+            let tbl_name = crate::cmd::txt2seq_cmps::TextParseCmps::get_table_name(tbl_num);
+            let _tbl:&[i32] = crate::cmd::txt2seq_cmps::TextParseCmps::get_table(tbl_num);
+            let cname = tbl_name.to_string();
+            if cname.chars().nth(0).unwrap_or(' ') == '_' {
+                let root = crate::cmd::txt2seq_cmps::TextParseCmps::get_root_name(self.root as usize);
+                self.chord_name = root.to_string() + &cname[1..];
+            }
+            else {
+                self.chord_name = cname;
+            }
+            println!("Chord Data: {}, {}, {}, {}",self.chord_name, cd[lpnlib::TICK], cd[lpnlib::CD_ROOT], cd[lpnlib::CD_TABLE]);
         }
     }
     fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {

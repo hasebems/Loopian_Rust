@@ -87,7 +87,7 @@ const NONE:   [i32; 2]  = [1000, 1001];  // if more than 127, no sound by limit
 
 pub struct TextParseCmps {}
 impl TextParseCmps {
-    pub fn _get_table(num: usize) -> &'static [i32] {
+    pub fn get_table(num: usize) -> &'static [i32] {
         CHORD_TABLE[num].table
     }
     pub fn get_table_num(kind: &str) -> u16 {
@@ -99,6 +99,12 @@ impl TextParseCmps {
             }
         }
         table
+    }
+    pub fn get_table_name(tbl_num: usize) -> &'static str {
+        CHORD_TABLE[tbl_num].name
+    }
+    pub fn get_root_name(tbl_num: usize) -> &'static str {
+        ROOT_NAME[tbl_num]
     }
     pub fn complement_composition(input_text: String) -> Option<[Vec<String>;2]> {
         // 1. {} を抜き出し、２つ分の brackets を Vec に入れて戻す
