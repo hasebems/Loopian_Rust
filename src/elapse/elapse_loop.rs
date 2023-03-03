@@ -242,23 +242,24 @@ impl CompositionLoop {
     pub fn _get_translation(&self) -> (u8, Vec<u32>) {(0, vec![0,1,2,3,4,5,6,7,8,9,10,11])}
     fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
     fn prepare_note_translation(&mut self, cd: Vec<u16>) {
-        /*<<DoItLater>>*/
         if cd[lpnlib::TYPE] == lpnlib::TYPE_CHORD {
             self.root = cd[lpnlib::CD_ROOT];
             self.translation_tbl = cd[lpnlib::CD_TABLE];
 
             let tbl_num: usize = self.translation_tbl as usize;
             let tbl_name = crate::cmd::txt2seq_cmps::TextParseCmps::get_table_name(tbl_num);
-            let _tbl:&[i32] = crate::cmd::txt2seq_cmps::TextParseCmps::get_table(tbl_num);
             let cname = tbl_name.to_string();
             if cname.chars().nth(0).unwrap_or(' ') == '_' {
-                let root = crate::cmd::txt2seq_cmps::TextParseCmps::get_root_name(self.root as usize);
+                let root_index = ((self.root-1)/3) as usize;
+                let root = crate::cmd::txt2seq_cmps::TextParseCmps::get_root_name(root_index);
                 self.chord_name = root.to_string() + &cname[1..];
             }
             else {
                 self.chord_name = cname;
             }
             println!("Chord Data: {}, {}, {}, {}",self.chord_name, cd[lpnlib::TICK], cd[lpnlib::CD_ROOT], cd[lpnlib::CD_TABLE]);
+            /*<<DoItLater>>*/
+            let _tbl:&[i32] = crate::cmd::txt2seq_cmps::TextParseCmps::get_table(tbl_num);
         }
     }
     fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {

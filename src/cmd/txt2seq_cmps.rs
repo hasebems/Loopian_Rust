@@ -104,6 +104,7 @@ impl TextParseCmps {
         CHORD_TABLE[tbl_num].name
     }
     pub fn get_root_name(tbl_num: usize) -> &'static str {
+        if tbl_num >= ROOT_NAME.len() {return "";}
         ROOT_NAME[tbl_num]
     }
     pub fn complement_composition(input_text: String) -> Option<[Vec<String>;2]> {
