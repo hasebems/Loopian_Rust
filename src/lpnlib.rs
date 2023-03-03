@@ -15,7 +15,8 @@ pub const FULL: i32 = 10000;
 pub const _ALL_PART: u16 = 0xffff;
 pub const KEEP: i32 = 0;
 pub const LAST: i32 = 10000;
-pub const CANCEL: u16 = 0xffff;
+pub const _CANCEL: u16 = 0xffff;
+pub const NO_ROOT: u16 = 0; // root = 1:Ib,2:I,3:I# ...
 
 //=====================
 // part count

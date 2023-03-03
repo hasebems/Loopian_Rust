@@ -91,7 +91,7 @@ impl TextParseCmps {
         CHORD_TABLE[num].table
     }
     pub fn get_table_num(kind: &str) -> u16 {
-        let mut table: u16 = 0;
+        let mut table: u16 = (CHORD_TABLE.len()-1) as u16;
         for (i, tp) in CHORD_TABLE.iter().enumerate() {
             if tp.name == kind {
                 table = i as u16;
@@ -245,31 +245,52 @@ impl TextParseCmps {
         (chord, dur)
     }
     fn convert_chord_to_num(chord: String) -> (u16, u16) {
-        let mut root: u16 = lpnlib::CANCEL;
-        let mut kind: &str = "";
+        let mut root: u16 = 2;
+        let mut kind: String = "".to_string();
+        let mut root_str: String = "".to_string();
+        let mut ltr_cnt = 0;
         let length = chord.len();
 
-        //  Root
-        if length >= 3 {
-            let first_three: String = chord[0..3].to_string();
-            if first_three == ROOT_NAME[2] {root=2; kind=&chord[3..];}
-            else if first_three == ROOT_NAME[6] {root=6; kind=&chord[3..];}
-        }
-        if length >= 2 && root == lpnlib::CANCEL {
-            let first_two: String = chord[0..2].to_string();
-            if first_two == ROOT_NAME[1] {root=1; kind=&chord[2..];}
-            else if first_two == ROOT_NAME[3] {root=3; kind=&chord[2..];}
-            else if first_two == ROOT_NAME[5] {root=5; kind=&chord[2..];}
-        }
-        if length >= 1 && root == lpnlib::CANCEL {
-            let first_ltr: char = chord.chars().nth(0).unwrap_or(' ');
-            if first_ltr == 'I' {root=0; kind=&chord[1..];}
-            else if first_ltr == 'V' {root=4; kind=&chord[1..];}
-            else {return (lpnlib::CANCEL, 0);}
+        // extract root from chord
+        loop {
+            if length <= ltr_cnt {break;}
+            let ltr = chord.chars().nth(ltr_cnt).unwrap_or(' ');
+            if ltr == 'I' || ltr == 'V' {
+                root_str.push(ltr);
+            }
+            else if ltr == 'b' {
+                root = 1;
+                ltr_cnt += 1;
+                break;
+            }
+            else if ltr == '#' {
+                root = 3;
+                ltr_cnt += 1;
+                break;
+            }
+            else {break;}
+            ltr_cnt += 1;
         }
 
-        //  Table
-        let table = TextParseCmps::get_table_num(kind);
+        //  separate with chord, decide root number
+        if length > ltr_cnt {
+            kind = chord[ltr_cnt..].to_string();
+        }
+        let mut found = false;
+        for (i, rn) in ROOT_NAME.iter().enumerate() {
+            if rn == &root_str {
+                root += 3*(i as u16);
+                kind = "_".to_string() + &kind;
+                found = true;
+                break;
+            }
+        }
+        if !found {root = lpnlib::NO_ROOT;}
+
+        //  search chord type from Table
+        //println!("*<Chord: {}, {}, {}>*", root, root_str, kind);
+        let table = TextParseCmps::get_table_num(&kind);
+
         (root, table)
     }
 }
