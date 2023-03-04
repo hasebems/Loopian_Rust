@@ -315,7 +315,12 @@ impl Part {
     pub fn rcv_cmps_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
         self.cm.rcv_msg(msg, whole_tick);
     }
-    pub fn get_cmps_loop(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
-        self.cm.loop_cmps.clone()
+    pub fn get_chord_info(&self) -> (u16, u16) {
+        if let Some(cmps_loop) = &self.cm.loop_cmps {
+            cmps_loop.borrow().get_chord()
+        }
+        else {  // まだ loop obj.が生成されていない
+            (lpnlib::NO_ROOT, lpnlib::NO_TABLE)
+        }
     }
 }

@@ -116,6 +116,7 @@ impl PhraseLoop {
         //    }
         //}
         let (_root, _ctbl) = estk.get_chord_info(self.id.pid as usize);
+        println!("Get Chord: {}, {}", _root, _ctbl);
 
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(trace as u32, self.id.sid, estk, &ev, msr, tick);
         estk.add_elapse(Rc::clone(&nt));
@@ -259,7 +260,7 @@ impl CompositionLoop {
             else {
                 self.chord_name = cname;
             }
-            println!("Chord Data: {}, {}, {}, {}",self.chord_name, cd[lpnlib::TICK], cd[lpnlib::CD_ROOT], cd[lpnlib::CD_TABLE]);
+            println!("Chord Data: {}, {}, {}",self.chord_name, cd[lpnlib::CD_ROOT], cd[lpnlib::CD_TABLE]);
             /*<<DoItLater>>*/
             let _tbl:&[i32] = crate::cmd::txt2seq_cmps::TextParseCmps::get_table(tbl_num);
         }

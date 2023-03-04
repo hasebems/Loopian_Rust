@@ -151,10 +151,7 @@ impl ElapseStack {
     }
     pub fn get_chord_info(&self, part_num: usize) -> (u16, u16) {
         assert!(part_num < lpnlib::ALL_PART_COUNT);
-        if let Some(cmps_loop) = self.part_vec[part_num].borrow().get_cmps_loop() {
-            cmps_loop.borrow().get_chord()
-        }
-        else {(lpnlib::NO_ROOT, 0)}
+        self.part_vec[part_num].borrow().get_chord_info()
     }
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {

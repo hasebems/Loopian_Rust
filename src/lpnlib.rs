@@ -17,6 +17,7 @@ pub const KEEP: i32 = 0;
 pub const LAST: i32 = 10000;
 pub const _CANCEL: u16 = 0xffff;
 pub const NO_ROOT: u16 = 0; // root = 1:Ib,2:I,3:I# ...
+pub const NO_TABLE: u16 = 10000;
 
 //=====================
 // part count

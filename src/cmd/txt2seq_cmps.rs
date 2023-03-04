@@ -54,6 +54,7 @@ const CHORD_TABLE: [ChordTable; 39] = [
     ChordTable {name:   "Err",          table:  &ERR,},
     ChordTable {name:   "None",         table:  &NONE,},
 ];
+pub const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
 
 const THRU:   [i32; 12] = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11];
 const MAJOR:  [i32; 3]  = [0,  4,  7];
@@ -92,15 +93,15 @@ impl TextParseCmps {
         ROOT_NAME[idx_num]
     }
     pub fn get_table(idx_num: usize) -> &'static [i32] {
-        assert!(idx_num < CHORD_TABLE.len());
+        assert!(idx_num < MAX_CHORD_TABLE);
         CHORD_TABLE[idx_num].table
     }
     pub fn get_table_name(idx_num: usize) -> &'static str {
-        assert!(idx_num < CHORD_TABLE.len());
+        assert!(idx_num < MAX_CHORD_TABLE);
         CHORD_TABLE[idx_num].name
     }
     pub fn get_table_num(kind: &str) -> u16 {
-        let mut table: u16 = (CHORD_TABLE.len()-1) as u16;
+        let mut table: u16 = (MAX_CHORD_TABLE-1) as u16;
         for (i, tp) in CHORD_TABLE.iter().enumerate() {
             if tp.name == kind {
                 table = i as u16;
