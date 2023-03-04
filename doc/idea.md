@@ -70,21 +70,23 @@
 
 ```mermaid
 classDiagram
-ElapseIF <|-- Part
-ElapseIF <|-- Loop
+LoopianApp *-- LoopianCmd
+LoopianApp *-- ElapseStack
+Elapse <|-- Part
+Elapse <|-- Loop
 Loop <|-- PhraseLoop
 Loop <|-- CompositionLoop
-ElapseIF <|-- Note
-ElapseIF <|-- Damper
+Elapse <|-- Note
+Elapse <|-- Damper
 ElapseStack o-- Part
 ElapseStack o-- PhraseLoop
 ElapseStack o-- CompositionLoop
 ElapseStack o-- Note
 ElapseStack o-- Damper
+LoopianCmd *-- SeqDataStock
 SeqDataStock *-- PhraseDataStock
-SeqDataStock *-- DamperDataStock
 SeqDataStock *-- CompositionDataStock
-SeqDataStock <-- ElapseStack
+SeqDataStock *-- DamperDataStock
 ```
 
 ### Elapse Object
@@ -125,7 +127,7 @@ SeqDataStock <-- ElapseStack
     - 同じ意味に使う文字 : 小節(/,|)、同時(=,_)、タイ(.,~)
 
 
-### 入力から再生までの変換の流れ
+### Phrase 入力から再生までの変換の流れ
 
 |変換順|name|名前|説明|変更タイミング|他原因|
 |-|-|-|-|-|-|
@@ -150,6 +152,15 @@ SeqDataStock <-- ElapseStack
 - Pedalデータは各パートの Loop 冒頭に以下の処理を行う
     - コード情報があれば、ペダルを踏む
     - コード情報がない、あるいは noped 指定の場合はペダルを踏まない
+
+### Composition 入力から再生までの変換の流れ
+
+|変換順|name|名前|説明|変更タイミング|他原因|
+|-|-|-|-|-|-|
+|1|raw|生|ユーザーが入力した生データ|入力時(static)||
+|2|complement|補填|生データに補填、追加したデータ|入力時||
+|3|recombined|再構成|SMF的な、tick/chord をセットにしたデータ|入力時|beat|
+
 
 ### Rust 版の Message の流れ
 
@@ -186,6 +197,14 @@ SeqDataStock <-- ElapseStack
         - 四分音符未満の長さに適用
     - Parallel
         - 音程全体を、ルート音の音高分だけ平行移動する
+
+
+### Note 処理
+
+![note](note.png)
+
+- octave は、Phrase生成時に足しこむ
+- key は、再生時に足しこむ
 
 
 ### Tempo 生成の考え方
@@ -226,13 +245,16 @@ SeqDataStock <-- ElapseStack
 
 ## Rust 化の順番
 - とりあえずテキスト入力で音が鳴る(2023/2/23)
-- humanized 対応
-- Composition のテキスト変換
-- Chord情報の再生
+- humanized 対応 2/25済
+- Composition のテキスト変換 2/28済
+- Part内のPhrase,Composition合体 3/3済
+- Chordのcmdからloopまでの伝達 3/4済
+- Chord情報の再生 3/4済
+- octave/key切替
 - Analyzed対応
 - Chord情報による音程変換
 - Part切替
-- Beat/Key切替
+- Beat切替
 - 8 indicator 全表示
 - Rondamized 対応
 - Log File対応
