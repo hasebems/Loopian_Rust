@@ -115,6 +115,8 @@ impl PhraseLoop {
         //        let (root, trans_tbl) = linked_comp.borrow().get_translation();
         //    }
         //}
+        let (_root, _ctbl) = estk.get_chord_info(self.id.pid as usize);
+
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(trace as u32, self.id.sid, estk, &ev, msr, tick);
         estk.add_elapse(Rc::clone(&nt));
     }
@@ -236,10 +238,10 @@ impl CompositionLoop {
             destroy: false,
             first_msr_num: msr,
             next_msr: 0,   //   次に呼ばれる小節番号が保持される
-            next_tick: 0,        
+            next_tick: 0,
         }))
     }
-    pub fn _get_translation(&self) -> (u8, Vec<u32>) {(0, vec![0,1,2,3,4,5,6,7,8,9,10,11])}
+    pub fn get_chord(&self) -> (u16, u16) {(self.root, self.translation_tbl)}
     fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
     fn prepare_note_translation(&mut self, cd: Vec<u16>) {
         if cd[lpnlib::TYPE] == lpnlib::TYPE_CHORD {

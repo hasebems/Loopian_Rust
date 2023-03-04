@@ -254,9 +254,9 @@ pub struct Part {
 }
 
 impl Elapse for Part {
-    fn id(&self) -> ElapseId {self.id}           // id を得る
-    fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
+    fn id(&self) -> ElapseId {self.id}      // id を得る
+    fn prio(&self) -> u32 {self.priority}   // priority を得る
+    fn next(&self) -> (i32, i32) {          // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
     }
     fn start(&mut self) {      // User による start/play 時にコールされる
@@ -270,55 +270,12 @@ impl Elapse for Part {
     fn fine(&mut self, _estk: &mut ElapseStack) {}        // User による fine があった次の小節先頭でコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let pbp = PartBasicPrm {
-                                    part_num: self.priority,
+                                    part_num: self.id.sid,
                                     keynote: self.keynote,
                                     sync_flag: self.sync_next_msr_flag,
                                 };
         self.cm.process(crnt_, estk, pbp);
         self.pm.process(crnt_, estk, pbp);
-
-        /*if self.state_reserve {
-            // 前小節にて phrase/pattern 指定された時
-            if crnt_.msr == 0 {
-                // 今回 start したとき
-                self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
-            }
-            else if self.max_loop_msr == 0 {
-                // データのない状態で start し、今回初めて指定された時
-                self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
-            }
-            else if self.max_loop_msr != 0 &&
-              (crnt_.msr - self.first_measure_num)%(self.max_loop_msr) == 0 {
-                // 前小節にて Loop Obj が終了した時
-                self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
-            }
-            else if self.max_loop_msr != 0 && self.sync_next_msr_flag {
-                // sync コマンドによる強制リセット
-                self.state_reserve = false;
-                self.sync_next_msr_flag = false;
-                if let Some(lp) = &self.loop_phrase {
-                    estk.del_elapse(lp.borrow().id());
-                    self.loop_phrase = None;
-                }
-                if let Some(lp) = &self.loop_cmps {
-                    estk.del_elapse(lp.borrow().id());
-                    self.loop_cmps = None;
-                }
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
-            }
-            else {
-                // 現在の Loop Obj が終了していない時
-                // state_reserve は持ち越す
-            }
-        }
-        else if self.max_loop_msr != 0 &&
-          (crnt_.msr - self.first_measure_num)%(self.max_loop_msr) == 0 {
-            // 同じ Loop.Obj を生成する
-            self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk);
-        }*/
 
         self.sync_next_msr_flag = false;
         // 毎小節の頭で process() がコール
@@ -357,5 +314,8 @@ impl Part {
     }
     pub fn rcv_cmps_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
         self.cm.rcv_msg(msg, whole_tick);
+    }
+    pub fn get_cmps_loop(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
+        self.cm.loop_cmps.clone()
     }
 }
