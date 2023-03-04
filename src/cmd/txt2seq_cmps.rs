@@ -88,15 +88,15 @@ const NONE:   [i32; 2]  = [1000, 1001];  // if more than 127, no sound by limit
 pub struct TextParseCmps {}
 impl TextParseCmps {
     pub fn get_root_name(idx_num: usize) -> &'static str {
-        assert!(idx_num >= ROOT_NAME.len());
+        assert!(idx_num < ROOT_NAME.len());
         ROOT_NAME[idx_num]
     }
     pub fn get_table(idx_num: usize) -> &'static [i32] {
-        assert!(idx_num >= CHORD_TABLE.len());
+        assert!(idx_num < CHORD_TABLE.len());
         CHORD_TABLE[idx_num].table
     }
     pub fn get_table_name(idx_num: usize) -> &'static str {
-        assert!(idx_num >= CHORD_TABLE.len());
+        assert!(idx_num < CHORD_TABLE.len());
         CHORD_TABLE[idx_num].name
     }
     pub fn get_table_num(kind: &str) -> u16 {
