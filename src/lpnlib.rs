@@ -64,6 +64,7 @@ pub const DEFAULT_VEL: u8 = 100;
 // MSG_STOP     | --          |
 // MSG_SET      | MSG2_BPM    |[bpm]| --
 //              | MSG2_BEAT   |[up]|[low]| --
+//              | MSG2_KEY    |[key]| --
 // MSG_PHR+part |[whole_tick] |( TYPE | TICK | DURATION | NOTE | VELOCITY )*n
 // MSG_CMP+part |[whole_tick] |( TYPE | TICK | ROOT | TABLE )*n
 pub const MSG_QUIT: u16     = 0xffff;
@@ -72,6 +73,7 @@ pub const MSG_STOP: u16     = 0xfff8;
 pub const MSG_SET:  u16     = 0xfff9;
 pub const MSG2_BPM: u16     = 0x0001;
 pub const MSG2_BEAT: u16    = 0x0002;
+pub const MSG2_KEY: u16     = 0x0003;
 
 pub const MSG_PART_MASK: u16 = 0xfff0;
 pub const MSG_PHR: u16      = 0x1000;   // 1桁目にパート番号

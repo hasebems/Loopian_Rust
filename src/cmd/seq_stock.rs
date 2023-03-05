@@ -58,6 +58,20 @@ impl SeqDataStock {
         self.bpm = bpm;
         self.recombine_phr_all();
     }
+    pub fn change_oct(&mut self, oct: i32, relative: bool, part: usize) -> bool {
+        let old = self.pdt[part].base_note/12 - 1;
+        let mut new = old;
+        if relative {new += oct;}
+        else        {new = oct;}
+        if new >= 8 {new = 7;}
+        else if new < 1 {new = 1;}
+        if old != new {
+            self.pdt[part].base_note = (new+1)*12;
+            self.pdt[part].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            true
+        }
+        else {false}
+    }
     fn recombine_phr_all(&mut self) {
         for pd in self.pdt.iter_mut() {
             pd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
@@ -65,7 +79,7 @@ impl SeqDataStock {
     }
 }
 pub struct PhraseDataStock {
-    oct_setting: i32,
+    base_note: i32,
     raw: String,
     cmpl_nt: Vec<String>,
     cmpl_ex: Vec<String>,
@@ -75,7 +89,7 @@ pub struct PhraseDataStock {
 impl Default for PhraseDataStock {
     fn default() -> Self {
         Self {
-            oct_setting: 0,
+            base_note: lpnlib::DEFAULT_NOTE_NUMBER as i32,
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
@@ -115,7 +129,7 @@ impl PhraseDataStock {
         // 3.recombined data
         let (whole_tick, rcmb) = TextParse::recombine_to_internal_format(
             &self.cmpl_nt, &self.cmpl_ex, input_mode,
-            self.oct_setting, tick_for_onemsr);
+            self.base_note, tick_for_onemsr);
         self.rcmb = rcmb;
         self.whole_tick = whole_tick;
 

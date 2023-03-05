@@ -165,7 +165,7 @@ impl TextParse {
     }
     //=========================================================================
     pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: lpnlib::InputMode,
-      oct_setting: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<u16>>) {
+      base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<u16>>) {
         let max_read_ptr = ntvec.len();
         let (exp_vel, exp_others) = TextParse::get_exp_info(expvec.clone());
         let mut read_ptr = 0;
@@ -179,7 +179,7 @@ impl TextParse {
             let note_text = ntvec[read_ptr].clone();
 
             let (notes, mes_end, bdur, dur_cnt, diff_vel, lnt)
-              = TextParse::break_up_nt_dur_vel(note_text, oct_setting, last_nt, base_dur, imd);
+              = TextParse::break_up_nt_dur_vel(note_text, base_note, last_nt, base_dur, imd);
             base_dur = bdur;
             last_nt = lnt;    // 次回の音程の上下判断のため
 
@@ -221,7 +221,7 @@ impl TextParse {
         if vel == lpnlib::END_OF_DATA {vel=lpnlib::DEFAULT_VEL as i32;}
         (vel, retvec)
     }
-    fn break_up_nt_dur_vel(note_text: String, oct_setting: i32, last_nt: i32, bdur: i32, imd: lpnlib::InputMode)
+    fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i32, imd: lpnlib::InputMode)
       -> (Vec<u8>, bool, i32, i32, i32, i32) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
 
         //  小節線のチェック
@@ -246,7 +246,7 @@ impl TextParse {
             else if imd == lpnlib::InputMode::Closer {
                 doremi = TextParse::convert_doremi_closer(nt.to_string(), last_nt);
             }
-            let mut base_pitch: i32 = oct_setting*12 + lpnlib::DEFAULT_NOTE_NUMBER as i32 + doremi;
+            let mut base_pitch: i32 = base_note + doremi;
             if base_pitch >= lpnlib::MAX_NOTE_NUMBER as i32 {base_pitch = lpnlib::MAX_NOTE_NUMBER as i32;}
             else if base_pitch < lpnlib::MIN_NOTE_NUMBER as i32 {base_pitch = lpnlib::MIN_NOTE_NUMBER as i32;}
             notes.push(base_pitch as u8);

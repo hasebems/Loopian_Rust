@@ -86,11 +86,87 @@ impl LoopianCmd {
         }
         else {println!("Part {}: No Data!",part)}
     }
+    fn change_key(&mut self, key_text: &str) -> bool {
+        let mut key = lpnlib::END_OF_DATA;
+        let length = key_text.len();
+        match key_text.chars().nth(0) {
+            Some('C') => key = 0,
+            Some('D') => key = 2,
+            Some('E') => key = 4,
+            Some('F') => key = 5,
+            Some('G') => key = 7,
+            Some('A') => key = 9,
+            Some('B') => key = 11,
+            Some(_) => (),
+            None => (),
+        }
+        if key != lpnlib::END_OF_DATA {
+            let mut oct = 0;
+            if length >= 2 {
+                let mut num_txt = "".to_string();
+                if let Some(ltr2) = key_text.chars().nth(1) {
+                    match ltr2 {
+                        '#' => {key += 1; num_txt = key_text[2..].to_string();},
+                        'b' => {key -= 1; num_txt = key_text[2..].to_string();},
+                        _ => {num_txt = key_text[1..].to_string();},
+                    }
+                }
+                if let Ok(oct_num) = num_txt.parse::<i32>() {oct = oct_num;}
+            }
+            if key < 0 {key+=12;}
+            else if key >= 12 {key-=12;}
+            println!("CHANGE KEY: {}, {}",key, oct);
+            // phrase 再生成(新oct込み)
+            if oct != 0 {
+                if self.gendt.change_oct(oct, false, self.input_part) {
+                    self.send_phrase_to_elapse(self.input_part);
+                }
+            }
+            // elapse に key を送る
+            self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_KEY, key as u16]);
+            true
+        }
+        else {
+            false
+        }
+    }
+    fn change_oct(&mut self, oct_txt: &str) -> bool {
+        let mut oct = lpnlib::FULL;
+        if let Ok(oct_num) = oct_txt.parse::<i32>() {oct = oct_num;}
+        if oct != lpnlib::FULL {
+            if self.gendt.change_oct(oct, true, self.input_part) {
+                self.send_phrase_to_elapse(self.input_part);
+                true
+            }
+            else {false}
+        }
+        else {false}
+    }
     fn parse_set_command(&mut self, input_text: &str) -> String {
         let cmnd = &input_text[4..];
-        let len = cmnd.chars().count();
-        if len > 4 && &cmnd[0..4] == "bpm=" {
-            match cmnd[4..].parse::<u16>() {
+        let _len = cmnd.chars().count();
+        let cv = cmnd.split('=').fold(Vec::new(), |mut s, i| {
+            s.push(i.to_string());
+            s
+        });
+        if cv[0] == "key".to_string() {
+            if self.change_key(&cv[1]) {
+                "Key has changed!".to_string()
+            }
+            else {
+                "what?".to_string()
+            }
+        }
+        else if cv[0] == "oct" {
+            if self.change_oct(&cv[1]) {
+                "Octave has changed!".to_string()
+            }
+            else {
+                "what?".to_string()
+            }
+        }
+        else if cv[0] == "bpm" {
+            match cv[1].parse::<u16>() {
                 Ok(msg) => {
                     self.gendt.change_bpm(msg);
                     self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BPM, msg]);
@@ -99,14 +175,14 @@ impl LoopianCmd {
                     }
                     "BPM has changed!".to_string()
                 },
-                Err(_e) => {
-                    println!("{:?}",_e);
+                Err(e) => {
+                    println!("{:?}",e);
                     "Number is wrong.".to_string()
                 },
             }
         }
-        else if len > 5 && &cmnd[0..5] == "beat=" {
-            let beat = &cmnd[5..];
+        else if cv[0] == "beat" {
+            let beat = &cv[1];
             let numvec = lpnlib::split_by('/', beat.to_string());
             match (numvec[0].parse::<u16>(), numvec[1].parse::<u16>()) {
                 (Ok(up),Ok(low)) => {
@@ -120,16 +196,10 @@ impl LoopianCmd {
                 _ => "Number is wrong.".to_string()
             }
         }
-        else if len > 4 && &cmnd[0..4] == "key=" {
+        else if cv[0] == "input" {
             "what?".to_string()
         }
-        else if len > 4 && &cmnd[0..4] == "oct=" {
-            "what?".to_string()
-        }
-        else if len > 6 && &cmnd[0..6] == "input=" {
-            "what?".to_string()
-        }
-        else if len > 9 && &cmnd[0..9] == "samenote=" {
+        else if cv[0] == "samenote" {
             "what?".to_string()
         }
         else {
