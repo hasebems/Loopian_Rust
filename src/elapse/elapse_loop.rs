@@ -38,7 +38,7 @@ pub struct PhraseLoop {
 
     phrase_dt: Vec<Vec<u16>>,
     //analys_dt:
-    _keynote: u8,
+    keynote: u8,
     play_counter: usize,
     next_tick_in_phrase: i32,
     _last_note: u8,
@@ -90,12 +90,12 @@ impl Loop for PhraseLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl PhraseLoop {
-    pub fn new(sid: u32, pid: u32, knt: u8, msr: i32, msg: Vec<Vec<u16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<u16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_LOOP,
             phrase_dt: msg,
-            _keynote: knt,
+            keynote,
             play_counter: 0,
             next_tick_in_phrase: 0,
             _last_note: lpnlib::NO_NOTE,
@@ -118,7 +118,14 @@ impl PhraseLoop {
         let (_root, _ctbl) = estk.get_chord_info(self.id.pid as usize);
         println!("Get Chord: {}, {}", _root, _ctbl);
 
-        let nt: Rc<RefCell<dyn Elapse>> = Note::new(trace as u32, self.id.sid, estk, &ev, msr, tick);
+        let nt: Rc<RefCell<dyn Elapse>> = Note::new(
+            trace as u32,   //  read pointer
+            self.id.sid,    //  loop.sid -> note.pid
+            estk,
+            &ev,
+            self.keynote,
+            msr,
+            tick);
         estk.add_elapse(Rc::clone(&nt));
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {

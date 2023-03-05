@@ -177,6 +177,9 @@ impl ElapseStack {
         if msg[1] == lpnlib::MSG2_BPM {
             self.bpm_stock = msg[2];
         }
+        else if msg[1] == lpnlib::MSG2_KEY {
+            self.part_vec.iter().for_each(|x| x.borrow_mut().change_key(msg[2] as u8));
+        }
     }
     fn phrase(&mut self, msg: Vec<u16>) {
         // message の２次元化

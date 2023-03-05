@@ -304,9 +304,8 @@ impl Part {
             sync_next_msr_flag: false,
         }))
     }
-    pub fn _change_key(&mut self, knt: u8) {
+    pub fn change_key(&mut self, knt: u8) {
         self.keynote = knt;          // 0-11
-        //self.state_reserve = true;
         self.pm.state_reserve = true;
     }
     pub fn rcv_phr_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
