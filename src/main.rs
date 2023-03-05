@@ -115,8 +115,8 @@ impl LoopianApp {
     fn text_for_eight_indicator(&mut self, num: i32) -> String {
         let indi_txt;
         match num {
-            0 => indi_txt = "key:".to_string() + self.cmd.get_indicator(0),
-            1 => indi_txt = "bpm:".to_string() + self.cmd.get_indicator(1),
+            0 => indi_txt = "key: ".to_string() + self.cmd.get_indicator(0),
+            1 => indi_txt = "bpm: ".to_string() + self.cmd.get_indicator(1),
             2 => indi_txt = "beat:".to_string() + self.cmd.get_indicator(2),
             4 => indi_txt = "L1:".to_string() + self.cmd.get_indicator(4),
             5 => indi_txt = "L2:".to_string() + self.cmd.get_indicator(5),

@@ -25,6 +25,8 @@ impl LoopianCmd {
     pub fn new(msg_hndr: mpsc::Sender<Vec<u16>>, ui_hndr: mpsc::Receiver<String>) -> Self {
         let mut indc: Vec<String> = Vec::new();
         for _ in 0..Self::MAX_INDICATOR {indc.push("---".to_string());}
+        indc[0] = "C".to_string();
+        indc[1] = lpnlib::DEFAULT_BPM.to_string();
         indc[3] = "1 : 1 : 000".to_string();
         Self {
             indicator: indc,
@@ -124,6 +126,7 @@ impl LoopianCmd {
             }
             // elapse に key を送る
             self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_KEY, key as u16]);
+            self.indicator[0] = key_text.to_string();
             true
         }
         else {
