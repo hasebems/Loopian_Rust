@@ -7,6 +7,9 @@ use crate::lpnlib;
 use super::txt2seq_phr::*;
 use super::txt2seq_cmps::*;
 
+//*******************************************************************
+//          Seq Data Stock Struct
+//*******************************************************************
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
 pub struct SeqDataStock {
@@ -78,6 +81,10 @@ impl SeqDataStock {
         }
     }
 }
+
+//*******************************************************************
+//          Phrase Data Stock Struct
+//*******************************************************************
 pub struct PhraseDataStock {
     base_note: i32,
     raw: String,
@@ -111,7 +118,7 @@ impl PhraseDataStock {
         self.raw = input_text.clone();
 
         // 2.complement data
-        let cmpl = TextParse::complement_phrase(input_text);
+        let cmpl = complement_phrase(input_text);
         if cmpl.len() <= 1 {
             println!("Phrase input failed!");
             return false
@@ -127,7 +134,7 @@ impl PhraseDataStock {
         if self.cmpl_nt == [""] {return}
 
         // 3.recombined data
-        let (whole_tick, rcmb) = TextParse::recombine_to_internal_format(
+        let (whole_tick, rcmb) = recombine_to_internal_format(
             &self.cmpl_nt, &self.cmpl_ex, input_mode,
             self.base_note, tick_for_onemsr);
         self.rcmb = rcmb;
@@ -136,10 +143,14 @@ impl PhraseDataStock {
         // 4.analysed data
 
         // 5.humanized data
-        self.rcmb = TextParse::beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
+        self.rcmb = beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
         println!("final_phrase: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
     }
 }
+
+//*******************************************************************
+//          Composition Data Stock Struct
+//*******************************************************************
 pub struct CompositionDataStock {
     raw: String,
     cmpl_cd: Vec<String>,
@@ -171,7 +182,7 @@ impl CompositionDataStock {
         self.raw = input_text.clone();
 
         // 2.complement data
-        if let Some(cmpl) = TextParseCmps::complement_composition(input_text){
+        if let Some(cmpl) = complement_composition(input_text){
             self.cmpl_cd = cmpl[0].clone();
             self.cmpl_ex = cmpl[1].clone();
             println!("complement_composition: {:?} exp: {:?}",cmpl[0],cmpl[1]);
@@ -187,7 +198,7 @@ impl CompositionDataStock {
 
         // 3.recombined data
         let (whole_tick, rcmb) = 
-            TextParseCmps::recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_onebeat);
+            recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_onebeat);
         self.rcmb = rcmb;
         self.whole_tick = whole_tick;
         println!("final_composition: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);

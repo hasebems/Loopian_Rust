@@ -257,11 +257,11 @@ impl CompositionLoop {
             self.translation_tbl = cd[lpnlib::CD_TABLE];
 
             let tbl_num: usize = self.translation_tbl as usize;
-            let tbl_name = crate::cmd::txt2seq_cmps::TextParseCmps::get_table_name(tbl_num);
+            let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
             let cname = tbl_name.to_string();
             if cname.chars().nth(0).unwrap_or(' ') == '_' {
                 let root_index = ((self.root-1)/3) as usize;
-                let root = crate::cmd::txt2seq_cmps::TextParseCmps::get_root_name(root_index);
+                let root = crate::cmd::txt2seq_cmps::get_root_name(root_index);
                 self.chord_name = root.to_string() + &cname[1..];
             }
             else {
@@ -269,7 +269,7 @@ impl CompositionLoop {
             }
             println!("Chord Data: {}, {}, {}",self.chord_name, cd[lpnlib::CD_ROOT], cd[lpnlib::CD_TABLE]);
             /*<<DoItLater>>*/
-            let _tbl:&[i32] = crate::cmd::txt2seq_cmps::TextParseCmps::get_table(tbl_num);
+            let _tbl:&[i32] = crate::cmd::txt2seq_cmps::get_table(tbl_num);
         }
     }
     fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {

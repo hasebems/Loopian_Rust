@@ -19,9 +19,9 @@ pub const _CANCEL: u16 = 0xffff;
 pub const NO_ROOT: u16 = 0; // root = 1:Ib,2:I,3:I# ...
 pub const NO_TABLE: u16 = 10000;
 
-//=====================
-// part count
-//=====================
+//*******************************************************************
+//          part count
+//*******************************************************************
 // Comp 2(L)+2(R), Phrase 2(L)+2(R), Pedal 1 
 pub const _LEFT1: usize = 0;
 pub const _LEFT2: usize = 1;
@@ -42,10 +42,9 @@ pub const MAX_USER_PART: usize = MAX_LEFT_PART+MAX_RIGHT_PART;
 pub const _DAMPER_PEDAL_PART: usize = MAX_USER_PART;
 pub const ALL_PART_COUNT: usize = MAX_USER_PART+1;
 
-
-//=====================
-// default value
-//=====================
+//*******************************************************************
+//          default value
+//*******************************************************************
 pub const DEFAULT_BPM: u16 = 100;
 pub const DEFAULT_NOTE_NUMBER: u8 = 60;     // C4
 pub const MAX_NOTE_NUMBER: u8 = 108;        // C8
@@ -54,9 +53,9 @@ pub const NO_NOTE: u8 = 255;
 pub const REST: u8 = 254;
 pub const DEFAULT_VEL: u8 = 100;
 
-//=====================
-// UI->ELPS Message
-//=====================
+//*******************************************************************
+//          UI->ELPS Message
+//*******************************************************************
 //  MSG1st      |  2nd        |  3rd  |
 //------------------------------------
 // MSG_QUIT     | --          |
@@ -97,18 +96,18 @@ pub const CD_TABLE: usize   = 3;
 pub const TYPE_DAMPER: u16  = 0xf003;
 
 
-//=====================
-// Enum
-//=====================
+//*******************************************************************
+//          Enum
+//*******************************************************************
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum InputMode {
     Fixed,  // 階名のオクターブ位置は固定。絶対位置を指定
     Closer, // 次の階名は近い方のオクターブを選択。遠い方を指示する場合、+/-を使う。
 }
 
-//=====================
-// Functions
-//=====================
+//*******************************************************************
+//          Func
+//*******************************************************************
 pub fn convert_exp2vel(vel_text: &str) -> i32 {
     match vel_text {
         "ff" => 127,

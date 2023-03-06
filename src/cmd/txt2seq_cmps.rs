@@ -5,6 +5,9 @@
 //
 use crate::lpnlib;
 
+//*******************************************************************
+//          Chord Tables and IF
+//*******************************************************************
 const ROOT_NAME: [&'static str; 7] = ["I","II","III","IV","V","VI","VII"];
 struct ChordTable {
     name: &'static str,
@@ -86,215 +89,219 @@ const BLUES:  [i32; 6]  = [0, 3, 5, 6, 7, 10];
 const ERR:    [i32; 1]  = [0];
 const NONE:   [i32; 2]  = [1000, 1001];  // if more than 127, no sound by limit
 
-pub struct TextParseCmps {}
-impl TextParseCmps {
-    pub fn get_root_name(idx_num: usize) -> &'static str {
-        assert!(idx_num < ROOT_NAME.len());
-        ROOT_NAME[idx_num]
-    }
-    pub fn get_table(idx_num: usize) -> &'static [i32] {
-        assert!(idx_num < MAX_CHORD_TABLE);
-        CHORD_TABLE[idx_num].table
-    }
-    pub fn get_table_name(idx_num: usize) -> &'static str {
-        assert!(idx_num < MAX_CHORD_TABLE);
-        CHORD_TABLE[idx_num].name
-    }
-    pub fn get_table_num(kind: &str) -> u16 {
-        let mut table: u16 = (MAX_CHORD_TABLE-1) as u16;
-        for (i, tp) in CHORD_TABLE.iter().enumerate() {
-            if tp.name == kind {
-                table = i as u16;
-                break;
-            }
+pub fn get_root_name(idx_num: usize) -> &'static str {
+    assert!(idx_num < ROOT_NAME.len());
+    ROOT_NAME[idx_num]
+}
+pub fn get_table(idx_num: usize) -> &'static [i32] {
+    assert!(idx_num < MAX_CHORD_TABLE);
+    CHORD_TABLE[idx_num].table
+}
+pub fn get_table_name(idx_num: usize) -> &'static str {
+    assert!(idx_num < MAX_CHORD_TABLE);
+    CHORD_TABLE[idx_num].name
+}
+pub fn get_table_num(kind: &str) -> u16 {
+    let mut table: u16 = (MAX_CHORD_TABLE-1) as u16;
+    for (i, tp) in CHORD_TABLE.iter().enumerate() {
+        if tp.name == kind {
+            table = i as u16;
+            break;
         }
-        table
     }
-    pub fn complement_composition(input_text: String) -> Option<[Vec<String>;2]> {
-        // 1. {} を抜き出し、２つ分の brackets を Vec に入れて戻す
-        if let Some((cd, ce)) = TextParseCmps::divide_brace(input_text){
-            println!("{:?}",cd);
+    table
+}
 
-            // 2. 重複補填と ',' で分割
-            let cmps_vec = TextParseCmps::fill_omitted_chord_data(cd);
+//*******************************************************************
+//          complement_composition
+//*******************************************************************
+pub fn complement_composition(input_text: String) -> Option<[Vec<String>;2]> {
+    // 1. {} を抜き出し、２つ分の brackets を Vec に入れて戻す
+    if let Some((cd, ce)) = divide_brace(input_text){
+        println!("{:?}",cd);
 
-            // 3. Expression を ',' で分割
-            let ex_vec = lpnlib::split_by(',', ce);
+        // 2. 重複補填と ',' で分割
+        let cmps_vec = fill_omitted_chord_data(cd);
 
-            Some([cmps_vec, ex_vec])
-        }
-        else {None}
+        // 3. Expression を ',' で分割
+        let ex_vec = lpnlib::split_by(',', ce);
+
+        Some([cmps_vec, ex_vec])
     }
-    pub fn divide_brace(input_text: String) -> Option<(String, String)> {
-        let mut cmps_info: Vec<String> = Vec::new();
+    else {None}
+}
+pub fn divide_brace(input_text: String) -> Option<(String, String)> {
+    let mut cmps_info: Vec<String> = Vec::new();
 
-        // {} のセットを抜き出し、中身を cmps_info に入れる
-        let mut isx: &str = &input_text;
-        loop {
-            if let Some(n2) = isx.find('}') {
-                cmps_info.push(isx[1..n2].to_string());
-                isx = &isx[n2+1..];
-                if isx.len() == 0 {break;}
-                if let Some(n3) = isx.find('{') {
-                    if n3 != 0 {break;}
-                }
-                else {break;}
+    // {} のセットを抜き出し、中身を cmps_info に入れる
+    let mut isx: &str = &input_text;
+    loop {
+        if let Some(n2) = isx.find('}') {
+            cmps_info.push(isx[1..n2].to_string());
+            isx = &isx[n2+1..];
+            if isx.len() == 0 {break;}
+            if let Some(n3) = isx.find('{') {
+                if n3 != 0 {break;}
             }
             else {break;}
         }
-
-        let blk_cnt = cmps_info.len();
-        if blk_cnt >= 2 {
-            Some((cmps_info[0].clone(), cmps_info[1].clone()))
-        }
-        else if blk_cnt == 1 {
-            Some((cmps_info[0].clone(), "".to_string()))
-        }
-        else {None}
+        else {break;}
     }
-    fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
-        //  省略を thru で補填
-        const NO_CHORD: &str = "thru";
-        let mut end_flag: bool = true;
-        let mut fill: String = "".to_string();
-        let mut chord: String = NO_CHORD.to_string();
-        for ltr in cmps.chars() {
-            if ltr == ',' {
-                fill += &chord;
-                fill += ",";
-                chord = NO_CHORD.to_string();
-                end_flag = true;
-            }
-            else if ltr == '/' || ltr == '|' {
-                fill += &chord;
-                fill += "|,";
-                chord = NO_CHORD.to_string();
-                end_flag = true;
-            }
-            else {
-                if end_flag {
-                    chord = ltr.to_string();
-                    end_flag = false;
-                }
-                else {
-                    chord.push(ltr);
-                }
-            }
-        }
-        if chord != "" {
+
+    let blk_cnt = cmps_info.len();
+    if blk_cnt >= 2 {
+        Some((cmps_info[0].clone(), cmps_info[1].clone()))
+    }
+    else if blk_cnt == 1 {
+        Some((cmps_info[0].clone(), "".to_string()))
+    }
+    else {None}
+}
+fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
+    //  省略を thru で補填
+    const NO_CHORD: &str = "thru";
+    let mut end_flag: bool = true;
+    let mut fill: String = "".to_string();
+    let mut chord: String = NO_CHORD.to_string();
+    for ltr in cmps.chars() {
+        if ltr == ',' {
             fill += &chord;
+            fill += ",";
+            chord = NO_CHORD.to_string();
+            end_flag = true;
         }
-
-        // space を削除
-        fill.retain(|c| !c.is_whitespace());
-
-        // ',' で分割
-        lpnlib::split_by(',', fill)
-    }
-    //=========================================================================
-    pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_for_onebeat: i32)
-      -> (i32, Vec<Vec<u16>>) {
-        if comp.len() == 0 {
-            return (0, vec![vec![0]]);
-        }
-        let btcnt = tick_for_onemsr/tick_for_onebeat;
-        let max_read_ptr = comp.len();
-        let mut read_ptr = 0;
-        let mut tick: i32 = 0;
-        let mut msr: i32 = 1;
-        let mut rcmb: Vec<Vec<u16>> = Vec::new();
-        let mut same_chord: String = "x".to_string();
-
-        while read_ptr < max_read_ptr {
-            let (chord, dur) = TextParseCmps::divide_chord_info(comp[read_ptr].clone(), btcnt);
-            if tick < tick_for_onemsr*msr {
-                if same_chord != chord {
-                    same_chord = chord.clone();
-                    let (root, table) = TextParseCmps::convert_chord_to_num(chord);
-                    rcmb.push(vec![lpnlib::TYPE_CHORD, tick as u16, root, table]);
-                }
-                tick += tick_for_onebeat*dur;
-            }
-            if dur == btcnt {
-                tick = tick_for_onemsr*msr;
-                same_chord = "x".to_string();
-                msr += 1;
-            }
-            read_ptr += 1;  // out from repeat
-        }        
-
-        tick = msr*tick_for_onemsr;
-        (tick, rcmb)
-    }
-    fn divide_chord_info(mut chord: String, btcnt: i32) -> (String, i32) {
-        let mut dur: i32 = 1;
-        let mut ltr_count = chord.len();
-        if ltr_count == 0 {
-            return (chord, dur);
-        }
-
-        let mut last_ltr = chord.chars().last().unwrap_or(' ');
-        if last_ltr == '|' {
-            dur =  btcnt;
-            chord = chord[0..ltr_count-1].to_string();
+        else if ltr == '/' || ltr == '|' {
+            fill += &chord;
+            fill += "|,";
+            chord = NO_CHORD.to_string();
+            end_flag = true;
         }
         else {
-            while ltr_count >= 1 && last_ltr == '.' {
-                dur += 1;
-                chord = chord[0..ltr_count-1].to_string();
-                last_ltr = chord.chars().last().unwrap_or(' ');
-                ltr_count = chord.len();
+            if end_flag {
+                chord = ltr.to_string();
+                end_flag = false;
+            }
+            else {
+                chord.push(ltr);
             }
         }
-        (chord, dur)
     }
-    fn convert_chord_to_num(chord: String) -> (u16, u16) {
-        let mut root: u16 = 2;
-        let mut kind: String = "".to_string();
-        let mut root_str: String = "".to_string();
-        let mut ltr_cnt = 0;
-        let length = chord.len();
+    if chord != "" {
+        fill += &chord;
+    }
 
-        // extract root from chord
-        loop {
-            if length <= ltr_cnt {break;}
-            let ltr = chord.chars().nth(ltr_cnt).unwrap_or(' ');
-            if ltr == 'I' || ltr == 'V' {
-                root_str.push(ltr);
+    // space を削除
+    fill.retain(|c| !c.is_whitespace());
+
+    // ',' で分割
+    lpnlib::split_by(',', fill)
+}
+
+//*******************************************************************
+//          recombine_to_chord_loop
+//*******************************************************************
+pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_for_onebeat: i32)
+    -> (i32, Vec<Vec<u16>>) {
+    if comp.len() == 0 {
+        return (0, vec![vec![0]]);
+    }
+    let btcnt = tick_for_onemsr/tick_for_onebeat;
+    let max_read_ptr = comp.len();
+    let mut read_ptr = 0;
+    let mut tick: i32 = 0;
+    let mut msr: i32 = 1;
+    let mut rcmb: Vec<Vec<u16>> = Vec::new();
+    let mut same_chord: String = "x".to_string();
+
+    while read_ptr < max_read_ptr {
+        let (chord, dur) = divide_chord_info(comp[read_ptr].clone(), btcnt);
+        if tick < tick_for_onemsr*msr {
+            if same_chord != chord {
+                same_chord = chord.clone();
+                let (root, table) = convert_chord_to_num(chord);
+                rcmb.push(vec![lpnlib::TYPE_CHORD, tick as u16, root, table]);
             }
-            else if ltr == 'b' {
-                root = 1;
-                ltr_cnt += 1;
-                break;
-            }
-            else if ltr == '#' {
-                root = 3;
-                ltr_cnt += 1;
-                break;
-            }
-            else {break;}
+            tick += tick_for_onebeat*dur;
+        }
+        if dur == btcnt {
+            tick = tick_for_onemsr*msr;
+            same_chord = "x".to_string();
+            msr += 1;
+        }
+        read_ptr += 1;  // out from repeat
+    }        
+
+    tick = msr*tick_for_onemsr;
+    (tick, rcmb)
+}
+fn divide_chord_info(mut chord: String, btcnt: i32) -> (String, i32) {
+    let mut dur: i32 = 1;
+    let mut ltr_count = chord.len();
+    if ltr_count == 0 {
+        return (chord, dur);
+    }
+
+    let mut last_ltr = chord.chars().last().unwrap_or(' ');
+    if last_ltr == '|' {
+        dur =  btcnt;
+        chord = chord[0..ltr_count-1].to_string();
+    }
+    else {
+        while ltr_count >= 1 && last_ltr == '.' {
+            dur += 1;
+            chord = chord[0..ltr_count-1].to_string();
+            last_ltr = chord.chars().last().unwrap_or(' ');
+            ltr_count = chord.len();
+        }
+    }
+    (chord, dur)
+}
+fn convert_chord_to_num(chord: String) -> (u16, u16) {
+    let mut root: u16 = 2;
+    let mut kind: String = "".to_string();
+    let mut root_str: String = "".to_string();
+    let mut ltr_cnt = 0;
+    let length = chord.len();
+
+    // extract root from chord
+    loop {
+        if length <= ltr_cnt {break;}
+        let ltr = chord.chars().nth(ltr_cnt).unwrap_or(' ');
+        if ltr == 'I' || ltr == 'V' {
+            root_str.push(ltr);
+        }
+        else if ltr == 'b' {
+            root = 1;
             ltr_cnt += 1;
+            break;
         }
-
-        //  separate with chord, decide root number
-        if length > ltr_cnt {
-            kind = chord[ltr_cnt..].to_string();
+        else if ltr == '#' {
+            root = 3;
+            ltr_cnt += 1;
+            break;
         }
-        let mut found = false;
-        for (i, rn) in ROOT_NAME.iter().enumerate() {
-            if rn == &root_str {
-                root += 3*(i as u16);
-                kind = "_".to_string() + &kind;
-                found = true;
-                break;
-            }
-        }
-        if !found {root = lpnlib::NO_ROOT;}
-
-        //  search chord type from Table
-        //println!("*<Chord: {}, {}, {}>*", root, root_str, kind);
-        let table = TextParseCmps::get_table_num(&kind);
-
-        (root, table)
+        else {break;}
+        ltr_cnt += 1;
     }
+
+    //  separate with chord, decide root number
+    if length > ltr_cnt {
+        kind = chord[ltr_cnt..].to_string();
+    }
+    let mut found = false;
+    for (i, rn) in ROOT_NAME.iter().enumerate() {
+        if rn == &root_str {
+            root += 3*(i as u16);
+            kind = "_".to_string() + &kind;
+            found = true;
+            break;
+        }
+    }
+    if !found {root = lpnlib::NO_ROOT;}
+
+    //  search chord type from Table
+    //println!("*<Chord: {}, {}, {}>*", root, root_str, kind);
+    let table = get_table_num(&kind);
+
+    (root, table)
 }
