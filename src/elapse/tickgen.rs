@@ -7,7 +7,7 @@ use std::time::Instant;
 use crate::lpnlib::{Beat, DEFAULT_TICK_FOR_ONE_MEASURE, DEFAULT_TICK_FOR_QUARTER, DEFAULT_BPM};
 
 pub struct TickGen {
-    bpm: u16,
+    bpm: i16,
     beat: Beat,
     tick_for_onemsr: i32,
     origin_time: Instant,       // start 時の絶対時間
@@ -47,7 +47,7 @@ impl TickGen {
         self.bpm_start_time = self.crnt_time;
         self.bpm_start_tick = 0;
     }
-    pub fn change_bpm_event(&mut self, bpm: u16) {
+    pub fn change_bpm_event(&mut self, bpm: i16) {
         self.bpm_start_tick = self.calc_crnt_tick();
         self.bpm_start_time = self.crnt_time;  // Get current time
         self.bpm = bpm;
@@ -78,7 +78,7 @@ impl TickGen {
             self.tick_for_onemsr/tick_for_beat)
     }
     //pub fn get_tick_for_onemsr(&self) -> i32 {self.tick_for_onemsr}
-    pub fn get_bpm(&self) -> u16 {self.bpm}
+    pub fn get_bpm(&self) -> i16 {self.bpm}
     pub fn _get_beat(&self) -> Beat {self.beat}
     fn calc_crnt_tick(&self) -> i32 {
         let diff = self.crnt_time - self.bpm_start_time;

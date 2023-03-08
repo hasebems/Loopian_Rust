@@ -36,7 +36,7 @@ pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
 
-    phrase_dt: Vec<Vec<u16>>,
+    phrase_dt: Vec<Vec<i16>>,
     //analys_dt:
     keynote: u8,
     play_counter: usize,
@@ -90,7 +90,7 @@ impl Loop for PhraseLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl PhraseLoop {
-    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<u16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<i16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_LOOP,
@@ -107,7 +107,7 @@ impl PhraseLoop {
             next_tick: 0,
         }))
     }
-    fn note_event(&self, estk: &mut ElapseStack, trace: usize, ev: Vec<u16>, _next_tick: i32, msr: i32, tick: i32) {
+    fn note_event(&self, estk: &mut ElapseStack, trace: usize, ev: Vec<i16>, _next_tick: i32, msr: i32, tick: i32) {
         // phr: ['note', tick, duration, note, velocity]
         // <<DoItLater>>
         //if let Some(linked_part) = estk.get_part(self.id.pid) {
@@ -167,15 +167,15 @@ pub struct CompositionLoop {
     id: ElapseId,
     priority: u32,
 
-    cmps_dt: Vec<Vec<u16>>,
+    cmps_dt: Vec<Vec<i16>>,
     //analys_dt:
     _keynote: u8,
     play_counter: usize,
     next_tick_in_cmps: i32,
     // for Composition
     chord_name: String,
-    root: u16,
-    translation_tbl: u16,
+    root: i16,
+    translation_tbl: i16,
     already_end: bool,
 
     // for super's member
@@ -226,7 +226,7 @@ impl Loop for CompositionLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl CompositionLoop {
-    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<Vec<u16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<Vec<i16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_LOOP,
@@ -249,9 +249,9 @@ impl CompositionLoop {
             next_tick: 0,
         }))
     }
-    pub fn get_chord(&self) -> (u16, u16) {(self.root, self.translation_tbl)}
+    pub fn get_chord(&self) -> (i16, i16) {(self.root, self.translation_tbl)}
     fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
-    fn prepare_note_translation(&mut self, cd: Vec<u16>) {
+    fn prepare_note_translation(&mut self, cd: Vec<i16>) {
         if cd[lpnlib::TYPE] == lpnlib::TYPE_CHORD {
             self.root = cd[lpnlib::CD_ROOT];
             self.translation_tbl = cd[lpnlib::CD_TABLE];

@@ -101,11 +101,11 @@ pub fn get_table_name(idx_num: usize) -> &'static str {
     assert!(idx_num < MAX_CHORD_TABLE);
     CHORD_TABLE[idx_num].name
 }
-pub fn get_table_num(kind: &str) -> u16 {
-    let mut table: u16 = (MAX_CHORD_TABLE-1) as u16;
+pub fn get_table_num(kind: &str) -> i16 {
+    let mut table: i16 = (MAX_CHORD_TABLE-1) as i16;
     for (i, tp) in CHORD_TABLE.iter().enumerate() {
         if tp.name == kind {
-            table = i as u16;
+            table = i as i16;
             break;
         }
     }
@@ -201,7 +201,7 @@ fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
 //          recombine_to_chord_loop
 //*******************************************************************
 pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_for_onebeat: i32)
-    -> (i32, Vec<Vec<u16>>) {
+    -> (i32, Vec<Vec<i16>>) {
     if comp.len() == 0 {
         return (0, vec![vec![0]]);
     }
@@ -210,7 +210,7 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
     let mut read_ptr = 0;
     let mut tick: i32 = 0;
     let mut msr: i32 = 1;
-    let mut rcmb: Vec<Vec<u16>> = Vec::new();
+    let mut rcmb: Vec<Vec<i16>> = Vec::new();
     let mut same_chord: String = "x".to_string();
 
     while read_ptr < max_read_ptr {
@@ -219,7 +219,7 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
             if same_chord != chord {
                 same_chord = chord.clone();
                 let (root, table) = convert_chord_to_num(chord);
-                rcmb.push(vec![lpnlib::TYPE_CHORD, tick as u16, root, table]);
+                rcmb.push(vec![lpnlib::TYPE_CHORD, tick as i16, root, table]);
             }
             tick += tick_for_onebeat*dur;
         }
@@ -256,8 +256,8 @@ fn divide_chord_info(mut chord: String, btcnt: i32) -> (String, i32) {
     }
     (chord, dur)
 }
-fn convert_chord_to_num(chord: String) -> (u16, u16) {
-    let mut root: u16 = 2;
+fn convert_chord_to_num(chord: String) -> (i16, i16) {
+    let mut root: i16 = 2;
     let mut kind: String = "".to_string();
     let mut root_str: String = "".to_string();
     let mut ltr_cnt = 0;
@@ -291,7 +291,7 @@ fn convert_chord_to_num(chord: String) -> (u16, u16) {
     let mut found = false;
     for (i, rn) in ROOT_NAME.iter().enumerate() {
         if rn == &root_str {
-            root += 3*(i as u16);
+            root += 3*(i as i16);
             kind = "_".to_string() + &kind;
             found = true;
             break;

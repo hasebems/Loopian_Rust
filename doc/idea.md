@@ -134,7 +134,7 @@ SeqDataStock *-- DamperDataStock
 |1|raw|生|ユーザーが入力した生データ|入力時(static)||
 |2|complement|補填|生データに補填、追加したデータ|入力時||
 |3|recombined|再構成|SMF的な、tick/note/velocity をセットにしたデータ|入力時|composition/bpm/beat/key/oct|
-|4|analyzed|分析|コード変換時に自然な変換をするための分析データ|入力時||
+|4|analysed|分析|コード変換時に自然な変換をするための分析データ|入力時||
 |5|humanized|生演奏|velocity/duration を生演奏に近づけたデータ|入力時||
 ||||◆ここまでのデータが次のLoop先頭でロード◆|||
 |6|randomized|分散|変化量を分散したデータ|Loop頭(dynamic)||
@@ -172,6 +172,21 @@ SeqDataStock *-- DamperDataStock
     - mspc::channel は複数のスレッドから、一つのスレッドにメッセージを送れるが、今回は１対１の関係とする
     - LoopianApp::new() で二つの mspc::channel() がつくられ、各スレッドが受信するよう設定される
 
+### Note 処理
+
+![note](note.png)
+
+- octave は、Phrase生成時に足しこむ
+- key は、再生時に足しこむ
+
+
+### Analysed でやっていること
+
+- 時間単位での Phrase 情報の整列
+    - Note単位での再生情報を、時間単位に変換（和音指定を一つの単位に凝縮）
+    
+
+
 
 ### Filter
 
@@ -197,14 +212,6 @@ SeqDataStock *-- DamperDataStock
         - 四分音符未満の長さに適用
     - Parallel
         - 音程全体を、ルート音の音高分だけ平行移動する
-
-
-### Note 処理
-
-![note](note.png)
-
-- octave は、Phrase生成時に足しこむ
-- key は、再生時に足しこむ
 
 
 ### Tempo 生成の考え方
@@ -250,11 +257,12 @@ SeqDataStock *-- DamperDataStock
 - Part内のPhrase,Composition合体 3/3済
 - Chordのcmdからloopまでの伝達 3/4済
 - Chord情報の再生 3/4済
-- octave/key切替
+- octave/key切替 3/5済
 - Analyzed対応
 - Chord情報による音程変換
 - Part切替
 - Beat切替
+- pedal 対応
 - 8 indicator 全表示
 - Rondamized 対応
 - Log File対応

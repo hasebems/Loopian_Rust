@@ -13,7 +13,7 @@ use super::seq_stock::*;
 //  3. eguiに返事を返す
 pub struct LoopianCmd {
     indicator: Vec<String>,
-    msg_hndr: mpsc::Sender<Vec<u16>>,
+    msg_hndr: mpsc::Sender<Vec<i16>>,
     ui_hndr: mpsc::Receiver<String>,
     input_part: usize,
     gendt: SeqDataStock,
@@ -22,7 +22,7 @@ pub struct LoopianCmd {
 impl LoopianCmd {
     const MAX_INDICATOR: u32 = 8;
 
-    pub fn new(msg_hndr: mpsc::Sender<Vec<u16>>, ui_hndr: mpsc::Receiver<String>) -> Self {
+    pub fn new(msg_hndr: mpsc::Sender<Vec<i16>>, ui_hndr: mpsc::Receiver<String>) -> Self {
         let mut indc: Vec<String> = Vec::new();
         for _ in 0..Self::MAX_INDICATOR {indc.push("---".to_string());}
         indc[0] = "C".to_string();
@@ -60,7 +60,7 @@ impl LoopianCmd {
         self.read_from_ui_hndr();
         &self.indicator[num]
     }
-    fn send_msg_to_elapse(&self, msg: Vec<u16>) {
+    fn send_msg_to_elapse(&self, msg: Vec<i16>) {
         match self.msg_hndr.send(msg) {
             Err(e) => println!("Something happened on MPSC! {}",e),
             _ => {},
@@ -68,9 +68,9 @@ impl LoopianCmd {
     }
     fn send_phrase_to_elapse(&self, part: usize) {
         let pdstk = self.gendt.get_pdstk(part);
-        let mut pdt: Vec<u16> = pdstk.get_final();
+        let mut pdt: Vec<i16> = pdstk.get_final();
         if pdt.len() > 1 {
-            let mut msg: Vec<u16> = vec![lpnlib::MSG_PHR+self.input_part as u16];
+            let mut msg: Vec<i16> = vec![lpnlib::MSG_PHR+self.input_part as i16];
             msg.append(&mut pdt);
             //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
@@ -79,9 +79,9 @@ impl LoopianCmd {
     }
     fn send_composition_to_elapse(&self, part: usize) {
         let cdstk = self.gendt.get_cdstk(part);
-        let mut cdt: Vec<u16> = cdstk.get_final();
+        let mut cdt: Vec<i16> = cdstk.get_final();
         if cdt.len() > 1 {
-            let mut msg: Vec<u16> = vec![lpnlib::MSG_CMP+self.input_part as u16];
+            let mut msg: Vec<i16> = vec![lpnlib::MSG_CMP+self.input_part as i16];
             msg.append(&mut cdt);
             //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
@@ -125,7 +125,7 @@ impl LoopianCmd {
                 }
             }
             // elapse に key を送る
-            self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_KEY, key as u16]);
+            self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_KEY, key as i16]);
             self.indicator[0] = key_text.to_string();
             true
         }
@@ -169,7 +169,7 @@ impl LoopianCmd {
             }
         }
         else if cv[0] == "bpm" {
-            match cv[1].parse::<u16>() {
+            match cv[1].parse::<i16>() {
                 Ok(msg) => {
                     self.gendt.change_bpm(msg);
                     self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BPM, msg]);
@@ -187,7 +187,7 @@ impl LoopianCmd {
         else if cv[0] == "beat" {
             let beat = &cv[1];
             let numvec = lpnlib::split_by('/', beat.to_string());
-            match (numvec[0].parse::<u16>(), numvec[1].parse::<u16>()) {
+            match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
                 (Ok(up),Ok(low)) => {
                     self.gendt.change_beat(up, low);
                     self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BEAT, up, low]);

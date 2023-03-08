@@ -169,7 +169,7 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
 //          recombine_to_internal_format
 //*******************************************************************
 pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: lpnlib::InputMode,
-    base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<u16>>) {
+    base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<i16>>) {
     let max_read_ptr = ntvec.len();
     let (exp_vel, exp_others) = get_exp_info(expvec.clone());
     let mut read_ptr = 0;
@@ -177,7 +177,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
     let mut tick: i32 = 0;
     let mut msr: i32 = 1;
     let mut base_dur: i32 = lpnlib::DEFAULT_TICK_FOR_QUARTER;
-    let mut rcmb: Vec<Vec<u16>> = Vec::new();
+    let mut rcmb: Vec<Vec<i16>> = Vec::new();
 
     while read_ptr < max_read_ptr {
         let note_text = ntvec[read_ptr].clone();
@@ -201,7 +201,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
             else if last_vel < 1 {last_vel = 1;}
 
             // add to recombined data
-            rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as u16);
+            rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16);
             tick += real_dur;
         }
         if mes_end {// 小節線があった場合
@@ -296,11 +296,11 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
     //  基準音価を解析し、base_dur を確定 
     let txtlen = ntext.len();
     if txtlen > 0 {
-        let mut triplet: u16 = 0;
+        let mut triplet: i16 = 0;
         let mut idx = 1;
         let mut fst_ltr = ntext.chars().nth(0).unwrap_or(' ');
         if fst_ltr == '3' || fst_ltr == '5' {
-            triplet = fst_ltr as u16;
+            triplet = fst_ltr as i16;
             fst_ltr = ntext.chars().nth(1).unwrap_or(' ');
         }
         if fst_ltr == '\'' {
@@ -364,7 +364,7 @@ fn trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
     }
     else {return_dur}
 }
-fn add_note(rcmb: Vec<Vec<u16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: u16) -> Vec<Vec<u16>> {
+fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16) -> Vec<Vec<i16>> {
     let mut return_rcmb = rcmb.clone();
     if notes.len() != 0 {
         for note in notes.iter() {
@@ -385,8 +385,8 @@ fn add_note(rcmb: Vec<Vec<u16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_
                     else: break */
             }
             else {
-                let nt_data: Vec<u16> = 
-                    vec![lpnlib::TYPE_NOTE, tick as u16, note_dur as u16, *note as u16, last_vel];
+                let nt_data: Vec<i16> = 
+                    vec![lpnlib::TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
                     return_rcmb.push(nt_data);
             }
         }
@@ -467,17 +467,79 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
 }
 
 //*******************************************************************
-//          analyse_plain_data
+//          analyse_data
 //*******************************************************************
-
+// beat analysis data format: 
+// fn basic_analysis()
+//      1st     note count,    : at same tick
+//      2nd     tick, 
+//      3rd     dur, 
+//      4th     note num,      : highest
+//  note count が１より大きい時、note num には最も高い音程の音が記録される
+//
+// fn arp_translation()
+//  上記で準備した beat_analysis の後ろに、arpeggio 用の解析データを追加
+//      5th     'com'/'arp'
+//      6th     $DIFF
+//       'arp': arpeggio 用 Note変換を発動させる（前の音と連続している）
+//       $DIFF: 上記が True の場合の、前の音との音程の差分
+//
+pub fn analyse_data(generated: &Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<Vec<i16>> {
+    let mut para = false;
+    for exp in exps.iter() {
+        if exp == "para" {
+            para = true;
+            break;
+        }        
+    }
+    let beat_analysis = basic_analysis(&generated);
+    let rcmb = arp_translation(&beat_analysis, para);
+    rcmb
+}
+fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
+    let get_hi = |na:Vec<i16>| -> i16 {
+        match na.iter().max() {
+            Some(x) => *x,
+            None => 0,
+        }
+    };
+    let mut crnt_tick = lpnlib::NOTHING;
+    let mut note_cnt = 0;
+    let mut crnt_dur = 0;
+    let mut note_all: Vec<i16> = Vec::new();
+    let mut beat_analysis: Vec<Vec<i16>> = Vec::new();
+    for nt in gen.iter() {
+        if nt[lpnlib::TICK] == crnt_tick {
+            note_cnt += 1;
+            note_all.push(nt[lpnlib::NOTE]);
+        }
+        else {
+            if note_cnt > 0 {
+                beat_analysis.push(vec![note_cnt, crnt_tick, crnt_dur, get_hi(note_all.clone())]);
+            }
+            crnt_tick = nt[lpnlib::TICK];
+            crnt_dur = nt[lpnlib::DURATION];
+            note_cnt = 1;
+            note_all = vec![nt[lpnlib::NOTE]];
+        }
+    }
+    if note_cnt > 0 {
+        beat_analysis.push(vec![note_cnt, crnt_tick, crnt_dur, get_hi(note_all)]);
+    }
+    beat_analysis
+}
+fn arp_translation(ba: &Vec<Vec<i16>>, _para: bool) -> Vec<Vec<i16>> {
+    //let mut last_note = lpnlib::REST;
+    ba.clone()
+}
 
 //*******************************************************************
 //          beat_filter
 //*******************************************************************
-pub fn beat_filter(rcmb_org: &Vec<Vec<u16>>, bpm: u16, tick_for_onemsr: i32) -> Vec<Vec<u16>> {
-    const EFFECT: u16 = 20;     // bigger(1..100), stronger
-    const MIN_BPM: u16 = 60;
-    const MIN_AVILABLE_VELO: u16 = 30;
+pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> Vec<Vec<i16>> {
+    const EFFECT: i16 = 20;     // bigger(1..100), stronger
+    const MIN_BPM: i16 = 60;
+    const MIN_AVILABLE_VELO: i16 = 30;
     const TICK_4_4: f32 = (lpnlib::DEFAULT_TICK_FOR_QUARTER*4) as f32;
     const TICK_3_4: f32 = (lpnlib::DEFAULT_TICK_FOR_QUARTER*3) as f32;
     const TICK_1BT: f32 = lpnlib::DEFAULT_TICK_FOR_QUARTER as f32;
@@ -485,7 +547,7 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<u16>>, bpm: u16, tick_for_onemsr: i32) -> 
     if bpm < MIN_BPM {return rcmb;}
 
     // 純粋な四拍子、三拍子のみ対応
-    let base_bpm: u16 = (bpm - MIN_BPM)*EFFECT/100;
+    let base_bpm: i16 = (bpm - MIN_BPM)*EFFECT/100;
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in rcmb.iter_mut() {
             let tm: f32 = (dt[lpnlib::TICK] as f32 % TICK_4_4)/TICK_1BT;
@@ -519,4 +581,7 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<u16>>, bpm: u16, tick_for_onemsr: i32) -> 
         }
     }
     rcmb
+}
+pub fn crispy_tick(rcmb_org: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
+    rcmb_org.clone()
 }

@@ -27,8 +27,8 @@ struct PhrLoopManager {
     max_loop_msr: i32,
     whole_tick: i32,
     loop_cntr: u32,
-    new_data_stock: Option<Vec<Vec<u16>>>,
-    whole_tick_stock: u16,
+    new_data_stock: Option<Vec<Vec<i16>>>,
+    whole_tick_stock: i16,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     state_reserve: bool,
 }
@@ -87,7 +87,7 @@ impl PhrLoopManager {
             self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
         }
     }
-    pub fn rcv_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
+    pub fn rcv_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
         println!("Phrase Msg: {:?}", msg);
         self.new_data_stock = Some(msg);
         self.state_reserve = true;
@@ -136,8 +136,8 @@ struct CmpsLoopManager {
     max_loop_msr: i32,
     whole_tick: i32,
     loop_cntr: u32,
-    new_data_stock: Option<Vec<Vec<u16>>>,
-    whole_tick_stock: u16,
+    new_data_stock: Option<Vec<Vec<i16>>>,
+    whole_tick_stock: i16,
     loop_cmps: Option<Rc<RefCell<CompositionLoop>>>,
     state_reserve: bool,
 }
@@ -196,7 +196,7 @@ impl CmpsLoopManager {
             self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
         }
     }
-    pub fn rcv_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
+    pub fn rcv_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
         println!("Composition Msg: {:?}", msg);
         self.new_data_stock = Some(msg);
         self.state_reserve = true;
@@ -308,13 +308,13 @@ impl Part {
         self.keynote = knt;          // 0-11
         self.pm.state_reserve = true;
     }
-    pub fn rcv_phr_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
+    pub fn rcv_phr_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
         self.pm.rcv_msg(msg, whole_tick);
     }
-    pub fn rcv_cmps_msg(&mut self, msg: Vec<Vec<u16>>, whole_tick: u16) {
+    pub fn rcv_cmps_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
         self.cm.rcv_msg(msg, whole_tick);
     }
-    pub fn get_chord_info(&self) -> (u16, u16) {
+    pub fn get_chord_info(&self) -> (i16, i16) {
         if let Some(cmps_loop) = &self.cm.loop_cmps {
             cmps_loop.borrow().get_chord()
         }

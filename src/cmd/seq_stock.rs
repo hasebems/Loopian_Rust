@@ -18,7 +18,7 @@ pub struct SeqDataStock {
     input_mode: lpnlib::InputMode,
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
-    bpm: u16,
+    bpm: i16,
 }
 impl SeqDataStock {
     pub fn new() -> Self {
@@ -51,13 +51,13 @@ impl SeqDataStock {
         }
         false
     }
-    pub fn change_beat(&mut self, beat_count: u16, base_note: u16) {
+    pub fn change_beat(&mut self, beat_count: i16, base_note: i16) {
         println!("beat: {}/{}",beat_count, base_note);
-        self.tick_for_onemsr = lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE*(beat_count as i32)/(base_note as i32);
+        self.tick_for_onemsr = lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE*(beat_count as i32)*(base_note as i32);
         self.tick_for_onebeat = lpnlib::DEFAULT_TICK_FOR_QUARTER*4/(base_note as i32);
         self.recombine_phr_all();
     }
-    pub fn change_bpm(&mut self, bpm: u16) {
+    pub fn change_bpm(&mut self, bpm: i16) {
         self.bpm = bpm;
         self.recombine_phr_all();
     }
@@ -90,7 +90,8 @@ pub struct PhraseDataStock {
     raw: String,
     cmpl_nt: Vec<String>,
     cmpl_ex: Vec<String>,
-    rcmb: Vec<Vec<u16>>,
+    rcmb: Vec<Vec<i16>>,
+    ana: Vec<Vec<i16>>,
     whole_tick: i32,
 }
 impl Default for PhraseDataStock {
@@ -101,13 +102,14 @@ impl Default for PhraseDataStock {
             cmpl_nt: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
             rcmb: Vec::new(),
+            ana: Vec::new(),
             whole_tick: 0,
         }
     }
 }
 impl PhraseDataStock {
-    pub fn get_final(&self) -> Vec<u16> {
-        let mut ret_rcmb: Vec<u16> = vec![self.whole_tick as u16];
+    pub fn get_final(&self) -> Vec<i16> {
+        let mut ret_rcmb: Vec<i16> = vec![self.whole_tick as i16];
         for ev in self.rcmb.iter() {
             ret_rcmb.append(&mut ev.clone());
         }
@@ -130,7 +132,7 @@ impl PhraseDataStock {
         println!("complement_phrase: {:?} exp: {:?}",cmpl[0],cmpl[1]);
         true
     }
-    pub fn set_recombined(&mut self, input_mode: lpnlib::InputMode, bpm: u16, tick_for_onemsr: i32) {
+    pub fn set_recombined(&mut self, input_mode: lpnlib::InputMode, bpm: i16, tick_for_onemsr: i32) {
         if self.cmpl_nt == [""] {return}
 
         // 3.recombined data
@@ -141,9 +143,11 @@ impl PhraseDataStock {
         self.whole_tick = whole_tick;
 
         // 4.analysed data
+        self.ana = analyse_data(&self.rcmb, &self.cmpl_ex);
 
         // 5.humanized data
-        self.rcmb = beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
+        let human = beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
+        self.rcmb = crispy_tick(&human);
         println!("final_phrase: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
     }
 }
@@ -155,7 +159,7 @@ pub struct CompositionDataStock {
     raw: String,
     cmpl_cd: Vec<String>,
     cmpl_ex: Vec<String>,
-    rcmb: Vec<Vec<u16>>,
+    rcmb: Vec<Vec<i16>>,
     whole_tick: i32,
 }
 impl Default for CompositionDataStock {
@@ -170,8 +174,8 @@ impl Default for CompositionDataStock {
     }    
 }
 impl CompositionDataStock {
-    pub fn get_final(&self) -> Vec<u16> {
-        let mut ret_rcmb: Vec<u16> = vec![self.whole_tick as u16];
+    pub fn get_final(&self) -> Vec<i16> {
+        let mut ret_rcmb: Vec<i16> = vec![self.whole_tick as i16];
         for ev in self.rcmb.iter() {
             ret_rcmb.append(&mut ev.clone());
         }
