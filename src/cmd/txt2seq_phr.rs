@@ -171,7 +171,7 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
 pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: lpnlib::InputMode,
     base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<i16>>) {
     let max_read_ptr = ntvec.len();
-    let (exp_vel, exp_others) = get_exp_info(expvec.clone());
+    let (exp_vel, _exp_others) = get_exp_info(expvec.clone());
     let mut read_ptr = 0;
     let mut last_nt: i32 = 0;
     let mut tick: i32 = 0;
@@ -193,7 +193,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
                 next_msr_tick - tick);
 
             // duration
-            let note_dur = trans_dur(real_dur, &exp_others);
+            //let note_dur = trans_dur(real_dur, &exp_others);
 
             // velocity
             let mut last_vel: i32 = exp_vel + diff_vel;
@@ -201,7 +201,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
             else if last_vel < 1 {last_vel = 1;}
 
             // add to recombined data
-            rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16);
+            rcmb = add_note(rcmb, tick, notes, real_dur, last_vel as i16);
             tick += real_dur;
         }
         if mes_end {// 小節線があった場合
@@ -354,7 +354,7 @@ fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
         base_dur*dur_cnt as i32
     }
 }
-fn trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
+fn _trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
     let mut return_dur = real_dur;
     if exp_others.iter().any(|x| x=="stacc") {
         return_dur = real_dur/2;
@@ -471,18 +471,18 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
 //*******************************************************************
 // beat analysis data format: 
 // fn basic_analysis()
-//      1st     note count,    : at same tick
-//      2nd     tick, 
-//      3rd     dur, 
-//      4th     note num,      : highest
+//      1st     lpnlib::TYPE_ANA
+//      2nd     tick,
+//      3rd     dur,
+//      4th     note count,    : at same tick
+//      5th     note num,      : highest
 //  note count が１より大きい時、note num には最も高い音程の音が記録される
 //
 // fn arp_translation()
 //  上記で準備した beat_analysis の後ろに、arpeggio 用の解析データを追加
-//      5th     'com'/'arp'
-//      6th     $DIFF
-//       'arp': arpeggio 用 Note変換を発動させる（前の音と連続している）
-//       $DIFF: 上記が True の場合の、前の音との音程の差分
+//      6th     0:com, $DIFF:arp,  lpnlib::PARA:para 
+//       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
+//       $DIFF: arp の場合の、前の音との音程の差分
 //
 pub fn analyse_data(generated: &Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<Vec<i16>> {
     let mut para = false;
@@ -493,7 +493,7 @@ pub fn analyse_data(generated: &Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<Vec<i1
         }        
     }
     let beat_analysis = basic_analysis(&generated);
-    let rcmb = arp_translation(&beat_analysis, para);
+    let rcmb = arp_translation(beat_analysis.clone(), para);
     rcmb
 }
 fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
@@ -515,7 +515,7 @@ fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
         }
         else {
             if note_cnt > 0 {
-                beat_analysis.push(vec![note_cnt, crnt_tick, crnt_dur, get_hi(note_all.clone())]);
+                beat_analysis.push(vec![lpnlib::TYPE_ANA, crnt_tick, crnt_dur, note_cnt, get_hi(note_all.clone())]);
             }
             crnt_tick = nt[lpnlib::TICK];
             crnt_dur = nt[lpnlib::DURATION];
@@ -528,9 +528,53 @@ fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
     }
     beat_analysis
 }
-fn arp_translation(ba: &Vec<Vec<i16>>, _para: bool) -> Vec<Vec<i16>> {
-    //let mut last_note = lpnlib::REST;
-    ba.clone()
+fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, para: bool) -> Vec<Vec<i16>> {
+    let mut last_note = lpnlib::REST;
+    let mut last_cnt = 0;
+    let mut total_tick = 0;
+    for ana in beat_analysis.iter_mut() {
+        // total_tick の更新
+        if total_tick != ana[lpnlib::TICK] {
+            total_tick = ana[lpnlib::TICK];
+            last_note = lpnlib::REST;
+            last_cnt = 0;
+        }
+        else if ana[lpnlib::DURATION] as i32 >= lpnlib::DEFAULT_TICK_FOR_QUARTER {
+            total_tick = ana[lpnlib::TICK];
+            last_note = lpnlib::REST;
+            last_cnt = 0;
+        }
+        else {
+            total_tick += ana[lpnlib::DURATION];
+        }
+
+        // crnt_note の更新
+        let mut crnt_note = lpnlib::NO_NOTE;
+        let crnt_cnt = ana[lpnlib::ARP_NTCNT];
+        if crnt_cnt == 1 {
+            crnt_note = ana[lpnlib::NOTE] as u8;
+        }
+
+        // 条件の確認と、ana への情報追加
+        if para {
+            ana.push(lpnlib::PARA);    // para
+        }
+        else if last_note <= lpnlib::MAX_NOTE_NUMBER &&
+          last_cnt == 1 &&
+          crnt_note <= lpnlib::MAX_NOTE_NUMBER &&
+          crnt_cnt == 1 &&
+          last_note-crnt_note < 10 &&
+          crnt_note-last_note < 10 {
+            // 過去＆現在：単音、ノート適正、差が10半音以内
+            ana.push((crnt_note-last_note) as i16); // arp
+        }
+        else {
+            ana.push(0);    // com
+        }
+        last_cnt = crnt_cnt;
+        last_note = crnt_note;
+    }
+    beat_analysis.clone()
 }
 
 //*******************************************************************

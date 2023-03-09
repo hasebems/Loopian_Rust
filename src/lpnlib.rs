@@ -19,6 +19,7 @@ pub const NO_ROOT: i16 = 0; // root = 1:Ib,2:I,3:I# ...
 pub const NO_TABLE: i16 = 10000;
 pub const _CANCEL: i16 = -1;
 pub const NOTHING: i16 = -1;
+pub const PARA: i16 = 10000;
 
 //*******************************************************************
 //          part count
@@ -96,6 +97,9 @@ pub const CD_ROOT: usize    = 2;
 pub const CD_TABLE: usize   = 3; 
 
 pub const TYPE_DAMPER: i16  = 1003;
+
+pub const TYPE_ANA: i16     = 1004;
+pub const ARP_NTCNT: usize  = 4;
 
 
 //*******************************************************************
