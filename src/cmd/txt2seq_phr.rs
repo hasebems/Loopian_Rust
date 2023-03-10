@@ -464,8 +464,8 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
 //      1st     lpnlib::TYPE_ANA
 //      2nd     tick,
 //      3rd     dur,
-//      4th     note count,    : at same tick
-//      5th     note num,      : highest
+//      4th     note num,      : highest
+//      5th     note count,    : at same tick
 //  note count が１より大きい時、note num には最も高い音程の音が記録される
 //
 // fn arp_translation()
@@ -552,7 +552,7 @@ fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, para: bool) -> Vec<Vec<i16>
         // 条件の確認と、ana への情報追加
         //println!("ana_dbg: {},{},{},{}",crnt_cnt,crnt_note,last_cnt,last_note);
         if para {
-            ana.push(lpnlib::PARA);    // para
+            ana.push(lpnlib::ARP_PARA);    // para
         }
         else if last_note <= lpnlib::MAX_NOTE_NUMBER &&
           last_cnt == 1 &&
@@ -564,7 +564,7 @@ fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, para: bool) -> Vec<Vec<i16>
             ana.push((crnt_note-last_note) as i16); // arp
         }
         else {
-            ana.push(0);    // com
+            ana.push(lpnlib::ARP_COM);    // com
         }
         last_cnt = crnt_cnt;
         last_note = crnt_note;

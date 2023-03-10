@@ -28,6 +28,7 @@ struct PhrLoopManager {
     whole_tick: i32,
     loop_cntr: u32,
     new_data_stock: Option<Vec<Vec<i16>>>,
+    new_ana_stock: Option<Vec<Vec<i16>>>,
     whole_tick_stock: i16,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     state_reserve: bool,
@@ -40,6 +41,7 @@ impl PhrLoopManager {
             whole_tick: 0,
             loop_cntr: 0,
             new_data_stock: None,
+            new_ana_stock: None,
             whole_tick_stock: 0,
             loop_phrase: None,
             state_reserve: false,
@@ -88,10 +90,15 @@ impl PhrLoopManager {
         }
     }
     pub fn rcv_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
-        println!("Phrase Msg: {:?}", msg);
+        //println!("Phrase Msg: {:?}", msg);
         self.new_data_stock = Some(msg);
         self.state_reserve = true;
         self.whole_tick_stock = whole_tick;
+    }
+    pub fn rcv_ana(&mut self, msg: Vec<Vec<i16>>) {
+        //println!("Analysed Msg: {:?}", msg);
+        self.new_ana_stock = Some(msg);
+        self.state_reserve = true;
     }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32,
         estk: &mut ElapseStack, pbp: PartBasicPrm) {
@@ -313,6 +320,9 @@ impl Part {
     }
     pub fn rcv_cmps_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
         self.cm.rcv_msg(msg, whole_tick);
+    }
+    pub fn rcv_ana_msg(&mut self, msg_ana: Vec<Vec<i16>>) {
+        self.pm.rcv_ana(msg_ana);
     }
     pub fn get_chord_info(&self) -> (i16, i16) {
         if let Some(cmps_loop) = &self.cm.loop_cmps {

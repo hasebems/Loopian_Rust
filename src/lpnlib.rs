@@ -19,7 +19,6 @@ pub const NO_ROOT: i16 = 0; // root = 1:Ib,2:I,3:I# ...
 pub const NO_TABLE: i16 = 10000;
 pub const _CANCEL: i16 = -1;
 pub const NOTHING: i16 = -1;
-pub const PARA: i16 = 10000;
 
 //*******************************************************************
 //          part count
@@ -68,7 +67,7 @@ pub const DEFAULT_VEL: u8 = 100;
 //              | MSG2_KEY    |[key]| --
 // MSG_PHR+part |[whole_tick] |( TYPE | TICK | DURATION | NOTE | VELOCITY )*n
 // MSG_CMP+part |[whole_tick] |( TYPE | TICK | ROOT | TABLE )*n
-// MSG_ANA+part |[whole_tick] |( TYPE | TICK | ROOT | TABLE )*n
+// MSG_ANA+part |             |( TYPE | TICK | DURATION | NOTE | NTCNT | ARP_TYPE )*n
 pub const MSG_QUIT: i16     = -1;
 pub const MSG_START:i16     = -16;
 pub const MSG_STOP: i16     = -8;
@@ -101,11 +100,14 @@ pub const CD_TABLE: usize   = 3;
 pub const TYPE_DAMPER: i16  = 1003;
 
 pub const TYPE_ANA: i16     = 1004;
+pub const TYPE_ANA_SIZE: usize = 6;
 //pub const TICK: usize       = 1;
 //pub const DURATION: usize   = 2;
 //pub const NOTE: usize       = 3;
 pub const ARP_NTCNT: usize  = 4;
-
+pub const _ARP_DIFF: usize   = 5;
+pub const ARP_COM: i16      = 0;
+pub const ARP_PARA: i16     = 10000;
 
 //*******************************************************************
 //          Enum
