@@ -354,16 +354,6 @@ fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
         base_dur*dur_cnt as i32
     }
 }
-fn _trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
-    let mut return_dur = real_dur;
-    if exp_others.iter().any(|x| x=="stacc") {
-        return_dur = real_dur/2;
-    }
-    if return_dur > 40 {  // 一律 duration 40 を引く
-        return_dur - 40
-    }
-    else {return_dur}
-}
 fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16) -> Vec<Vec<i16>> {
     let mut return_rcmb = rcmb.clone();
     if notes.len() != 0 {
@@ -515,7 +505,8 @@ fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
         }
         else {
             if note_cnt > 0 {
-                beat_analysis.push(vec![lpnlib::TYPE_ANA, crnt_tick, crnt_dur, note_cnt, get_hi(note_all.clone())]);
+                beat_analysis.push(vec![lpnlib::TYPE_ANA, crnt_tick, crnt_dur,
+                    get_hi(note_all.clone()), note_cnt]);
             }
             crnt_tick = nt[lpnlib::TICK];
             crnt_dur = nt[lpnlib::DURATION];
@@ -524,13 +515,16 @@ fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
         }
     }
     if note_cnt > 0 {
-        beat_analysis.push(vec![note_cnt, crnt_tick, crnt_dur, get_hi(note_all)]);
+        beat_analysis.push(vec![lpnlib::TYPE_ANA, crnt_tick, crnt_dur,
+            get_hi(note_all), note_cnt]);
     }
     beat_analysis
 }
 fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, para: bool) -> Vec<Vec<i16>> {
     let mut last_note = lpnlib::REST;
     let mut last_cnt = 0;
+    let mut crnt_note;
+    let mut crnt_cnt;
     let mut total_tick = 0;
     for ana in beat_analysis.iter_mut() {
         // total_tick の更新
@@ -549,13 +543,14 @@ fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, para: bool) -> Vec<Vec<i16>
         }
 
         // crnt_note の更新
-        let mut crnt_note = lpnlib::NO_NOTE;
-        let crnt_cnt = ana[lpnlib::ARP_NTCNT];
+        crnt_note = lpnlib::NO_NOTE;
+        crnt_cnt = ana[lpnlib::ARP_NTCNT];
         if crnt_cnt == 1 {
             crnt_note = ana[lpnlib::NOTE] as u8;
         }
 
         // 条件の確認と、ana への情報追加
+        //println!("ana_dbg: {},{},{},{}",crnt_cnt,crnt_note,last_cnt,last_note);
         if para {
             ana.push(lpnlib::PARA);    // para
         }
@@ -563,8 +558,8 @@ fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, para: bool) -> Vec<Vec<i16>
           last_cnt == 1 &&
           crnt_note <= lpnlib::MAX_NOTE_NUMBER &&
           crnt_cnt == 1 &&
-          last_note-crnt_note < 10 &&
-          crnt_note-last_note < 10 {
+          (last_note as i32)-(crnt_note as i32) < 10 &&
+          (crnt_note as i32)-(last_note as i32) < 10 {
             // 過去＆現在：単音、ノート適正、差が10半音以内
             ana.push((crnt_note-last_note) as i16); // arp
         }
@@ -626,6 +621,19 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
     }
     rcmb
 }
-pub fn crispy_tick(rcmb_org: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
-    rcmb_org.clone()
+pub fn crispy_tick(rcmb_org: &Vec<Vec<i16>>, exp_others: &Vec<String>) -> Vec<Vec<i16>> {
+    let mut rcmb = rcmb_org.clone();
+    let mut stacc = false;
+    if exp_others.iter().any(|x| x=="stacc") {stacc = true;}
+    for dt in rcmb.iter_mut() {
+        let mut return_dur = dt[lpnlib::DURATION];
+        if stacc {
+            return_dur = return_dur/2;
+        }
+        else if return_dur > 40 {  // 一律 duration 40 を引く
+            return_dur -= 40;
+        }
+        dt[lpnlib::DURATION] = return_dur;
+    }
+    rcmb.clone()
 }

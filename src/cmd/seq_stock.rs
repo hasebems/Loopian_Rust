@@ -108,12 +108,16 @@ impl Default for PhraseDataStock {
     }
 }
 impl PhraseDataStock {
-    pub fn get_final(&self) -> Vec<i16> {
+    pub fn get_final(&self) -> (Vec<i16>, Vec<i16>) {
         let mut ret_rcmb: Vec<i16> = vec![self.whole_tick as i16];
         for ev in self.rcmb.iter() {
             ret_rcmb.append(&mut ev.clone());
         }
-        ret_rcmb
+        let mut ret_ana: Vec<i16> = vec![self.whole_tick as i16];
+        for ev in self.ana.iter() {
+            ret_ana.append(&mut ev.clone());
+        }
+        (ret_rcmb, ret_ana)
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
         // 1.raw
@@ -146,9 +150,10 @@ impl PhraseDataStock {
         self.ana = analyse_data(&self.rcmb, &self.cmpl_ex);
 
         // 5.humanized data
-        let human = beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
-        self.rcmb = crispy_tick(&human);
+        let human1 = beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
+        self.rcmb = crispy_tick(&human1, &self.cmpl_ex);
         println!("final_phrase: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
+        println!("analyse: {:?}", self.ana);
     }
 }
 

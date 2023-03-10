@@ -68,12 +68,18 @@ impl LoopianCmd {
     }
     fn send_phrase_to_elapse(&self, part: usize) {
         let pdstk = self.gendt.get_pdstk(part);
-        let mut pdt: Vec<i16> = pdstk.get_final();
+        let (mut pdt, mut ana): (Vec<i16>, Vec<i16>) = pdstk.get_final();
         if pdt.len() > 1 {
             let mut msg: Vec<i16> = vec![lpnlib::MSG_PHR+self.input_part as i16];
             msg.append(&mut pdt);
             //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
+            if ana.len() > 1 {
+                let mut msgana: Vec<i16> = vec![lpnlib::MSG_ANA+self.input_part as i16];
+                msgana.append(&mut ana);
+                //println!("msg check: {:?}",msg);
+                self.send_msg_to_elapse(msgana);                
+            }
         }
         else {println!("Part {}: No Data!",part)}
     }

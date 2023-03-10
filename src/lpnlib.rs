@@ -78,8 +78,9 @@ pub const MSG2_BEAT: i16    = 2;
 pub const MSG2_KEY: i16     = 3;
 
 pub const MSG_PART_MASK: i16 = 0x7ff0;
-pub const MSG_PHR: i16      = 0x1000;   // 1桁目にパート番号
-pub const MSG_CMP: i16      = 0x2000;   // 1桁目にパート番号
+pub const MSG_PHR: i16      = 1000;   // 1桁目にパート番号
+pub const MSG_CMP: i16      = 2000;   // 1桁目にパート番号
+pub const MSG_ANA: i16      = 3000;   // 1桁目にパート番号
 pub const MSG_HEADER: usize = 2;
 
 pub const TYPE: usize       = 0;
@@ -93,12 +94,16 @@ pub const VELOCITY: usize   = 4;
 
 pub const TYPE_CHORD: i16   = 1002;
 pub const TYPE_CHORD_SIZE: usize = 4;
+//pub const TICK: usize       = 1;
 pub const CD_ROOT: usize    = 2;
 pub const CD_TABLE: usize   = 3; 
 
 pub const TYPE_DAMPER: i16  = 1003;
 
 pub const TYPE_ANA: i16     = 1004;
+//pub const TICK: usize       = 1;
+//pub const DURATION: usize   = 2;
+//pub const NOTE: usize       = 3;
 pub const ARP_NTCNT: usize  = 4;
 
 
