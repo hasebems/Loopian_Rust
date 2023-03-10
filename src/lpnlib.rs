@@ -77,7 +77,7 @@ pub const MSG2_BPM: i16     = 1;
 pub const MSG2_BEAT: i16    = 2;
 pub const MSG2_KEY: i16     = 3;
 
-pub const MSG_PART_MASK: i16 = 0x7ff0;
+pub const MSG_PART_MASK: i16 = 1000;   // X-(X % MSG_PART_MASK)
 pub const MSG_PHR: i16      = 1000;   // 1桁目にパート番号
 pub const MSG_CMP: i16      = 2000;   // 1桁目にパート番号
 pub const MSG_ANA: i16      = 3000;   // 1桁目にパート番号
@@ -119,6 +119,8 @@ pub enum InputMode {
 //*******************************************************************
 //          Func
 //*******************************************************************
+pub fn pt(msg: i16) -> i16 {msg%MSG_PART_MASK}
+pub fn msg1st(msg: i16) -> i16 {msg-pt(msg)}
 pub fn convert_exp2vel(vel_text: &str) -> i32 {
     match vel_text {
         "ff" => 127,

@@ -183,7 +183,7 @@ impl ElapseStack {
     }
     fn phrase(&mut self, msg: Vec<i16>) {
         // message の２次元化
-        let part_num: usize = (msg[0] & !lpnlib::MSG_PART_MASK) as usize;
+        let part_num: usize = lpnlib::pt(msg[0]) as usize;
         let whole_tick: i16 = msg[1];
         let mut phr_vec: Vec<Vec<i16>> = Vec::new();
         let mut msg_cnt: usize = 0;
@@ -202,7 +202,7 @@ impl ElapseStack {
     }
     fn composition(&mut self, msg: Vec<i16>) {
         // message の２次元化
-        let part_num: usize = (msg[0] & !lpnlib::MSG_PART_MASK) as usize;
+        let part_num: usize = lpnlib::pt(msg[0]) as usize;
         let whole_tick: i16 = msg[1];
         let mut cmps_vec: Vec<Vec<i16>> = Vec::new();
         let mut msg_cnt: usize = 0;
@@ -225,8 +225,8 @@ impl ElapseStack {
         else if msg[0] == lpnlib::MSG_START {self.start();}
         else if msg[0] == lpnlib::MSG_STOP {self.stop();}
         else if msg[0] == lpnlib::MSG_SET {self.setting_cmnd(msg);}
-        else if (msg[0] & lpnlib::MSG_PART_MASK) == lpnlib::MSG_PHR {self.phrase(msg);}
-        else if (msg[0] & lpnlib::MSG_PART_MASK) == lpnlib::MSG_CMP {self.composition(msg);}
+        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_PHR {self.phrase(msg);}
+        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_CMP {self.composition(msg);}
     }
     fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
