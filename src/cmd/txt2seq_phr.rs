@@ -461,7 +461,7 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
 //*******************************************************************
 // beat analysis data format: 
 // fn basic_analysis()
-//      1st     lpnlib::TYPE_ANA
+//      1st     lpnlib::TYPE_BEAT
 //      2nd     tick,
 //      3rd     dur,
 //      4th     note num,      : highest
@@ -505,7 +505,7 @@ fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
         }
         else {
             if note_cnt > 0 {
-                beat_analysis.push(vec![lpnlib::TYPE_ANA, crnt_tick, crnt_dur,
+                beat_analysis.push(vec![lpnlib::TYPE_BEAT, crnt_tick, crnt_dur,
                     get_hi(note_all.clone()), note_cnt]);
             }
             crnt_tick = nt[lpnlib::TICK];
@@ -515,7 +515,7 @@ fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
         }
     }
     if note_cnt > 0 {
-        beat_analysis.push(vec![lpnlib::TYPE_ANA, crnt_tick, crnt_dur,
+        beat_analysis.push(vec![lpnlib::TYPE_BEAT, crnt_tick, crnt_dur,
             get_hi(note_all), note_cnt]);
     }
     beat_analysis

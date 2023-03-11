@@ -25,6 +25,7 @@ pub struct Note {
     destroy: bool,
     next_msr: i32,
     next_tick: i32,
+    deb_txt: String,
 }
 
 impl Elapse for Note {
@@ -80,7 +81,8 @@ impl Elapse for Note {
 }
 
 impl Note {
-    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &Vec<i16>, keynote: u8, msr: i32, tick: i32)
+    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &Vec<i16>, keynote: u8, deb_txt: String, 
+        msr: i32, tick: i32)
       -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpNote,},
@@ -95,6 +97,7 @@ impl Note {
             destroy: false,
             next_msr: msr,
             next_tick: tick,
+            deb_txt,
         }))
     }
     fn note_on(&mut self, estk: &mut ElapseStack) {
@@ -105,7 +108,8 @@ impl Note {
         //}
         self.noteoff_enable = true; // 上で false にされるので
         estk.midi_out(0x90, self.real_note, self.velocity);
-        println!("NoteOn: {},{}", self.real_note, self.velocity);
+        print!("NoteOn: {},{} NoteTranslate: ", self.real_note, self.velocity);
+        println!("{}", self.deb_txt);
     }
     fn note_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;
@@ -113,7 +117,7 @@ impl Note {
         // midi note off
         if self.noteoff_enable {
             estk.midi_out(0x90, self.real_note, 0);
-            println!("NoteOff: {},{}", self.real_note, self.velocity);
+            println!("NoteOff: {}", self.real_note);
         }
     }
     fn note_limit(num: u8, min_value: i16, max_value: i16) -> u8 {

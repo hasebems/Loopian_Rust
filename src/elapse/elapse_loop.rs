@@ -37,11 +37,11 @@ pub struct PhraseLoop {
     priority: u32,
 
     phrase_dt: Vec<Vec<i16>>,
-    //analys_dt:
+    analys_dt: Vec<Vec<i16>>,
     keynote: u8,
     play_counter: usize,
     next_tick_in_phrase: i32,
-    _last_note: u8,
+    last_note: u8,
 
     // for super's member
     whole_tick: i32,
@@ -90,15 +90,17 @@ impl Loop for PhraseLoop {
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 impl PhraseLoop {
-    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<i16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<i16>>, ana: Vec<Vec<i16>>, whole_tick: i32) 
+      -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_LOOP,
             phrase_dt: msg,
+            analys_dt: ana,
             keynote,
             play_counter: 0,
             next_tick_in_phrase: 0,
-            _last_note: lpnlib::NO_NOTE,
+            last_note: lpnlib::NO_NOTE,
             // for super's member
             whole_tick,
             destroy: false,
@@ -106,27 +108,6 @@ impl PhraseLoop {
             next_msr: 0,
             next_tick: 0,
         }))
-    }
-    fn note_event(&self, estk: &mut ElapseStack, trace: usize, ev: Vec<i16>, _next_tick: i32, msr: i32, tick: i32) {
-        // phr: ['note', tick, duration, note, velocity]
-        // <<DoItLater>>
-        //if let Some(linked_part) = estk.get_part(self.id.pid) {
-        //    if let Some(linked_comp) = linked_part.borrow().get_comp() {
-        //        let (root, trans_tbl) = linked_comp.borrow().get_translation();
-        //    }
-        //}
-        let (_root, _ctbl) = estk.get_chord_info(self.id.pid as usize);
-        println!("Get Chord: {}, {}", _root, _ctbl);
-
-        let nt: Rc<RefCell<dyn Elapse>> = Note::new(
-            trace as u32,   //  read pointer
-            self.id.sid,    //  loop.sid -> note.pid
-            estk,
-            &ev,
-            self.keynote,
-            msr,
-            tick);
-        estk.add_elapse(Rc::clone(&nt));
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut next_tick: i32;
@@ -156,6 +137,55 @@ impl PhraseLoop {
 
         self.play_counter = trace;
         next_tick
+    }
+    fn note_event(&mut self, estk: &mut ElapseStack, trace: usize, ev: Vec<i16>, next_tick: i32, msr: i32, tick: i32) {
+        // phr: ['note', tick, duration, note, velocity]
+        let mut crnt_ev = ev.clone();
+        let (root, ctbl) = estk.get_chord_info(self.id.pid as usize);
+        let mut deb_txt: String = "no chord".to_string();
+        //println!("Get Chord: {}, {}", root, ctbl);
+
+        if root != lpnlib::NO_ROOT || ctbl != lpnlib::NO_TABLE  {
+            let option = self.identify_trans_option(next_tick, ev[lpnlib::NOTE]);
+            let trans_note: u8;
+            if option == lpnlib::ARP_PARA {
+                let mut tgt_nt = ev[lpnlib::NOTE]+root;
+                if root > 5 {tgt_nt -= 12;}
+                trans_note = self.translate_note_com(root, ctbl, tgt_nt);
+                deb_txt = "para:".to_string();
+            }
+            else if option == lpnlib::ARP_COM {
+                trans_note = self.translate_note_com(root, ctbl, ev[lpnlib::NOTE]);
+                deb_txt = "com:".to_string();
+            }
+            else { // Arpeggio
+                trans_note = self.translate_note_arp(root, ctbl, option);
+                deb_txt = "arp:".to_string();
+            }
+            self.last_note = trans_note;
+            crnt_ev[lpnlib::NOTE] = trans_note as i16;
+            deb_txt += &(root.to_string() + " - " + &ctbl.to_string());
+        }
+
+        let nt: Rc<RefCell<dyn Elapse>> = Note::new(
+            trace as u32,   //  read pointer
+            self.id.sid,    //  loop.sid -> note.pid
+            estk,
+            &crnt_ev,
+            self.keynote,
+            deb_txt,
+            msr,
+            tick);
+        estk.add_elapse(Rc::clone(&nt));
+    }
+    fn identify_trans_option(&self, _next_tick: i32, _note: i16) -> i16 {
+        0
+    }
+    fn translate_note_com(&self, _root: i16, _ctbl: i16, tgt_nt: i16) -> u8 {
+        tgt_nt as u8
+    }
+    fn translate_note_arp(&self, _root: i16, _ctbl: i16, _nt_diff: i16) -> u8 {
+        0
     }
 }
 

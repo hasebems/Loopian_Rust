@@ -104,33 +104,31 @@ impl PhrLoopManager {
         estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成
         if let Some(phr) = &self.new_data_stock {
-            println!("New Phrase Loop!");
-            self.first_msr_num = msr;    // 計測開始の更新
-
-            //<<DoItLater>>
-            // 新しい data から、ana データを取得
-            //elm, ana = self.seqdt_part.get_final(msr)
-            self.whole_tick = self.whole_tick_stock as i32;
-
-            // その時の beat 情報で、whole_tick を loop_measure に換算
-            let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
-            self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
-
-            //self.update_loop_for_gui(); // for 8indicator
-            if self.whole_tick == 0 {
-                self.state_reserve = true; // 次小節冒頭で呼ばれるように
-                self.loop_phrase = None;
-                return;
+            if let Some(ana) = &self.new_ana_stock {
+                println!("New Phrase Loop!");
+                self.first_msr_num = msr;    // 計測開始の更新
+                self.whole_tick = self.whole_tick_stock as i32;
+    
+                // その時の beat 情報で、whole_tick を loop_measure に換算
+                let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
+                self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
+    
+                //self.update_loop_for_gui(); // for 8indicator
+                if self.whole_tick == 0 {
+                    self.state_reserve = true; // 次小節冒頭で呼ばれるように
+                    self.loop_phrase = None;
+                    return;
+                }
+    
+                let lp = PhraseLoop::new(self.loop_cntr, pbp.part_num, 
+                    pbp.keynote, msr, phr.to_vec(), ana.to_vec(), self.whole_tick);
+                self.loop_phrase = Some(Rc::clone(&lp));
+                //<<DoItLater>> 引数の追加
+                //    self.est, self.md, msr, elm, ana,  \
+                //    self.keynote, self.whole_tick, part_num);
+                estk.add_elapse(lp);
+                self.loop_cntr += 1;
             }
-
-            let lp = PhraseLoop::new(self.loop_cntr, pbp.part_num, 
-                pbp.keynote, msr, phr.to_vec(), self.whole_tick);
-            self.loop_phrase = Some(Rc::clone(&lp));
-            //<<DoItLater>> 引数の追加
-            //    self.est, self.md, msr, elm, ana,  \
-            //    self.keynote, self.whole_tick, part_num);
-            estk.add_elapse(lp);
-            self.loop_cntr += 1;
         }
     }
 }

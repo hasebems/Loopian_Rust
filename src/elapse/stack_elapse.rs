@@ -226,9 +226,9 @@ impl ElapseStack {
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
-            let index = |x, cnt| {x+lpnlib::MSG_HEADER+cnt*lpnlib::TYPE_ANA_SIZE};
+            let index = |x, cnt| {x+lpnlib::MSG_HEADER+cnt*lpnlib::TYPE_BEAT_SIZE};
             let mut vtmp: Vec<i16> = Vec::new();
-            for i in 0..lpnlib::TYPE_ANA_SIZE {
+            for i in 0..lpnlib::TYPE_BEAT_SIZE {
                 vtmp.push(msg[index(i,msg_cnt)]);
             }
             ana_vec.push(vtmp);
