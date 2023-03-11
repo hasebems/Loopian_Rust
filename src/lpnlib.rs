@@ -108,7 +108,7 @@ pub const TYPE_BEAT_SIZE: usize = 6;
 //pub const DURATION: usize   = 2;
 //pub const NOTE: usize       = 3;
 pub const ARP_NTCNT: usize  = 4;
-pub const _ARP_DIFF: usize   = 5;
+pub const ARP_DIFF: usize   = 5;
 pub const ARP_COM: i16      = 0;
 pub const ARP_PARA: i16     = 10000;
 

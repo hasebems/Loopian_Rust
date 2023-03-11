@@ -11,7 +11,7 @@ use crate::lpnlib;
 const ROOT_NAME: [&'static str; 7] = ["I","II","III","IV","V","VI","VII"];
 struct ChordTable {
     name: &'static str,
-    table: &'static [i32],
+    table: &'static [i16],
 }
 const CHORD_TABLE: [ChordTable; 39] = [
     ChordTable {name:   "thru",     table:  &THRU,},
@@ -59,41 +59,41 @@ const CHORD_TABLE: [ChordTable; 39] = [
 ];
 pub const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
 
-const THRU:   [i32; 12] = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11];
-const MAJOR:  [i32; 3]  = [0,  4,  7];
-const MINOR:  [i32; 3]  = [0,  3,  7];
-const M7TH:   [i32; 4]  = [0, 4, 7, 10];
-const MAJ6TH: [i32; 4]  = [0, 4, 7, 9];
-const MIN7TH: [i32; 4]  = [0, 3, 7, 10];
-const MAJ7TH: [i32; 4]  = [0, 4, 7, 11];
-const ADD9TH: [i32; 4]  = [0, 2, 4, 7];
-const M9TH:   [i32; 5]  = [0, 2, 4, 7, 10];
-const MIN9TH: [i32; 5]  = [0, 2, 3, 7, 10];
-const MAJ9TH: [i32; 5]  = [0, 2, 4, 7, 11];
-const AUG5TH: [i32; 3]  = [0, 4, 8];
-const AUG7TH: [i32; 4]  = [0, 4, 8, 10];
-const M7MNS9: [i32; 5]  = [0, 1, 4, 7, 10];
-const M7PLS9: [i32; 5]  = [0, 3, 4, 7, 10];
-const DIM:    [i32; 4]  = [0, 3, 6, 9];
-const MIN7M5: [i32; 4]  = [0, 3, 6, 10];
-const SUS4:   [i32; 3]  = [0, 5, 7];
-const M7SUS4: [i32; 4]  = [0, 5, 7, 10];
-const IONIAN: [i32; 7]  = [0, 2, 4, 5, 7, 9, 11]; // Ionian
-const DORIAN: [i32; 7]  = [0, 2, 3, 5, 7, 9, 10]; // Dorian
-const LYDIAN: [i32; 7]  = [0, 2, 4, 6, 7, 9, 11]; // Lydian
-const MIXOLYDIAN: [i32; 7]  = [0, 2, 4, 5, 7, 9, 10]; // Mixolydian
-const AEOLIAN:[i32; 7]  = [0, 2, 3, 5, 7, 8, 10]; // Aeolian
-const COMDIM: [i32; 8]  = [0, 2, 3, 5, 6, 8, 9, 11];
-const PENTATONIC:[i32; 5] = [0, 2, 4, 7, 9];
-const BLUES:  [i32; 6]  = [0, 3, 5, 6, 7, 10];
-const ERR:    [i32; 1]  = [0];
-const NONE:   [i32; 2]  = [1000, 1001];  // if more than 127, no sound by limit
+const THRU:   [i16; 12] = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11];
+const MAJOR:  [i16; 3]  = [0,  4,  7];
+const MINOR:  [i16; 3]  = [0,  3,  7];
+const M7TH:   [i16; 4]  = [0, 4, 7, 10];
+const MAJ6TH: [i16; 4]  = [0, 4, 7, 9];
+const MIN7TH: [i16; 4]  = [0, 3, 7, 10];
+const MAJ7TH: [i16; 4]  = [0, 4, 7, 11];
+const ADD9TH: [i16; 4]  = [0, 2, 4, 7];
+const M9TH:   [i16; 5]  = [0, 2, 4, 7, 10];
+const MIN9TH: [i16; 5]  = [0, 2, 3, 7, 10];
+const MAJ9TH: [i16; 5]  = [0, 2, 4, 7, 11];
+const AUG5TH: [i16; 3]  = [0, 4, 8];
+const AUG7TH: [i16; 4]  = [0, 4, 8, 10];
+const M7MNS9: [i16; 5]  = [0, 1, 4, 7, 10];
+const M7PLS9: [i16; 5]  = [0, 3, 4, 7, 10];
+const DIM:    [i16; 4]  = [0, 3, 6, 9];
+const MIN7M5: [i16; 4]  = [0, 3, 6, 10];
+const SUS4:   [i16; 3]  = [0, 5, 7];
+const M7SUS4: [i16; 4]  = [0, 5, 7, 10];
+const IONIAN: [i16; 7]  = [0, 2, 4, 5, 7, 9, 11]; // Ionian
+const DORIAN: [i16; 7]  = [0, 2, 3, 5, 7, 9, 10]; // Dorian
+const LYDIAN: [i16; 7]  = [0, 2, 4, 6, 7, 9, 11]; // Lydian
+const MIXOLYDIAN: [i16; 7]  = [0, 2, 4, 5, 7, 9, 10]; // Mixolydian
+const AEOLIAN:[i16; 7]  = [0, 2, 3, 5, 7, 8, 10]; // Aeolian
+const COMDIM: [i16; 8]  = [0, 2, 3, 5, 6, 8, 9, 11];
+const PENTATONIC:[i16; 5] = [0, 2, 4, 7, 9];
+const BLUES:  [i16; 6]  = [0, 3, 5, 6, 7, 10];
+const ERR:    [i16; 1]  = [0];
+const NONE:   [i16; 2]  = [1000, 1001];  // if more than 127, no sound by limit
 
 pub fn get_root_name(idx_num: usize) -> &'static str {
     assert!(idx_num < ROOT_NAME.len());
     ROOT_NAME[idx_num]
 }
-pub fn get_table(idx_num: usize) -> &'static [i32] {
+pub fn get_table(idx_num: usize) -> &'static [i16] {
     assert!(idx_num < MAX_CHORD_TABLE);
     CHORD_TABLE[idx_num].table
 }

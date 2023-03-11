@@ -59,10 +59,14 @@
 - Phrase の Music Expression 一覧
     - ff,f,mf,mp,p,pp,ppp  （ベロシティ指定）
     - ped, noped （ペダル奏法）
-    - artic: stacc,legato,marc （dulation指定）
-    - p->f など音量の漸次的変化
-- Composition の Music Expression 一覧
     - para  （コード変換の指定）
+    - artic: stacc,legato,marc （dulation指定）
+    - p->f など音量の漸次的変化（未実装）
+<!--
+- Composition の Music Expression 一覧
+    - 今のところ無し
+-->
+
 
 
 ## Design
@@ -184,7 +188,15 @@ SeqDataStock *-- DamperDataStock
 
 - 時間単位での Phrase 情報の整列
     - Note単位での再生情報を、時間単位に変換（和音指定を一つの単位に凝縮）
-    
+    - 音程差を検出し、Phrase の起伏を走査する
+
+### Note のノート変換(note translation)
+
+- ノート変換は loop object 内で発生する
+    - ノート変換後に Note Object を生成
+    - コード情報と、Phrase Analysed情報をベースにノート変換を行う
+    - Phrase の Music Expression 内にあるノート変換情報は Analysed に反映される
+        - para
 
 
 
@@ -227,6 +239,7 @@ SeqDataStock *-- DamperDataStock
 
 
 ### 次にやること
+<!--
 - アルペジオで連続して同じ音が出ないようにする -> 同音回避型和音変換対応　10/7済
 - | を小節区切り対応　10/10済
 - 左手用に、平行移動型の和音変換、Music Expressionへの追加(trans:para/parallel)　10/12済
@@ -237,8 +250,12 @@ SeqDataStock *-- DamperDataStock
 - ',",q,hによる冒頭の音価設定　1/1済
 - 特定のタイミングだけ強くしたり、弱くする phrase 表記追加　1/4済
 - rit. の種類実装, rit. -> Fine 1/13済
+-->
 
-当面の対応
+バグ情報
+- テンポを早くすると一拍目が鳴らないことがある
+
+次の対応
 - 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
     - '+' で連結するのを止める 1/14済
     - @2[....] と入れた瞬間に、最初の phrase が終わったら、2 の phrase を再生する
@@ -258,8 +275,8 @@ SeqDataStock *-- DamperDataStock
 - Chordのcmdからloopまでの伝達 3/4済
 - Chord情報の再生 3/4済
 - octave/key切替 3/5済
-- Analyzed対応
-- Chord情報による音程変換
+- Analyzed対応 3/10済
+- Chord情報による音程変換 3/12済
 - Part切替
 - Beat切替
 - pedal 対応
