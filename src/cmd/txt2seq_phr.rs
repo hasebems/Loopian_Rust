@@ -590,33 +590,37 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in rcmb.iter_mut() {
             let tm: f32 = (dt[lpnlib::TICK] as f32 % TICK_4_4)/TICK_1BT;
+            let mut vel = dt[lpnlib::VELOCITY];
             if tm == 0.0 {
-                dt[lpnlib::VELOCITY] += base_bpm;
+                vel += base_bpm;
             }
             else if tm == 2.0 {
-                dt[lpnlib::VELOCITY] += base_bpm/4;
+                vel += base_bpm/4;
             }
             else {
-                if dt[lpnlib::VELOCITY] > base_bpm/4 + MIN_AVILABLE_VELO {
-                    dt[lpnlib::VELOCITY] -= base_bpm/4;
-                }
+                vel -= base_bpm/4;
             }
+            if vel>127 {vel=127;}
+            else if vel < MIN_AVILABLE_VELO {vel=MIN_AVILABLE_VELO;}
+            dt[lpnlib::VELOCITY] = vel;
         }
     }
     else if tick_for_onemsr == TICK_3_4 as i32 {
         for dt in rcmb.iter_mut() {
             let tm: f32 = (dt[lpnlib::TICK] as f32 % TICK_3_4)/TICK_1BT;
+            let mut vel = dt[lpnlib::VELOCITY];
             if tm == 0.0 {
-                dt[lpnlib::VELOCITY] += base_bpm;
+                vel += base_bpm;
             }
             else if tm == 1.0 {
-                dt[lpnlib::VELOCITY] += base_bpm/4;
+                vel += base_bpm/4;
             }
             else {
-                if dt[lpnlib::VELOCITY] > base_bpm/4 + MIN_AVILABLE_VELO {
-                    dt[lpnlib::VELOCITY] -= base_bpm/4;
-                }
+                vel -= base_bpm/4;
             }
+            if vel>127 {vel=127;}
+            else if vel < MIN_AVILABLE_VELO {vel=MIN_AVILABLE_VELO;}
+            dt[lpnlib::VELOCITY] = vel;
         }
     }
     rcmb

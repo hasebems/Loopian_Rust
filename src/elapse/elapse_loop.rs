@@ -95,7 +95,7 @@ impl PhraseLoop {
       -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
-            priority: PRI_LOOP,
+            priority: PRI_PHR_LOOP,
             phrase_dt: msg,
             analys_dt: ana,
             keynote,
@@ -370,7 +370,7 @@ impl Elapse for CompositionLoop {
             self.next_msr = next_msr;
             self.next_tick = next_tick;
         }
-        assert!(self.next_msr > crnt_.msr);
+        //assert!(self.next_msr > crnt_.msr);
     }
 }
 impl Loop for CompositionLoop {
@@ -382,7 +382,7 @@ impl CompositionLoop {
     pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<Vec<i16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
-            priority: PRI_LOOP,
+            priority: PRI_CMPS_LOOP,
             cmps_dt: msg,
             //analys_dt:
             _keynote: knt,

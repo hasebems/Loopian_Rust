@@ -197,8 +197,11 @@ SeqDataStock *-- DamperDataStock
     - コード情報と、Phrase Analysed情報をベースにノート変換を行う
     - Phrase の Music Expression 内にあるノート変換情報は Analysed に反映される
         - para
-
-
+- ノート変換アルゴリズム
+    - parallel: root の音高に合わせて phrase を平行移動
+    - common: table の最も近い値を選ぶ
+    - arpeggio: アルペジオ判定のとき、前の音と同じにならない処理を加味して table の値を選ぶ
+        - 四分音符未満の長さに適用
 
 ### Filter
 
@@ -216,14 +219,6 @@ SeqDataStock *-- DamperDataStock
         - 両密度とも高いとき、少し強め
     - 音高平均との差(linear) -> velocity
         - フレーズの平均音高より離れていると、velocity は強くなる
-- Translation Filter(7.translatedで適用)
-    - Common
-        - テーブルを通した一番近い音に変更
-    - Arpeggio
-        - 連続して同じ音が出ない
-        - 四分音符未満の長さに適用
-    - Parallel
-        - 音程全体を、ルート音の音高分だけ平行移動する
 
 
 ### Tempo 生成の考え方
@@ -253,7 +248,7 @@ SeqDataStock *-- DamperDataStock
 -->
 
 バグ情報
-- テンポを早くすると一拍目が鳴らないことがある
+- 一拍目の音が前のコードになってしまう
 
 次の対応
 - 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
@@ -277,7 +272,7 @@ SeqDataStock *-- DamperDataStock
 - octave/key切替 3/5済
 - Analyzed対応 3/10済
 - Chord情報による音程変換 3/12済
-- Part切替
+- Part切替 3/12済
 - Beat切替
 - pedal 対応
 - 8 indicator 全表示

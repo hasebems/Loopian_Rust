@@ -259,15 +259,20 @@ impl ElapseStack {
                 }
                 else {
                     // playable に、時間順になるように挿入
+                    let mut after_break = false; 
                     for (i, one_plabl) in playable.iter().enumerate() {
                         let (msrx, tickx) = one_plabl.borrow().next();
                         if (msr < msrx) || 
                            ((msr == msrx) &&
                             ((tick < tickx) ||
-                             (tick == tickx && one_plabl.borrow().prio() > elps.borrow().prio()))){
+                             ((tick == tickx) && (one_plabl.borrow().prio() > elps.borrow().prio())))){
                             playable.insert(i, Rc::clone(&elps));
+                            after_break = true;
                             break;
                         }
+                    }
+                    if !after_break { // 条件にはまらなければ最後に入れる
+                        playable.push(Rc::clone(&elps));
                     }
                 }
             }

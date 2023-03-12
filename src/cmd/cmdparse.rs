@@ -20,11 +20,9 @@ pub struct LoopianCmd {
 }
 
 impl LoopianCmd {
-    const MAX_INDICATOR: u32 = 8;
-
     pub fn new(msg_hndr: mpsc::Sender<Vec<i16>>, ui_hndr: mpsc::Receiver<String>) -> Self {
         let mut indc: Vec<String> = Vec::new();
-        for _ in 0..Self::MAX_INDICATOR {indc.push("---".to_string());}
+        for _ in 0..crate::LoopianApp::MAX_INDICATOR {indc.push("---".to_string());}
         indc[0] = "C".to_string();
         indc[1] = lpnlib::DEFAULT_BPM.to_string();
         indc[3] = "1 : 1 : 000".to_string();
@@ -58,7 +56,7 @@ impl LoopianCmd {
                         let len = uitxt.chars().count();
                         if len >= 2 {
                             let txt = uitxt.split_off(1);
-                            if ind_num < Self::MAX_INDICATOR {
+                            if ind_num < crate::LoopianApp::MAX_INDICATOR {
                                 self.indicator[ind_num as usize] = txt;
                             }
                         }

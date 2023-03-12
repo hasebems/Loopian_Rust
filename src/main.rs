@@ -46,6 +46,7 @@ impl LoopianApp {
 
     const PROMPT_LETTERS: usize = 3;
     const CURSOR_MAX_LOCATE: usize = 79;
+    const MAX_INDICATOR: u32 = 8;
 
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         //  create new thread & channel
