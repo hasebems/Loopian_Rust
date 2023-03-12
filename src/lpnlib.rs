@@ -24,10 +24,10 @@ pub const NOTHING: i16 = -1;
 //          part count
 //*******************************************************************
 // Comp 2(L)+2(R), Phrase 2(L)+2(R), Pedal 1 
-pub const _LEFT1: usize = 0;
-pub const _LEFT2: usize = 1;
+pub const LEFT1: usize = 0;
+pub const LEFT2: usize = 1;
 pub const RIGHT1: usize = 2;
-pub const _RIGHT2: usize = 3;
+pub const RIGHT2: usize = 3;
 pub const MAX_LEFT_PART: usize = 2;
 pub const MAX_RIGHT_PART: usize = 2;
 pub const MAX_USER_PART: usize = MAX_LEFT_PART+MAX_RIGHT_PART;

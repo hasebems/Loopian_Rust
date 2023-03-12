@@ -23,7 +23,12 @@ pub struct SeqDataStock {
 impl SeqDataStock {
     pub fn new() -> Self {
         Self {
-            pdt: Default::default(),
+            pdt: [
+                PhraseDataStock::new(true),
+                PhraseDataStock::new(true),
+                PhraseDataStock::new(false),
+                PhraseDataStock::new(false)
+            ],
             cdt: Default::default(),
             input_mode: lpnlib::InputMode::Closer,
             tick_for_onemsr: lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE,
@@ -51,10 +56,10 @@ impl SeqDataStock {
         }
         false
     }
-    pub fn change_beat(&mut self, beat_count: i16, base_note: i16) {
-        println!("beat: {}/{}",beat_count, base_note);
-        self.tick_for_onemsr = lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE*(beat_count as i32)*(base_note as i32);
-        self.tick_for_onebeat = lpnlib::DEFAULT_TICK_FOR_QUARTER*4/(base_note as i32);
+    pub fn change_beat(&mut self, numerator: i16, denomirator: i16) {
+        println!("beat: {}/{}",numerator, denomirator);
+        self.tick_for_onemsr = lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE*(numerator as i32)*(denomirator as i32);
+        self.tick_for_onebeat = lpnlib::DEFAULT_TICK_FOR_QUARTER*4/(denomirator as i32);
         self.recombine_phr_all();
     }
     pub fn change_bpm(&mut self, bpm: i16) {
@@ -94,10 +99,12 @@ pub struct PhraseDataStock {
     ana: Vec<Vec<i16>>,
     whole_tick: i32,
 }
-impl Default for PhraseDataStock {
-    fn default() -> Self {
+impl PhraseDataStock {
+    fn new(left: bool) -> Self {
+        let base_note = if left {(lpnlib::DEFAULT_NOTE_NUMBER-12) as i32}
+        else {lpnlib::DEFAULT_NOTE_NUMBER as i32};
         Self {
-            base_note: lpnlib::DEFAULT_NOTE_NUMBER as i32,
+            base_note,
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
@@ -106,8 +113,6 @@ impl Default for PhraseDataStock {
             whole_tick: 0,
         }
     }
-}
-impl PhraseDataStock {
     pub fn get_final(&self) -> (Vec<i16>, Vec<i16>) {
         let mut ret_rcmb: Vec<i16> = vec![self.whole_tick as i16];
         for ev in self.rcmb.iter() {

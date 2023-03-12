@@ -272,13 +272,14 @@ impl LoopianApp {
         }
         // Draw Letters
         let prompt_mergin: f32 = Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32);
+        let prompt_txt: &str = self.cmd.get_part_txt();
         ui.put( // Prompt
             Rect { 
                    min: Pos2 {x:Self::SPACE_LEFT + 5.0,
                               y:Self::SPACE3_UPPER + 2.0},
                    max: Pos2 {x:Self::SPACE_LEFT + 5.0 + prompt_mergin,
                               y:Self::SPACE3_LOWER - 3.0},},
-            Label::new(RichText::new("R1>")
+            Label::new(RichText::new(prompt_txt)
                 .size(16.0).color(Color32::from_rgb(0,200,200)).family(FontFamily::Monospace))
         );
         let ltrcnt = self.input_text.chars().count();
