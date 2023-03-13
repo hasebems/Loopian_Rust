@@ -10,7 +10,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::vec::Vec;
 
-use crate::lpnlib;
+use crate::lpnlib::*;
 use super::tickgen::{TickGen, CrntMsrTick};
 use super::midi::MidiTx;
 use super::elapse::*;
@@ -27,7 +27,7 @@ pub struct ElapseStack {
     crnt_time: Instant,
     _count: u32,
     bpm_stock: i16,
-    beat_stock: lpnlib::Beat,
+    beat_stock: Beat,
     during_play: bool,
     display_time: Instant,
     tg: TickGen,
@@ -42,7 +42,7 @@ impl ElapseStack {
             Ok(c)   => {
                 let mut vp = Vec::new();
                 let mut velps = Vec::new();
-                for i in 0..lpnlib::ALL_PART_COUNT {
+                for i in 0..ALL_PART_COUNT {
                     // 同じ Part を part_vec, elapse_vec 両方に繋げる
                     let pt = Part::new(i as u32);
                     vp.push(Rc::clone(&pt));
@@ -54,8 +54,8 @@ impl ElapseStack {
                     _start_time: Instant::now(),
                     crnt_time: Instant::now(),
                     _count: 0,
-                    bpm_stock: lpnlib::DEFAULT_BPM,
-                    beat_stock: lpnlib::Beat(4,4),
+                    bpm_stock: DEFAULT_BPM,
+                    beat_stock: Beat(4,4),
                     during_play: false,
                     display_time: Instant::now(),
                     tg: TickGen::new(),
@@ -89,7 +89,7 @@ impl ElapseStack {
         self.crnt_time = Instant::now();
         match msg {
             Ok(n)  => {
-                if n[0] == lpnlib::MSG_QUIT {return true;}
+                if n[0] == MSG_QUIT {return true;}
                 else {self.parse_msg(n);}
             },
             Err(TryRecvError::Disconnected) => return true,// Wrong!
@@ -106,7 +106,7 @@ impl ElapseStack {
             println!("New measure!");
             // change beat event
             if self.beat_stock != self.tg.get_beat() {
-                let tick_for_onemsr = (lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE/self.beat_stock.1)*self.beat_stock.0;
+                let tick_for_onemsr = (DEFAULT_TICK_FOR_ONE_MEASURE/self.beat_stock.1)*self.beat_stock.0;
                 self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
             }
             // change bpm event
@@ -155,7 +155,7 @@ impl ElapseStack {
         }*/
     }
     pub fn get_chord_info(&self, part_num: usize) -> (i16, i16) {
-        assert!(part_num < lpnlib::ALL_PART_COUNT);
+        assert!(part_num < ALL_PART_COUNT);
         self.part_vec[part_num].borrow().get_chord_info()
     }
     fn send_msg_to_ui(&self, msg: &str) {
@@ -179,27 +179,27 @@ impl ElapseStack {
         }
     }
     fn setting_cmnd(&mut self, msg: Vec<i16>) {
-        if msg[1] == lpnlib::MSG2_BPM {
+        if msg[1] == MSG2_BPM {
             self.bpm_stock = msg[2];
         }
-        else if msg[1] == lpnlib::MSG2_BEAT {
-            self.beat_stock = lpnlib::Beat(msg[2] as i32, msg[3] as i32);
+        else if msg[1] == MSG2_BEAT {
+            self.beat_stock = Beat(msg[2] as i32, msg[3] as i32);
         }
-        else if msg[1] == lpnlib::MSG2_KEY {
+        else if msg[1] == MSG2_KEY {
             self.part_vec.iter().for_each(|x| x.borrow_mut().change_key(msg[2] as u8));
         }
     }
     fn phrase(&mut self, msg: Vec<i16>) {
         // message の２次元化
-        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        let part_num: usize = pt(msg[0]) as usize;
         let whole_tick: i16 = msg[1];
         let mut phr_vec: Vec<Vec<i16>> = Vec::new();
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
-            let index = |x, cnt| {x+lpnlib::MSG_HEADER+cnt*lpnlib::TYPE_NOTE_SIZE};
+            let index = |x, cnt| {x+MSG_HEADER+cnt*TYPE_NOTE_SIZE};
             let mut vtmp: Vec<i16> = Vec::new();
-            for i in 0..lpnlib::TYPE_NOTE_SIZE {
+            for i in 0..TYPE_NOTE_SIZE {
                 vtmp.push(msg[index(i,msg_cnt)]);
             }
             phr_vec.push(vtmp);
@@ -210,15 +210,15 @@ impl ElapseStack {
     }
     fn composition(&mut self, msg: Vec<i16>) {
         // message の２次元化
-        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        let part_num: usize = pt(msg[0]) as usize;
         let whole_tick: i16 = msg[1];
         let mut cmps_vec: Vec<Vec<i16>> = Vec::new();
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
-            let index = |x, cnt| {x+lpnlib::MSG_HEADER+cnt*lpnlib::TYPE_CHORD_SIZE};
+            let index = |x, cnt| {x+MSG_HEADER+cnt*TYPE_CHORD_SIZE};
             let mut vtmp: Vec<i16> = Vec::new();
-            for i in 0..lpnlib::TYPE_CHORD_SIZE {
+            for i in 0..TYPE_CHORD_SIZE {
                 vtmp.push(msg[index(i,msg_cnt)]);
             }
             cmps_vec.push(vtmp);
@@ -229,14 +229,14 @@ impl ElapseStack {
     }
     fn ana(&mut self, msg: Vec<i16>) {
         // message の２次元化
-        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        let part_num: usize = pt(msg[0]) as usize;
         let mut ana_vec: Vec<Vec<i16>> = Vec::new();
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
-            let index = |x, cnt| {x+lpnlib::MSG_HEADER+cnt*lpnlib::TYPE_BEAT_SIZE};
+            let index = |x, cnt| {x+MSG_HEADER+cnt*TYPE_BEAT_SIZE};
             let mut vtmp: Vec<i16> = Vec::new();
-            for i in 0..lpnlib::TYPE_BEAT_SIZE {
+            for i in 0..TYPE_BEAT_SIZE {
                 vtmp.push(msg[index(i,msg_cnt)]);
             }
             ana_vec.push(vtmp);
@@ -246,30 +246,30 @@ impl ElapseStack {
         self.part_vec[part_num].borrow_mut().rcv_ana_msg(ana_vec);
     }
     fn del_phrase(&mut self, msg: Vec<i16>) {
-        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        let part_num: usize = pt(msg[0]) as usize;
         self.part_vec[part_num].borrow_mut().rcv_phr_msg(Vec::new(), 0);
         self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new());
     }
     fn del_composition(&mut self, msg: Vec<i16>) {
-        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        let part_num: usize = pt(msg[0]) as usize;
         self.part_vec[part_num].borrow_mut().rcv_cmps_msg(Vec::new(), 0);
     }
     fn del_ana(&mut self, msg: Vec<i16>) {
-        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        let part_num: usize = pt(msg[0]) as usize;
         self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new());
     }
     fn parse_msg(&mut self, msg: Vec<i16>) {
         println!("msg is {:?}", msg[0]);
-        if msg[0] == lpnlib::MSG_START {self.start();}
-        else if msg[0] == lpnlib::MSG_START {self.start();}
-        else if msg[0] == lpnlib::MSG_STOP {self.stop();}
-        else if msg[0] == lpnlib::MSG_SET {self.setting_cmnd(msg);}
-        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_PHR_X {self.del_phrase(msg);}
-        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_CMP_X {self.del_composition(msg);}
-        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_ANA_X {self.del_ana(msg);}
-        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_PHR {self.phrase(msg);}
-        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_CMP {self.composition(msg);}
-        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_ANA {self.ana(msg);}
+        if msg[0] == MSG_START {self.start();}
+        else if msg[0] == MSG_START {self.start();}
+        else if msg[0] == MSG_STOP {self.stop();}
+        else if msg[0] == MSG_SET {self.setting_cmnd(msg);}
+        else if msg1st(msg[0]) == MSG_PHR_X {self.del_phrase(msg);}
+        else if msg1st(msg[0]) == MSG_CMP_X {self.del_composition(msg);}
+        else if msg1st(msg[0]) == MSG_ANA_X {self.del_ana(msg);}
+        else if msg1st(msg[0]) == MSG_PHR {self.phrase(msg);}
+        else if msg1st(msg[0]) == MSG_CMP {self.composition(msg);}
+        else if msg1st(msg[0]) == MSG_ANA {self.ana(msg);}
     }
     fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();

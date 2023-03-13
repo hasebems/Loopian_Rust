@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib;
+use crate::lpnlib::*;
 use super::txt2seq_phr::*;
 use super::txt2seq_cmps::*;
 
@@ -13,9 +13,9 @@ use super::txt2seq_cmps::*;
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
 pub struct SeqDataStock {
-    pdt: [PhraseDataStock; lpnlib::MAX_USER_PART],
-    cdt: [CompositionDataStock; lpnlib::MAX_USER_PART],
-    input_mode: lpnlib::InputMode,
+    pdt: [PhraseDataStock; MAX_USER_PART],
+    cdt: [CompositionDataStock; MAX_USER_PART],
+    input_mode: InputMode,
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
     bpm: i16,
@@ -30,16 +30,16 @@ impl SeqDataStock {
                 PhraseDataStock::new(false)
             ],
             cdt: Default::default(),
-            input_mode: lpnlib::InputMode::Closer,
-            tick_for_onemsr: lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE,
-            tick_for_onebeat: lpnlib::DEFAULT_TICK_FOR_QUARTER,
-            bpm: lpnlib::DEFAULT_BPM,
+            input_mode: InputMode::Closer,
+            tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+            tick_for_onebeat: DEFAULT_TICK_FOR_QUARTER,
+            bpm: DEFAULT_BPM,
         }
     }
     pub fn get_pdstk(&self, part: usize) -> &PhraseDataStock {&self.pdt[part]}
     pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {&self.cdt[part]}
     pub fn set_raw_phrase(&mut self, part: usize, input_text: String) -> bool {
-        if part < lpnlib::MAX_USER_PART {
+        if part < MAX_USER_PART {
             if self.pdt[part].set_raw(input_text) {
                 self.pdt[part].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
                 return true
@@ -48,7 +48,7 @@ impl SeqDataStock {
         false
     }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
-        if part < lpnlib::MAX_USER_PART {
+        if part < MAX_USER_PART {
             if self.cdt[part].set_raw(input_text) {
                 self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
                 return true
@@ -58,8 +58,8 @@ impl SeqDataStock {
     }
     pub fn change_beat(&mut self, numerator: i16, denomirator: i16) {
         println!("beat: {}/{}",numerator, denomirator);
-        self.tick_for_onemsr = lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE*(numerator as i32)*(denomirator as i32);
-        self.tick_for_onebeat = lpnlib::DEFAULT_TICK_FOR_QUARTER*4/(denomirator as i32);
+        self.tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE*(numerator as i32)*(denomirator as i32);
+        self.tick_for_onebeat = DEFAULT_TICK_FOR_QUARTER*4/(denomirator as i32);
         self.recombine_phr_all();
     }
     pub fn change_bpm(&mut self, bpm: i16) {
@@ -101,8 +101,8 @@ pub struct PhraseDataStock {
 }
 impl PhraseDataStock {
     fn new(left: bool) -> Self {
-        let base_note = if left {(lpnlib::DEFAULT_NOTE_NUMBER-12) as i32}
-        else {lpnlib::DEFAULT_NOTE_NUMBER as i32};
+        let base_note = if left {(DEFAULT_NOTE_NUMBER-12) as i32}
+        else {DEFAULT_NOTE_NUMBER as i32};
         Self {
             base_note,
             raw: "".to_string(),
@@ -141,7 +141,7 @@ impl PhraseDataStock {
         println!("complement_phrase: {:?} exp: {:?}",cmpl[0],cmpl[1]);
         true
     }
-    pub fn set_recombined(&mut self, input_mode: lpnlib::InputMode, bpm: i16, tick_for_onemsr: i32) {
+    pub fn set_recombined(&mut self, input_mode: InputMode, bpm: i16, tick_for_onemsr: i32) {
         if self.cmpl_nt == [""] {
             //  clear
             self.rcmb = Vec::new();

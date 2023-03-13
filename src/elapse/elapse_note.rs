@@ -6,7 +6,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::lpnlib;
+use crate::lpnlib::*;
 use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
@@ -87,9 +87,9 @@ impl Note {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpNote,},
             priority: PRI_NOTE,
-            note_num: ev[lpnlib::NOTE] as u8,
-            velocity: ev[lpnlib::VELOCITY] as u8,
-            duration: ev[lpnlib::DURATION] as i32,
+            note_num: ev[NOTE] as u8,
+            velocity: ev[VELOCITY] as u8,
+            duration: ev[DURATION] as i32,
             keynote,
             real_note: 0,
             noteon_started: false,
@@ -113,7 +113,7 @@ impl Note {
     }
     fn note_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;
-        self.next_msr = lpnlib::FULL;
+        self.next_msr = FULL;
         // midi note off
         if self.noteoff_enable {
             estk.midi_out(0x90, self.real_note, 0);

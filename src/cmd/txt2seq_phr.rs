@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib;
+use crate::lpnlib::*;
 
 //*******************************************************************
 //          complement_phrase
@@ -17,7 +17,7 @@ pub fn complement_phrase(input_text: String) -> [Vec<String>;2] {
     nf.retain(|c| !c.is_whitespace());  // space を削除
 
     // 3. , で分割
-    let mut nvec = lpnlib::split_by(',', nf);
+    let mut nvec = split_by(',', nf);
 
     // 4. < >*n を展開
     loop {
@@ -35,7 +35,7 @@ pub fn complement_phrase(input_text: String) -> [Vec<String>;2] {
 
     // 6. Expression を , で分割
     ne.clone().retain(|c| !c.is_whitespace());  // space を削除
-    let nevec = lpnlib::split_by(',', ne);
+    let nevec = split_by(',', ne);
 
     return [nvec,nevec];
 }
@@ -168,7 +168,7 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
 //*******************************************************************
 //          recombine_to_internal_format
 //*******************************************************************
-pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: lpnlib::InputMode,
+pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: InputMode,
     base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<i16>>) {
     let max_read_ptr = ntvec.len();
     let (exp_vel, _exp_others) = get_exp_info(expvec.clone());
@@ -176,7 +176,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
     let mut last_nt: i32 = 0;
     let mut tick: i32 = 0;
     let mut msr: i32 = 1;
-    let mut base_dur: i32 = lpnlib::DEFAULT_TICK_FOR_QUARTER;
+    let mut base_dur: i32 = DEFAULT_TICK_FOR_QUARTER;
     let mut rcmb: Vec<Vec<i16>> = Vec::new();
 
     while read_ptr < max_read_ptr {
@@ -213,19 +213,19 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
     (tick, rcmb)
 }
 fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
-    let mut vel = lpnlib::END_OF_DATA;
+    let mut vel = END_OF_DATA;
     let mut retvec = expvec.clone();
     for (i, txt) in expvec.iter().enumerate() {
-        vel = lpnlib::convert_exp2vel(txt);
-        if vel != lpnlib::END_OF_DATA {
+        vel = convert_exp2vel(txt);
+        if vel != END_OF_DATA {
             retvec.remove(i);
             break;
         }
     }
-    if vel == lpnlib::END_OF_DATA {vel=lpnlib::DEFAULT_VEL as i32;}
+    if vel == END_OF_DATA {vel=DEFAULT_VEL as i32;}
     (vel, retvec)
 }
-fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i32, imd: lpnlib::InputMode)
+fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i32, imd: InputMode)
     -> (Vec<u8>, bool, i32, i32, i32, i32) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
 
     //  小節線のチェック
@@ -239,20 +239,20 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i3
     //  duration 情報、 Velocity 情報の抽出
     let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur);
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
-    let notes_vec: Vec<String> = lpnlib::split_by_by('=', '_', ntext4);
+    let notes_vec: Vec<String> = split_by_by('=', '_', ntext4);
 
     let mut notes: Vec<u8> = Vec::new();
     let mut doremi: i32 = 0;
     for nt in notes_vec.iter() {    // 同時発音
-        if imd == lpnlib::InputMode::Fixed {
+        if imd == InputMode::Fixed {
             doremi = convert_doremi_fixed(nt.to_string());
         }
-        else if imd == lpnlib::InputMode::Closer {
+        else if imd == InputMode::Closer {
             doremi = convert_doremi_closer(nt.to_string(), last_nt);
         }
         let mut base_pitch: i32 = base_note + doremi;
-        if base_pitch >= lpnlib::MAX_NOTE_NUMBER as i32 {base_pitch = lpnlib::MAX_NOTE_NUMBER as i32;}
-        else if base_pitch < lpnlib::MIN_NOTE_NUMBER as i32 {base_pitch = lpnlib::MIN_NOTE_NUMBER as i32;}
+        if base_pitch >= MAX_NOTE_NUMBER as i32 {base_pitch = MAX_NOTE_NUMBER as i32;}
+        else if base_pitch < MIN_NOTE_NUMBER as i32 {base_pitch = MIN_NOTE_NUMBER as i32;}
         notes.push(base_pitch as u8);
     }
     (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi)
@@ -276,7 +276,7 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
     let txtlen = ntext.len(); 
     if txtlen > 0 {
         if ntext.chars().nth(txtlen-1).unwrap_or(' ') == 'o' {
-            dur_cnt = lpnlib::LAST;
+            dur_cnt = LAST;
             ntext.pop();
         }
         else {
@@ -305,14 +305,14 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         }
         if fst_ltr == '\'' {
             if ntext.chars().nth(2).unwrap_or(' ') == '\"' {
-                base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER/8;
+                base_dur = DEFAULT_TICK_FOR_QUARTER/8;
                 idx = 2;
             }
-            else {base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER/2;}
+            else {base_dur = DEFAULT_TICK_FOR_QUARTER/2;}
         }
-        else if fst_ltr == '\"' {base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER/4;}
-        else if fst_ltr == 'q' {base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER;}
-        else if fst_ltr == 'h' {base_dur = lpnlib::DEFAULT_TICK_FOR_QUARTER*2;}
+        else if fst_ltr == '\"' {base_dur = DEFAULT_TICK_FOR_QUARTER/4;}
+        else if fst_ltr == 'q' {base_dur = DEFAULT_TICK_FOR_QUARTER;}
+        else if fst_ltr == 'h' {base_dur = DEFAULT_TICK_FOR_QUARTER*2;}
         else {idx = 0;}
         if triplet != 0 {
             base_dur = base_dur*2/triplet as i32;
@@ -344,10 +344,10 @@ fn gen_diff_vel(nt: String) -> (String, i32) {
     (ntext, diff_vel)
 }
 fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
-    if dur_cnt == lpnlib::LAST {
+    if dur_cnt == LAST {
         rest_tick
     }
-    else if base_dur == lpnlib::KEEP {
+    else if base_dur == KEEP {
         base_dur*dur_cnt as i32
     }
     else {
@@ -358,10 +358,10 @@ fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_
     let mut return_rcmb = rcmb.clone();
     if notes.len() != 0 {
         for note in notes.iter() {
-            if *note == lpnlib::REST {
+            if *note == REST {
                 continue;
             }
-            else if *note == lpnlib::NO_NOTE {
+            else if *note == NO_NOTE {
                 continue;
                 // python で、前の入力が '=' による和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
                 // とコメントがあったが、処理内容不明
@@ -376,7 +376,7 @@ fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_
             }
             else {
                 let nt_data: Vec<i16> = 
-                    vec![lpnlib::TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
+                    vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
                     return_rcmb.push(nt_data);
             }
         }
@@ -385,7 +385,7 @@ fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_
     return_rcmb
 }
 fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
-    if doremi.len() == 0 {return lpnlib::NO_NOTE as i32;}
+    if doremi.len() == 0 {return NO_NOTE as i32;}
     let mut last_doremi = last_nt;
     while last_doremi >= 12 {last_doremi -= 12;}
     while last_doremi < 0 {last_doremi += 12;}
@@ -393,7 +393,7 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
     let mut oct_pitch = 0;
     let mut pure_doremi = String::from("");
     for (i, ltr) in doremi.chars().enumerate() {
-        if ltr == 'x' {return lpnlib::REST as i32;}
+        if ltr == 'x' {return REST as i32;}
         else if ltr == '+' {oct_pitch += 12;}
         else if ltr == '-' {oct_pitch -= 12;}
         else {
@@ -404,13 +404,13 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
 
     let mut base_note = 0;
     if pure_doremi.len() != 0 {
-        base_note = lpnlib::doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
+        base_note = doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
         pure_doremi.remove(0);
     }
-    else {return lpnlib::NO_NOTE as i32;}
+    else {return NO_NOTE as i32;}
 
     if pure_doremi.len() != 0 {
-        base_note = lpnlib::doremi_semi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
+        base_note = doremi_semi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
     }
 
     let base_pitch: i32;
@@ -433,11 +433,11 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
     base_pitch
 }
 fn convert_doremi_fixed(doremi: String) -> i32 {
-    if doremi.len() == 0 {return lpnlib::NO_NOTE as i32;}
+    if doremi.len() == 0 {return NO_NOTE as i32;}
     let mut base_pitch: i32 = 0;
     let mut pure_doremi = String::from("");
     for (i, ltr) in doremi.chars().enumerate() {
-        if ltr == 'x' {return lpnlib::REST as i32;}
+        if ltr == 'x' {return REST as i32;}
         else if ltr == '+' {base_pitch += 12;}
         else if ltr == '-' {base_pitch -= 12;}
         else {
@@ -446,12 +446,12 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
         }
     }
     if pure_doremi.len() != 0 {
-        base_pitch = lpnlib::doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_pitch);
+        base_pitch = doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_pitch);
     }
-    else {return lpnlib::NO_NOTE as i32;}
+    else {return NO_NOTE as i32;}
 
     if pure_doremi.len() > 1 {
-        base_pitch = lpnlib::doremi_semi_number(pure_doremi.chars().nth(1).unwrap_or(' '), base_pitch);
+        base_pitch = doremi_semi_number(pure_doremi.chars().nth(1).unwrap_or(' '), base_pitch);
     }
     base_pitch
 }
@@ -461,7 +461,7 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
 //*******************************************************************
 // beat analysis data format: 
 // fn basic_analysis()
-//      1st     lpnlib::TYPE_BEAT
+//      1st     TYPE_BEAT
 //      2nd     tick,
 //      3rd     dur,
 //      4th     note num,      : highest
@@ -470,7 +470,7 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
 //
 // fn arp_translation()
 //  上記で準備した beat_analysis の後ろに、arpeggio 用の解析データを追加
-//      6th     0:com, $DIFF:arp,  lpnlib::PARA:para 
+//      6th     0:com, $DIFF:arp,  PARA:para 
 //       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
 //       $DIFF: arp の場合の、前の音との音程の差分
 //
@@ -493,70 +493,70 @@ fn basic_analysis(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
             None => 0,
         }
     };
-    let mut crnt_tick = lpnlib::NOTHING;
+    let mut crnt_tick = NOTHING;
     let mut note_cnt = 0;
     let mut crnt_dur = 0;
     let mut note_all: Vec<i16> = Vec::new();
     let mut beat_analysis: Vec<Vec<i16>> = Vec::new();
     for nt in gen.iter() {
-        if nt[lpnlib::TICK] == crnt_tick {
+        if nt[TICK] == crnt_tick {
             note_cnt += 1;
-            note_all.push(nt[lpnlib::NOTE]);
+            note_all.push(nt[NOTE]);
         }
         else {
             if note_cnt > 0 {
-                beat_analysis.push(vec![lpnlib::TYPE_BEAT, crnt_tick, crnt_dur,
+                beat_analysis.push(vec![TYPE_BEAT, crnt_tick, crnt_dur,
                     get_hi(note_all.clone()), note_cnt]);
             }
-            crnt_tick = nt[lpnlib::TICK];
-            crnt_dur = nt[lpnlib::DURATION];
+            crnt_tick = nt[TICK];
+            crnt_dur = nt[DURATION];
             note_cnt = 1;
-            note_all = vec![nt[lpnlib::NOTE]];
+            note_all = vec![nt[NOTE]];
         }
     }
     if note_cnt > 0 {
-        beat_analysis.push(vec![lpnlib::TYPE_BEAT, crnt_tick, crnt_dur,
+        beat_analysis.push(vec![TYPE_BEAT, crnt_tick, crnt_dur,
             get_hi(note_all), note_cnt]);
     }
     beat_analysis
 }
 fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, para: bool) -> Vec<Vec<i16>> {
-    let mut last_note = lpnlib::REST;
+    let mut last_note = REST;
     let mut last_cnt = 0;
     let mut crnt_note;
     let mut crnt_cnt;
     let mut total_tick = 0;
     for ana in beat_analysis.iter_mut() {
         // total_tick の更新
-        if total_tick != ana[lpnlib::TICK] {
-            total_tick = ana[lpnlib::TICK];
-            last_note = lpnlib::REST;
+        if total_tick != ana[TICK] {
+            total_tick = ana[TICK];
+            last_note = REST;
             last_cnt = 0;
         }
-        else if ana[lpnlib::DURATION] as i32 >= lpnlib::DEFAULT_TICK_FOR_QUARTER {
-            total_tick = ana[lpnlib::TICK];
-            last_note = lpnlib::REST;
+        else if ana[DURATION] as i32 >= DEFAULT_TICK_FOR_QUARTER {
+            total_tick = ana[TICK];
+            last_note = REST;
             last_cnt = 0;
         }
         else {
-            total_tick += ana[lpnlib::DURATION];
+            total_tick += ana[DURATION];
         }
 
         // crnt_note の更新
-        crnt_note = lpnlib::NO_NOTE;
-        crnt_cnt = ana[lpnlib::ARP_NTCNT];
+        crnt_note = NO_NOTE;
+        crnt_cnt = ana[ARP_NTCNT];
         if crnt_cnt == 1 {
-            crnt_note = ana[lpnlib::NOTE] as u8;
+            crnt_note = ana[NOTE] as u8;
         }
 
         // 条件の確認と、ana への情報追加
         //println!("ana_dbg: {},{},{},{}",crnt_cnt,crnt_note,last_cnt,last_note);
         if para {
-            ana.push(lpnlib::ARP_PARA);    // para
+            ana.push(ARP_PARA);    // para
         }
-        else if last_note <= lpnlib::MAX_NOTE_NUMBER &&
+        else if last_note <= MAX_NOTE_NUMBER &&
           last_cnt == 1 &&
-          crnt_note <= lpnlib::MAX_NOTE_NUMBER &&
+          crnt_note <= MAX_NOTE_NUMBER &&
           crnt_cnt == 1 &&
           (last_note as i32)-(crnt_note as i32) < 10 &&
           (crnt_note as i32)-(last_note as i32) < 10 {
@@ -564,7 +564,7 @@ fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, para: bool) -> Vec<Vec<i16>
             ana.push((crnt_note-last_note) as i16); // arp
         }
         else {
-            ana.push(lpnlib::ARP_COM);    // com
+            ana.push(ARP_COM);    // com
         }
         last_cnt = crnt_cnt;
         last_note = crnt_note;
@@ -579,9 +579,9 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
     const EFFECT: i16 = 20;     // bigger(1..100), stronger
     const MIN_BPM: i16 = 60;
     const MIN_AVILABLE_VELO: i16 = 30;
-    const TICK_4_4: f32 = (lpnlib::DEFAULT_TICK_FOR_QUARTER*4) as f32;
-    const TICK_3_4: f32 = (lpnlib::DEFAULT_TICK_FOR_QUARTER*3) as f32;
-    const TICK_1BT: f32 = lpnlib::DEFAULT_TICK_FOR_QUARTER as f32;
+    const TICK_4_4: f32 = (DEFAULT_TICK_FOR_QUARTER*4) as f32;
+    const TICK_3_4: f32 = (DEFAULT_TICK_FOR_QUARTER*3) as f32;
+    const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
     let mut rcmb = rcmb_org.clone();
     if bpm < MIN_BPM {return rcmb;}
 
@@ -589,8 +589,8 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
     let base_bpm: i16 = (bpm - MIN_BPM)*EFFECT/100;
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in rcmb.iter_mut() {
-            let tm: f32 = (dt[lpnlib::TICK] as f32 % TICK_4_4)/TICK_1BT;
-            let mut vel = dt[lpnlib::VELOCITY];
+            let tm: f32 = (dt[TICK] as f32 % TICK_4_4)/TICK_1BT;
+            let mut vel = dt[VELOCITY];
             if tm == 0.0 {
                 vel += base_bpm;
             }
@@ -602,13 +602,13 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
             }
             if vel>127 {vel=127;}
             else if vel < MIN_AVILABLE_VELO {vel=MIN_AVILABLE_VELO;}
-            dt[lpnlib::VELOCITY] = vel;
+            dt[VELOCITY] = vel;
         }
     }
     else if tick_for_onemsr == TICK_3_4 as i32 {
         for dt in rcmb.iter_mut() {
-            let tm: f32 = (dt[lpnlib::TICK] as f32 % TICK_3_4)/TICK_1BT;
-            let mut vel = dt[lpnlib::VELOCITY];
+            let tm: f32 = (dt[TICK] as f32 % TICK_3_4)/TICK_1BT;
+            let mut vel = dt[VELOCITY];
             if tm == 0.0 {
                 vel += base_bpm;
             }
@@ -620,7 +620,7 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
             }
             if vel>127 {vel=127;}
             else if vel < MIN_AVILABLE_VELO {vel=MIN_AVILABLE_VELO;}
-            dt[lpnlib::VELOCITY] = vel;
+            dt[VELOCITY] = vel;
         }
     }
     rcmb
@@ -630,14 +630,14 @@ pub fn crispy_tick(rcmb_org: &Vec<Vec<i16>>, exp_others: &Vec<String>) -> Vec<Ve
     let mut stacc = false;
     if exp_others.iter().any(|x| x=="stacc") {stacc = true;}
     for dt in rcmb.iter_mut() {
-        let mut return_dur = dt[lpnlib::DURATION];
+        let mut return_dur = dt[DURATION];
         if stacc {
             return_dur = return_dur/2;
         }
         else if return_dur > 40 {  // 一律 duration 40 を引く
             return_dur -= 40;
         }
-        dt[lpnlib::DURATION] = return_dur;
+        dt[DURATION] = return_dur;
     }
     rcmb.clone()
 }

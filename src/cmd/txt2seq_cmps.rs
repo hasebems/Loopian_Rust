@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib;
+use crate::lpnlib::*;
 
 //*******************************************************************
 //          Chord Tables and IF
@@ -124,7 +124,7 @@ pub fn complement_composition(input_text: String) -> Option<[Vec<String>;2]> {
         let cmps_vec = fill_omitted_chord_data(cd);
 
         // 3. Expression を ',' で分割
-        let ex_vec = lpnlib::split_by(',', ce);
+        let ex_vec = split_by(',', ce);
 
         Some([cmps_vec, ex_vec])
     }
@@ -194,7 +194,7 @@ fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
     fill.retain(|c| !c.is_whitespace());
 
     // ',' で分割
-    lpnlib::split_by(',', fill)
+    split_by(',', fill)
 }
 
 //*******************************************************************
@@ -219,7 +219,7 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
             if same_chord != chord {
                 same_chord = chord.clone();
                 let (root, table) = convert_chord_to_num(chord);
-                rcmb.push(vec![lpnlib::TYPE_CHORD, tick as i16, root, table]);
+                rcmb.push(vec![TYPE_CHORD, tick as i16, root, table]);
             }
             tick += tick_for_onebeat*dur;
         }
@@ -297,7 +297,7 @@ fn convert_chord_to_num(chord: String) -> (i16, i16) {
             break;
         }
     }
-    if !found {root = lpnlib::NO_ROOT;}
+    if !found {root = NO_ROOT;}
 
     //  search chord type from Table
     //println!("*<Chord: {}, {}, {}>*", root, root_str, kind);

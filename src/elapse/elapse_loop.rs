@@ -6,7 +6,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::lpnlib;
+use crate::lpnlib::*;
 use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
@@ -65,7 +65,7 @@ impl Elapse for PhraseLoop {
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let elapsed_tick = self.calc_serial_tick(crnt_);
         if elapsed_tick > self.whole_tick {
-            self.next_msr = lpnlib::FULL;
+            self.next_msr = FULL;
             self.destroy = true;
             return
         }
@@ -73,8 +73,8 @@ impl Elapse for PhraseLoop {
         if elapsed_tick >= self.next_tick_in_phrase {
             let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
             self.next_tick_in_phrase = next_tick;
-            if next_tick == lpnlib::END_OF_DATA {
-                self.next_msr = lpnlib::FULL;
+            if next_tick == END_OF_DATA {
+                self.next_msr = FULL;
                 self.destroy = true;
             }
             else {
@@ -101,7 +101,7 @@ impl PhraseLoop {
             keynote,
             play_counter: 0,
             next_tick_in_phrase: 0,
-            last_note: lpnlib::NO_NOTE,
+            last_note: NO_NOTE,
             // for super's member
             whole_tick,
             destroy: false,
@@ -117,18 +117,18 @@ impl PhraseLoop {
         let max_ev = self.phrase_dt.len();
         loop {
             if max_ev <= trace {
-                next_tick = lpnlib::END_OF_DATA;   // means sequence finished
+                next_tick = END_OF_DATA;   // means sequence finished
                 break;
             }
-            next_tick = phr[trace][lpnlib::TICK] as i32;
+            next_tick = phr[trace][TICK] as i32;
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                if phr[trace][lpnlib::TYPE] == lpnlib::TYPE_DAMPER {
+                if phr[trace][TYPE] == TYPE_DAMPER {
                     //<<DoItLater>>
                     // phr: ['damper', duration, tick, value]
                     //estk.add_obj(elpn.Damper(self.est, self.md, phr, msr, tick))
                 }
-                else if self.phrase_dt[trace][lpnlib::TYPE] == lpnlib::TYPE_NOTE {
+                else if self.phrase_dt[trace][TYPE] == TYPE_NOTE {
                     self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
                 }
             }
@@ -146,18 +146,18 @@ impl PhraseLoop {
         let (root, ctbl) = estk.get_chord_info(self.id.pid as usize);
         let mut deb_txt: String = "no chord".to_string();
 
-        if root != lpnlib::NO_ROOT || ctbl != lpnlib::NO_TABLE  {
-            let option = self.identify_trans_option(next_tick, ev[lpnlib::NOTE]);
+        if root != NO_ROOT || ctbl != NO_TABLE  {
+            let option = self.identify_trans_option(next_tick, ev[NOTE]);
             let trans_note: u8;
             let root_nt = Self::ROOT2NTNUM[root as usize];
-            if option == lpnlib::ARP_PARA {
-                let mut tgt_nt = ev[lpnlib::NOTE]+root;
+            if option == ARP_PARA {
+                let mut tgt_nt = ev[NOTE]+root;
                 if root_nt > 5 {tgt_nt -= 12;}
                 trans_note = self.translate_note_com(root_nt, ctbl, tgt_nt);
                 deb_txt = "para:".to_string();
             }
-            else if option == lpnlib::ARP_COM {
-                trans_note = self.translate_note_com(root_nt, ctbl, ev[lpnlib::NOTE]);
+            else if option == ARP_COM {
+                trans_note = self.translate_note_com(root_nt, ctbl, ev[NOTE]);
                 deb_txt = "com:".to_string();
             }
             else { // Arpeggio
@@ -165,7 +165,7 @@ impl PhraseLoop {
                 deb_txt = "arp:".to_string();
             }
             self.last_note = trans_note;
-            crnt_ev[lpnlib::NOTE] = trans_note as i16;
+            crnt_ev[NOTE] = trans_note as i16;
             deb_txt += &(root_nt.to_string() + "-" + &ctbl.to_string());
         }
 
@@ -182,17 +182,17 @@ impl PhraseLoop {
     }
     fn identify_trans_option(&self, next_tick: i32, note: i16) -> i16 {
         for anaone in self.analys_dt.iter() {
-            if anaone[lpnlib::TICK] == next_tick as i16 && 
-               anaone[lpnlib::NOTE] == note {
-                return anaone[lpnlib::ARP_DIFF];
+            if anaone[TICK] == next_tick as i16 && 
+               anaone[NOTE] == note {
+                return anaone[ARP_DIFF];
             }
         }
-        lpnlib::ARP_COM
+        ARP_COM
     }
     fn translate_note_com(&self, root: i16, ctbl: i16, tgt_nt: i16) -> u8 {
         let mut proper_nt = tgt_nt;
         let tbl = txt2seq_cmps::get_table(ctbl as usize);
-        let real_root = root + lpnlib::DEFAULT_NOTE_NUMBER as i16;
+        let real_root = root + DEFAULT_NOTE_NUMBER as i16;
         let mut former_nt: i16 = 0;
         let mut found = false;
         let oct_adjust = 
@@ -225,7 +225,7 @@ impl PhraseLoop {
     }
     fn translate_note_arp(&self, root: i16, ctbl: i16, nt_diff: i16) -> u8 {
         let arp_nt = self.last_note as i16 + nt_diff;
-        let mut nty = lpnlib::DEFAULT_NOTE_NUMBER as i16;
+        let mut nty = DEFAULT_NOTE_NUMBER as i16;
         let tbl = txt2seq_cmps::get_table(ctbl as usize);
         if nt_diff == 0 {
             arp_nt as u8
@@ -298,7 +298,7 @@ impl PhraseLoop {
             octave += 1;
             scale_nt = root + octave*12;
         }
-        scale_nt = lpnlib::MAX_NOTE_NUMBER as i16;
+        scale_nt = MAX_NOTE_NUMBER as i16;
         octave = -1;
         let mut cnt = tbl.len() as i16;
         while nt < scale_nt { // Table index 判定
@@ -352,14 +352,14 @@ impl Elapse for CompositionLoop {
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let elapsed_tick = self.calc_serial_tick(crnt_);
         if elapsed_tick >= self.whole_tick { // =をつけないと、loop終了直後の小節頭で無限ループになる
-            self.next_msr = lpnlib::FULL;
+            self.next_msr = FULL;
             self.destroy = true;
             return
         }
 
         if !self.already_end && elapsed_tick >= self.next_tick_in_cmps {
             let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
-            if next_tick == lpnlib::END_OF_DATA {
+            if next_tick == END_OF_DATA {
                 self.already_end = true;
                 self.next_tick_in_cmps = self.whole_tick;
             }
@@ -405,9 +405,9 @@ impl CompositionLoop {
     pub fn get_chord(&self) -> (i16, i16) {(self.root, self.translation_tbl)}
     fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
     fn prepare_note_translation(&mut self, cd: Vec<i16>) {
-        if cd[lpnlib::TYPE] == lpnlib::TYPE_CHORD {
-            self.root = cd[lpnlib::CD_ROOT];
-            self.translation_tbl = cd[lpnlib::CD_TABLE];
+        if cd[TYPE] == TYPE_CHORD {
+            self.root = cd[CD_ROOT];
+            self.translation_tbl = cd[CD_TABLE];
 
             let tbl_num: usize = self.translation_tbl as usize;
             let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
@@ -420,7 +420,7 @@ impl CompositionLoop {
             else {
                 self.chord_name = cname;
             }
-            println!("Chord Data: {}, {}, {}",self.chord_name, cd[lpnlib::CD_ROOT], cd[lpnlib::CD_TABLE]);
+            println!("Chord Data: {}, {}, {}",self.chord_name, cd[CD_ROOT], cd[CD_TABLE]);
         }
     }
     fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
@@ -430,10 +430,10 @@ impl CompositionLoop {
         loop {
             let max_ev: usize = cmps.len();
             if max_ev <= trace {
-                next_tick = lpnlib::END_OF_DATA;   // means sequence finished
+                next_tick = END_OF_DATA;   // means sequence finished
                 break
             }
-            next_tick = cmps[trace][lpnlib::TICK] as i32;
+            next_tick = cmps[trace][TICK] as i32;
             if next_tick <= elapsed_tick {
                 self.prepare_note_translation(cmps[trace].clone());
             }

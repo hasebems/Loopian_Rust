@@ -6,7 +6,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use crate::lpnlib;
+use crate::lpnlib::*;
 use super::elapse::*;
 use super::elapse_loop::{PhraseLoop, CompositionLoop};
 use super::tickgen::CrntMsrTick;
@@ -284,13 +284,13 @@ impl Elapse for Part {
 impl Part {
     pub fn new(num: u32) -> Rc<RefCell<Part>> {
         // left なら 1, でなければ 0
-        let left_part = 1-(num/(lpnlib::MAX_LEFT_PART as u32));
+        let left_part = 1-(num/(MAX_LEFT_PART as u32));
         let new_id = ElapseId {pid:0, sid:num, elps_type: ElapseType::TpPart,};
         Rc::new(RefCell::new(Self {
             id: new_id,
             priority: PRI_PART,
             keynote: 0,
-            _base_note: lpnlib::DEFAULT_NOTE_NUMBER - 12*(left_part as u8),
+            _base_note: DEFAULT_NOTE_NUMBER - 12*(left_part as u8),
             first_measure_num: 0,
             next_msr: 0,
             next_tick: 0,
@@ -317,7 +317,7 @@ impl Part {
             cmps_loop.borrow().get_chord()
         }
         else {  // まだ loop obj.が生成されていない
-            (lpnlib::NO_ROOT, lpnlib::NO_TABLE)
+            (NO_ROOT, NO_TABLE)
         }
     }
 }
