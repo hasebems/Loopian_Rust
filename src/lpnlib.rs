@@ -68,6 +68,9 @@ pub const DEFAULT_VEL: u8 = 100;
 // MSG_PHR+part |[whole_tick] |( TYPE | TICK | DURATION | NOTE | VELOCITY )*n
 // MSG_CMP+part |[whole_tick] |( TYPE | TICK | ROOT | TABLE )*n
 // MSG_ANA+part |             |( TYPE | TICK | DURATION | NOTE | NTCNT | ARP_TYPE )*n
+// MSG_PHR_X+part|--          |
+// MSG_CMP_X+part|--          |
+// MSG_ANA_X+part|--          |
 pub const MSG_QUIT: i16     = -1;
 pub const MSG_START:i16     = -16;
 pub const MSG_STOP: i16     = -8;
@@ -76,10 +79,13 @@ pub const MSG2_BPM: i16     = 1;
 pub const MSG2_BEAT: i16    = 2;
 pub const MSG2_KEY: i16     = 3;
 
-pub const MSG_PART_MASK: i16 = 1000;   // X-(X % MSG_PART_MASK)
+pub const MSG_PART_MASK:i16 = 100;    // X-(X % MSG_PART_MASK)
 pub const MSG_PHR: i16      = 1000;   // 1桁目にパート番号
 pub const MSG_CMP: i16      = 2000;   // 1桁目にパート番号
 pub const MSG_ANA: i16      = 3000;   // 1桁目にパート番号
+pub const MSG_PHR_X: i16    = 1900;   // Phrase 消去、1桁目にパート番号
+pub const MSG_CMP_X: i16    = 2900;   // Composition 消去、1桁目にパート番号
+pub const MSG_ANA_X: i16    = 3900;   // Analysed 消去、1桁目にパート番号
 pub const MSG_HEADER: usize = 2;
 
 // MSG_PHR

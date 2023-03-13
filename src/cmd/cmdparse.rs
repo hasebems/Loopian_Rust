@@ -312,11 +312,17 @@ impl LoopianCmd {
             if ana.len() > 1 {
                 let mut msgana: Vec<i16> = vec![lpnlib::MSG_ANA+self.input_part as i16];
                 msgana.append(&mut ana);
-                //println!("msg check: {:?}",msg);
+                //println!("msg check ana: {:?}",msgana);
                 self.send_msg_to_elapse(msgana);                
             }
         }
-        else {println!("Part {}: No Data!",part)}
+        else {
+            self.send_msg_to_elapse(vec![lpnlib::MSG_PHR_X+self.input_part as i16]);
+            if ana.len() == 0 {
+                self.send_msg_to_elapse(vec![lpnlib::MSG_ANA_X+self.input_part as i16]);
+            }
+            println!("Part {} Phrase: No Data!",part);
+        }
     }
     fn send_composition_to_elapse(&self, part: usize) {
         let cdstk = self.gendt.get_cdstk(part);
@@ -327,6 +333,9 @@ impl LoopianCmd {
             //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
         }
-        else {println!("Part {}: No Data!",part)}
+        else {
+            self.send_msg_to_elapse(vec![lpnlib::MSG_CMP_X+self.input_part as i16]);
+            println!("Part {} Composition: No Data!",part)
+        }
     }
 }

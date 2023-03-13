@@ -237,12 +237,28 @@ impl ElapseStack {
         }
         self.part_vec[part_num].borrow_mut().rcv_ana_msg(ana_vec);
     }
+    fn del_phrase(&mut self, msg: Vec<i16>) {
+        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        self.part_vec[part_num].borrow_mut().rcv_phr_msg(Vec::new(), 0);
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new());
+    }
+    fn del_composition(&mut self, msg: Vec<i16>) {
+        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(Vec::new(), 0);
+    }
+    fn del_ana(&mut self, msg: Vec<i16>) {
+        let part_num: usize = lpnlib::pt(msg[0]) as usize;
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new());
+    }
     fn parse_msg(&mut self, msg: Vec<i16>) {
         println!("msg is {:?}", msg[0]);
         if msg[0] == lpnlib::MSG_START {self.start();}
         else if msg[0] == lpnlib::MSG_START {self.start();}
         else if msg[0] == lpnlib::MSG_STOP {self.stop();}
         else if msg[0] == lpnlib::MSG_SET {self.setting_cmnd(msg);}
+        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_PHR_X {self.del_phrase(msg);}
+        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_CMP_X {self.del_composition(msg);}
+        else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_ANA_X {self.del_ana(msg);}
         else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_PHR {self.phrase(msg);}
         else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_CMP {self.composition(msg);}
         else if lpnlib::msg1st(msg[0]) == lpnlib::MSG_ANA {self.ana(msg);}

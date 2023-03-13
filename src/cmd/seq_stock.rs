@@ -142,7 +142,12 @@ impl PhraseDataStock {
         true
     }
     pub fn set_recombined(&mut self, input_mode: lpnlib::InputMode, bpm: i16, tick_for_onemsr: i32) {
-        if self.cmpl_nt == [""] {return}
+        if self.cmpl_nt == [""] {
+            //  clear
+            self.rcmb = Vec::new();
+            self.ana = Vec::new();
+            return
+        }
 
         // 3.recombined data
         let (whole_tick, rcmb) = recombine_to_internal_format(
@@ -208,7 +213,11 @@ impl CompositionDataStock {
         }
     }
     pub fn set_recombined(&mut self, tick_for_onemsr: i32, tick_for_onebeat: i32) {
-        if self.cmpl_cd == [""] {return}
+        if self.cmpl_cd == [""] {
+            // clear
+            self.rcmb = Vec::new();
+            return
+        }
 
         // 3.recombined data
         let (whole_tick, rcmb) = 

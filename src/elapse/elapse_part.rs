@@ -105,7 +105,7 @@ impl PhrLoopManager {
         // 新たに Loop Obj.を生成
         if let Some(phr) = &self.new_data_stock {
             if let Some(ana) = &self.new_ana_stock {
-                println!("New Phrase Loop!");
+                println!("New Phrase Loop! whole tick: {}", self.whole_tick_stock);
                 self.first_msr_num = msr;    // 計測開始の更新
                 self.whole_tick = self.whole_tick_stock as i32;
     
