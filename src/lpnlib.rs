@@ -5,7 +5,7 @@
 //
 
 #[derive(Copy, Clone, PartialEq)]
-pub struct Beat(pub u32, pub u32); // 分子/分母
+pub struct Beat(pub i32, pub i32); // 分子/分母
 
 pub const DEFAULT_TICK_FOR_QUARTER: i32 = 480;
 pub const DEFAULT_TICK_FOR_ONE_MEASURE: i32 = 1920;  // 480 * 4
@@ -63,7 +63,7 @@ pub const DEFAULT_VEL: u8 = 100;
 // MSG_START    | --          |
 // MSG_STOP     | --          |
 // MSG_SET      | MSG2_BPM    |[bpm]| --
-//              | MSG2_BEAT   |[up]|[low]| --
+//              | MSG2_BEAT   |[numerator]|[denomirator]| --
 //              | MSG2_KEY    |[key]| --
 // MSG_PHR+part |[whole_tick] |( TYPE | TICK | DURATION | NOTE | VELOCITY )*n
 // MSG_CMP+part |[whole_tick] |( TYPE | TICK | ROOT | TABLE )*n

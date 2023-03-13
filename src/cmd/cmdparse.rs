@@ -216,9 +216,9 @@ impl LoopianCmd {
             let beat = &cv[1];
             let numvec = lpnlib::split_by('/', beat.to_string());
             match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
-                (Ok(up),Ok(low)) => {
-                    self.gendt.change_beat(up, low);
-                    self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BEAT, up, low]);
+                (Ok(numerator),Ok(denomirator)) => {
+                    self.gendt.change_beat(numerator, denomirator);
+                    self.send_msg_to_elapse(vec![lpnlib::MSG_SET, lpnlib::MSG2_BEAT, numerator, denomirator]);
                     for i in 0..lpnlib::MAX_USER_PART {
                         self.send_phrase_to_elapse(i);
                     }
@@ -305,21 +305,21 @@ impl LoopianCmd {
         let pdstk = self.gendt.get_pdstk(part);
         let (mut pdt, mut ana): (Vec<i16>, Vec<i16>) = pdstk.get_final();
         if pdt.len() > 1 {
-            let mut msg: Vec<i16> = vec![lpnlib::MSG_PHR+self.input_part as i16];
+            let mut msg: Vec<i16> = vec![lpnlib::MSG_PHR+part as i16];
             msg.append(&mut pdt);
             //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
             if ana.len() > 1 {
-                let mut msgana: Vec<i16> = vec![lpnlib::MSG_ANA+self.input_part as i16];
+                let mut msgana: Vec<i16> = vec![lpnlib::MSG_ANA+part as i16];
                 msgana.append(&mut ana);
                 //println!("msg check ana: {:?}",msgana);
                 self.send_msg_to_elapse(msgana);                
             }
         }
         else {
-            self.send_msg_to_elapse(vec![lpnlib::MSG_PHR_X+self.input_part as i16]);
+            self.send_msg_to_elapse(vec![lpnlib::MSG_PHR_X+part as i16]);
             if ana.len() == 0 {
-                self.send_msg_to_elapse(vec![lpnlib::MSG_ANA_X+self.input_part as i16]);
+                self.send_msg_to_elapse(vec![lpnlib::MSG_ANA_X+part as i16]);
             }
             println!("Part {} Phrase: No Data!",part);
         }

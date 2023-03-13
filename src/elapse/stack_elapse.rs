@@ -27,6 +27,7 @@ pub struct ElapseStack {
     crnt_time: Instant,
     _count: u32,
     bpm_stock: i16,
+    beat_stock: lpnlib::Beat,
     during_play: bool,
     display_time: Instant,
     tg: TickGen,
@@ -54,6 +55,7 @@ impl ElapseStack {
                     crnt_time: Instant::now(),
                     _count: 0,
                     bpm_stock: lpnlib::DEFAULT_BPM,
+                    beat_stock: lpnlib::Beat(4,4),
                     during_play: false,
                     display_time: Instant::now(),
                     tg: TickGen::new(),
@@ -102,8 +104,11 @@ impl ElapseStack {
         if crnt_msr_tick.new_msr { 
             // 小節先頭
             println!("New measure!");
-            // change beat event //<<DoItLater>>
-
+            // change beat event
+            if self.beat_stock != self.tg.get_beat() {
+                let tick_for_onemsr = (lpnlib::DEFAULT_TICK_FOR_ONE_MEASURE/self.beat_stock.1)*self.beat_stock.0;
+                self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
+            }
             // change bpm event
             if self.bpm_stock != self.tg.get_bpm() {
                 self.tg.change_bpm_event(self.bpm_stock);
@@ -176,6 +181,9 @@ impl ElapseStack {
     fn setting_cmnd(&mut self, msg: Vec<i16>) {
         if msg[1] == lpnlib::MSG2_BPM {
             self.bpm_stock = msg[2];
+        }
+        else if msg[1] == lpnlib::MSG2_BEAT {
+            self.beat_stock = lpnlib::Beat(msg[2] as i32, msg[3] as i32);
         }
         else if msg[1] == lpnlib::MSG2_KEY {
             self.part_vec.iter().for_each(|x| x.borrow_mut().change_key(msg[2] as u8));
