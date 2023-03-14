@@ -92,24 +92,29 @@ pub const MSG_HEADER: usize = 2;
 pub const TYPE: usize       = 0;
 pub const _TYPE_ID: i16     = 1000;
 pub const TYPE_NOTE: i16    = 1001;
-pub const TYPE_NOTE_SIZE: usize = 5;
 pub const TICK: usize       = 1;
 pub const DURATION: usize   = 2;
 pub const NOTE: usize       = 3;
 pub const VELOCITY: usize   = 4;
+pub const TYPE_NOTE_SIZE: usize = 5;
 
 // MSG_CMP
+//pub const TYPE: usize       = 0;
 pub const TYPE_CHORD: i16   = 1002;
-pub const TYPE_CHORD_SIZE: usize = 4;
 //pub const TICK: usize       = 1;
 pub const CD_ROOT: usize    = 2;
-pub const CD_TABLE: usize   = 3; 
+pub const CD_TABLE: usize   = 3;
+pub const TYPE_CHORD_SIZE: usize = 4;
 
+//pub const TYPE: usize       = 0;
 pub const TYPE_DAMPER: i16  = 1003;
+//pub const TICK: usize       = 1;
+pub const _POS: usize        = 2;
+pub const _TYPE_DAMPER_SIZE: usize = 3;
 
 // MSG_ANA
+//pub const TYPE: usize       = 0;
 pub const TYPE_BEAT: i16    = 1004;
-pub const TYPE_BEAT_SIZE: usize = 6;
 //pub const TICK: usize       = 1;
 //pub const DURATION: usize   = 2;
 //pub const NOTE: usize       = 3;
@@ -117,6 +122,13 @@ pub const ARP_NTCNT: usize  = 4;
 pub const ARP_DIFF: usize   = 5;
 pub const ARP_COM: i16      = 0;
 pub const ARP_PARA: i16     = 10000;
+pub const TYPE_BEAT_SIZE: usize = 6;
+
+//pub const TYPE: usize       = 0;
+pub const TYPE_EXP: i16     = 1010;
+pub const EXP: usize        = 1;
+pub const NOPED: i16        = 10;       // Note情報より先に置く
+pub const _TYPE_EXP_SIZE: usize = 2;
 
 //*******************************************************************
 //          Enum
