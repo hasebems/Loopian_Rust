@@ -8,7 +8,7 @@ use std::cell::RefCell;
 
 use crate::lpnlib::*;
 use super::elapse::*;
-use super::elapse_loop::{PhraseLoop, CompositionLoop};
+use super::elapse_loop::{PhraseLoop, CompositionLoop, DamperLoop};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 
@@ -99,6 +99,9 @@ impl PhrLoopManager {
         //println!("Analysed Msg: {:?}", msg);
         self.new_ana_stock = Some(msg);
         self.state_reserve = true;
+    }
+    pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
+        self.loop_phrase.clone()    // 重いclone()?
     }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32,
         estk: &mut ElapseStack, pbp: PartBasicPrm) {
@@ -204,6 +207,9 @@ impl CmpsLoopManager {
         self.state_reserve = true;
         self.whole_tick_stock = whole_tick;
     }
+    pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
+        self.loop_cmps.clone()    // 重いclone()?
+    }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32,
         estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成
@@ -232,6 +238,30 @@ impl CmpsLoopManager {
     }
 }
 //*******************************************************************
+//          Damper Loop Manager Struct
+//*******************************************************************
+struct DamperLoopManager {
+    first_msr_num: i32,
+    loop_dmpr: Option<Rc<RefCell<DamperLoop>>>,
+    loop_cntr: u32,
+}
+impl DamperLoopManager {
+    pub fn new() -> Self {
+        Self {
+            first_msr_num: 0,
+            loop_dmpr: None,
+            loop_cntr: 0,
+        }
+    }
+    pub fn start(&mut self) {self.first_msr_num = 0;}
+    pub fn process(&mut self, _crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        let dp = DamperLoop::new(self.loop_cntr, pbp.part_num);
+        self.loop_dmpr = Some(Rc::clone(&dp));
+        estk.add_elapse(dp);
+        self.loop_cntr += 1;
+    }
+}
+//*******************************************************************
 //          Part Struct
 //*******************************************************************
 pub struct Part {
@@ -245,6 +275,7 @@ pub struct Part {
     next_tick: i32,
     pm: PhrLoopManager,
     cm: CmpsLoopManager,
+    dm: Option<DamperLoopManager>,
     sync_next_msr_flag: bool,
 }
 
@@ -260,6 +291,9 @@ impl Elapse for Part {
         self.next_tick = 0;
         self.cm.start();
         self.pm.start();
+        if let Some(dmpr) = self.dm.as_mut() {
+            dmpr.start();
+        }
     }
     fn stop(&mut self, _estk: &mut ElapseStack) {}        // User による stop 時にコールされる
     fn fine(&mut self, _estk: &mut ElapseStack) {}        // User による fine があった次の小節先頭でコールされる
@@ -271,6 +305,9 @@ impl Elapse for Part {
                                 };
         self.cm.process(crnt_, estk, pbp);
         self.pm.process(crnt_, estk, pbp);
+        if let Some(dmpr) = self.dm.as_mut() {
+            dmpr.process(crnt_, estk, pbp);
+        }
 
         self.sync_next_msr_flag = false;
         // 毎小節の頭で process() がコール
@@ -296,6 +333,7 @@ impl Part {
             next_tick: 0,
             pm: PhrLoopManager::new(),
             cm: CmpsLoopManager::new(),
+            dm: if num as usize == DAMPER_PEDAL_PART {Some(DamperLoopManager::new())} else {None},
             sync_next_msr_flag: false,
         }))
     }
@@ -312,12 +350,10 @@ impl Part {
     pub fn rcv_ana_msg(&mut self, msg_ana: Vec<Vec<i16>>) {
         self.pm.rcv_ana(msg_ana);
     }
-    pub fn get_chord_info(&self) -> (i16, i16) {
-        if let Some(cmps_loop) = &self.cm.loop_cmps {
-            cmps_loop.borrow().get_chord()
-        }
-        else {  // まだ loop obj.が生成されていない
-            (NO_ROOT, NO_TABLE)
-        }
+    pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
+        self.pm.get_phr()
+    }
+    pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
+        self.cm.get_cmps()
     }
 }

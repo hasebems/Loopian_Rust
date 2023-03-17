@@ -15,6 +15,7 @@ use super::tickgen::{TickGen, CrntMsrTick};
 use super::midi::MidiTx;
 use super::elapse::*;
 use super::elapse_part::Part;
+use super::elapse_loop::{PhraseLoop, CompositionLoop};
 
 //  ElapseStack の責務
 //  1. Elapse Object の生成と集約
@@ -154,10 +155,13 @@ impl ElapseStack {
             }
         }*/
     }
-    pub fn get_chord_info(&self, part_num: usize) -> (i16, i16) {
-        assert!(part_num < ALL_PART_COUNT);
-        self.part_vec[part_num].borrow().get_chord_info()
+    pub fn get_phr(&self, part_num: usize) -> Option<Rc<RefCell<PhraseLoop>>> {
+        self.part_vec[part_num].borrow().get_phr()
     }
+    pub fn get_cmps(&self, part_num: usize) -> Option<Rc<RefCell<CompositionLoop>>> {
+        self.part_vec[part_num].borrow().get_cmps()
+    }
+    pub fn tg(&self) -> &TickGen {&self.tg}
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {
             Err(e) => println!("Something happened on MPSC! {}",e),

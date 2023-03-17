@@ -40,7 +40,7 @@ pub const MAX_USER_PART: usize = MAX_LEFT_PART+MAX_RIGHT_PART;
 
 //pub const _DAMPER_PEDAL_PART: usize = MAX_COMPOSITION_PART+MAX_PHRASE_PART;
 //pub const ALL_PART_COUNT: usize = MAX_COMPOSITION_PART+MAX_PHRASE_PART+1;
-pub const _DAMPER_PEDAL_PART: usize = MAX_USER_PART;
+pub const DAMPER_PEDAL_PART: usize = MAX_USER_PART;
 pub const ALL_PART_COUNT: usize = MAX_USER_PART+1;
 
 //*******************************************************************

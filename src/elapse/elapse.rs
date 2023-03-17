@@ -20,6 +20,7 @@ pub enum ElapseType {
     TpPart,
     TpPhraseLoop,
     TpCompositionLoop,
+    TpDamperLoop,
     TpNote,
     _TpDamper,
 }

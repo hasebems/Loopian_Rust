@@ -43,6 +43,7 @@ pub struct PhraseLoop {
     play_counter: usize,
     next_tick_in_phrase: i32,
     last_note: u8,
+    noped: bool,
 
     // for super's member
     whole_tick: i32,
@@ -51,48 +52,10 @@ pub struct PhraseLoop {
     next_msr: i32,   //   次に呼ばれる小節番号が保持される
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
-impl Elapse for PhraseLoop {
-    fn id(&self) -> ElapseId {self.id}     // id を得る
-    fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
-        (self.next_msr, self.next_tick)
-    }
-    fn start(&mut self) {}      // User による start/play 時にコールされる
-    fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
-    fn fine(&mut self, _estk: &mut ElapseStack) {} // User による fine があった次の小節先頭でコールされる
-    fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
-    fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
-        let elapsed_tick = self.calc_serial_tick(crnt_);
-        if elapsed_tick > self.whole_tick {
-            self.next_msr = FULL;
-            self.destroy = true;
-            return
-        }
-
-        if elapsed_tick >= self.next_tick_in_phrase {
-            let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
-            self.next_tick_in_phrase = next_tick;
-            if next_tick == END_OF_DATA {
-                self.next_msr = FULL;
-                self.destroy = true;
-            }
-            else {
-                let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                self.next_msr = msr;
-                self.next_tick = tick;
-            }
-        }
-    }
-}
-impl Loop for PhraseLoop {
-    fn destroy(&self) -> bool {self.destroy}
-    fn set_destroy(&mut self) {self.destroy = true;}
-    fn first_msr_num(&self) -> i32 {self.first_msr_num}
-}
 impl PhraseLoop {
     pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<i16>>, ana: Vec<Vec<i16>>, whole_tick: i32) 
       -> Rc<RefCell<Self>> {
+        let noped = ana.iter().any(|x| x[TYPE]==TYPE_EXP && x[EXP]==NOPED);
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_PHR_LOOP,
@@ -102,6 +65,7 @@ impl PhraseLoop {
             play_counter: 0,
             next_tick_in_phrase: 0,
             last_note: NO_NOTE,
+            noped,
             // for super's member
             whole_tick,
             destroy: false,
@@ -110,6 +74,7 @@ impl PhraseLoop {
             next_tick: 0,
         }))
     }
+    pub fn get_noped(&self) -> bool {self.noped}
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut next_tick: i32;
         let mut trace: usize = self.play_counter;
@@ -143,8 +108,11 @@ impl PhraseLoop {
     fn note_event(&mut self, estk: &mut ElapseStack, trace: usize, ev: Vec<i16>, next_tick: i32, msr: i32, tick: i32) {
         // ev: ['note', tick, duration, note, velocity]
         let mut crnt_ev = ev.clone();
-        let (root, ctbl) = estk.get_chord_info(self.id.pid as usize);
         let mut deb_txt: String = "no chord".to_string();
+        let (mut root, mut ctbl) = (NO_ROOT, NO_TABLE);
+        if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
+            (root, ctbl) = cmps.borrow().get_chord();
+        }
 
         if root != NO_ROOT || ctbl != NO_TABLE  {
             let option = self.identify_trans_option(next_tick, ev[NOTE]);
@@ -182,7 +150,8 @@ impl PhraseLoop {
     }
     fn identify_trans_option(&self, next_tick: i32, note: i16) -> i16 {
         for anaone in self.analys_dt.iter() {
-            if anaone[TICK] == next_tick as i16 && 
+            if anaone[TYPE] == TYPE_BEAT &&
+               anaone[TICK] == next_tick as i16 && 
                anaone[NOTE] == note {
                 return anaone[ARP_DIFF];
             }
@@ -312,6 +281,45 @@ impl PhraseLoop {
         scale_nt
     }
 }
+impl Elapse for PhraseLoop {
+    fn id(&self) -> ElapseId {self.id}     // id を得る
+    fn prio(&self) -> u32 {self.priority}  // priority を得る
+    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
+        (self.next_msr, self.next_tick)
+    }
+    fn start(&mut self) {}      // User による start/play 時にコールされる
+    fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
+    fn fine(&mut self, _estk: &mut ElapseStack) {} // User による fine があった次の小節先頭でコールされる
+    fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
+    fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+        let elapsed_tick = self.calc_serial_tick(crnt_);
+        if elapsed_tick > self.whole_tick {
+            self.next_msr = FULL;
+            self.destroy = true;
+            return
+        }
+
+        if elapsed_tick >= self.next_tick_in_phrase {
+            let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
+            self.next_tick_in_phrase = next_tick;
+            if next_tick == END_OF_DATA {
+                self.next_msr = FULL;
+                self.destroy = true;
+            }
+            else {
+                let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
+                self.next_msr = msr;
+                self.next_tick = tick;
+            }
+        }
+    }
+}
+impl Loop for PhraseLoop {
+    fn destroy(&self) -> bool {self.destroy}
+    fn set_destroy(&mut self) {self.destroy = true;}
+    fn first_msr_num(&self) -> i32 {self.first_msr_num}
+}
 
 //*******************************************************************
 //          Composition Loop Struct
@@ -321,7 +329,6 @@ pub struct CompositionLoop {
     priority: u32,
 
     cmps_dt: Vec<Vec<i16>>,
-    //analys_dt:
     _keynote: u8,
     play_counter: usize,
     next_tick_in_cmps: i32,
@@ -337,6 +344,89 @@ pub struct CompositionLoop {
     first_msr_num: i32,
     next_msr: i32,   //   次に呼ばれる小節番号が保持される
     next_tick: i32,  //   次に呼ばれるTick数が保持される
+}
+impl CompositionLoop {
+    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<Vec<i16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Self {
+            id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
+            priority: PRI_CMPS_LOOP,
+            cmps_dt: msg,
+            _keynote: knt,
+            play_counter: 0,
+            next_tick_in_cmps: 0,
+
+            chord_name: "".to_string(),
+            root: 0,
+            translation_tbl: 0,
+            already_end: false,
+
+            // for super's member
+            whole_tick,
+            destroy: false,
+            first_msr_num: msr,
+            next_msr: 0,   //   次に呼ばれる小節番号が保持される
+            next_tick: 0,
+        }))
+    }
+    pub fn get_chord(&self) -> (i16, i16) {(self.root, self.translation_tbl)}
+    pub fn get_chord_map(&self, msr: i32, tick_for_onemsr: i32, tick_for_onebeat: i32) -> Vec<bool> {
+        let first_tick = (self.first_msr_num - msr)*tick_for_onemsr;
+        let end_tick = (self.first_msr_num - msr + 1)*tick_for_onemsr;
+        let beat_num = tick_for_onemsr/tick_for_onebeat;
+        let mut trace: usize = 0;
+        let cmps = self.cmps_dt.to_vec();
+        let mut chord_map: Vec<bool> = vec![false; beat_num as usize];
+        let max_ev: usize = cmps.len();
+        loop {
+            if max_ev <= trace {break}
+            let tick = cmps[trace][TICK] as i32;
+            if first_tick <= tick && tick <= end_tick {
+                chord_map[(tick/tick_for_onebeat) as usize] = true;
+            }
+            else if tick > end_tick {break;}
+            trace += 1;
+        }
+        chord_map
+    }
+    fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
+    fn prepare_note_translation(&mut self, cd: Vec<i16>) {
+        if cd[TYPE] == TYPE_CHORD {
+            self.root = cd[CD_ROOT];
+            self.translation_tbl = cd[CD_TABLE];
+
+            let tbl_num: usize = self.translation_tbl as usize;
+            let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
+            let cname = tbl_name.to_string();
+            if cname.chars().nth(0).unwrap_or(' ') == '_' {
+                let root_index = ((self.root-1)/3) as usize;
+                let root = crate::cmd::txt2seq_cmps::get_root_name(root_index);
+                self.chord_name = root.to_string() + &cname[1..];
+            }
+            else {
+                self.chord_name = cname;
+            }
+            println!("Chord Data: {}, {}, {}",self.chord_name, cd[CD_ROOT], cd[CD_TABLE]);
+        }
+    }
+    fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
+        let mut trace: usize = self.play_counter;
+        let mut next_tick: i32;
+        let cmps = self.cmps_dt.to_vec();
+        loop {
+            if cmps.len() <= trace {
+                next_tick = END_OF_DATA;   // means sequence finished
+                break
+            }
+            next_tick = cmps[trace][TICK] as i32;
+            if next_tick <= elapsed_tick {
+                self.prepare_note_translation(cmps[trace].clone());
+            }
+            else {break;}
+            trace += 1;
+        }
+        self.play_counter = trace;
+        next_tick
+    }
 }
 impl Elapse for CompositionLoop {
     fn id(&self) -> ElapseId {self.id}     // id を得る
@@ -378,69 +468,70 @@ impl Loop for CompositionLoop {
     fn set_destroy(&mut self) {self.destroy = true;}
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
-impl CompositionLoop {
-    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<Vec<i16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(Self {
-            id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
-            priority: PRI_CMPS_LOOP,
-            cmps_dt: msg,
-            //analys_dt:
-            _keynote: knt,
-            play_counter: 0,
-            next_tick_in_cmps: 0,
 
-            chord_name: "".to_string(),
-            root: 0,
-            translation_tbl: 0,
-            already_end: false,
+//*******************************************************************
+//          Damper Loop Struct (no elapse)
+//*******************************************************************
+pub struct DamperLoop {
+    id: ElapseId,
+    priority: u32,
+
+    chord_map: Vec<bool>,
+    // for super's member
+    whole_tick: i32,
+    destroy: bool,
+    first_msr_num: i32,
+    next_msr: i32,   //   次に呼ばれる小節番号が保持される
+    next_tick: i32,  //   次に呼ばれるTick数が保持される
+}
+impl DamperLoop {
+    pub fn new(sid: u32, pid: u32) -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Self {
+            id: ElapseId {pid, sid, elps_type: ElapseType::TpDamperLoop,},
+            priority: PRI_CMPS_LOOP,
+            chord_map: Vec::new(),
 
             // for super's member
-            whole_tick,
+            whole_tick: 0,
             destroy: false,
-            first_msr_num: msr,
+            first_msr_num: 0,
             next_msr: 0,   //   次に呼ばれる小節番号が保持される
             next_tick: 0,
         }))
     }
-    pub fn get_chord(&self) -> (i16, i16) {(self.root, self.translation_tbl)}
-    fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
-    fn prepare_note_translation(&mut self, cd: Vec<i16>) {
-        if cd[TYPE] == TYPE_CHORD {
-            self.root = cd[CD_ROOT];
-            self.translation_tbl = cd[CD_TABLE];
-
-            let tbl_num: usize = self.translation_tbl as usize;
-            let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
-            let cname = tbl_name.to_string();
-            if cname.chars().nth(0).unwrap_or(' ') == '_' {
-                let root_index = ((self.root-1)/3) as usize;
-                let root = crate::cmd::txt2seq_cmps::get_root_name(root_index);
-                self.chord_name = root.to_string() + &cname[1..];
+    fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+        // 再生 msr/tick に達したらコールされる
+        let (tick_for_onemsr, tick_for_onebeat) = estk.tg().get_beat_tick();
+        let beat_num = tick_for_onemsr/tick_for_onebeat;
+        self.chord_map = vec![false; beat_num as usize];
+        for i in 0..MAX_USER_PART {
+            if let Some(phr) = estk.get_phr(i) {
+                if !phr.borrow().get_noped() {continue;}
             }
-            else {
-                self.chord_name = cname;
+            else {continue;}
+            if let Some(cmps) = estk.get_cmps(i) {
+                let ba = cmps.borrow().get_chord_map(crnt_.msr, tick_for_onemsr, tick_for_onebeat);
+                for (i, x) in self.chord_map.iter_mut().enumerate() {*x |= ba[i];}
             }
-            println!("Chord Data: {}, {}, {}",self.chord_name, cd[CD_ROOT], cd[CD_TABLE]);
         }
     }
-    fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
-        let mut trace: usize = self.play_counter;
-        let mut next_tick: i32;
-        let cmps = self.cmps_dt.to_vec();
-        loop {
-            let max_ev: usize = cmps.len();
-            if max_ev <= trace {
-                next_tick = END_OF_DATA;   // means sequence finished
-                break
-            }
-            next_tick = cmps[trace][TICK] as i32;
-            if next_tick <= elapsed_tick {
-                self.prepare_note_translation(cmps[trace].clone());
-            }
-            else {break;}
-            trace += 1;
-        }
-        self.play_counter = trace;
-        next_tick
+}
+impl Elapse for DamperLoop {
+    fn id(&self) -> ElapseId {self.id}     // id を得る
+    fn prio(&self) -> u32 {self.priority}  // priority を得る
+    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
+        (self.next_msr, self.next_tick)
     }
+    fn start(&mut self) {self.first_msr_num = 0;}    // User による start/play 時にコールされる
+    fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
+    fn fine(&mut self, _estk: &mut ElapseStack) {} // User による fine があった次の小節先頭でコールされる
+    fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
+    fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+    }
+}
+impl Loop for DamperLoop {
+    fn destroy(&self) -> bool {self.destroy}
+    fn set_destroy(&mut self) {self.destroy = true;}
+    fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
