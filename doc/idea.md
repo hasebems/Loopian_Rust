@@ -248,7 +248,7 @@ SeqDataStock *-- DamperDataStock
 -->
 
 バグ情報
-- 一拍目の音が前のコードになってしまう
+- Arpeggio で上昇が下降になったとき、コードを送ると音が消える
 
 次の対応
 - 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
@@ -273,8 +273,8 @@ SeqDataStock *-- DamperDataStock
 - Analyzed対応 3/10済
 - Chord情報による音程変換 3/12済
 - Part切替 3/12済
-- Beat切替
-- pedal 対応
+- Beat切替 3/13済
+- pedal 対応 3/18済
 - 8 indicator 全表示
 - Rondamized 対応
 - Log File対応

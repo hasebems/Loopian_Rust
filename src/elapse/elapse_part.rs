@@ -254,8 +254,8 @@ impl DamperLoopManager {
         }
     }
     pub fn start(&mut self) {self.first_msr_num = 0;}
-    pub fn process(&mut self, _crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        let dp = DamperLoop::new(self.loop_cntr, pbp.part_num);
+    pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        let dp = DamperLoop::new(self.loop_cntr, pbp.part_num, crnt_.msr);
         self.loop_dmpr = Some(Rc::clone(&dp));
         estk.add_elapse(dp);
         self.loop_cntr += 1;
@@ -277,46 +277,6 @@ pub struct Part {
     cm: CmpsLoopManager,
     dm: Option<DamperLoopManager>,
     sync_next_msr_flag: bool,
-}
-
-impl Elapse for Part {
-    fn id(&self) -> ElapseId {self.id}      // id を得る
-    fn prio(&self) -> u32 {self.priority}   // priority を得る
-    fn next(&self) -> (i32, i32) {          // 次に呼ばれる小節番号、Tick数を返す
-        (self.next_msr, self.next_tick)
-    }
-    fn start(&mut self) {      // User による start/play 時にコールされる
-        self.first_measure_num = 0;
-        self.next_msr = 0;
-        self.next_tick = 0;
-        self.cm.start();
-        self.pm.start();
-        if let Some(dmpr) = self.dm.as_mut() {
-            dmpr.start();
-        }
-    }
-    fn stop(&mut self, _estk: &mut ElapseStack) {}        // User による stop 時にコールされる
-    fn fine(&mut self, _estk: &mut ElapseStack) {}        // User による fine があった次の小節先頭でコールされる
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
-        let pbp = PartBasicPrm {
-                                    part_num: self.id.sid,
-                                    keynote: self.keynote,
-                                    sync_flag: self.sync_next_msr_flag,
-                                };
-        self.cm.process(crnt_, estk, pbp);
-        self.pm.process(crnt_, estk, pbp);
-        if let Some(dmpr) = self.dm.as_mut() {
-            dmpr.process(crnt_, estk, pbp);
-        }
-
-        self.sync_next_msr_flag = false;
-        // 毎小節の頭で process() がコール
-        self.next_msr = crnt_.msr + 1
-    }
-    fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
-    fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す
-        false
-    }
 }
 impl Part {
     pub fn new(num: u32) -> Rc<RefCell<Part>> {
@@ -355,5 +315,44 @@ impl Part {
     }
     pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.cm.get_cmps()
+    }
+}
+impl Elapse for Part {
+    fn id(&self) -> ElapseId {self.id}      // id を得る
+    fn prio(&self) -> u32 {self.priority}   // priority を得る
+    fn next(&self) -> (i32, i32) {          // 次に呼ばれる小節番号、Tick数を返す
+        (self.next_msr, self.next_tick)
+    }
+    fn start(&mut self) {      // User による start/play 時にコールされる
+        self.first_measure_num = 0;
+        self.next_msr = 0;
+        self.next_tick = 0;
+        self.cm.start();
+        self.pm.start();
+        if let Some(dmpr) = self.dm.as_mut() {
+            dmpr.start();
+        }
+    }
+    fn stop(&mut self, _estk: &mut ElapseStack) {}        // User による stop 時にコールされる
+    fn fine(&mut self, _estk: &mut ElapseStack) {}        // User による fine があった次の小節先頭でコールされる
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+        let pbp = PartBasicPrm {
+                                    part_num: self.id.sid,
+                                    keynote: self.keynote,
+                                    sync_flag: self.sync_next_msr_flag,
+                                };
+        self.cm.process(crnt_, estk, pbp);
+        self.pm.process(crnt_, estk, pbp);
+        if let Some(dmpr) = self.dm.as_mut() {
+            dmpr.process(crnt_, estk, pbp);
+        }
+
+        self.sync_next_msr_flag = false;
+        // 毎小節の頭で process() がコール
+        self.next_msr = crnt_.msr + 1
+    }
+    fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
+    fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す
+        false
     }
 }

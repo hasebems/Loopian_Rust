@@ -109,8 +109,9 @@ pub const TYPE_CHORD_SIZE: usize = 4;
 //pub const TYPE: usize       = 0;
 pub const TYPE_DAMPER: i16  = 1003;
 //pub const TICK: usize       = 1;
-pub const _POS: usize        = 2;
-pub const _TYPE_DAMPER_SIZE: usize = 3;
+//pub const DURATION: usize   = 2;
+pub const POS: usize        = 3;
+pub const _TYPE_DAMPER_SIZE: usize = 4;
 
 // MSG_ANA
 //pub const TYPE: usize       = 0;

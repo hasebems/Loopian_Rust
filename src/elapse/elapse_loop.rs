@@ -10,7 +10,7 @@ use crate::lpnlib::*;
 use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
-use super::elapse_note::Note;
+use super::elapse_note::{Note, Damper};
 use crate::cmd::txt2seq_cmps;
 
 //*******************************************************************
@@ -88,12 +88,7 @@ impl PhraseLoop {
             next_tick = phr[trace][TICK] as i32;
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                if phr[trace][TYPE] == TYPE_DAMPER {
-                    //<<DoItLater>>
-                    // phr: ['damper', duration, tick, value]
-                    //estk.add_obj(elpn.Damper(self.est, self.md, phr, msr, tick))
-                }
-                else if self.phrase_dt[trace][TYPE] == TYPE_NOTE {
+                if self.phrase_dt[trace][TYPE] == TYPE_NOTE {
                     self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
                 }
             }
@@ -369,9 +364,9 @@ impl CompositionLoop {
         }))
     }
     pub fn get_chord(&self) -> (i16, i16) {(self.root, self.translation_tbl)}
-    pub fn get_chord_map(&self, msr: i32, tick_for_onemsr: i32, tick_for_onebeat: i32) -> Vec<bool> {
-        let first_tick = (self.first_msr_num - msr)*tick_for_onemsr;
-        let end_tick = (self.first_msr_num - msr + 1)*tick_for_onemsr;
+    pub fn get_chord_map(&self, msr: i32, tick_for_onemsr: i32, tick_for_onebeat: i32) -> Vec<bool> { // for Damper
+        let first_tick = (msr - self.first_msr_num)*tick_for_onemsr;
+        let end_tick = (msr - self.first_msr_num + 1)*tick_for_onemsr;
         let beat_num = tick_for_onemsr/tick_for_onebeat;
         let mut trace: usize = 0;
         let cmps = self.cmps_dt.to_vec();
@@ -380,8 +375,8 @@ impl CompositionLoop {
         loop {
             if max_ev <= trace {break}
             let tick = cmps[trace][TICK] as i32;
-            if first_tick <= tick && tick <= end_tick {
-                chord_map[(tick/tick_for_onebeat) as usize] = true;
+            if first_tick <= tick && tick < end_tick {
+                chord_map[((tick%tick_for_onemsr)/tick_for_onebeat) as usize] = true;
             }
             else if tick > end_tick {break;}
             trace += 1;
@@ -470,13 +465,15 @@ impl Loop for CompositionLoop {
 }
 
 //*******************************************************************
-//          Damper Loop Struct (no elapse)
+//          Damper Loop Struct
 //*******************************************************************
 pub struct DamperLoop {
     id: ElapseId,
     priority: u32,
 
-    chord_map: Vec<bool>,
+    evt: Vec<Vec<i16>>,
+    play_counter: usize,
+    next_tick_in_phrase: i32,
     // for super's member
     whole_tick: i32,
     destroy: bool,
@@ -485,35 +482,94 @@ pub struct DamperLoop {
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl DamperLoop {
-    pub fn new(sid: u32, pid: u32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, msr: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpDamperLoop,},
             priority: PRI_CMPS_LOOP,
-            chord_map: Vec::new(),
-
+            evt: Vec::new(),
+            play_counter: 0,
+            next_tick_in_phrase: 0,
             // for super's member
             whole_tick: 0,
             destroy: false,
-            first_msr_num: 0,
+            first_msr_num: msr,
             next_msr: 0,   //   次に呼ばれる小節番号が保持される
             next_tick: 0,
         }))
     }
-    fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+    fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
+        let mut next_tick: i32;
+        let mut trace: usize = self.play_counter;
+        let evt = self.evt.to_vec();
+        let max_ev = self.evt.len();
+        loop {
+            if max_ev <= trace {
+                next_tick = END_OF_DATA;   // means sequence finished
+                break;
+            }
+            next_tick = evt[trace][TICK] as i32;
+            if next_tick <= elapsed_tick {
+                let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
+                if evt[trace][TYPE] == TYPE_DAMPER {
+                    let dmpr: Rc<RefCell<dyn Elapse>> = Damper::new(
+                        trace as u32,   //  read pointer
+                        self.id.sid,    //  loop.sid -> note.pid
+                        estk,
+                        &evt[trace],
+                        msr,
+                        tick);
+                    estk.add_elapse(Rc::clone(&dmpr));
+                }
+            }
+            else {break;}
+            trace += 1;
+        }
+
+        self.play_counter = trace;
+        next_tick
+    }
+    fn make_events(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         // 再生 msr/tick に達したらコールされる
         let (tick_for_onemsr, tick_for_onebeat) = estk.tg().get_beat_tick();
-        let beat_num = tick_for_onemsr/tick_for_onebeat;
-        self.chord_map = vec![false; beat_num as usize];
+        let beat_num: usize = (tick_for_onemsr/tick_for_onebeat) as usize;
+        let mut chord_map = vec![false; beat_num];
         for i in 0..MAX_USER_PART {
             if let Some(phr) = estk.get_phr(i) {
-                if !phr.borrow().get_noped() {continue;}
+                if phr.borrow().get_noped() {continue;}
             }
             else {continue;}
             if let Some(cmps) = estk.get_cmps(i) {
                 let ba = cmps.borrow().get_chord_map(crnt_.msr, tick_for_onemsr, tick_for_onebeat);
-                for (i, x) in self.chord_map.iter_mut().enumerate() {*x |= ba[i];}
+                for (i, x) in chord_map.iter_mut().enumerate() {*x |= ba[i];}
             }
         }
+        println!("@@@@ Damper Map:{:?}",chord_map);
+        let mut keep: usize = beat_num;
+        let mut dmpr_evt: Vec<Vec<i16>> = Vec::new();
+        const PDL_MARGIN_TICK: i32 = 60;
+        for (j, k) in chord_map.iter().enumerate() {
+            if *k {
+                if keep != beat_num {
+                    dmpr_evt.push(vec![
+                        TYPE_DAMPER, 
+                        ((keep as i32)*tick_for_onebeat+PDL_MARGIN_TICK) as i16,
+                        (((j-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
+                        127]);
+                }
+                keep = j;
+            }
+        }
+        if keep != beat_num {
+            dmpr_evt.push(vec![
+                TYPE_DAMPER, 
+                ((keep as i32)*tick_for_onebeat+PDL_MARGIN_TICK) as i16,
+                (((beat_num-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
+                127]);
+        }
+        println!("@@@@ Damper Event:{:?}",dmpr_evt);
+        self.evt = dmpr_evt;
+        self.whole_tick = tick_for_onemsr;
+        self.next_tick_in_phrase = 0;
     }
 }
 impl Elapse for DamperLoop {
@@ -528,6 +584,30 @@ impl Elapse for DamperLoop {
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+        if self.next_tick_in_phrase == 0 {
+            self.make_events(crnt_, estk);
+        }
+
+        let elapsed_tick = self.calc_serial_tick(crnt_);
+        if elapsed_tick > self.whole_tick {
+            self.next_msr = FULL;
+            self.destroy = true;
+            return
+        }
+
+        if elapsed_tick >= self.next_tick_in_phrase {
+            let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
+            self.next_tick_in_phrase = next_tick;
+            if next_tick == END_OF_DATA {
+                self.next_msr = FULL;
+                self.destroy = true;
+            }
+            else {
+                let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
+                self.next_msr = msr;
+                self.next_tick = tick;
+            }
+        }
     }
 }
 impl Loop for DamperLoop {
