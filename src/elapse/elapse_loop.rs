@@ -195,7 +195,6 @@ impl PhraseLoop {
             arp_nt
         }
         else if nt_diff > 0 {
-            println!("  @@@ 1 @@@ checked up!:{}",arp_nt);   
             let mut ntx = self.last_note as i16 + 1;
             ntx = PhraseLoop::search_scale_nt_just_above(root, tbl, ntx);
             if ntx >= arp_nt {
@@ -214,8 +213,7 @@ impl PhraseLoop {
             }
             nty
         }
-        else {
-            println!("  @@@ 2 @@@ checked up! arp:{},last_nt:{}",arp_nt,self.last_note);            
+        else {       
             let mut ntx = self.last_note as i16 - 1;
             ntx = PhraseLoop::search_scale_nt_just_below(root, tbl, ntx);
             if ntx <= arp_nt {

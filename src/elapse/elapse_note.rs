@@ -52,13 +52,16 @@ impl Note {
     }
     fn note_on(&mut self, estk: &mut ElapseStack) {
         let num = self.note_num + self.keynote;
-        self.real_note = Note::note_limit(num, 0, 127);
-        //if self.est.pianoteq_mode {
-            estk.register_sp_cmnd(ElapseMsg::MsgNoSameNoteOff, self.real_note, self.id());
-        //}
-        self.noteoff_enable = true; // 上で false にされるので
-        estk.midi_out(0x90, self.real_note, self.velocity);
-        print!("NoteOn: {},{} NoteTranslate: ", self.real_note, self.velocity);
+        if Note::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
+            self.real_note = num;
+            //if self.est.pianoteq_mode {
+                estk.register_sp_cmnd(ElapseMsg::MsgNoSameNoteOff, self.real_note, self.id());
+            //}
+            self.noteoff_enable = true; // 上で false にされるので
+            estk.midi_out(0x90, self.real_note, self.velocity);
+        }
+        else {self.deb_txt += "=> Note Limit Failed!!";}
+        print!("NoteOn: {},{} NoteTranslate: ", num, self.velocity);
         println!("{}", self.deb_txt);
     }
     fn note_off(&mut self, estk: &mut ElapseStack) {
@@ -70,11 +73,10 @@ impl Note {
             println!("NoteOff: {}", self.real_note);
         }
     }
-    fn note_limit(num: u8, min_value: i16, max_value: i16) -> u8 {
-        let mut adj_num = num as i16;
-        while adj_num > max_value {adj_num -= 12;}
-        while adj_num < min_value {adj_num += 12;}
-        adj_num as u8
+    fn note_limit_available(num: u8, min_value: u8, max_value: u8) -> bool {
+        if num > max_value {false}
+        else if num < min_value {false}
+        else {true}
     }
 }
 impl Elapse for Note {
@@ -158,7 +160,7 @@ impl Damper {
     }
     fn damper_on(&mut self, estk: &mut ElapseStack) {
         estk.midi_out(0xb0, 0x40, 127);
-        print!("DamperOn: {}", self.position);
+        println!("DamperOn: {}", self.position);
     }
     fn damper_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;

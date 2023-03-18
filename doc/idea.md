@@ -248,7 +248,8 @@ SeqDataStock *-- DamperDataStock
 -->
 
 バグ情報
-- Arpeggio で上昇が下降になったとき、コードを送ると音が消える
+- Chordが正しく再生されないときがある
+- Pedalが正しく再生されないときがある
 
 次の対応
 - 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
