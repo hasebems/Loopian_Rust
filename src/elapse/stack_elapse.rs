@@ -100,11 +100,9 @@ impl ElapseStack {
         // play 中でなければ return
         if !self.during_play {return false;}
 
-        //  新tick計算
-        let crnt_msr_tick = self.tg.get_crnt_msr_tick(self.crnt_time);
-        if crnt_msr_tick.new_msr { 
-            // 小節先頭
-            println!("New measure!");
+        // 小節先頭ならば、beat/bpm のイベント調査
+        if self.tg.new_msr(self.crnt_time) { 
+            println!("<New measure! in stack_elapse>");
             // change beat event
             if self.beat_stock != self.tg.get_beat() {
                 let tick_for_onemsr = (DEFAULT_TICK_FOR_ONE_MEASURE/self.beat_stock.1)*self.beat_stock.0;
@@ -116,16 +114,18 @@ impl ElapseStack {
             }
             // fine //<<DoItLater>>
         }
+        //  新tick計算
+        let crnt_ = self.tg.get_crnt_msr_tick();
 
         loop {
             // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
-            let playable = self.pick_out_playable(&crnt_msr_tick);
+            let playable = self.pick_out_playable(&crnt_);
             if playable.len() == 0 {
                 break;
             }
             // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
             for elps in playable {
-                elps.borrow_mut().process(&crnt_msr_tick, self);
+                elps.borrow_mut().process(&crnt_, self);
             }
         }
 
@@ -335,14 +335,18 @@ impl ElapseStack {
     fn update_gui(&mut self) {
         if self.crnt_time-self.display_time > Duration::from_millis(20) {
             self.display_time = self.crnt_time;
-            // tick
-            let (m,b,t,_c) = self.tg.get_tick();
-            let beat_disp = format!("3{} : {} : {:>03}",m,b,t);
-            self.send_msg_to_ui(&beat_disp);
             // bpm
             let bpm_num = self.tg.get_bpm();
             let bpm_disp = format!("1{}",bpm_num);
             self.send_msg_to_ui(&bpm_disp);
+            // beat
+            let beat = self.tg.get_beat();
+            let bpm_disp = format!("2{}/{}",beat.0,beat.1);
+            self.send_msg_to_ui(&bpm_disp);
+            // tick
+            let (m,b,t,_c) = self.tg.get_tick();
+            let beat_disp = format!("3{} : {} : {:>03}",m,b,t);
+            self.send_msg_to_ui(&beat_disp);
             //<<DoItLater>> その他の表示
         }
     }

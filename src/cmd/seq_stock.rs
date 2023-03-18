@@ -58,8 +58,8 @@ impl SeqDataStock {
         false
     }
     pub fn change_beat(&mut self, numerator: i16, denomirator: i16) {
-        println!("beat: {}/{}",numerator, denomirator);
-        self.tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE*(numerator as i32)*(denomirator as i32);
+        //println!("beat: {}/{}",numerator, denomirator);
+        self.tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE*(numerator as i32)/(denomirator as i32);
         self.tick_for_onebeat = DEFAULT_TICK_FOR_QUARTER*4/(denomirator as i32);
         self.recombine_phr_all();
     }

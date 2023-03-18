@@ -26,7 +26,7 @@ struct PhrLoopManager {
     first_msr_num: i32,
     max_loop_msr: i32,
     whole_tick: i32,
-    loop_cntr: u32,
+    loop_cntr: u32,         // loop sid
     new_data_stock: Option<Vec<Vec<i16>>>,
     new_ana_stock: Option<Vec<Vec<i16>>>,
     whole_tick_stock: i16,
@@ -78,26 +78,31 @@ impl PhrLoopManager {
                 }
                 self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
             }
-            //else {
+            else {
                 // 現在の Loop Obj が終了していない時
                 // state_reserve は持ち越す
-            //}
+            }
         }
         else if self.max_loop_msr != 0 &&
           (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) == 0 {
             // 同じ Loop.Obj を生成する
             self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
         }
+        else {
+            // 通常の Loop 中
+        }
     }
     pub fn rcv_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
         //println!("Phrase Msg: {:?}", msg);
-        self.new_data_stock = Some(msg);
+        if msg.len() == 0 && whole_tick == 0 {self.new_data_stock = None;}
+        else {self.new_data_stock = Some(msg);}
         self.state_reserve = true;
         self.whole_tick_stock = whole_tick;
     }
     pub fn rcv_ana(&mut self, msg: Vec<Vec<i16>>) {
         //println!("Analysed Msg: {:?}", msg);
-        self.new_ana_stock = Some(msg);
+        if msg.len() == 0 {self.new_ana_stock = None;}
+        else {self.new_ana_stock = Some(msg);}
         self.state_reserve = true;
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
@@ -108,7 +113,7 @@ impl PhrLoopManager {
         // 新たに Loop Obj.を生成
         if let Some(phr) = &self.new_data_stock {
             if let Some(ana) = &self.new_ana_stock {
-                println!("New Phrase Loop! whole tick: {}", self.whole_tick_stock);
+                println!("New Phrase Loop! --whole tick: {}", self.whole_tick_stock);
                 self.first_msr_num = msr;    // 計測開始の更新
                 self.whole_tick = self.whole_tick_stock as i32;
     
@@ -140,7 +145,7 @@ struct CmpsLoopManager {
     first_msr_num: i32,
     max_loop_msr: i32,
     whole_tick: i32,
-    loop_cntr: u32,
+    loop_cntr: u32,         // loop sid
     new_data_stock: Option<Vec<Vec<i16>>>,
     whole_tick_stock: i16,
     loop_cmps: Option<Rc<RefCell<CompositionLoop>>>,
@@ -202,8 +207,9 @@ impl CmpsLoopManager {
         }
     }
     pub fn rcv_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
-        println!("Composition Msg: {:?}", msg);
-        self.new_data_stock = Some(msg);
+        //println!("Composition Msg: {:?}", msg);
+        if msg.len() == 0 && whole_tick == 0 {self.new_data_stock = None;}
+        else {self.new_data_stock = Some(msg);}
         self.state_reserve = true;
         self.whole_tick_stock = whole_tick;
     }

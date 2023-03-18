@@ -22,7 +22,6 @@ pub struct CrntMsrTick {
     pub msr: i32,
     pub tick: i32,
     pub tick_for_onemsr: i32,
-    pub new_msr: bool,
 }
 
 impl TickGen {
@@ -57,17 +56,19 @@ impl TickGen {
         self.origin_time = time;
         self.bpm_start_time = time;
     }
-    pub fn get_crnt_msr_tick(&mut self, crnt_time: Instant) -> CrntMsrTick {
+    pub fn new_msr(&mut self, crnt_time: Instant) -> bool {
         let former_msr = self.crnt_msr;
         self.crnt_time = crnt_time;
         let tick_from_beat_starts = self.calc_crnt_tick();
         self.crnt_msr = (tick_from_beat_starts/self.tick_for_onemsr + self.beat_start_msr) as i32;
         self.crnt_tick_inmsr = tick_from_beat_starts%self.tick_for_onemsr;
+        self.crnt_msr != former_msr
+    }
+    pub fn get_crnt_msr_tick(&self) -> CrntMsrTick {
         CrntMsrTick {
             msr: self.crnt_msr,
             tick: self.crnt_tick_inmsr,
             tick_for_onemsr: self.tick_for_onemsr,
-            new_msr: self.crnt_msr != former_msr,
         }
     }
     pub fn get_tick(&self) -> (i32, i32, i32, i32) {
