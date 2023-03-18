@@ -42,7 +42,7 @@ pub struct PhraseLoop {
     keynote: u8,
     play_counter: usize,
     next_tick_in_phrase: i32,
-    last_note: u8,
+    last_note: i16,
     noped: bool,
 
     // for super's member
@@ -64,7 +64,7 @@ impl PhraseLoop {
             keynote,
             play_counter: 0,
             next_tick_in_phrase: 0,
-            last_note: NO_NOTE,
+            last_note: NO_NOTE as i16,
             noped,
             // for super's member
             whole_tick,
@@ -111,7 +111,7 @@ impl PhraseLoop {
 
         if root != NO_ROOT || ctbl != NO_TABLE  {
             let option = self.identify_trans_option(next_tick, ev[NOTE]);
-            let trans_note: u8;
+            let trans_note: i16;
             let root_nt = Self::ROOT2NTNUM[root as usize];
             if option == ARP_PARA {
                 let mut tgt_nt = ev[NOTE]+root;
@@ -128,7 +128,7 @@ impl PhraseLoop {
                 deb_txt = "arp:".to_string();
             }
             self.last_note = trans_note;
-            crnt_ev[NOTE] = trans_note as i16;
+            crnt_ev[NOTE] = trans_note;
             deb_txt += &(root_nt.to_string() + "-" + &ctbl.to_string());
         }
 
@@ -153,7 +153,7 @@ impl PhraseLoop {
         }
         ARP_COM
     }
-    fn translate_note_com(&self, root: i16, ctbl: i16, tgt_nt: i16) -> u8 {
+    fn translate_note_com(&self, root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
         let mut proper_nt = tgt_nt;
         let tbl = txt2seq_cmps::get_table(ctbl as usize);
         let real_root = root + DEFAULT_NOTE_NUMBER as i16;
@@ -185,20 +185,21 @@ impl PhraseLoop {
                 proper_nt = former_nt
             }
         }
-        proper_nt as u8
+        proper_nt
     }
-    fn translate_note_arp(&self, root: i16, ctbl: i16, nt_diff: i16) -> u8 {
+    fn translate_note_arp(&self, root: i16, ctbl: i16, nt_diff: i16) -> i16 {
         let arp_nt = self.last_note as i16 + nt_diff;
         let mut nty = DEFAULT_NOTE_NUMBER as i16;
         let tbl = txt2seq_cmps::get_table(ctbl as usize);
         if nt_diff == 0 {
-            arp_nt as u8
+            arp_nt
         }
         else if nt_diff > 0 {
+            println!("  @@@ 1 @@@ checked up!:{}",arp_nt);   
             let mut ntx = self.last_note as i16 + 1;
             ntx = PhraseLoop::search_scale_nt_just_above(root, tbl, ntx);
             if ntx >= arp_nt {
-                return ntx as u8;
+                return ntx;
             }
             while nty < 128 {
                 nty = ntx + 1;
@@ -211,13 +212,14 @@ impl PhraseLoop {
                 }
                 ntx = nty;
             }
-            nty as u8
+            nty
         }
         else {
+            println!("  @@@ 2 @@@ checked up! arp:{},last_nt:{}",arp_nt,self.last_note);            
             let mut ntx = self.last_note as i16 - 1;
             ntx = PhraseLoop::search_scale_nt_just_below(root, tbl, ntx);
             if ntx <= arp_nt {
-                return ntx as u8;
+                return ntx;
             }
             while nty >= 0 {
                 nty = ntx - 1;
@@ -230,7 +232,7 @@ impl PhraseLoop {
                 }
                 ntx = nty;
             }
-            nty as u8
+            nty
         }
     }
     fn search_scale_nt_just_above(root: i16, tbl:&[i16], nt: i16) -> i16 {
@@ -263,7 +265,7 @@ impl PhraseLoop {
             scale_nt = root + octave*12;
         }
         scale_nt = MAX_NOTE_NUMBER as i16;
-        octave = -1;
+        octave -= 1;
         let mut cnt = tbl.len() as i16;
         while nt < scale_nt { // Table index 判定
             cnt -= 1;
