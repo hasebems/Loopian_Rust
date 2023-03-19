@@ -221,7 +221,7 @@ SeqDataStock *-- DamperDataStock
         - フレーズの平均音高より離れていると、velocity は強くなる
 
 
-### Tempo 生成の考え方
+### Beat/Tempo 生成の考え方
 
 - ElapseStack Class 内で動作する TickGenerator Class にてテンポ生成を行う
     1. Tempo 変化時の絶対時間とその時点の tick を記録
@@ -232,6 +232,15 @@ SeqDataStock *-- DamperDataStock
     - rit. 終了は次（の次）の小節の頭
     - テンポが一定比率で落ちる場合、Tickは２次関数的に減っていく
 
+- 拍子(beat)が変わる時のTimeLine
+    - cmd内で、全パート(phrase,composition)に recombine が発生
+    - ElapseStack にメッセージを送り、送られたメッセージはstockされ、syncフラグを立てる
+    - 次小節の頭で、TickGen にchange_beat_event()が発生
+    - syncフラグが立っているので、Partがloopに set_destroy() を送る
+        - set_destroy() では、destroyフラグを立て、nextを遠い未来に設定
+        - destroyフラグを立てられた phrase loop では、process では何も起きないようにする
+            - 前のループの、次の拍に鳴るはずだった音を鳴らさせないため
+        - 同じ時間のループ内にloopは回収される
 
 ### 次にやること
 <!--
@@ -248,8 +257,7 @@ SeqDataStock *-- DamperDataStock
 -->
 
 バグ情報
-- Chordが正しく再生されないときがある
-- Pedalが正しく再生されないときがある
+
 
 次の対応
 - 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
@@ -281,6 +289,7 @@ SeqDataStock *-- DamperDataStock
 - Log File対応
 - fine 対応
 - rit 対応
+- sync 対応
 
 ## loopian 計画
 - loopian を使った動画制作

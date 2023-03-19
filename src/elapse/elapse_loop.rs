@@ -288,6 +288,8 @@ impl Elapse for PhraseLoop {
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+        if self.destroy {return;}
+
         let elapsed_tick = self.calc_serial_tick(crnt_);
         if elapsed_tick > self.whole_tick {
             self.next_msr = FULL;
@@ -312,7 +314,11 @@ impl Elapse for PhraseLoop {
 }
 impl Loop for PhraseLoop {
     fn destroy(&self) -> bool {self.destroy}
-    fn set_destroy(&mut self) {self.destroy = true;}
+    fn set_destroy(&mut self) {
+        self.next_tick = 0;
+        self.next_msr = FULL;
+        self.destroy = true;
+    }
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 
@@ -435,6 +441,8 @@ impl Elapse for CompositionLoop {
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+        if self.destroy {return;}
+
         let elapsed_tick = self.calc_serial_tick(crnt_);
         if elapsed_tick >= self.whole_tick { // =をつけないと、loop終了直後の小節頭で無限ループになる
             self.next_msr = FULL;
@@ -460,7 +468,11 @@ impl Elapse for CompositionLoop {
 }
 impl Loop for CompositionLoop {
     fn destroy(&self) -> bool {self.destroy}
-    fn set_destroy(&mut self) {self.destroy = true;}
+    fn set_destroy(&mut self) {
+        self.next_tick = 0;
+        self.next_msr = FULL;
+        self.destroy = true;
+    }
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }
 
@@ -584,6 +596,8 @@ impl Elapse for DamperLoop {
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+        if self.destroy {return;}
+
         if self.next_tick_in_phrase == 0 {
             self.make_events(crnt_, estk);
         }
@@ -612,6 +626,10 @@ impl Elapse for DamperLoop {
 }
 impl Loop for DamperLoop {
     fn destroy(&self) -> bool {self.destroy}
-    fn set_destroy(&mut self) {self.destroy = true;}
+    fn set_destroy(&mut self) {
+        self.next_tick = 0;
+        self.next_msr = FULL;
+        self.destroy = true;
+    }
     fn first_msr_num(&self) -> i32 {self.first_msr_num}
 }

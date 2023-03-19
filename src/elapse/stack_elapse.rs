@@ -71,7 +71,7 @@ impl ElapseStack {
     pub fn add_elapse(&mut self, elps: Rc<RefCell<dyn Elapse>>) {
         self.elapse_vec.push(elps);
     }
-    pub fn del_elapse(&mut self, search_id: ElapseId) {
+    pub fn _del_elapse(&mut self, search_id: ElapseId) {    // 呼ぶとエラーが出る
         if let Some(remove_index) = self.elapse_vec.iter().position(|x| x.borrow().id() == search_id) {
             self.elapse_vec.remove(remove_index);
         }
@@ -87,6 +87,7 @@ impl ElapseStack {
         self.registered_cmnd.push((msg, dt, id));
     }
     pub fn periodic(&mut self, msg: Result<Vec<i16>, TryRecvError>) -> bool {
+        let mut limit_for_deb = 0;
         self.crnt_time = Instant::now();
         match msg {
             Ok(n)  => {
@@ -122,6 +123,11 @@ impl ElapseStack {
             let playable = self.pick_out_playable(&crnt_);
             if playable.len() == 0 {
                 break;
+            }
+            else {
+                //println!("$$$deb:{},{},{},{:?}",limit_for_deb,crnt_.msr,crnt_.tick,self.crnt_time);
+                assert!(limit_for_deb < 100);
+                limit_for_deb += 1;
             }
             // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
             for elps in playable {
@@ -182,12 +188,23 @@ impl ElapseStack {
             elps.borrow_mut().stop(self);
         }
     }
+    fn sync(&mut self, lpart: bool, rpart: bool) {
+        if lpart {
+            self.part_vec[0].borrow_mut().set_sync();
+            self.part_vec[1].borrow_mut().set_sync();
+        }
+        if rpart {
+            self.part_vec[2].borrow_mut().set_sync();
+            self.part_vec[3].borrow_mut().set_sync();
+        }
+    }
     fn setting_cmnd(&mut self, msg: Vec<i16>) {
         if msg[1] == MSG2_BPM {
             self.bpm_stock = msg[2];
         }
         else if msg[1] == MSG2_BEAT {
             self.beat_stock = Beat(msg[2] as i32, msg[3] as i32);
+            self.sync(true, true);
         }
         else if msg[1] == MSG2_KEY {
             self.part_vec.iter().for_each(|x| x.borrow_mut().change_key(msg[2] as u8));

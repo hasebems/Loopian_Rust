@@ -6,6 +6,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use crate::elapse::elapse_loop::Loop;
 use crate::lpnlib::*;
 use super::elapse::*;
 use super::elapse_loop::{PhraseLoop, CompositionLoop, DamperLoop};
@@ -72,9 +73,8 @@ impl PhrLoopManager {
             else if self.max_loop_msr != 0 && pbp.sync_flag {
                 // sync コマンドによる強制リセット
                 self.state_reserve = false;
-                if let Some(lp) = &self.loop_phrase {
-                    estk.del_elapse(lp.borrow().id());
-                    self.loop_phrase = None;
+                if let Some(phr) = self.loop_phrase.as_mut() {
+                    phr.borrow_mut().set_destroy();
                 }
                 self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
             }
@@ -127,12 +127,12 @@ impl PhrLoopManager {
                     self.loop_phrase = None;
                     return;
                 }
-    
+
+                self.loop_cntr += 1;
                 let lp = PhraseLoop::new(self.loop_cntr, pbp.part_num, 
                     pbp.keynote, msr, phr.to_vec(), ana.to_vec(), self.whole_tick);
                 self.loop_phrase = Some(Rc::clone(&lp));
                 estk.add_elapse(lp);
-                self.loop_cntr += 1;
             }
         }
     }
@@ -189,16 +189,15 @@ impl CmpsLoopManager {
             else if self.max_loop_msr != 0 && pbp.sync_flag {
                 // sync コマンドによる強制リセット
                 self.state_reserve = false;
-                if let Some(lp) = &self.loop_cmps {
-                    estk.del_elapse(lp.borrow().id());
-                    self.loop_cmps = None;
+                if let Some(phr) = self.loop_cmps.as_mut() {
+                    phr.borrow_mut().set_destroy();
                 }
                 self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
             }
-            //else {
+            else {
                 // 現在の Loop Obj が終了していない時
                 // state_reserve は持ち越す
-            //}
+            }
         }
         else if self.max_loop_msr != 0 &&
           (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) == 0 {
@@ -235,11 +234,11 @@ impl CmpsLoopManager {
                 return;
             }
 
+            self.loop_cntr += 1;
             let lp = CompositionLoop::new(self.loop_cntr, pbp.part_num, 
                 pbp.keynote, msr, cmps.to_vec(), self.whole_tick);
             self.loop_cmps = Some(Rc::clone(&lp));
             estk.add_elapse(lp);
-            self.loop_cntr += 1;
         }        
     }
 }
@@ -322,6 +321,7 @@ impl Part {
     pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.cm.get_cmps()
     }
+    pub fn set_sync(&mut self) {self.sync_next_msr_flag = true;}
 }
 impl Elapse for Part {
     fn id(&self) -> ElapseId {self.id}      // id を得る

@@ -61,7 +61,7 @@ impl SeqDataStock {
         //println!("beat: {}/{}",numerator, denomirator);
         self.tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE*(numerator as i32)/(denomirator as i32);
         self.tick_for_onebeat = DEFAULT_TICK_FOR_QUARTER*4/(denomirator as i32);
-        self.recombine_phr_all();
+        self.recombine_all();
     }
     pub fn change_bpm(&mut self, bpm: i16) {
         self.bpm = bpm;
@@ -84,6 +84,12 @@ impl SeqDataStock {
     fn recombine_phr_all(&mut self) {
         for pd in self.pdt.iter_mut() {
             pd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+        }
+    }
+    fn recombine_all(&mut self) {
+        for (i, pd) in self.pdt.iter_mut().enumerate() {
+            pd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            self.cdt[i].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
         }
     }
 }
@@ -152,6 +158,7 @@ impl PhraseDataStock {
             //  clear
             self.rcmb = Vec::new();
             self.ana = Vec::new();
+            println!("no_phrase...");
             return
         }
 
@@ -222,6 +229,7 @@ impl CompositionDataStock {
         if self.cmpl_cd == [""] {
             // clear
             self.rcmb = Vec::new();
+            println!("no_composition...");
             return
         }
 
