@@ -370,6 +370,7 @@ impl CompositionLoop {
         }))
     }
     pub fn get_chord(&self) -> (i16, i16) {(self.root, self.translation_tbl)}
+    pub fn get_chord_name(&self) -> String {self.chord_name.clone()}
     pub fn get_chord_map(&self, msr: i32, tick_for_onemsr: i32, tick_for_onebeat: i32) -> Vec<bool> { // for Damper
         let first_tick = (msr - self.first_msr_num)*tick_for_onemsr;
         let end_tick = (msr - self.first_msr_num + 1)*tick_for_onemsr;

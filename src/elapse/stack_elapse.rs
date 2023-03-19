@@ -114,6 +114,9 @@ impl ElapseStack {
                 self.tg.change_bpm_event(self.bpm_stock);
             }
             // fine //<<DoItLater>>
+
+            // for GUI(8indicator)
+            self.update_gui_at_msrtop();
         }
         //  新tick計算
         let crnt_ = self.tg.get_crnt_msr_tick();
@@ -349,22 +352,32 @@ impl ElapseStack {
             if removed_num == -1 {break;}
         }
     }
+    fn update_gui_at_msrtop(&mut self) {
+        // key
+        let key_disp = "0_".to_string();
+        self.send_msg_to_ui(&key_disp);
+        // bpm
+        let bpm_num = self.tg.get_bpm();
+        let bpm_disp = format!("1{}",bpm_num);
+        self.send_msg_to_ui(&bpm_disp);
+        // beat
+        let beat = self.tg.get_beat();
+        let beat_disp = format!("2{}/{}",beat.0,beat.1);
+        self.send_msg_to_ui(&beat_disp);
+    }
     fn update_gui(&mut self) {
-        if self.crnt_time-self.display_time > Duration::from_millis(20) {
+        if self.crnt_time-self.display_time > Duration::from_millis(80) {
             self.display_time = self.crnt_time;
-            // bpm
-            let bpm_num = self.tg.get_bpm();
-            let bpm_disp = format!("1{}",bpm_num);
-            self.send_msg_to_ui(&bpm_disp);
-            // beat
-            let beat = self.tg.get_beat();
-            let bpm_disp = format!("2{}/{}",beat.0,beat.1);
-            self.send_msg_to_ui(&bpm_disp);
             // tick
             let (m,b,t,_c) = self.tg.get_tick();
-            let beat_disp = format!("3{} : {} : {:>03}",m,b,t);
-            self.send_msg_to_ui(&beat_disp);
-            //<<DoItLater>> その他の表示
+            let tick_disp = format!("3{} : {} : {:>03}",m,b,t);
+            self.send_msg_to_ui(&tick_disp);
+            // part
+            self.part_vec.iter().for_each(|x| {
+                let crnt_ = self.tg.get_crnt_msr_tick();
+                let part_ind = x.borrow().gen_part_indicator(&crnt_);
+                self.send_msg_to_ui(&part_ind);
+            });
         }
     }
 }

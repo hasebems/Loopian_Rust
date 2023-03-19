@@ -46,7 +46,7 @@ impl LoopianApp {
 
     const PROMPT_LETTERS: usize = 3;
     const CURSOR_MAX_LOCATE: usize = 79;
-    const MAX_INDICATOR: u32 = 8;
+    const MAX_INDICATOR: usize = 8;
 
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         //  create new thread & channel
@@ -192,7 +192,7 @@ impl LoopianApp {
             );
         }
     }
-    fn command_key(&mut self, key: &Key) {
+    fn command_key(&mut self, key: &Key, modifiers: &Modifiers) {
         if key == &Key::Enter {
             if self.input_text.len() == 0 {return;}
             self.input_lines.push(self.input_text.clone());
@@ -214,13 +214,15 @@ impl LoopianApp {
             //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowLeft {
-            if self.input_locate > 0 {self.input_locate -= 1;}
+            if modifiers.shift {self.input_locate = 0;}
+            else if self.input_locate > 0 {self.input_locate -= 1;}
             //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowRight {
-            self.input_locate += 1;
             let maxlen = self.input_text.chars().count();
-            if self.input_locate > maxlen { self.input_locate = maxlen;}
+            if modifiers.shift {self.input_locate = maxlen;}
+            else {self.input_locate += 1;}
+            if self.input_locate > maxlen {self.input_locate = maxlen;}
             //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowUp {
@@ -229,6 +231,8 @@ impl LoopianApp {
             if max_count > 0 && self.history < max_count {
                 self.input_text = self.input_lines[self.history].clone();
             }
+            let maxlen = self.input_text.chars().count();
+            if maxlen < self.input_locate {self.input_locate = maxlen;}
         }
         else if key == &Key::ArrowDown {
             let max_count = self.input_lines.len();
@@ -239,6 +243,8 @@ impl LoopianApp {
             else if self.history >= max_count {
                 self.input_text = "".to_string();
             }
+            let maxlen = self.input_text.chars().count();
+            if maxlen < self.input_locate {self.input_locate = maxlen;}
         }
     }
     fn input_letter(&mut self, letters: Vec<&String>) {
@@ -315,8 +321,8 @@ impl eframe::App for LoopianApp {
         for ev in evts.iter() {
             match ev {
                 Event::Text(ltr) => letters.push(ltr),
-                Event::Key {key,pressed, modifiers:_} => {
-                    if pressed == &true { self.command_key(key);}
+                Event::Key {key,pressed, modifiers} => {
+                    if pressed == &true { self.command_key(key, modifiers);}
                 },
                 _ => {},
             }

@@ -108,6 +108,16 @@ impl PhrLoopManager {
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.loop_phrase.clone()    // 重いclone()?
     }
+    pub fn gen_msrcnt(&self, crnt_msr: i32) -> String {
+        if let Some(phr) = &self.loop_phrase {
+            let denomirator = self.max_loop_msr;
+            let numerator = crnt_msr - phr.borrow().first_msr_num();
+            format!("{}/{}", numerator, denomirator)
+        }
+        else {
+            String::from("---")
+        }
+    }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32,
         estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成
@@ -214,6 +224,12 @@ impl CmpsLoopManager {
     }
     pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.loop_cmps.clone()    // 重いclone()?
+    }
+    pub fn gen_chord_name(&self) -> String {
+        if let Some(cmps) = &self.loop_cmps {
+            cmps.borrow().get_chord_name()
+        }
+        else {String::from("")}
     }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32,
         estk: &mut ElapseStack, pbp: PartBasicPrm) {
@@ -322,6 +338,11 @@ impl Part {
         self.cm.get_cmps()
     }
     pub fn set_sync(&mut self) {self.sync_next_msr_flag = true;}
+    pub fn gen_part_indicator(&self, crnt_: &CrntMsrTick) -> String {
+        let msrcnt = self.pm.gen_msrcnt(crnt_.msr);
+        let chord_name = self.cm.gen_chord_name();
+        format!("{}{} {}",self.id.sid+4, msrcnt, chord_name)
+    }
 }
 impl Elapse for Part {
     fn id(&self) -> ElapseId {self.id}      // id を得る

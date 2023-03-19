@@ -3,6 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use crate::LoopianApp;
 use crate::lpnlib::*;
 use std::sync::{mpsc, mpsc::*};
 use super::seq_stock::*;
@@ -13,6 +14,7 @@ use super::seq_stock::*;
 //  3. eguiに返事を返す
 pub struct LoopianCmd {
     indicator: Vec<String>,
+    indicator_key_stock: String,
     msg_hndr: mpsc::Sender<Vec<i16>>,
     ui_hndr: mpsc::Receiver<String>,
     input_part: usize,
@@ -21,13 +23,13 @@ pub struct LoopianCmd {
 
 impl LoopianCmd {
     pub fn new(msg_hndr: mpsc::Sender<Vec<i16>>, ui_hndr: mpsc::Receiver<String>) -> Self {
-        let mut indc: Vec<String> = Vec::new();
-        for _ in 0..crate::LoopianApp::MAX_INDICATOR {indc.push("---".to_string());}
-        indc[0] = "C".to_string();
-        indc[1] = DEFAULT_BPM.to_string();
-        indc[3] = "1 : 1 : 000".to_string();
+        let mut indicator = vec![String::from("---"); LoopianApp::MAX_INDICATOR];
+        indicator[0] = "C".to_string();
+        indicator[1] = DEFAULT_BPM.to_string();
+        indicator[3] = "1 : 1 : 000".to_string();
         Self {
-            indicator: indc,
+            indicator,
+            indicator_key_stock: "C".to_string(),
             msg_hndr,
             ui_hndr,
             input_part: RIGHT1,
@@ -48,16 +50,20 @@ impl LoopianCmd {
         &self.indicator[num]
     }
     fn read_from_ui_hndr(&mut self) {
+        // Play Thread からの、8indicator表示用メッセージを受信する処理
         loop {
             match self.ui_hndr.try_recv() {
                 Ok(mut uitxt)  => {
                     if let Some(letter) = uitxt.chars().nth(0) {
-                        let ind_num = letter.to_digit(10).unwrap();
+                        let ind_num: usize = letter.to_digit(10).unwrap() as usize;
                         let len = uitxt.chars().count();
                         if len >= 2 {
                             let txt = uitxt.split_off(1);
-                            if ind_num < crate::LoopianApp::MAX_INDICATOR {
-                                self.indicator[ind_num as usize] = txt;
+                            if ind_num == 0 && txt == "_" {
+                                self.indicator[0] = self.indicator_key_stock.clone();
+                            }
+                            else if ind_num < LoopianApp::MAX_INDICATOR {
+                                self.indicator[ind_num] = txt;
                             }
                         }
                     }
@@ -275,7 +281,7 @@ impl LoopianCmd {
             }
             // elapse に key を送る
             self.send_msg_to_elapse(vec![MSG_SET, MSG2_KEY, key as i16]);
-            self.indicator[0] = key_text.to_string();
+            self.indicator_key_stock = key_text.to_string();
             true
         }
         else {
