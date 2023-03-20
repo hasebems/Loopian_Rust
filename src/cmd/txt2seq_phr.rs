@@ -171,13 +171,14 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
 pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: InputMode,
     base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<i16>>) {
     let max_read_ptr = ntvec.len();
-    let (exp_vel, _exp_others) = get_exp_info(expvec.clone());
+    let (exp_vel, exp_others) = get_exp_info(expvec.clone());
     let mut read_ptr = 0;
     let mut last_nt: i32 = 0;
     let mut tick: i32 = 0;
     let mut msr: i32 = 1;
     let mut base_dur: i32 = DEFAULT_TICK_FOR_QUARTER;
     let mut rcmb: Vec<Vec<i16>> = Vec::new();
+    let mut mes_top: bool = false;
 
     while read_ptr < max_read_ptr {
         let note_text = ntvec[read_ptr].clone();
@@ -189,11 +190,9 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
 
         let next_msr_tick = tick_for_onemsr*msr;
         if tick < next_msr_tick {
-            let real_dur = get_real_dur(base_dur, dur_cnt,
-                next_msr_tick - tick);
-
             // duration
-            //let note_dur = trans_dur(real_dur, &exp_others);
+            let real_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
+            let note_dur = trans_dur(real_dur, &exp_others);
 
             // velocity
             let mut last_vel: i32 = exp_vel + diff_vel;
@@ -201,13 +200,15 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
             else if last_vel < 1 {last_vel = 1;}
 
             // add to recombined data
-            rcmb = add_note(rcmb, tick, notes, real_dur, last_vel as i16);
+            rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16, mes_top);
             tick += real_dur;
         }
         if mes_end {// 小節線があった場合
             tick = next_msr_tick;
             msr += 1;
+            mes_top = true;
         }
+        else {mes_top = false;}
         read_ptr += 1;  // out from repeat
     }
     (tick, rcmb)
@@ -226,7 +227,7 @@ fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     (vel, retvec)
 }
 fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i32, imd: InputMode)
-    -> (Vec<u8>, bool, i32, i32, i32, i32) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, nt)
+    -> (Vec<u8>, bool, i32, i32, i32, i32) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, last_nt)
 
     //  小節線のチェック
     let mut mes_end = false;
@@ -250,14 +251,25 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i3
         else if imd == InputMode::Closer {
             doremi = convert_doremi_closer(nt.to_string(), last_nt);
         }
-        let mut base_pitch: i32 = base_note + doremi;
-        if base_pitch >= MAX_NOTE_NUMBER as i32 {base_pitch = MAX_NOTE_NUMBER as i32;}
-        else if base_pitch < MIN_NOTE_NUMBER as i32 {base_pitch = MIN_NOTE_NUMBER as i32;}
+        let mut base_pitch: i32;
+        if doremi >= NO_MIDI_VALUE as i32 { // special meaning
+            base_pitch = doremi;
+            doremi = last_nt;
+        }
+        else {
+            base_pitch = base_note + doremi;
+            if base_pitch >= MAX_NOTE_NUMBER as i32 {base_pitch = MAX_NOTE_NUMBER as i32;}
+            else if base_pitch < MIN_NOTE_NUMBER as i32 {base_pitch = MIN_NOTE_NUMBER as i32;}
+        }
         notes.push(base_pitch as u8);
     }
     (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi)
 }
 fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
+    // 階名指定が無く、小節冒頭のタイの場合の音価を判定
+    if nt.chars().nth(0).unwrap_or(' ') == 'o' {return ("".to_string(), bdur, LAST);}
+    if nt.chars().any(|ltr| ltr=='.') {return ("".to_string(), bdur, nt.len() as i32);}
+
     // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
     // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
     let mut excnt = 0;
@@ -269,10 +281,9 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         }
     }
     let mut ntext = nt[excnt..].to_string();
-    let mut base_dur = bdur;
-    let mut dur_cnt: i32 = 1;
 
     //  タイなどの音価を解析し、dur_cnt を確定
+    let mut dur_cnt: i32 = 1;
     let txtlen = ntext.len(); 
     if txtlen > 0 {
         if ntext.chars().nth(txtlen-1).unwrap_or(' ') == 'o' {
@@ -293,7 +304,8 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         }
     }
 
-    //  基準音価を解析し、base_dur を確定 
+    //  基準音価を解析し、base_dur を確定
+    let mut base_dur = bdur;
     let txtlen = ntext.len();
     if txtlen > 0 {
         let mut triplet: i16 = 0;
@@ -344,44 +356,47 @@ fn gen_diff_vel(nt: String) -> (String, i32) {
     (ntext, diff_vel)
 }
 fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
-    if dur_cnt == LAST {
-        rest_tick
-    }
-    else if base_dur == KEEP {
-        base_dur*dur_cnt as i32
-    }
-    else {
-        base_dur*dur_cnt as i32
-    }
+    if dur_cnt == LAST {rest_tick}
+    else if base_dur == KEEP {base_dur*dur_cnt}
+    else {base_dur*dur_cnt}
 }
-fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16) -> Vec<Vec<i16>> {
+fn trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
+    if exp_others.iter().any(|x| x=="stacc") {
+        real_dur/2  // staccato の場合、音価は半分
+    }
+    else {real_dur}
+}
+fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16, mes_top: bool)
+    -> Vec<Vec<i16>> {
+    assert!(notes.len() != 0);
     let mut return_rcmb = rcmb.clone();
-    if notes.len() != 0 {
-        for note in notes.iter() {
-            if *note == REST {
-                continue;
+    for note in notes.iter() {
+        if *note == REST {
+            continue;
+        }
+        else if *note == NO_NOTE {
+            if mes_top {
+                // 小節先頭にタイがあった場合、前の音の音価を増やす
+                // 前回の入力が '=' による和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
+                let mut search_idx = return_rcmb.len()-1;
+                let last_tick = return_rcmb[search_idx][1];
+                loop {
+                    if return_rcmb[search_idx][1] == last_tick {
+                        return_rcmb[search_idx][2] += note_dur as i16;
+                    }
+                    else {break;}
+                    if search_idx == 0 {break;}
+                    search_idx -= 1;
+                }
             }
-            else if *note == NO_NOTE {
-                continue;
-                // python で、前の入力が '=' による和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
-                // とコメントがあったが、処理内容不明
-            /*  same_tick = generated[-1][1]
-                cnt = 0
-                while True:
-                    if len(generated) <= cnt: break
-                    cnt += 1
-                    if generated[-cnt][1] == same_tick:
-                        generated[-cnt][2] += real_dur
-                    else: break */
-            }
-            else {
-                let nt_data: Vec<i16> = 
-                    vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
-                    return_rcmb.push(nt_data);
-            }
+            else {continue;}
+        }
+        else {
+            let nt_data: Vec<i16> = 
+                vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
+                return_rcmb.push(nt_data);
         }
     }
-    else {println!("Error!")}
     return_rcmb
 }
 fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {

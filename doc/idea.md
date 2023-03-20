@@ -232,9 +232,9 @@ SeqDataStock *-- DamperDataStock
     - rit. 終了は次（の次）の小節の頭
     - テンポが一定比率で落ちる場合、Tickは２次関数的に減っていく
 
-- 拍子(beat)が変わる時のTimeLine
+- 拍子(beat)が変わる時のシーケンス
     - cmd内で、全パート(phrase,composition)に recombine が発生
-    - ElapseStack にメッセージを送り、送られたメッセージはstockされ、syncフラグを立てる
+    - Play thread にメッセージを送り、送られたメッセージはstockされ、syncフラグを立てる
     - 次小節の頭で、TickGen にchange_beat_event()が発生
     - syncフラグが立っているので、Partがloopに set_destroy() を送る
         - set_destroy() では、destroyフラグを立て、nextを遠い未来に設定
@@ -284,7 +284,7 @@ SeqDataStock *-- DamperDataStock
 - Part切替 3/12済
 - Beat切替 3/13済
 - pedal 対応 3/18済
-- 8 indicator 全表示
+- 8 indicator 全表示 3/19済
 - Rondamized 対応
 - Log File対応
 - fine 対応
