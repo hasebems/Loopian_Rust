@@ -104,32 +104,32 @@ impl PhraseLoop {
         // ev: ['note', tick, duration, note, velocity]
         let mut crnt_ev = ev.clone();
         let mut deb_txt: String = "no chord".to_string();
-        let (mut root, mut ctbl) = (NO_ROOT, NO_TABLE);
+        let (mut rt, mut ctbl) = (NO_ROOT, NO_TABLE);
         if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
-            (root, ctbl) = cmps.borrow().get_chord();
+            (rt, ctbl) = cmps.borrow().get_chord();
         }
 
-        if root != NO_ROOT || ctbl != NO_TABLE  {
+        if rt != NO_ROOT || ctbl != NO_TABLE  {
             let option = self.identify_trans_option(next_tick, ev[NOTE]);
             let trans_note: i16;
-            let root_nt = Self::ROOT2NTNUM[root as usize];
+            let root = Self::ROOT2NTNUM[rt as usize];
             if option == ARP_PARA {
-                let mut tgt_nt = ev[NOTE]+root;
-                if root_nt > 5 {tgt_nt -= 12;}
-                trans_note = self.translate_note_com(root_nt, ctbl, tgt_nt);
+                let mut tgt_nt = ev[NOTE] + root;
+                if root > 5 {tgt_nt -= 12;}
+                trans_note = self.translate_note_com(root, ctbl, tgt_nt);
                 deb_txt = "para:".to_string();
             }
             else if option == ARP_COM {
-                trans_note = self.translate_note_com(root_nt, ctbl, ev[NOTE]);
+                trans_note = self.translate_note_com(root, ctbl, ev[NOTE]);
                 deb_txt = "com:".to_string();
             }
             else { // Arpeggio
-                trans_note = self.translate_note_arp(root_nt, ctbl, option);
+                trans_note = self.translate_note_arp(root, ctbl, option);
                 deb_txt = "arp:".to_string();
             }
             self.last_note = trans_note;
             crnt_ev[NOTE] = trans_note;
-            deb_txt += &(root_nt.to_string() + "-" + &ctbl.to_string());
+            deb_txt += &(root.to_string() + "-" + &ctbl.to_string());
         }
 
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
