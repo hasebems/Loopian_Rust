@@ -118,32 +118,33 @@ impl PhrLoopManager {
             String::from("---")
         }
     }
-    fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32,
-        estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        // 新たに Loop Obj.を生成
+    fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        self.first_msr_num = msr;
         if let Some(phr) = &self.new_data_stock {
-            if let Some(ana) = &self.new_ana_stock {
-                println!("New Phrase Loop! --whole tick: {}", self.whole_tick_stock);
-                self.first_msr_num = msr;    // 計測開始の更新
-                self.whole_tick = self.whole_tick_stock as i32;
-    
-                // その時の beat 情報で、whole_tick を loop_measure に換算
-                let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
-                self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
-    
-                //self.update_loop_for_gui(); // for 8indicator
-                if self.whole_tick == 0 {
-                    self.state_reserve = true; // 次小節冒頭で呼ばれるように
-                    self.loop_phrase = None;
-                    return;
-                }
+        if let Some(ana) = &self.new_ana_stock {
+            // 新しいデータが来ていれば、新たに Loop Obj.を生成
+            self.whole_tick = self.whole_tick_stock as i32;
+            println!("New Phrase Loop! --whole tick: {}", self.whole_tick_stock);
 
-                self.loop_cntr += 1;
-                let lp = PhraseLoop::new(self.loop_cntr, pbp.part_num, 
-                    pbp.keynote, msr, phr.to_vec(), ana.to_vec(), self.whole_tick);
-                self.loop_phrase = Some(Rc::clone(&lp));
-                estk.add_elapse(lp);
+            // その時の beat 情報で、whole_tick を loop_measure に換算
+            let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
+            self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
+
+            //self.update_loop_for_gui(); // for 8indicator
+            if self.whole_tick == 0 {
+                self.state_reserve = true; // 次小節冒頭で呼ばれるように
+                self.loop_phrase = None;
+                return;
             }
+
+            self.loop_cntr += 1;
+            let lp = PhraseLoop::new(self.loop_cntr, pbp.part_num, 
+                pbp.keynote, msr, phr.to_vec(), ana.to_vec(), self.whole_tick);
+            self.loop_phrase = Some(Rc::clone(&lp));
+            estk.add_elapse(lp);
+        }}
+        else {
+            self.whole_tick = 0;
         }
     }
 }
@@ -339,9 +340,12 @@ impl Part {
     }
     pub fn set_sync(&mut self) {self.sync_next_msr_flag = true;}
     pub fn gen_part_indicator(&self, crnt_: &CrntMsrTick) -> String {
-        let msrcnt = self.pm.gen_msrcnt(crnt_.msr);
-        let chord_name = self.cm.gen_chord_name();
-        format!("{}{} {}",self.id.sid+4, msrcnt, chord_name)
+        if self.pm.whole_tick != 0 {
+            let msrcnt = self.pm.gen_msrcnt(crnt_.msr);
+            let chord_name = self.cm.gen_chord_name();
+            format!("{}{} {}",self.id.sid+4, msrcnt, chord_name)
+        }
+        else {format!("{}---",self.id.sid+4)}
     }
 }
 impl Elapse for Part {
