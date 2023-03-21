@@ -7,11 +7,18 @@ mod cmd;
 mod elapse;
 mod lpnlib;
 
-use eframe::{egui::*};
-use eframe::egui;
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+//use std::io::prelude::*;
+use std::path::Path;
 use std::time::{Duration, Instant};
 use std::thread;
 use std::sync::mpsc;
+use chrono::Local;
+use eframe::{egui::*};
+use eframe::egui;
+
 use cmd::cmdparse;
 use elapse::stack_elapse::ElapseStack;
 
@@ -20,12 +27,15 @@ pub struct LoopianApp {
     input_locate: usize,
     input_text: String,
     start_time: Instant,
-    input_lines: Vec<String>,
+    input_lines: Vec<(String, String)>,
     cmd: cmdparse::LoopianCmd,
     history: usize,
 }
 
 impl LoopianApp {
+    const WINDOW_X: f32 = 900.0;
+    const WINDOW_Y: f32 = 480.0;
+
     const SPACE_LEFT: f32 = 30.0;
     const SPACE_RIGHT: f32 = 870.0;
     const _LEFT_MERGIN: f32 = 5.0;
@@ -176,7 +186,8 @@ impl LoopianApp {
             ofs_count = self.input_lines.len() - 10;
         }
         for i in 0..max_count {
-            let past_text = self.input_lines[ofs_count+i].clone();
+            let past_text_set = self.input_lines[ofs_count+i].clone();
+            let past_text = past_text_set.0 + &past_text_set.1;
             let cnt = past_text.chars().count();
             let txt_color = if i%2==0 {Color32::WHITE} else {Color32::from_rgb(255,0,255)};
             ui.put(
@@ -195,14 +206,17 @@ impl LoopianApp {
     fn command_key(&mut self, key: &Key, modifiers: &Modifiers) {
         if key == &Key::Enter {
             if self.input_text.len() == 0 {return;}
-            self.input_lines.push(self.input_text.clone());
+            let dt = Local::now();
+            let tm = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
+            self.input_lines.push((tm, self.input_text.clone()));
             if let Some(answer) = self.cmd.set_and_responce(&self.input_text) {
-                self.input_lines.push(answer.clone());
+                self.input_lines.push(("".to_string(), answer));
                 self.input_text = "".to_string();
                 self.input_locate = 0;
                 self.history = self.input_lines.len();
             }
             else {  // The end of the App
+                self.app_end();
                 std::process::exit(0);
             }
         }
@@ -229,7 +243,7 @@ impl LoopianApp {
             let max_count = self.input_lines.len();
             if self.history >= 2 {self.history -= 2;}
             if max_count > 0 && self.history < max_count {
-                self.input_text = self.input_lines[self.history].clone();
+                self.input_text = self.input_lines[self.history].1.clone();
             }
             let maxlen = self.input_text.chars().count();
             if maxlen < self.input_locate {self.input_locate = maxlen;}
@@ -238,7 +252,7 @@ impl LoopianApp {
             let max_count = self.input_lines.len();
             if self.history < max_count {self.history += 2;}
             if max_count > 0 && self.history < max_count {
-                self.input_text = self.input_lines[self.history].clone();
+                self.input_text = self.input_lines[self.history].1.clone();
             }
             else if self.history >= max_count {
                 self.input_text = "".to_string();
@@ -303,12 +317,46 @@ impl LoopianApp {
             );
         }
     }
+    fn gen_log(&mut self) {
+        // フォルダ作成
+        let path = Path::new("log");
+        if !path.is_dir() {
+            fs::create_dir_all(path).unwrap();
+        }
+        // 時間をファイル名に使う
+        let file = Local::now().format("%Y-%m-%d_%H-%M-%S.txt").to_string();
+        let path_str = "log/".to_string() + &file;
+        let path = Path::new(&path_str);
+        let display = path.display();
+        // log収集
+        let mut whole_txt: String = String::new();
+        for line in self.input_lines.iter() {
+            if line.0.len() > 0 {
+                whole_txt += &line.0.to_string();
+                whole_txt += &line.1.to_string();
+                whole_txt += "\n";
+            }
+        }
+        // ファイル作成
+        let mut file = match File::create(&path) {
+            Err(why) => panic!("couldn't create {}: {}", display, why),
+            Ok(file) => file,
+        };
+        // ファイル書き込み
+        match file.write_all(whole_txt.as_bytes()) {
+            Err(why) => panic!("couldn't write to {}: {}", display, why),
+            Ok(_) => println!("successfully wrote to {}", display),
+        }
+    }
+    fn app_end(&mut self) {
+        self.gen_log();
+        println!("That's all. Thank you!");
+    }
 }
 
 impl eframe::App for LoopianApp {
     fn on_close_event(&mut self) -> bool {
-        println!("App will end!");
-        thread::sleep(Duration::from_millis(500));
+        self.app_end();
         true
     }
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
@@ -355,11 +403,11 @@ impl eframe::App for LoopianApp {
 
 fn main() {
     let options = eframe::NativeOptions {
-        initial_window_size: Some((900.0, 480.0).into()),
+        initial_window_size: Some((LoopianApp::WINDOW_X, LoopianApp::WINDOW_Y).into()),
         resizable: false,
 //        follow_system_theme: false,
         ..eframe::NativeOptions::default()
     };
-    eframe::run_native("Loopian", options, Box::new(|cc| Box::new(LoopianApp::new(cc))));
-    println!("Bye, thank you!");
+    eframe::run_native("Loopian", options, 
+        Box::new(|cc| Box::new(LoopianApp::new(cc))));
 }

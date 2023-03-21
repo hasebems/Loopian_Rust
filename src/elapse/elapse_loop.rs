@@ -579,7 +579,7 @@ impl DamperLoop {
                 (((beat_num-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
                 127]);
         }
-        println!("@@@@ Damper Event:{:?}",dmpr_evt);
+        //println!("@@@@ Damper Event:{:?}",dmpr_evt);
         self.evt = dmpr_evt;
         self.whole_tick = tick_for_onemsr;
         self.next_tick_in_phrase = 0;

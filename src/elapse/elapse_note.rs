@@ -5,6 +5,8 @@
 //
 use std::rc::Rc;
 use std::cell::RefCell;
+use rand::prelude::{Distribution, thread_rng};
+use rand_distr::Normal;
 
 use crate::lpnlib::*;
 use super::elapse::*;
@@ -58,11 +60,11 @@ impl Note {
                 estk.register_sp_cmnd(ElapseMsg::MsgNoSameNoteOff, self.real_note, self.id());
             //}
             self.noteoff_enable = true; // 上で false にされるので
-            estk.midi_out(0x90, self.real_note, self.velocity);
+            let vel = self.random_velocity(self.velocity);
+            estk.midi_out(0x90, self.real_note, vel);
+            println!("On: {},{} Trns: {}, ", num, vel, self.deb_txt);
         }
-        else {self.deb_txt += "=> Note Limit Failed!!";}
-        print!("NoteOn: {},{} NoteTranslate: ", num, self.velocity);
-        println!("{}", self.deb_txt);
+        else {println!("NoteOn: => Note Limit Failed!!");}
     }
     fn note_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;
@@ -70,13 +72,23 @@ impl Note {
         // midi note off
         if self.noteoff_enable {
             estk.midi_out(0x90, self.real_note, 0);
-            println!("NoteOff: {}", self.real_note);
+            println!("Off: {}, ", self.real_note);
         }
     }
     fn note_limit_available(num: u8, min_value: u8, max_value: u8) -> bool {
         if num > max_value {false}
         else if num < min_value {false}
         else {true}
+    }
+    fn random_velocity(&self, input_vel: u8) -> u8 {
+        let mut rng = thread_rng();
+        // std_dev: 標準偏差
+        let dist = Normal::<f64>::new(0.0, 3.0).unwrap();
+        let diff = dist.sample(&mut rng) as i32;
+        if input_vel as i32+ diff > 0 && input_vel as i32+ diff < 128 {
+            (input_vel as i32 + diff) as u8
+        }
+        else {input_vel}
     }
 }
 impl Elapse for Note {
@@ -160,14 +172,14 @@ impl Damper {
     }
     fn damper_on(&mut self, estk: &mut ElapseStack) {
         estk.midi_out(0xb0, 0x40, 127);
-        println!("DamperOn: {}", self.position);
+        println!("Damper-On: {}", self.position);
     }
     fn damper_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;
         self.next_msr = FULL;
         // midi damper off
         estk.midi_out(0xb0, 0x40, 0);
-        println!("DamperOff");
+        println!("Damper-Off");
     }
 }
 impl Elapse for Damper {

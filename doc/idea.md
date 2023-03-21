@@ -141,7 +141,7 @@ SeqDataStock *-- DamperDataStock
 |4|analysed|分析|コード変換時に自然な変換をするための分析データ|入力時||
 |5|humanized|生演奏|velocity/duration を生演奏に近づけたデータ|入力時||
 ||||◆ここまでのデータが次のLoop先頭でロード◆|||
-|6|randomized|分散|変化量を分散したデータ|Loop頭(dynamic)||
+|6|randomized|分散|変化量を分散したデータ|再生時(dynamic)||
 |7|translated|変換|コードの反映|再生時(dynamic)||
 
 
@@ -257,7 +257,7 @@ SeqDataStock *-- DamperDataStock
 -->
 
 バグ情報
-
+・[para]が正常に動いていない
 
 次の対応
 - 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
@@ -285,8 +285,8 @@ SeqDataStock *-- DamperDataStock
 - Beat切替 3/13済
 - pedal 対応 3/18済
 - 8 indicator 全表示 3/19済
-- Rondamized 対応
-- Log File対応
+- Rondamized 対応 3/21済
+- Log File対応 3/21済
 - fine 対応
 - rit 対応
 - sync 対応

@@ -171,7 +171,7 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
 pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: InputMode,
     base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<i16>>) {
     let max_read_ptr = ntvec.len();
-    let (exp_vel, exp_others) = get_exp_info(expvec.clone());
+    let (exp_vel, _exp_others) = get_exp_info(expvec.clone());
     let mut read_ptr = 0;
     let mut last_nt: i32 = 0;
     let mut tick: i32 = 0;
@@ -191,8 +191,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
         let next_msr_tick = tick_for_onemsr*msr;
         if tick < next_msr_tick {
             // duration
-            let real_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
-            let note_dur = trans_dur(real_dur, &exp_others);
+            let note_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
 
             // velocity
             let mut last_vel: i32 = exp_vel + diff_vel;
@@ -201,7 +200,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
 
             // add to recombined data
             rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16, mes_top);
-            tick += real_dur;
+            tick += note_dur;
         }
         if mes_end {// 小節線があった場合
             tick = next_msr_tick;
@@ -267,17 +266,23 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i3
 }
 fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
-    if nt.chars().nth(0).unwrap_or(' ') == 'o' {return ("".to_string(), bdur, LAST);}
-    if nt.chars().any(|ltr| ltr=='.') {return ("".to_string(), bdur, nt.len() as i32);}
-
-    // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
-    // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
+    let first_ltr = nt.chars().nth(0).unwrap_or(' ');
+    if first_ltr == 'o' {return ("".to_string(), bdur, LAST);}
+    if first_ltr == '.' {
+        let mut dot_cnt = 0;
+        for ltr in nt.chars() {if ltr == '.' {dot_cnt += 1;}}
+        return ("".to_string(), bdur, dot_cnt);
+    }
     let mut excnt = 0;
-    for (i, ltr) in nt.chars().enumerate() {
-        if ltr == '+' || ltr == '-' {continue;}
-        else {
-            excnt = i;
-            break;
+    if first_ltr == '+' || first_ltr == '-' {
+        // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
+        // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
+        for (i, ltr) in nt.chars().enumerate() {
+            if ltr == '+' || ltr == '-' {continue;}
+            else {
+                excnt = i;
+                break;
+            }
         }
     }
     let mut ntext = nt[excnt..].to_string();
@@ -359,12 +364,6 @@ fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
     if dur_cnt == LAST {rest_tick}
     else if base_dur == KEEP {base_dur*dur_cnt}
     else {base_dur*dur_cnt}
-}
-fn trans_dur(real_dur: i32, exp_others: &Vec<String>) -> i32 {
-    if exp_others.iter().any(|x| x=="stacc") {
-        real_dur/2  // staccato の場合、音価は半分
-    }
-    else {real_dur}
 }
 fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16, mes_top: bool)
     -> Vec<Vec<i16>> {
