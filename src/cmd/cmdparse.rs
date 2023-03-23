@@ -90,7 +90,7 @@ impl LoopianCmd {
         else if first_letter == "a" {self.letter_a(input_text)}
         //else if first_letter == "b" {self.letter_b(input_text)}
         //else if first_letter == "c" {self.letter_c(input_text)}
-        //else if first_letter == "f" {self.letter_f(input_text)}
+        else if first_letter == "f" {self.letter_f(input_text)}
         //else if first_letter == "i" {self.letter_i(input_text)}
         else if first_letter == "l" {self.letter_l(input_text)}
         else if first_letter == "p" {self.letter_p(input_text)}
@@ -98,6 +98,16 @@ impl LoopianCmd {
         else if first_letter == "s" {self.letter_s(input_text)}
         //else if first_letter == "m" {self.letter_m(input_text)}
         else                        {Some("what?".to_string())}
+    }
+    fn letter_f(&mut self, input_text: &str) -> Option<String> {
+        let len = input_text.chars().count();
+        if len == 4 && &input_text[0..4] == "fine" {
+            // fine
+            self.send_msg_to_elapse(vec![MSG_FINE]);
+            Some("Will be ended!".to_string())
+        } else {
+            Some("what?".to_string())
+        }
     }
     fn letter_l(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
@@ -132,6 +142,33 @@ impl LoopianCmd {
         } else if len >= 6 && &input_text[0..6] == "right2" {
             self.input_part = RIGHT2;
             Some("Changed current part to right2.".to_string())
+        } else if len >= 4 && &input_text[0..4] == "rit." {
+            let strength_txt: String;
+            let mut aft_rit: i16 = MSG3_ATP;
+            let mut strength_value: i16 = MSG2_NRM;
+            if input_text.chars().any(|x| x=='/') {
+                let rit_txt_raw = &input_text[4..];
+                let rit_txt = split_by('/', rit_txt_raw.to_string());
+                let nxt_msr_txt = &rit_txt[1];
+                if nxt_msr_txt == "fine" {aft_rit = MSG3_FINE;}
+                else {
+                    match nxt_msr_txt.parse::<i16>() {
+                        Ok(tmp) => aft_rit = tmp,
+                        Err(e) => {
+                            println!("{:?}",e);
+                            "Number is wrong.".to_string();
+                        },
+                    }
+                }
+                strength_txt = rit_txt[0].clone();
+            }
+            else {
+                strength_txt = input_text[4..].to_string();
+            }
+            if strength_txt == "poco" {strength_value = MSG2_POCO;}
+            else if strength_txt == "molto" {strength_value = MSG2_MLT;}
+            self.send_msg_to_elapse(vec![MSG_RIT, strength_value, aft_rit]);
+            Some("rit. has started!".to_string())
         } else {
             Some("what?".to_string())
         }
@@ -146,6 +183,24 @@ impl LoopianCmd {
             // set
             let responce = self.parse_set_command(input_text);
             Some(responce)
+        } else if len >= 4 && &input_text[0..4] == "sync" {
+            // sync
+            let extra_txt = &input_text[4..];
+            if extra_txt == "right" {
+                self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_RGT]);
+                Some("Right Part Synchronized!".to_string())
+            } else if extra_txt == "left" {
+                self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_LFT]);
+                Some("Left Part Synchronized!".to_string())
+            } else if extra_txt == "all" {
+                self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_ALL]);
+                Some("All Part Synchronized!".to_string())
+            } else if extra_txt == "" {
+                self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_PART]);
+                Some("Synchronized!".to_string())
+            } else {
+                Some("what?".to_string())
+            }
         } else {
             Some("what?".to_string())
         }
