@@ -64,7 +64,7 @@ pub const DEFAULT_VEL: u8 = 100;
 // MSG_START    | --          |
 // MSG_STOP     | --          |
 // MSG_FINE     | --          |
-// MSG_SYNC     |( MSG2_PART / MSG2_LFT / MSG2_RGT / MSG2_ALL )|
+// MSG_SYNC     |( [0-3] / MSG2_LFT / MSG2_RGT / MSG2_ALL )|
 // MSG_RIT      |( MSG2_NRM / MSG2_POCO / MSG2_MLT )|( MSG3_ATP | MSG3_FINE |[tempo])
 // MSG_SET      | MSG2_BPM    |[bpm]| --
 //              | MSG2_BEAT   |[numerator]|[denomirator]| --
@@ -86,7 +86,6 @@ pub const MSG_SET:  i16     = -1;
 pub const MSG2_BPM: i16     = 1;
 pub const MSG2_BEAT: i16    = 2;
 pub const MSG2_KEY: i16     = 3;
-pub const MSG2_PART: i16    = 4;
 pub const MSG2_LFT: i16     = 5;
 pub const MSG2_RGT: i16     = 6;
 pub const MSG2_ALL: i16     = 7;

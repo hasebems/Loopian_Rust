@@ -185,19 +185,22 @@ impl LoopianCmd {
             Some(responce)
         } else if len >= 4 && &input_text[0..4] == "sync" {
             // sync
-            let extra_txt = &input_text[4..];
-            if extra_txt == "right" {
+            let vectxt = input_text.split(' ').fold(Vec::new(), |mut s, i| {
+                s.push(i.to_string());
+                s
+            });
+            if vectxt.len() < 2 {
+                self.send_msg_to_elapse(vec![MSG_SYNC, self.input_part as i16]);
+                Some("Synchronized!".to_string())
+            } else if vectxt[1] == "right" {
                 self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_RGT]);
                 Some("Right Part Synchronized!".to_string())
-            } else if extra_txt == "left" {
+            } else if vectxt[1] == "left" {
                 self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_LFT]);
                 Some("Left Part Synchronized!".to_string())
-            } else if extra_txt == "all" {
+            } else if vectxt[1] == "all" {
                 self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_ALL]);
                 Some("All Part Synchronized!".to_string())
-            } else if extra_txt == "" {
-                self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_PART]);
-                Some("Synchronized!".to_string())
             } else {
                 Some("what?".to_string())
             }

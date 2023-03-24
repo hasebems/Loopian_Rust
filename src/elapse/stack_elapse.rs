@@ -191,15 +191,27 @@ impl ElapseStack {
             elps.borrow_mut().stop(self);
         }
     }
-    fn sync(&mut self, lpart: bool, rpart: bool) {
-        if lpart {
-            self.part_vec[0].borrow_mut().set_sync();
-            self.part_vec[1].borrow_mut().set_sync();
+    fn fine(&mut self, _msg: Vec<i16>) {}
+    fn sync(&mut self, msg: Vec<i16>) {
+        let mut sync_part = [false; MAX_USER_PART];
+        if msg[1] < MAX_USER_PART as i16 {sync_part[msg[1] as usize] = true;}
+        else if msg[1] == MSG2_LFT {
+            sync_part[LEFT1] = true;
+            sync_part[LEFT2] = true;
         }
-        if rpart {
-            self.part_vec[2].borrow_mut().set_sync();
-            self.part_vec[3].borrow_mut().set_sync();
+        else if msg[1] == MSG2_RGT {
+            sync_part[RIGHT1] = true;
+            sync_part[RIGHT2] = true;
         }
+        else if msg[1] == MSG2_ALL {
+            for pt in sync_part.iter_mut() {*pt=true;}
+        }
+        for (i, pt) in sync_part.iter().enumerate() {
+            if *pt {self.part_vec[i].borrow_mut().set_sync();}
+        }
+    }
+    fn rit(&mut self, msg: Vec<i16>) {
+        
     }
     fn setting_cmnd(&mut self, msg: Vec<i16>) {
         if msg[1] == MSG2_BPM {
@@ -207,7 +219,7 @@ impl ElapseStack {
         }
         else if msg[1] == MSG2_BEAT {
             self.beat_stock = Beat(msg[2] as i32, msg[3] as i32);
-            self.sync(true, true);
+            self.sync(vec![MSG_SYNC, MSG2_ALL]);
         }
         else if msg[1] == MSG2_KEY {
             self.part_vec.iter().for_each(|x| x.borrow_mut().change_key(msg[2] as u8));
@@ -285,8 +297,10 @@ impl ElapseStack {
     fn parse_msg(&mut self, msg: Vec<i16>) {
         println!("msg is {:?}", msg[0]);
         if msg[0] == MSG_START {self.start();}
-        else if msg[0] == MSG_START {self.start();}
         else if msg[0] == MSG_STOP {self.stop();}
+        else if msg[0] == MSG_FINE {self.fine(msg);}
+        else if msg[0] == MSG_SYNC {self.sync(msg);}
+        else if msg[0] == MSG_RIT {self.rit(msg);}
         else if msg[0] == MSG_SET {self.setting_cmnd(msg);}
         else if msg1st(msg[0]) == MSG_PHR_X {self.del_phrase(msg);}
         else if msg1st(msg[0]) == MSG_CMP_X {self.del_composition(msg);}
