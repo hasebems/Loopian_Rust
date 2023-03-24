@@ -87,7 +87,7 @@ const COMDIM: [i16; 8]  = [0, 2, 3, 5, 6, 8, 9, 11];
 const PENTATONIC:[i16; 5] = [0, 2, 4, 7, 9];
 const BLUES:  [i16; 6]  = [0, 3, 5, 6, 7, 10];
 const ERR:    [i16; 1]  = [0];
-const NONE:   [i16; 2]  = [1000, 1001];  // if more than 127, no sound by limit
+const NONE:   [i16; 1]  = [0];
 
 pub fn get_root_name(idx_num: usize) -> &'static str {
     assert!(idx_num < ROOT_NAME.len());
