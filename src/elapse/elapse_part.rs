@@ -111,7 +111,7 @@ impl PhrLoopManager {
     pub fn gen_msrcnt(&self, crnt_msr: i32) -> String {
         if let Some(phr) = &self.loop_phrase {
             let denomirator = self.max_loop_msr;
-            let numerator = crnt_msr - phr.borrow().first_msr_num();
+            let numerator = crnt_msr - phr.borrow().first_msr_num() + 1;    // 1origin
             format!("{}/{}", numerator, denomirator)
         }
         else {

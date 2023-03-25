@@ -401,7 +401,10 @@ impl CompositionLoop {
             let cname = tbl_name.to_string();
             if cname.chars().nth(0).unwrap_or(' ') == '_' {
                 let root_index = ((self.root-1)/3) as usize;
-                let root = crate::cmd::txt2seq_cmps::get_root_name(root_index);
+                let alteration = (self.root+1)%3;
+                let mut root = crate::cmd::txt2seq_cmps::get_root_name(root_index).to_string();
+                if alteration == 1 {root += "#";}
+                else if alteration == 2 {root += "b";}
                 self.chord_name = root.to_string() + &cname[1..];
             }
             else {
