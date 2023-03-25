@@ -338,7 +338,11 @@ impl Part {
     pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.cm.get_cmps()
     }
-    pub fn set_sync(&mut self) {self.sync_next_msr_flag = true;}
+    pub fn set_sync(&mut self) {
+        self.pm.state_reserve = true;
+        self.cm.state_reserve = true;
+        self.sync_next_msr_flag = true;
+    }
     pub fn gen_part_indicator(&self, crnt_: &CrntMsrTick) -> String {
         if self.pm.whole_tick != 0 {
             let msrcnt = self.pm.gen_msrcnt(crnt_.msr);
