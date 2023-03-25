@@ -81,7 +81,7 @@ pub const MSG_STOP: i16     = -8;
 pub const MSG_FINE: i16     = -7;
 pub const MSG_SYNC: i16     = -6;
 pub const MSG_RIT: i16      = -5;
-pub const MSG_SET:  i16     = -1;
+pub const MSG_SET: i16      = -2;
 
 pub const MSG2_BPM: i16     = 1;
 pub const MSG2_BEAT: i16    = 2;

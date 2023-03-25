@@ -70,12 +70,15 @@ impl TickGen {
         self.bpm = bpm;
     }
     //pub fn calc_tick(&mut self)
-    pub fn start(&mut self, time: Instant) {
+    pub fn start(&mut self, time: Instant, bpm: i16) {
         self.rit_state = false;
         self.origin_time = time;
+        self.crnt_time = time;
+        self.bpm_start_tick = 0;
         self.bpm_start_time = time;
+        self.bpm = bpm;
     }
-    pub fn new_msr(&mut self, crnt_time: Instant) -> bool {
+    pub fn is_new_msr(&mut self, crnt_time: Instant) -> bool {
         let former_msr = self.crnt_msr;
         self.crnt_time = crnt_time;
         if self.rit_state {

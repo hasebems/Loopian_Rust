@@ -47,7 +47,6 @@ loopian は、Live Coding などで使うために開発している、テキス
     - 'quit' : 終了
     - ウインドウの close ボタンを押しても終了
 
-<!--
 
 音を出すための外部環境
 --------------------
@@ -62,12 +61,12 @@ loopian は、Live Coding などで使うために開発している、テキス
 --------------
 
 - 'play' 'start' : シーケンス開始
-- 'fine' : この小節の最後でシーケンス終了
+- 'fine' : 次の小節の頭の拍を再生して停止(stopで終わる)
 - 'stop' : 直ちにシーケンス終了
 - 'rit.' : テンポをだんだん遅くして、次の小節の頭で元のテンポ
     - rit.poco   : rit.の遅さが弱い
     - rit.molto  : rit.の遅さが強い
-    - rit./fine  : rit.の次の小節の頭の拍を再生して終了
+    - rit./fine  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
     - rit.molto/fine
     - rit./120   : rit.の次の小節をテンポ120で開始
 - 'sync' : 次の小節の頭で、ループ先頭に戻る
@@ -167,8 +166,6 @@ Composition 指定
 ----------------
 
 - 'right1' 'left1' : 右手２パート、左手２パートの４パートを指定可能
-- 'all' : 全パートの入力モードになる
-- 'midi 1' : MIDI PORT 1 を選択
 - 'panic' : 今鳴っている音を消音する
 
 
@@ -192,4 +189,5 @@ Composition 指定
 - 'set samenote=modeling' : 同音連打の動き方
     - modeling は、モデリング音源向けで、note off は一度しか送らない（default）
     - common は、一般的なMIDI音源向けで、note off は note on の数だけ送られる
+<!--
 -->

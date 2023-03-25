@@ -170,7 +170,7 @@ SeqDataStock *-- DamperDataStock
 
 - thread は以下の二つ
     - main() 内の eframe::run_native() : Main thread
-    - stack_elapse::ElapseStack::periodic() : Play thread
+    - stack_elapse::ElapseStack::periodic() : Elps thread
 - 二つのスレッドは、それぞれ別の Message を受信できる
     - スレッド間でメッセージを送る Rust の機能 mspc::channel を使用する
     - mspc::channel は複数のスレッドから、一つのスレッドにメッセージを送れるが、今回は１対１の関係とする
@@ -234,7 +234,7 @@ SeqDataStock *-- DamperDataStock
 
 - 拍子(beat)が変わる時のシーケンス
     - cmd内で、全パート(phrase,composition)に recombine が発生
-    - Play thread にメッセージを送り、送られたメッセージはstockされ、syncフラグを立てる
+    - Elps thread にメッセージを送り、送られたメッセージはstockされ、syncフラグを立てる
     - 次小節の頭で、TickGen にchange_beat_event()が発生
     - syncフラグが立っているので、Partがloopに set_destroy() を送る
         - set_destroy() では、destroyフラグを立て、nextを遠い未来に設定
@@ -257,7 +257,7 @@ SeqDataStock *-- DamperDataStock
 -->
 
 バグ情報
-・[para]が正常に動いていない
+
 
 次の対応
 - 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
@@ -287,9 +287,11 @@ SeqDataStock *-- DamperDataStock
 - 8 indicator 全表示 3/19済
 - Rondamized 対応 3/21済
 - Log File対応 3/21済
-- fine 対応
-- rit 対応
+- fine 対応 3/25 済
+- rit 対応 3/25 済
 - sync 対応
+- input mode/same note対応
+- panic/midi 対応
 
 ## loopian 計画
 - loopian を使った動画制作

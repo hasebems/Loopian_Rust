@@ -361,7 +361,7 @@ impl LoopianCmd {
     //*************************************************************************
     fn send_msg_to_elapse(&self, msg: Vec<i16>) {
         match self.msg_hndr.send(msg) {
-            Err(e) => println!("Something happened on MPSC! {}",e),
+            Err(e) => println!("Something happened on MPSC for Elps! {}",e),
             _ => {},
         }
     }

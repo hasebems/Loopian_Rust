@@ -89,6 +89,8 @@ impl ElapseStack {
     pub fn periodic(&mut self, msg: Result<Vec<i16>, TryRecvError>) -> bool {
         let mut limit_for_deb = 0;
         self.crnt_time = Instant::now();
+
+        // message 受信処理
         match msg {
             Ok(n)  => {
                 if n[0] == MSG_QUIT {return true;}
@@ -102,7 +104,7 @@ impl ElapseStack {
         if !self.during_play {return false;}
 
         // 小節先頭ならば、beat/bpm のイベント調査
-        if self.tg.new_msr(self.crnt_time) { 
+        if self.tg.is_new_msr(self.crnt_time) { 
             println!("<New measure! in stack_elapse>");
             // change beat event
             if self.beat_stock != self.tg.get_beat() {
@@ -112,6 +114,7 @@ impl ElapseStack {
             // change bpm event
             if self.bpm_stock != self.tg.get_bpm() {
                 self.tg.change_bpm_event(self.bpm_stock);
+                if self.bpm_stock == 0 {self.bpm_stock = DEFAULT_BPM;}
             }
             // fine //<<DoItLater>>
 
@@ -173,25 +176,27 @@ impl ElapseStack {
     pub fn tg(&self) -> &TickGen {&self.tg}
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {
-            Err(e) => println!("Something happened on MPSC! {}",e),
+            Err(e) => println!("Something happened on MPSC for UI! {}",e),
             _ => {},
         }
     }
     fn start(&mut self) {
+        if self.during_play {return;}
         self.during_play = true;
-        self.tg.start(self.crnt_time);
+        self.tg.start(self.crnt_time, self.bpm_stock);
         for elps in self.elapse_vec.iter() {
             elps.borrow_mut().start();
         }
     }
     fn stop(&mut self) {
+        if !self.during_play {return;}
         self.during_play = false;
         let stop_vec = self.elapse_vec.to_vec();
         for elps in stop_vec.iter() {
             elps.borrow_mut().stop(self);
         }
     }
-    fn fine(&mut self, _msg: Vec<i16>) {}
+    fn fine(&mut self, _msg: Vec<i16>) {self.bpm_stock = 0;}
     fn sync(&mut self, msg: Vec<i16>) {
         let mut sync_part = [false; MAX_USER_PART];
         if msg[1] < MAX_USER_PART as i16 {sync_part[msg[1] as usize] = true;}
@@ -211,7 +216,16 @@ impl ElapseStack {
         }
     }
     fn rit(&mut self, msg: Vec<i16>) {
-        
+        let strength_set: [(i16, i32);3] = [(MSG2_POCO, 90),(MSG2_NRM, 75),(MSG2_MLT, 60)];
+        let strength = strength_set.into_iter()
+            .find(|x| x.0==msg[1])
+            .unwrap_or(strength_set[1]);
+        if msg[2] == MSG3_ATP {self.bpm_stock = self.tg.get_bpm();}
+        else if msg[2] == MSG3_FINE {self.bpm_stock = 0;}
+        else {
+            self.bpm_stock = msg[2];
+        }
+        self.tg.rit_evt(self.crnt_time, strength.1);
     }
     fn setting_cmnd(&mut self, msg: Vec<i16>) {
         if msg[1] == MSG2_BPM {
@@ -295,7 +309,7 @@ impl ElapseStack {
         self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new());
     }
     fn parse_msg(&mut self, msg: Vec<i16>) {
-        println!("msg is {:?}", msg[0]);
+        println!("msg {:?} has reached to Elps.", msg[0]);
         if msg[0] == MSG_START {self.start();}
         else if msg[0] == MSG_STOP {self.stop();}
         else if msg[0] == MSG_FINE {self.fine(msg);}

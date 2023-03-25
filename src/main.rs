@@ -67,7 +67,7 @@ impl LoopianApp {
                 Some(mut est) => {
                     loop { if est.periodic(rxmsg.try_recv()) {break;}}
                 },
-                None => {println!("Play thread does't work")},
+                None => {println!("Elps thread does't work")},
             }
         });
 
