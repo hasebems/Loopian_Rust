@@ -17,6 +17,13 @@ use super::elapse::*;
 use super::elapse_part::Part;
 use super::elapse_loop::{PhraseLoop, CompositionLoop};
 
+#[derive(Debug,PartialEq,Eq,Copy,Clone)]
+pub enum SameKeyState {
+    MORE,       //  まだある
+    LAST,       //  これが最後
+    NOTHING,    //  もうない
+}
+
 //  ElapseStack の責務
 //  1. Elapse Object の生成と集約
 //  2. Timing/Tempo の生成とtick管理
@@ -34,7 +41,7 @@ pub struct ElapseStack {
     tg: TickGen,
     part_vec: Vec<Rc<RefCell<Part>>>,           // Part Instance が繋がれた Vec
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>,   // dyn Elapse Instance が繋がれた Vec
-    registered_cmnd: Vec<(ElapseMsg, u8, ElapseId)>,
+    key_map: [i32; (MAX_NOTE_NUMBER-MIN_NOTE_NUMBER) as usize],
 }
 
 impl ElapseStack {
@@ -62,7 +69,7 @@ impl ElapseStack {
                     tg: TickGen::new(),
                     part_vec: vp,
                     elapse_vec: velps,
-                    registered_cmnd: Vec::new(),
+                    key_map: [0; (MAX_NOTE_NUMBER-MIN_NOTE_NUMBER) as usize],
                 })
             }
             Err(_e) => None,
@@ -82,9 +89,6 @@ impl ElapseStack {
             Some(part)
         }
         else {None}
-    }
-    pub fn register_sp_cmnd(&mut self, msg: ElapseMsg, dt: u8, id: ElapseId) {
-        self.registered_cmnd.push((msg, dt, id));
     }
     pub fn periodic(&mut self, msg: Result<Vec<i16>, TryRecvError>) -> bool {
         let mut limit_for_deb = 0;
@@ -116,8 +120,6 @@ impl ElapseStack {
                 self.tg.change_bpm_event(self.bpm_stock);
                 if self.bpm_stock == 0 {self.bpm_stock = DEFAULT_BPM;}
             }
-            // fine //<<DoItLater>>
-
             // for GUI(8indicator)
             self.update_gui_at_msrtop();
         }
@@ -141,9 +143,6 @@ impl ElapseStack {
             }
         }
 
-        // registered sp command
-        self.call_registered_cmnd();      
-
         // remove ended obj
         self.destroy_finished_elps();
 
@@ -154,18 +153,6 @@ impl ElapseStack {
     }
     pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
         self.mdx.midi_out(status, data1, data2);
-        /*let et = crnt_time-self.start_time;
-        if et > Duration::from_secs(1) {
-            self.start_time = crnt_time;
-            self.count += 1;
-            if self.count%2 == 1 {
-                self.mdx.midi_out(0x90,0x40,0x60);
-                self.send_msg_to_ui(&self.count.to_string());
-            }
-            else {
-                self.mdx.midi_out(0x80,0x40,0x40);
-            }
-        }*/
     }
     pub fn get_phr(&self, part_num: usize) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.part_vec[part_num].borrow().get_phr()
@@ -174,6 +161,20 @@ impl ElapseStack {
         self.part_vec[part_num].borrow().get_cmps()
     }
     pub fn tg(&self) -> &TickGen {&self.tg}
+    pub fn inc_key_map(&mut self, key_num: u8) {self.key_map[(key_num-MIN_NOTE_NUMBER) as usize] += 1;}
+    pub fn dec_key_map(&mut self, key_num: u8) -> SameKeyState {
+        let idx = (key_num-MIN_NOTE_NUMBER) as usize;
+        if self.key_map[idx] > 1 {
+            self.key_map[idx] -= 1;
+            SameKeyState::MORE
+        }
+        else if self.key_map[idx] == 1 {
+            self.key_map[idx] = 0;
+            SameKeyState::LAST
+        }
+        else {SameKeyState::NOTHING}
+    }
+
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {
             Err(e) => println!("Something happened on MPSC for UI! {}",e),
@@ -187,6 +188,9 @@ impl ElapseStack {
         for elps in self.elapse_vec.iter() {
             elps.borrow_mut().start();
         }
+    }
+    fn panic(&mut self) {
+        self.midi_out(0xb0, 0x78, 0x00);
     }
     fn stop(&mut self) {
         if !self.during_play {return;}
@@ -311,6 +315,7 @@ impl ElapseStack {
     fn parse_msg(&mut self, msg: Vec<i16>) {
         println!("msg {:?} has reached to Elps.", msg[0]);
         if msg[0] == MSG_START {self.start();}
+        else if msg[0] == MSG_PANIC {self.panic();}
         else if msg[0] == MSG_STOP {self.stop();}
         else if msg[0] == MSG_FINE {self.fine(msg);}
         else if msg[0] == MSG_SYNC {self.sync(msg);}
@@ -354,18 +359,6 @@ impl ElapseStack {
             }
         }
         playable
-    }
-    fn call_registered_cmnd(&mut self) {
-        for reg in &self.registered_cmnd {
-            //println!("registered cmnd!");
-            let (msg, dt, rmv_id) = *reg;
-            for elps in self.elapse_vec.iter() {
-                if elps.borrow().id() != rmv_id {
-                    elps.borrow_mut().rcv_sp(msg, dt);
-                }
-            }
-        }
-        self.registered_cmnd = Vec::new(); // Initialize
     }
     fn destroy_finished_elps(&mut self) {
         loop {

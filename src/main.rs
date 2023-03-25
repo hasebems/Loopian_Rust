@@ -58,6 +58,16 @@ impl LoopianApp {
     const CURSOR_MAX_LOCATE: usize = 79;
     const MAX_INDICATOR: usize = 8;
 
+    const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
+    const TEXT_GRAY: Color32 = Color32::from_rgb(0,0,0);
+    const _TEXT_BG: Color32 = Color32::from_rgb(0,200,200);
+
+    const BACK_WHITE: Color32 = Color32::from_rgb(180, 180, 180);
+    const BACK_WHITE2: Color32 = Color32::from_rgb(128,128,128);
+    const _BACK_MAZENTA: Color32 = Color32::from_rgb(180, 160, 180);
+    const BACK_GRAY: Color32 = Color32::from_rgb(48,48,48);
+    const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
+
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         //  create new thread & channel
         let (txmsg, rxmsg) = mpsc::channel();
@@ -139,8 +149,11 @@ impl LoopianApp {
         indi_txt
     }
     fn update_eight_indicator(&mut self, ui: &mut egui::Ui) {
+        let input_part = self.cmd.get_input_part();
         for i in 0..4 {
             for j in 0..2 {
+                let mut back_color = Self::BACK_WHITE;
+                if i as usize != input_part && j == 1 {back_color = Self::BACK_WHITE2;}
                 let raw: f32 = Self::NEXT_BLOCK*(i as f32);
                 let line: f32 = Self::SPACE1_NEXT*(j as f32);
                 ui.painter().rect_filled(
@@ -149,20 +162,20 @@ impl LoopianApp {
                            max: Pos2 {x:Self::BLOCK_LENGTH + raw,
                                       y:Self::SPACE1_UPPER + Self::SPACE1_HEIGHT + line},}, //  location
                     8.0,                //  curve
-                    Color32::from_rgb(180, 180, 180),     //  color
+                    back_color,     //  color
                 );
                 let tx = self.text_for_eight_indicator(i + j*4);
                 let ltrcnt = tx.chars().count();
-                for i in 0..ltrcnt {
+                for k in 0..ltrcnt {
                     ui.put(Rect {
                         min: Pos2 {
-                            x:Self::SPACE_LEFT + 10.0 + raw + Self::LETTER_WIDTH*(i as f32),
+                            x:Self::SPACE_LEFT + 10.0 + raw + Self::LETTER_WIDTH*(k as f32),
                             y:Self::SPACE1_UPPER + 2.0 + line},
                         max: Pos2 {
-                            x:Self::SPACE_LEFT + 10.0 + raw + Self::LETTER_WIDTH*((i+1) as f32),
+                            x:Self::SPACE_LEFT + 10.0 + raw + Self::LETTER_WIDTH*((k+1) as f32),
                             y:Self::SPACE1_UPPER + 27.0 + line},},
-                        Label::new(RichText::new(&tx[i..i+1])
-                            .size(16.0).color(Color32::from_rgb(48,48,48))
+                        Label::new(RichText::new(&tx[k..k+1])
+                            .size(16.0).color(Self::TEXT_GRAY)
                             .family(FontFamily::Monospace).text_style(TextStyle::Monospace))
                     );
                 }
@@ -173,8 +186,8 @@ impl LoopianApp {
         ui.painter().rect_filled(
             Rect::from_min_max( pos2(Self::SPACE_LEFT, Self::SPACE2_UPPER),
                                 pos2(Self::SPACE_RIGHT, Self::SPACE2_LOWER)),
-            2.0,                              //  curve
-            Color32::from_rgb(48, 48, 48)     //  color
+            2.0,                  //  curve
+            Self::BACK_GRAY     //  color
         );
         const LETTER_HEIGHT: f32 = 25.0;
         let mut max_count = 10;
@@ -189,7 +202,7 @@ impl LoopianApp {
             let past_text_set = self.input_lines[ofs_count+i].clone();
             let past_text = past_text_set.0 + &past_text_set.1;
             let cnt = past_text.chars().count();
-            let txt_color = if i%2==0 {Color32::WHITE} else {Color32::from_rgb(255,0,255)};
+            let txt_color = if i%2==0 {Color32::WHITE} else {Self::MAZENTA};
             ui.put(
                 Rect { min: Pos2 {x:Self::SPACE_LEFT + 5.0,
                                   y:Self::SPACE2_UPPER + LETTER_HEIGHT*(i as f32)}, 
@@ -276,7 +289,7 @@ impl LoopianApp {
             Rect::from_min_max(pos2(Self::SPACE_LEFT,Self::SPACE3_UPPER),
                                pos2(Self::SPACE_RIGHT,Self::SPACE3_LOWER)),
             2.0,                              //  curve
-            Color32::from_rgb(48, 48, 48)     //  color
+            Self::BACK_GRAY     //  color
         );
         // Paint cursor
         let cursor = self.input_locate + Self::PROMPT_LETTERS;
@@ -288,7 +301,7 @@ impl LoopianApp {
                        max: Pos2 {x:Self::SPACE_LEFT + 8.0 + 9.5*((cursor+1) as f32),
                                 y:Self::SPACE3_LOWER - Self::CURSOR_MERGIN + Self::CURSOR_THICKNESS},},
                 0.0,                              //  curve
-                Color32::from_rgb(160, 160, 160)  //  color
+                Self::BACK_GRAY2,  //  color
             );
         }
         // Draw Letters
@@ -301,7 +314,7 @@ impl LoopianApp {
                    max: Pos2 {x:Self::SPACE_LEFT + 5.0 + prompt_mergin,
                               y:Self::SPACE3_LOWER - 3.0},},
             Label::new(RichText::new(prompt_txt)
-                .size(16.0).color(Color32::from_rgb(0,200,200)).family(FontFamily::Monospace))
+                .size(16.0).color(Self::MAZENTA).family(FontFamily::Monospace))
         );
         let ltrcnt = self.input_text.chars().count();
         let input_mergin: f32 = prompt_mergin + 3.25;

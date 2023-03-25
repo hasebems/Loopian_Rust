@@ -76,12 +76,13 @@ pub const DEFAULT_VEL: u8 = 100;
 // MSG_CMP_X+part|--          |
 // MSG_ANA_X+part|--          |
 pub const MSG_QUIT: i16     = -1;
-pub const MSG_START:i16     = -16;
-pub const MSG_STOP: i16     = -8;
-pub const MSG_FINE: i16     = -7;
-pub const MSG_SYNC: i16     = -6;
-pub const MSG_RIT: i16      = -5;
-pub const MSG_SET: i16      = -2;
+pub const MSG_START:i16     = -16;  //  1byte msg
+pub const MSG_STOP: i16     = -15;
+pub const MSG_FINE: i16     = -14;
+pub const MSG_PANIC: i16    = -13;
+pub const MSG_SYNC: i16     = -8;   //  2byte
+pub const MSG_RIT: i16      = -7;   //  3byte
+pub const MSG_SET: i16      = -2;   //  3/4byte
 
 pub const MSG2_BPM: i16     = 1;
 pub const MSG2_BEAT: i16    = 2;

@@ -36,6 +36,7 @@ impl LoopianCmd {
             gendt: SeqDataStock::new(),
         }
     }
+    pub fn get_input_part(&self) -> usize {self.input_part}
     pub fn get_part_txt(&self) -> &str {
         match self.input_part {
             LEFT1 => "L1>",            
@@ -84,19 +85,13 @@ impl LoopianCmd {
             }
             else {Some("what?".to_string())}
         }
-        //<<DoItLater>>
         else if first_letter == "[" {self.letter_bracket(input_text)}
         else if first_letter == "{" {self.letter_brace(input_text)}
-        else if first_letter == "a" {self.letter_a(input_text)}
-        //else if first_letter == "b" {self.letter_b(input_text)}
-        //else if first_letter == "c" {self.letter_c(input_text)}
         else if first_letter == "f" {self.letter_f(input_text)}
-        //else if first_letter == "i" {self.letter_i(input_text)}
         else if first_letter == "l" {self.letter_l(input_text)}
         else if first_letter == "p" {self.letter_p(input_text)}
         else if first_letter == "r" {self.letter_r(input_text)}
         else if first_letter == "s" {self.letter_s(input_text)}
-        //else if first_letter == "m" {self.letter_m(input_text)}
         else                        {Some("what?".to_string())}
     }
     fn letter_f(&mut self, input_text: &str) -> Option<String> {
@@ -129,6 +124,7 @@ impl LoopianCmd {
             Some("Phrase has started!".to_string())
         } else if len >= 5 && &input_text[0..5] == "panic" {
             // panic
+            self.send_msg_to_elapse(vec![MSG_PANIC]);
             Some("All Sound Off!".to_string())
         } else {
             Some("what?".to_string())
@@ -178,7 +174,7 @@ impl LoopianCmd {
         if len >= 4 && &input_text[0..4] == "stop" {
             // stop
             self.send_msg_to_elapse(vec![MSG_STOP]);
-            Some("Phrase has stopped!".to_string())
+            Some("Stopped!".to_string())
         } else if len >= 3 && &input_text[0..3] == "set" {
             // set
             let responce = self.parse_set_command(input_text);
@@ -221,18 +217,6 @@ impl LoopianCmd {
         if self.gendt.set_raw_composition(self.input_part, input_text.to_string()) {
             self.send_composition_to_elapse(self.input_part);
             Some("Set Composition!".to_string())
-        } else {
-            Some("what?".to_string())
-        }
-    }
-    fn letter_a(&self, input_text: &str) -> Option<String> {
-        let len = input_text.chars().count();
-        if len >= 2 && &input_text[0..2] == "aa" {
-            self.send_msg_to_elapse(vec![MSG_PHR,TYPE_NOTE,0,480,64,100]);
-            Some("Test Phrase1".to_string())
-        } else if len >= 2 && &input_text[0..2] == "ab" {
-            self.send_msg_to_elapse(vec![MSG_PHR,TYPE_NOTE,0,480,64,100,TYPE_NOTE,0,480,68,100]);
-            Some("Test Phrase2".to_string())
         } else {
             Some("what?".to_string())
         }

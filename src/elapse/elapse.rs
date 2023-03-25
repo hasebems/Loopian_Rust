@@ -28,7 +28,6 @@ pub enum ElapseType {
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum ElapseMsg {
     _MsgNone,
-    MsgNoSameNoteOff,
 }
 
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]

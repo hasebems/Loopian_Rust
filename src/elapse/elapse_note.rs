@@ -9,7 +9,7 @@ use rand::prelude::{Distribution, thread_rng};
 use rand_distr::Normal;
 
 use crate::lpnlib::*;
-use super::elapse::*;
+use super::{elapse::*, stack_elapse};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 
@@ -26,7 +26,6 @@ pub struct Note {
     keynote: u8,
     real_note: u8,
     noteon_started: bool,
-    noteoff_enable: bool,
     destroy: bool,
     next_msr: i32,
     next_tick: i32,
@@ -45,7 +44,6 @@ impl Note {
             keynote,
             real_note: 0,
             noteon_started: false,
-            noteoff_enable: true,
             destroy: false,
             next_msr: msr,
             next_tick: tick,
@@ -56,10 +54,7 @@ impl Note {
         let num = self.note_num + self.keynote;
         if Note::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
             self.real_note = num;
-            //if self.est.pianoteq_mode {
-                estk.register_sp_cmnd(ElapseMsg::MsgNoSameNoteOff, self.real_note, self.id());
-            //}
-            self.noteoff_enable = true; // 上で false にされるので
+            estk.inc_key_map(num);
             let vel = self.random_velocity(self.velocity);
             estk.midi_out(0x90, self.real_note, vel);
             println!("On: {},{} Trns: {}, ", num, vel, self.deb_txt);
@@ -70,7 +65,8 @@ impl Note {
         self.destroy = true;
         self.next_msr = FULL;
         // midi note off
-        if self.noteoff_enable {
+        let snk = estk.dec_key_map(self.real_note);
+        if snk == stack_elapse::SameKeyState::LAST {
             estk.midi_out(0x90, self.real_note, 0);
             println!("Off: {}, ", self.real_note);
         }
@@ -130,16 +126,7 @@ impl Elapse for Note {
             }
         }
     }
-    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8) {
-        match msg {
-            ElapseMsg::MsgNoSameNoteOff => {
-                if self.real_note == msg_data {
-                    self.noteoff_enable = false;
-                }
-            },
-            _ => (),
-        }
-    }
+    fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy}   // 自クラスが役割を終えた時に True を返す
 }
 

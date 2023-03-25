@@ -257,7 +257,7 @@ SeqDataStock *-- DamperDataStock
 -->
 
 バグ情報
-
+・多分前からだが、和音の時、コード指定で同じ音を指してしまうのを回避したい。
 
 次の対応
 - 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
@@ -271,6 +271,7 @@ SeqDataStock *-- DamperDataStock
 - さらなる humanized アルゴリズムの追加
 - Load/Save機能、Auto Load/Play機能
 
+<!--
 ## Rust 化の順番
 - とりあえずテキスト入力で音が鳴る(2023/2/23)
 - humanized 対応 2/25済
@@ -289,9 +290,10 @@ SeqDataStock *-- DamperDataStock
 - Log File対応 3/21済
 - fine 対応 3/25 済
 - rit 対応 3/25 済
-- sync 対応
-- input mode/same note対応
-- panic/midi 対応
+- sync 対応 3/25 済
+- input mode/same note対応 3/25 済
+- panic 対応 3/25 済
+-->
 
 ## loopian 計画
 - loopian を使った動画制作
