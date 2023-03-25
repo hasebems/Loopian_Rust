@@ -185,10 +185,11 @@ impl LoopianCmd {
             Some(responce)
         } else if len >= 4 && &input_text[0..4] == "sync" {
             // sync
-            let vectxt = input_text.split(' ').fold(Vec::new(), |mut s, i| {
-                s.push(i.to_string());
-                s
-            });
+            let vectxt = input_text.split(' ')
+                .fold(Vec::new(), |mut s, i| {
+                    s.push(i.to_string());
+                    s
+                });
             if vectxt.len() < 2 {
                 self.send_msg_to_elapse(vec![MSG_SYNC, self.input_part as i16]);
                 Some("Synchronized!".to_string())
@@ -240,10 +241,11 @@ impl LoopianCmd {
     fn parse_set_command(&mut self, input_text: &str) -> String {
         let cmnd = &input_text[4..];
         let _len = cmnd.chars().count();
-        let cv = cmnd.split('=').fold(Vec::new(), |mut s, i| {
-            s.push(i.to_string());
-            s
-        });
+        let cv = cmnd.split('=')
+            .fold(Vec::new(), |mut s, i| {
+                s.push(i.to_string());
+                s
+            });
         if cv[0] == "key".to_string() {
             if self.change_key(&cv[1]) {
                 "Key has changed!".to_string()
