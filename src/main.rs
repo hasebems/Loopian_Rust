@@ -50,13 +50,9 @@ impl LoopianApp {
     const SPACE2_LOWER: f32 = 400.0;
     const SPACE3_UPPER: f32 = 420.0;    // input text
     const SPACE3_LOWER: f32 = 450.0;
-
-    const CURSOR_MERGIN: f32 = 6.0;
-    const CURSOR_THICKNESS: f32 = 4.0;
-
-    const PROMPT_LETTERS: usize = 3;
-    const CURSOR_MAX_LOCATE: usize = 79;
     const MAX_INDICATOR: usize = 8;
+
+    const TXT_LEFT_MARGIN: f32 = 5.0;
 
     const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
     const TEXT_GRAY: Color32 = Color32::from_rgb(0,0,0);
@@ -68,6 +64,9 @@ impl LoopianApp {
     const BACK_GRAY: Color32 = Color32::from_rgb(48,48,48);
     const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
 
+    //*******************************************************************
+    //      App Initialize / Log File /  App End
+    //*******************************************************************
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         //  create new thread & channel
         let (txmsg, rxmsg) = mpsc::channel();
@@ -122,7 +121,44 @@ impl LoopianApp {
         // Tell egui to use these fonts:
         cc.egui_ctx.set_fonts(fonts);
     }
-    //  for update()
+    fn gen_log(&mut self) {
+        // フォルダ作成
+        let path = Path::new("log");
+        if !path.is_dir() {
+            fs::create_dir_all(path).unwrap();
+        }
+        // 時間をファイル名に使う
+        let file = Local::now().format("%Y-%m-%d_%H-%M-%S.txt").to_string();
+        let path_str = "log/".to_string() + &file;
+        let path = Path::new(&path_str);
+        let display = path.display();
+        // log収集
+        let mut whole_txt: String = String::new();
+        for line in self.input_lines.iter() {
+            if line.0.len() > 0 {
+                whole_txt += &line.0.to_string();
+                whole_txt += &line.1.to_string();
+                whole_txt += "\n";
+            }
+        }
+        // ファイル作成
+        let mut file = match File::create(&path) {
+            Err(why) => panic!("couldn't create {}: {}", display, why),
+            Ok(file) => file,
+        };
+        // ファイル書き込み
+        match file.write_all(whole_txt.as_bytes()) {
+            Err(why) => panic!("couldn't write to {}: {}", display, why),
+            Ok(_) => println!("successfully wrote to {}", display),
+        }
+    }
+    fn app_end(&mut self) {
+        self.gen_log();
+        println!("That's all. Thank you!");
+    }
+    //*******************************************************************
+    //      Update Screen
+    //*******************************************************************
     fn update_title(ui: &mut egui::Ui) {
         ui.put(
             Rect { min: Pos2 {x:395.0, y:2.0}, max: Pos2 {x:505.0, y:47.0},}, //  location
@@ -133,6 +169,7 @@ impl LoopianApp {
             )
         );
     }
+    //*******************************************************************
     fn text_for_eight_indicator(&mut self, num: i32) -> String {
         let indi_txt;
         match num {
@@ -182,14 +219,16 @@ impl LoopianApp {
             }
         }
     }
+    //*******************************************************************
     fn update_scroll_text(&self, ui: &mut egui::Ui) {
+        const LETTER_HEIGHT: f32 = 25.0;
+        const FONT_SIZE: f32 = 16.0;
         ui.painter().rect_filled(
             Rect::from_min_max( pos2(Self::SPACE_LEFT, Self::SPACE2_UPPER),
                                 pos2(Self::SPACE_RIGHT, Self::SPACE2_LOWER)),
             2.0,                  //  curve
             Self::BACK_GRAY     //  color
         );
-        const LETTER_HEIGHT: f32 = 25.0;
         let mut max_count = 10;
         let mut ofs_count = 0;
         if self.input_lines.len() < 10 {
@@ -204,18 +243,95 @@ impl LoopianApp {
             let cnt = past_text.chars().count();
             let txt_color = if i%2==0 {Color32::WHITE} else {Self::MAZENTA};
             ui.put(
-                Rect { min: Pos2 {x:Self::SPACE_LEFT + 5.0,
-                                  y:Self::SPACE2_UPPER + LETTER_HEIGHT*(i as f32)}, 
-                       max: Pos2 {x:Self::SPACE_LEFT + 5.0 + Self::LETTER_WIDTH*(cnt as f32),
-                                  y:Self::SPACE2_UPPER + LETTER_HEIGHT*((i+1) as f32)},},
+                Rect { 
+                    min: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN,
+                               y:Self::SPACE2_UPPER + LETTER_HEIGHT*(i as f32)}, 
+                    max: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN + Self::LETTER_WIDTH*(cnt as f32),
+                               y:Self::SPACE2_UPPER + LETTER_HEIGHT*((i+1) as f32)},},
                 Label::new(RichText::new(&past_text)
-                    .size(16.0)
+                    .size(FONT_SIZE)
                     .color(txt_color)
                     .family(FontFamily::Monospace)
                 )
             );
         }
     }
+    //*******************************************************************
+    fn input_letter(&mut self, letters: Vec<&String>) {
+        const CURSOR_MAX_LOCATE: usize = 79;
+        if self.input_locate <= CURSOR_MAX_LOCATE {
+            //println!("Letters:{:?}",letters);
+            letters.iter().for_each(|ltr| {
+                self.input_text.insert_str(self.input_locate,ltr);
+                self.input_locate+=1;
+            });
+        }
+    }
+    fn update_input_text(&mut self, ui: &mut egui::Ui) {
+        const CURSOR_LEFT_MARGIN: f32 = 10.0;
+        const CURSOR_LOWER_MERGIN: f32 = 6.0;
+        const CURSOR_TXT_LENGTH: f32 = 9.55;
+        const CURSOR_THICKNESS: f32 = 4.0;
+        const PROMPT_LETTERS: usize = 3;
+
+        const TXT_UPPER_MARGIN: f32 = 2.0;
+        const TXT_LOWER_MARGIN: f32 = -3.0;
+        const FONT_SIZE: f32 = 16.0;
+
+        // Paint Letter Space
+        ui.painter().rect_filled(
+            Rect::from_min_max(pos2(Self::SPACE_LEFT,Self::SPACE3_UPPER),
+                               pos2(Self::SPACE_RIGHT,Self::SPACE3_LOWER)),
+            2.0,                              //  curve
+            Self::BACK_GRAY     //  color
+        );
+        // Paint cursor
+        let cursor = self.input_locate + PROMPT_LETTERS;
+        let elapsed_time = self.start_time.elapsed().as_millis();
+        if elapsed_time%500 > 200 {
+            ui.painter().rect_filled(
+                Rect { min: Pos2 {x:Self::SPACE_LEFT + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*(cursor as f32),
+                                y:Self::SPACE3_LOWER - CURSOR_LOWER_MERGIN},
+                       max: Pos2 {x:Self::SPACE_LEFT + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*((cursor+1) as f32) - 2.0,
+                                y:Self::SPACE3_LOWER - CURSOR_LOWER_MERGIN + CURSOR_THICKNESS},},
+                0.0,                              //  curve
+                Self::BACK_GRAY2,  //  color
+            );
+        }
+        // Draw Letters
+        let prompt_mergin: f32 = Self::LETTER_WIDTH*(PROMPT_LETTERS as f32);
+        let prompt_txt: &str = self.cmd.get_part_txt();
+        // Prompt Text
+        ui.put(
+            Rect { 
+                   min: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN,
+                              y:Self::SPACE3_UPPER + TXT_UPPER_MARGIN},
+                   max: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN + prompt_mergin,
+                              y:Self::SPACE3_LOWER + TXT_LOWER_MARGIN},},
+            Label::new(RichText::new(prompt_txt)
+                .size(FONT_SIZE)
+                .color(Self::MAZENTA)
+                .family(FontFamily::Monospace))
+        );
+        let ltrcnt = self.input_text.chars().count();
+        let input_mergin: f32 = prompt_mergin + 3.25;
+        for i in 0..ltrcnt {    // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
+            // User Input
+            ui.put(
+                Rect { 
+                    min: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN + input_mergin + Self::LETTER_WIDTH*(i as f32),
+                               y:Self::SPACE3_UPPER + TXT_UPPER_MARGIN},
+                    max: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN + input_mergin + Self::LETTER_WIDTH*((i+1) as f32),
+                               y:Self::SPACE3_LOWER + TXT_LOWER_MARGIN},},
+                Label::new(RichText::new(&self.input_text[i..i+1])
+                    .size(FONT_SIZE)
+                    .color(Color32::WHITE)
+                    .family(FontFamily::Monospace)
+                    .text_style(TextStyle::Monospace))
+            );
+        }
+    }
+    //*******************************************************************
     fn command_key(&mut self, key: &Key, modifiers: &Modifiers) {
         if key == &Key::Enter {
             if self.input_text.len() == 0 {return;}
@@ -274,99 +390,11 @@ impl LoopianApp {
             if maxlen < self.input_locate {self.input_locate = maxlen;}
         }
     }
-    fn input_letter(&mut self, letters: Vec<&String>) {
-        if self.input_locate <= Self::CURSOR_MAX_LOCATE {
-            //println!("Letters:{:?}",letters);
-            letters.iter().for_each(|ltr| {
-                self.input_text.insert_str(self.input_locate,ltr);
-                self.input_locate+=1;
-            });
-        }
-    }
-    fn update_input_text(&mut self, ui: &mut egui::Ui) {
-        // Paint Letter Space
-        ui.painter().rect_filled(
-            Rect::from_min_max(pos2(Self::SPACE_LEFT,Self::SPACE3_UPPER),
-                               pos2(Self::SPACE_RIGHT,Self::SPACE3_LOWER)),
-            2.0,                              //  curve
-            Self::BACK_GRAY     //  color
-        );
-        // Paint cursor
-        let cursor = self.input_locate + Self::PROMPT_LETTERS;
-        let elapsed_time = self.start_time.elapsed().as_millis();
-        if elapsed_time%500 > 200 {
-            ui.painter().rect_filled(
-                Rect { min: Pos2 {x:Self::SPACE_LEFT + 10.0 + 9.5*(cursor as f32),
-                                y:Self::SPACE3_LOWER - Self::CURSOR_MERGIN},
-                       max: Pos2 {x:Self::SPACE_LEFT + 8.0 + 9.5*((cursor+1) as f32),
-                                y:Self::SPACE3_LOWER - Self::CURSOR_MERGIN + Self::CURSOR_THICKNESS},},
-                0.0,                              //  curve
-                Self::BACK_GRAY2,  //  color
-            );
-        }
-        // Draw Letters
-        let prompt_mergin: f32 = Self::LETTER_WIDTH*(Self::PROMPT_LETTERS as f32);
-        let prompt_txt: &str = self.cmd.get_part_txt();
-        ui.put( // Prompt
-            Rect { 
-                   min: Pos2 {x:Self::SPACE_LEFT + 5.0,
-                              y:Self::SPACE3_UPPER + 2.0},
-                   max: Pos2 {x:Self::SPACE_LEFT + 5.0 + prompt_mergin,
-                              y:Self::SPACE3_LOWER - 3.0},},
-            Label::new(RichText::new(prompt_txt)
-                .size(16.0).color(Self::MAZENTA).family(FontFamily::Monospace))
-        );
-        let ltrcnt = self.input_text.chars().count();
-        let input_mergin: f32 = prompt_mergin + 3.25;
-        for i in 0..ltrcnt {    // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
-            ui.put( // User Input
-                Rect { 
-                    min: Pos2 {x:Self::SPACE_LEFT + 5.0 + input_mergin + Self::LETTER_WIDTH*(i as f32),
-                               y:Self::SPACE3_UPPER + 2.0},
-                    max: Pos2 {x:Self::SPACE_LEFT + 5.0 + input_mergin + Self::LETTER_WIDTH*((i+1) as f32),
-                               y:Self::SPACE3_LOWER - 3.0},},
-                Label::new(RichText::new(&self.input_text[i..i+1])
-                    .size(16.0).color(Color32::WHITE).family(FontFamily::Monospace).text_style(TextStyle::Monospace))
-            );
-        }
-    }
-    fn gen_log(&mut self) {
-        // フォルダ作成
-        let path = Path::new("log");
-        if !path.is_dir() {
-            fs::create_dir_all(path).unwrap();
-        }
-        // 時間をファイル名に使う
-        let file = Local::now().format("%Y-%m-%d_%H-%M-%S.txt").to_string();
-        let path_str = "log/".to_string() + &file;
-        let path = Path::new(&path_str);
-        let display = path.display();
-        // log収集
-        let mut whole_txt: String = String::new();
-        for line in self.input_lines.iter() {
-            if line.0.len() > 0 {
-                whole_txt += &line.0.to_string();
-                whole_txt += &line.1.to_string();
-                whole_txt += "\n";
-            }
-        }
-        // ファイル作成
-        let mut file = match File::create(&path) {
-            Err(why) => panic!("couldn't create {}: {}", display, why),
-            Ok(file) => file,
-        };
-        // ファイル書き込み
-        match file.write_all(whole_txt.as_bytes()) {
-            Err(why) => panic!("couldn't write to {}: {}", display, why),
-            Ok(_) => println!("successfully wrote to {}", display),
-        }
-    }
-    fn app_end(&mut self) {
-        self.gen_log();
-        println!("That's all. Thank you!");
-    }
 }
 
+//*******************************************************************
+//     Egui/Eframe framework basic
+//*******************************************************************
 impl eframe::App for LoopianApp {
     fn on_close_event(&mut self) -> bool {
         self.app_end();
@@ -414,6 +442,9 @@ impl eframe::App for LoopianApp {
     }
 }
 
+//*******************************************************************
+//      Main
+//*******************************************************************
 fn main() {
     let options = eframe::NativeOptions {
         initial_window_size: Some((LoopianApp::WINDOW_X, LoopianApp::WINDOW_Y).into()),
