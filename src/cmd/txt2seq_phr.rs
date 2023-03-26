@@ -317,7 +317,7 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         let mut idx = 1;
         let mut fst_ltr = ntext.chars().nth(0).unwrap_or(' ');
         if fst_ltr == '3' || fst_ltr == '5' {
-            triplet = fst_ltr as i16;
+            triplet = fst_ltr.to_digit(10).unwrap_or(1) as i16;
             fst_ltr = ntext.chars().nth(1).unwrap_or(' ');
         }
         if fst_ltr == '\'' {
@@ -332,7 +332,7 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         else if fst_ltr == 'h' {base_dur = DEFAULT_TICK_FOR_QUARTER*2;}
         else {idx = 0;}
         if triplet != 0 {
-            base_dur = base_dur*2/triplet as i32;
+            base_dur = (base_dur*2)/triplet as i32;
             idx = 2;
         }
         ntext = ntext[idx..].to_string();
