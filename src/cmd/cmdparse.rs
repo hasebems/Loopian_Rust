@@ -352,8 +352,7 @@ impl LoopianCmd {
         }
     }
     fn send_phrase_to_elapse(&self, part: usize) {
-        let pdstk = self.gendt.get_pdstk(part);
-        let (mut pdt, mut ana): (Vec<i16>, Vec<i16>) = pdstk.get_final();
+        let (mut pdt, mut ana): (Vec<i16>, Vec<i16>) = self.gendt.get_pdstk(part).get_final();
         if pdt.len() > 1 {
             let mut msg: Vec<i16> = vec![MSG_PHR+part as i16];
             msg.append(&mut pdt);
@@ -375,8 +374,7 @@ impl LoopianCmd {
         }
     }
     fn send_composition_to_elapse(&self, part: usize) {
-        let cdstk = self.gendt.get_cdstk(part);
-        let mut cdt: Vec<i16> = cdstk.get_final();
+        let mut cdt: Vec<i16> = self.gendt.get_cdstk(part).get_final();
         if cdt.len() > 1 {
             let mut msg: Vec<i16> = vec![MSG_CMP+self.input_part as i16];
             msg.append(&mut cdt);

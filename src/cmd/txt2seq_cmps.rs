@@ -14,7 +14,7 @@ struct ChordTable {
     table: &'static [i16],
 }
 const CHORD_TABLE: [ChordTable; 39] = [
-    ChordTable {name:   "thru",     table:  &THRU,},
+    ChordTable {name:   "thru",     table:  &THRU,},    // noped
     ChordTable {name:   "O",        table:  &THRU,},
     ChordTable {name:   "_",        table:  &MAJOR,},
     ChordTable {name:   "_m",       table:  &MINOR,},
@@ -118,7 +118,7 @@ pub fn get_table_num(kind: &str) -> i16 {
 pub fn complement_composition(input_text: String) -> Option<[Vec<String>;2]> {
     // 1. {} を抜き出し、２つ分の brackets を Vec に入れて戻す
     if let Some((cd, ce)) = divide_brace(input_text){
-        println!("{:?}",cd);
+        //println!("{:?}",cd);
 
         // 2. 重複補填と ',' で分割
         let cmps_vec = fill_omitted_chord_data(cd);
@@ -158,6 +158,8 @@ pub fn divide_brace(input_text: String) -> Option<(String, String)> {
     else {None}
 }
 fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
+    if cmps.len() == 0 {return vec!["".to_string()];}
+
     //  省略を thru で補填
     const NO_CHORD: &str = "thru";
     let mut end_flag: bool = true;

@@ -123,10 +123,8 @@ Phrase 追加
 Composition 指定
 ----------------------------
 
-- {*chord*}{*musical expression*} : Composition の書式
+- {*chord*} : Composition の書式
     - *chord*: コードを小節ごとに / で区切って時系列で記述
-    - *musical expression*: 音楽表現
-        - {*musical expression*} は省略可能
     - {} : 全データ削除
 
 - 長さの指定方法
@@ -143,9 +141,9 @@ Composition 指定
 
 - コード記述方法
     - O : original phrase
-    - I : d=m=s（Iの和音)
+    - I : d=m=s (Iの和音)
         - ローマ数字: I, II, III, IV, V, VI, VII
-    - I# : di=mi=si (数字の後に # を付けると半音高いコードになる。b は半音）
+    - I# : di=mi=si (数字の後に # を付けると半音高いコードになる。b は半音)
     - V : s=t=r (Ⅴの和音)
     - VIm : l=d=m (m: minor)
     - IVM7 : f=l=d=m (M7: major7th)

@@ -67,7 +67,6 @@ fn divide_brackets(input_text: String) -> (String, String) {
     return (note_info[0].clone(), note_info[1].clone());
 }
 fn fill_omitted_note_data(nf: String) -> String {
-    // ,| 連続入力による、休符指示の補填
     if nf.len() == 0 {return "".to_string();}
 
     let mut fill: String = "".to_string();
@@ -77,13 +76,13 @@ fn fill_omitted_note_data(nf: String) -> String {
         if ltr == ',' {
             fill += &doremi;
             fill += ",";
-            doremi = "x".to_string();
+            doremi = "x".to_string();// ,| 連続入力による、休符指示の補填
             doremi_end_flag = true;
         }
         else if ltr == '|' || ltr == '/' {
             fill += &doremi;
             fill += "|,";
-            doremi = "x".to_string();
+            doremi = "x".to_string();// ,| 連続入力による、休符指示の補填
             doremi_end_flag = true;
         }
         else {

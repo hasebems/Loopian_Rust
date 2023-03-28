@@ -244,7 +244,6 @@ impl CmpsLoopManager {
             let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
             self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
 
-            //self.update_loop_for_gui(); // for 8indicator
             if self.whole_tick == 0 {
                 self.state_reserve = true; // 次小節冒頭で呼ばれるように
                 self.loop_cmps = None;
@@ -256,7 +255,15 @@ impl CmpsLoopManager {
                 pbp.keynote, msr, cmps.to_vec(), self.whole_tick);
             self.loop_cmps = Some(Rc::clone(&lp));
             estk.add_elapse(lp);
-        }        
+        }
+        else {
+            // 新しい Composition が空のとき
+            self.max_loop_msr = 0;
+            self.whole_tick = 0;
+            self.loop_cntr = 0;
+            self.state_reserve = true;
+            self.loop_cmps = None;
+        }
     }
 }
 //*******************************************************************

@@ -382,7 +382,8 @@ impl CompositionLoop {
         loop {
             if max_ev <= trace {break}
             let tick = cmps[trace][TICK] as i32;
-            if first_tick <= tick && tick < end_tick {
+            if first_tick <= tick && tick < end_tick && cmps[trace][CD_TABLE] != 0 {
+                // Chord Table が "thru" で無ければ
                 chord_map[((tick%tick_for_onemsr)/tick_for_onebeat) as usize] = true;
             }
             else if tick > end_tick {break;}
@@ -544,14 +545,17 @@ impl DamperLoop {
         self.play_counter = trace;
         next_tick
     }
-    fn make_events(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+    fn make_events_in_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         // 再生 msr/tick に達したらコールされる
         let (tick_for_onemsr, tick_for_onebeat) = estk.tg().get_beat_tick();
         let beat_num: usize = (tick_for_onemsr/tick_for_onebeat) as usize;
         let mut chord_map = vec![false; beat_num];
         for i in 0..MAX_USER_PART {
             if let Some(phr) = estk.get_phr(i) {
-                if phr.borrow().get_noped() {continue;}
+                if phr.borrow().get_noped() {
+                    chord_map = vec![false; beat_num];
+                    break;
+                }
             }
             else {continue;}
             if let Some(cmps) = estk.get_cmps(i) {
@@ -603,7 +607,7 @@ impl Elapse for DamperLoop {
         if self.destroy {return;}
 
         if self.next_tick_in_phrase == 0 {
-            self.make_events(crnt_, estk);
+            self.make_events_in_msr(crnt_, estk);
         }
 
         let elapsed_tick = self.calc_serial_tick(crnt_);
