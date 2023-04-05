@@ -96,10 +96,10 @@ impl LoopianCmd {
     }
     fn letter_f(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
-        if len == 4 && &input_text[0..4] == "fine" {
-            // fine
-            self.send_msg_to_elapse(vec![MSG_FINE]);
-            Some("Will be ended!".to_string())
+        if len == 7 && &input_text[0..7] == "fermata" {
+            // fermata
+            self.send_msg_to_elapse(vec![MSG_FERMATA]);
+            Some("Will be longer!".to_string())
         } else {
             Some("what?".to_string())
         }
@@ -146,7 +146,7 @@ impl LoopianCmd {
                 let rit_txt_raw = &input_text[4..];
                 let rit_txt = split_by('/', rit_txt_raw.to_string());
                 let nxt_msr_txt = &rit_txt[1];
-                if nxt_msr_txt == "fine" {aft_rit = MSG3_FINE;}
+                if nxt_msr_txt == "fermata" {aft_rit = MSG3_FERMATA;}
                 else {
                     match nxt_msr_txt.parse::<i16>() {
                         Ok(tmp) => aft_rit = tmp,

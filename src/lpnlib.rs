@@ -78,7 +78,7 @@ pub const DEFAULT_VEL: u8 = 100;
 pub const MSG_QUIT: i16     = -1;
 pub const MSG_START:i16     = -16;  //  1byte msg
 pub const MSG_STOP: i16     = -15;
-pub const MSG_FINE: i16     = -14;
+pub const MSG_FERMATA: i16  = -14;
 pub const MSG_PANIC: i16    = -13;
 pub const MSG_SYNC: i16     = -8;   //  2byte
 pub const MSG_RIT: i16      = -7;   //  3byte
@@ -94,7 +94,7 @@ pub const MSG2_NRM: i16     = 8;
 pub const MSG2_POCO: i16    = 9;
 pub const MSG2_MLT: i16     = 10;
 pub const MSG3_ATP: i16     = 9999;
-pub const MSG3_FINE: i16    = 10000;
+pub const MSG3_FERMATA: i16 = 10000;
 
 pub const MSG_PART_MASK:i16 = 100;    // X-(X % MSG_PART_MASK)
 pub const MSG_PHR: i16      = 1000;   // 1桁目にパート番号

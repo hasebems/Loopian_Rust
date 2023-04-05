@@ -33,8 +33,8 @@ pub struct ElapseStack {
     mdx: MidiTx,
     _start_time: Instant,
     crnt_time: Instant,
-    _count: u32,
     bpm_stock: i16,
+    fermata_stock: bool,
     beat_stock: Beat,
     during_play: bool,
     display_time: Instant,
@@ -61,8 +61,8 @@ impl ElapseStack {
                     mdx: c,
                     _start_time: Instant::now(),
                     crnt_time: Instant::now(),
-                    _count: 0,
                     bpm_stock: DEFAULT_BPM,
+                    fermata_stock: false,
                     beat_stock: Beat(4,4),
                     during_play: false,
                     display_time: Instant::now(),
@@ -100,15 +100,15 @@ impl ElapseStack {
                 if n[0] == MSG_QUIT {return true;}
                 else {self.parse_msg(n);}
             },
-            Err(TryRecvError::Disconnected) => return true,// Wrong!
-            Err(TryRecvError::Empty) => {},      // No event
+            Err(TryRecvError::Disconnected) => return true, // Wrong!
+            Err(TryRecvError::Empty) => {},                 // No event
         }
 
         // play 中でなければ return
         if !self.during_play {return false;}
 
         // 小節先頭ならば、beat/bpm のイベント調査
-        if self.tg.is_new_msr(self.crnt_time) { 
+        if self.tg.gen_tick(self.crnt_time) { 
             println!("<New measure! in stack_elapse>");
             // change beat event
             if self.beat_stock != self.tg.get_beat() {
@@ -118,7 +118,10 @@ impl ElapseStack {
             // change bpm event
             if self.bpm_stock != self.tg.get_bpm() {
                 self.tg.change_bpm_event(self.bpm_stock);
-                if self.bpm_stock == 0 {self.bpm_stock = DEFAULT_BPM;}
+            }
+            if self.fermata_stock {
+                self.fermata_stock = false;
+                self.tg.change_fermata_event();
             }
             // for GUI(8indicator)
             self.update_gui_at_msrtop();
@@ -184,7 +187,7 @@ impl ElapseStack {
     fn start(&mut self) {
         if self.during_play {return;}
         self.during_play = true;
-        self.tg.start(self.crnt_time, self.bpm_stock);
+        self.tg.start(self.crnt_time, self.bpm_stock, false);
         for elps in self.elapse_vec.iter() {
             elps.borrow_mut().start();
         }
@@ -200,7 +203,7 @@ impl ElapseStack {
             elps.borrow_mut().stop(self);
         }
     }
-    fn fine(&mut self, _msg: Vec<i16>) {self.bpm_stock = 0;}
+    fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}
     fn sync(&mut self, msg: Vec<i16>) {
         let mut sync_part = [false; MAX_USER_PART];
         if msg[1] < MAX_USER_PART as i16 {sync_part[msg[1] as usize] = true;}
@@ -220,16 +223,16 @@ impl ElapseStack {
         }
     }
     fn rit(&mut self, msg: Vec<i16>) {
-        let strength_set: [(i16, i32);3] = [(MSG2_POCO, 90),(MSG2_NRM, 75),(MSG2_MLT, 60)];
+        let strength_set: [(i16, i32);3] = [(MSG2_POCO, 95),(MSG2_NRM, 80),(MSG2_MLT, 75)];
         let strength = strength_set.into_iter()
             .find(|x| x.0==msg[1])
             .unwrap_or(strength_set[1]);
         if msg[2] == MSG3_ATP {self.bpm_stock = self.tg.get_bpm();}
-        else if msg[2] == MSG3_FINE {self.bpm_stock = 0;}
+        else if msg[2] == MSG3_FERMATA {self.fermata_stock = true;}
         else {
             self.bpm_stock = msg[2];
         }
-        self.tg.rit_evt(self.crnt_time, strength.1);
+        self.tg.start_rit(self.crnt_time, strength.1);
     }
     fn setting_cmnd(&mut self, msg: Vec<i16>) {
         if msg[1] == MSG2_BPM {
@@ -317,7 +320,7 @@ impl ElapseStack {
         if msg[0] == MSG_START {self.start();}
         else if msg[0] == MSG_PANIC {self.panic();}
         else if msg[0] == MSG_STOP {self.stop();}
-        else if msg[0] == MSG_FINE {self.fine(msg);}
+        else if msg[0] == MSG_FERMATA {self.fermata(msg);}
         else if msg[0] == MSG_SYNC {self.sync(msg);}
         else if msg[0] == MSG_RIT {self.rit(msg);}
         else if msg[0] == MSG_SET {self.setting_cmnd(msg);}
@@ -377,10 +380,6 @@ impl ElapseStack {
         // key
         let key_disp = "0_".to_string();
         self.send_msg_to_ui(&key_disp);
-        // bpm
-        let bpm_num = self.tg.get_bpm();
-        let bpm_disp = format!("1{}",bpm_num);
-        self.send_msg_to_ui(&bpm_disp);
         // beat
         let beat = self.tg.get_beat();
         let beat_disp = format!("2{}/{}",beat.0,beat.1);
@@ -389,6 +388,10 @@ impl ElapseStack {
     fn update_gui(&mut self) {
         if self.crnt_time-self.display_time > Duration::from_millis(80) {
             self.display_time = self.crnt_time;
+            // bpm
+            let bpm_num = self.tg.get_real_bpm();
+            let bpm_disp = format!("1{}",bpm_num);
+            self.send_msg_to_ui(&bpm_disp);
             // tick
             let (m,b,t,_c) = self.tg.get_tick();
             let tick_disp = format!("3{} : {} : {:>03}",m,b,t);
