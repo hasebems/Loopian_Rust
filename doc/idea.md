@@ -93,6 +93,10 @@ SeqDataStock *-- CompositionDataStock
 SeqDataStock *-- DamperDataStock
 ```
 
+### Document
+
+[html doc](../target/doc/loopian_rust/index.html)
+
 ### Elapse Object
 
 - 用語定義
@@ -242,7 +246,7 @@ SeqDataStock *-- DamperDataStock
             - 前のループの、次の拍に鳴るはずだった音を鳴らさせないため
         - 同じ時間のループ内にloopは回収される
 
-### 次にやること
+### 開発状況
 <!--
 - アルペジオで連続して同じ音が出ないようにする -> 同音回避型和音変換対応　10/7済
 - | を小節区切り対応　10/10済
@@ -255,6 +259,9 @@ SeqDataStock *-- DamperDataStock
 - 特定のタイミングだけ強くしたり、弱くする phrase 表記追加　1/4済
 - rit. の種類実装, rit. -> Fine 1/13済
 -->
+
+パス
+- cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
 
 バグ情報
 - 多分前からだが、和音入力の時、コード指定で同じ音を指してしまうのを回避したい。

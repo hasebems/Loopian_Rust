@@ -60,14 +60,15 @@ loopian は、Live Coding などで使うために開発している、テキス
 再生コントロール
 --------------
 
-- 'play' 'start' : シーケンス開始
-- 'fine' : 次の小節の頭の拍を再生して停止(stopで終わる)
-- 'stop' : 直ちにシーケンス終了
+- 'play','start' : シーケンス開始(1小節目から)
+- 'fermata' : 次の小節の頭の拍を再生してbeatを止める
+- 'resume' : beatが止まっているとき、次の小節から再生を再開する
+- 'stop','fine' : 直ちにシーケンス終了
 - 'rit.' : テンポをだんだん遅くして、次の小節の頭で元のテンポ
     - rit.poco   : rit.の遅さが弱い
     - rit.molto  : rit.の遅さが強い
-    - rit./fine  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
-    - rit.molto/fine
+    - rit./fermata  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
+    - rit.molto/fermata
     - rit./120   : rit.の次の小節をテンポ120で開始
 - 'sync' : 次の小節の頭で、ループ先頭に戻る
     - sync       : そのパート(Phrase,Composition)のみ
