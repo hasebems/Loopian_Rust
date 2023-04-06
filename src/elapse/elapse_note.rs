@@ -50,7 +50,7 @@ impl Note {
             deb_txt,
         }))
     }
-    fn note_on(&mut self, estk: &mut ElapseStack) {
+    fn note_on(&mut self, estk: &mut ElapseStack) -> bool {
         let num = self.note_num + self.keynote;
         if Note::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
             self.real_note = num;
@@ -58,8 +58,12 @@ impl Note {
             let vel = self.random_velocity(self.velocity);
             estk.midi_out(0x90, self.real_note, vel);
             println!("On: {},{} Trns: {}, ", num, vel, self.deb_txt);
+            true
         }
-        else {println!("NoteOn: => Note Limit Failed!!");}
+        else {
+            println!("NoteOn: => Note Limit Failed!!");
+            false
+        }
     }
     fn note_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;
@@ -88,28 +92,40 @@ impl Note {
     }
 }
 impl Elapse for Note {
-    fn id(&self) -> ElapseId {self.id}     // id を得る
-    fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
+    /// id を得る
+    fn id(&self) -> ElapseId {self.id}
+    /// priority を得る
+    fn prio(&self) -> u32 {self.priority}
+    /// 次に呼ばれる小節番号、Tick数を返す
+    fn next(&self) -> (i32, i32) {
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {}      // User による start/play 時にコールされる
-    fn stop(&mut self, estk: &mut ElapseStack) {        // User による stop 時にコールされる
+    /// User による start/play 時にコールされる
+    fn start(&mut self) {}
+    /// User による stop 時にコールされる
+    fn stop(&mut self, estk: &mut ElapseStack) {
         if self.noteon_started {
             self.note_off(estk);
         }
     }
-    fn fine(&mut self, estk: &mut ElapseStack) {        // User による fine があった次の小節先頭でコールされる
+    /// User による fine があった次の小節先頭でコールされる
+    fn fine(&mut self, estk: &mut ElapseStack) {
         if self.noteon_started {
             self.note_off(estk);
         }
     }
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+    /// 再生処理 msr/tick に達したらコールされる
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick) || (crnt_.msr > self.next_msr) {
             if !self.noteon_started {
-                self.noteon_started = true;
                 // midi note on
-                self.note_on(estk);
+                self.noteon_started = self.note_on(estk);
+                if !self.noteon_started {
+                    // illegal
+                    self.destroy = true;
+                    self.next_msr = FULL;
+                    return;
+                }
 
                 let tk = crnt_.tick_for_onemsr;
                 let mut msrcnt = 0;
@@ -170,23 +186,30 @@ impl Damper {
     }
 }
 impl Elapse for Damper {
-    fn id(&self) -> ElapseId {self.id}     // id を得る
-    fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
+    /// id を得る
+    fn id(&self) -> ElapseId {self.id}
+    /// priority を得る
+    fn prio(&self) -> u32 {self.priority}
+    /// 次に呼ばれる小節番号、Tick数を返す
+    fn next(&self) -> (i32, i32) {
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {}      // User による start/play 時にコールされる
-    fn stop(&mut self, estk: &mut ElapseStack) {        // User による stop 時にコールされる
+    /// User による start/play 時にコールされる
+    fn start(&mut self) {}
+    /// User による stop 時にコールされる
+    fn stop(&mut self, estk: &mut ElapseStack) {
         if self.damper_started {
             self.damper_off(estk);
         }
     }
-    fn fine(&mut self, estk: &mut ElapseStack) {        // User による fine があった次の小節先頭でコールされる
+    /// User による fine があった次の小節先頭でコールされる
+    fn fine(&mut self, estk: &mut ElapseStack) {
         if self.damper_started {
             self.damper_off(estk);
         }
     }
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
+    /// 再生 msr/tick に達したらコールされる
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick) || (crnt_.msr > self.next_msr) {
             if !self.damper_started {
                 self.damper_started = true;
