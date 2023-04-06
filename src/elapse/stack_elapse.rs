@@ -184,10 +184,10 @@ impl ElapseStack {
             _ => {},
         }
     }
-    fn start(&mut self) {
-        if self.during_play {return;}
+    fn start(&mut self, resume: bool) {
+        if self.during_play && !resume {return;}
         self.during_play = true;
-        self.tg.start(self.crnt_time, self.bpm_stock, false);
+        self.tg.start(self.crnt_time, self.bpm_stock, resume);
         for elps in self.elapse_vec.iter() {
             elps.borrow_mut().start();
         }
@@ -317,10 +317,11 @@ impl ElapseStack {
     }
     fn parse_msg(&mut self, msg: Vec<i16>) {
         println!("msg {:?} has reached to Elps.", msg[0]);
-        if msg[0] == MSG_START {self.start();}
+        if msg[0] == MSG_START {self.start(false);}
         else if msg[0] == MSG_PANIC {self.panic();}
         else if msg[0] == MSG_STOP {self.stop();}
         else if msg[0] == MSG_FERMATA {self.fermata(msg);}
+        else if msg[0] == MSG_RESUME {self.start(true);}
         else if msg[0] == MSG_SYNC {self.sync(msg);}
         else if msg[0] == MSG_RIT {self.rit(msg);}
         else if msg[0] == MSG_SET {self.setting_cmnd(msg);}

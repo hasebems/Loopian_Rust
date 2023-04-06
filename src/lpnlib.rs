@@ -63,9 +63,9 @@ pub const DEFAULT_VEL: u8 = 100;
 // MSG_QUIT     | --          |
 // MSG_START    | --          |
 // MSG_STOP     | --          |
-// MSG_FINE     | --          |
+// MSG_FERMATA  | --          |
 // MSG_SYNC     |( [0-3] / MSG2_LFT / MSG2_RGT / MSG2_ALL )|
-// MSG_RIT      |( MSG2_NRM / MSG2_POCO / MSG2_MLT )|( MSG3_ATP | MSG3_FINE |[tempo])
+// MSG_RIT      |( MSG2_NRM / MSG2_POCO / MSG2_MLT )|( MSG3_ATP | MSG3_FERMATA |[tempo])
 // MSG_SET      | MSG2_BPM    |[bpm]| --
 //              | MSG2_BEAT   |[numerator]|[denomirator]| --
 //              | MSG2_KEY    |[key]| --
@@ -80,6 +80,7 @@ pub const MSG_START:i16     = -16;  //  1byte msg
 pub const MSG_STOP: i16     = -15;
 pub const MSG_FERMATA: i16  = -14;
 pub const MSG_PANIC: i16    = -13;
+pub const MSG_RESUME: i16   = -12;
 pub const MSG_SYNC: i16     = -8;   //  2byte
 pub const MSG_RIT: i16      = -7;   //  3byte
 pub const MSG_SET: i16      = -2;   //  3/4byte

@@ -132,7 +132,10 @@ impl LoopianCmd {
     }
     fn letter_r(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
-        if len >= 6 && &input_text[0..6] == "right1" {
+        if len >= 6 && &input_text[0..6] == "resume" {
+            self.send_msg_to_elapse(vec![MSG_RESUME]);
+            Some("Resume.".to_string())
+        } else if len >= 6 && &input_text[0..6] == "right1" {
             self.input_part = RIGHT1;
             Some("Changed current part to right1.".to_string())
         } else if len >= 6 && &input_text[0..6] == "right2" {
