@@ -81,6 +81,9 @@ impl SeqDataStock {
         }
         else {false}
     }
+    pub fn change_input_mode(&mut self, input_mode: InputMode) {
+        self.input_mode = input_mode;
+    }
     fn recombine_phr_all(&mut self) {
         for pd in self.pdt.iter_mut() {
             pd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);

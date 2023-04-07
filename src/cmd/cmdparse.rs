@@ -285,7 +285,10 @@ impl LoopianCmd {
             }
         }
         else if cv[0] == "input" {
-            "what?".to_string()
+            if self.change_input_mode(&cv[1]) {
+                "Input mode has changed!".to_string()
+            }
+            else {"what?".to_string()}
         }
         else if cv[0] == "samenote" {
             "what?".to_string()
@@ -348,6 +351,17 @@ impl LoopianCmd {
                 true
             }
             else {false}
+        }
+        else {false}
+    }
+    fn change_input_mode(&mut self, imd: &str) -> bool {
+        if imd == "fixed" {
+            self.gendt.change_input_mode(InputMode::Fixed);
+            true
+        }
+        else if imd == "closer" {
+            self.gendt.change_input_mode(InputMode::Closer);
+            true
         }
         else {false}
     }
