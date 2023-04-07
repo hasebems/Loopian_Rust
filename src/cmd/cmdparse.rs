@@ -96,7 +96,11 @@ impl LoopianCmd {
     }
     fn letter_f(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
-        if len == 7 && &input_text[0..7] == "fermata" {
+        if len >= 4 && &input_text[0..4] == "fine" {
+            // stop
+            self.send_msg_to_elapse(vec![MSG_STOP]);
+            Some("Fine.".to_string())
+        } else if len == 7 && &input_text[0..7] == "fermata" {
             // fermata
             self.send_msg_to_elapse(vec![MSG_FERMATA]);
             Some("Will be longer!".to_string())
