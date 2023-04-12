@@ -127,8 +127,11 @@ fn expand_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
                     let number: i32 = one[j+1..].parse().unwrap_or(0);
                     if number > 1 {
                         for _ in 0..number-1 {
+                            // 繰り返しマーク(&RPT)の挿入
+                            new_vec.insert(i+1, "$RPT".to_string());
                             for h in (repeat_start..(i+1)).rev() {
-                                new_vec.insert(i+1, new_vec[h].clone());
+                                // 繰り返しの後ろから、同じindexに挿入していく
+                                new_vec.insert(i+2, new_vec[h].clone());
                             }
                         }
                     }
@@ -182,31 +185,43 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
     while read_ptr < max_read_ptr {
         let note_text = ntvec[read_ptr].clone();
 
-        let (notes, mes_end, bdur, dur_cnt, diff_vel, lnt)
-            = break_up_nt_dur_vel(note_text, base_note, last_nt, base_dur, imd);
+        let (notes, mes_end, dur_cnt, diff_vel, bdur, lnt)
+            = break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, imd);
         base_dur = bdur;
         last_nt = lnt;    // 次回の音程の上下判断のため
 
-        let next_msr_tick = tick_for_onemsr*msr;
-        if tick < next_msr_tick {
-            // duration
-            let note_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
-
-            // velocity
-            let mut last_vel: i32 = exp_vel + diff_vel;
-            if last_vel > 127 {last_vel = 127;}
-            else if last_vel < 1 {last_vel = 1;}
-
-            // add to recombined data
-            rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16, mes_top);
-            tick += note_dur;
+        if notes[0] >= MAX_NOTE_NUMBER || notes[0] < MIN_NOTE_NUMBER {
+            match notes[0] {
+                RPT_HEAD => {
+                    // 繰り返し指定があったことを示すイベント
+                    let nt_data: Vec<i16> = vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
+                    rcmb.push(nt_data);                    
+                }
+                _ => (),
+            }
         }
-        if mes_end {// 小節線があった場合
-            tick = next_msr_tick;
-            msr += 1;
-            mes_top = true;
+        else {
+            let next_msr_tick = tick_for_onemsr*msr;
+            if tick < next_msr_tick {
+                // duration
+                let note_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
+    
+                // velocity
+                let mut last_vel: i32 = exp_vel + diff_vel;
+                if last_vel > 127 {last_vel = 127;}
+                else if last_vel < 1 {last_vel = 1;}
+    
+                // add to recombined data
+                rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16, mes_top);
+                tick += note_dur;
+            }
+            if mes_end {// 小節線があった場合
+                tick = next_msr_tick;
+                msr += 1;
+                mes_top = true;
+            }
+            else {mes_top = false;}
         }
-        else {mes_top = false;}
         read_ptr += 1;  // out from repeat
     }
     (tick, rcmb)
@@ -224,8 +239,13 @@ fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     if vel == END_OF_DATA {vel=DEFAULT_VEL as i32;}
     (vel, retvec)
 }
-fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i32, imd: InputMode)
-    -> (Vec<u8>, bool, i32, i32, i32, i32) { //(notes, mes_end, base_dur, dur_cnt, diff_vel, last_nt)
+fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i32, imd: InputMode)
+    -> (Vec<u8>, bool, i32, i32, i32, i32)
+    //(notes, mes_end, dur_cnt, diff_vel, base_dur, last_nt)
+    {
+    if note_text.chars().nth(0).unwrap_or(' ') == '$' {
+        return (vec![RPT_HEAD], false, 0, 0, bdur, last_nt)
+    }
 
     //  小節線のチェック
     let mut mes_end = false;
@@ -261,7 +281,7 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, last_nt: i32, bdur: i3
         }
         notes.push(base_pitch as u8);
     }
-    (notes, mes_end, base_dur, dur_cnt, diff_vel, doremi)
+    (notes, mes_end, dur_cnt, diff_vel, base_dur, doremi)
 }
 fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
@@ -392,7 +412,7 @@ fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_
         else {
             let nt_data: Vec<i16> = 
                 vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
-                return_rcmb.push(nt_data);
+            return_rcmb.push(nt_data);
         }
     }
     return_rcmb

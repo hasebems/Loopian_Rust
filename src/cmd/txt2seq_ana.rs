@@ -37,10 +37,11 @@ fn put_exp_data(exps: &Vec<String>) -> Vec<Vec<i16>> {
 //      3rd     dur,
 //      4th     note num,      : highest
 //      5th     note count,    : at same tick
-//  note count が１より大きい時、note num には最も高い音程の音が記録される
+//          note count が１より大きい時、note num には最も高い音程の音が記録される
+//      6th     -1
 //
 // fn arp_translation()
-//  上記で準備した beat_analysis の後ろに、arpeggio 用の解析データを追加
+//  上記で準備した beat_analysis の後ろに、arpeggio 用の解析データを追記
 //      6th     0:com, $DIFF:arp,  PARA:para 
 //       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
 //       $DIFF: arp の場合の、前の音との音程の差分
@@ -52,20 +53,32 @@ fn analyse_beat(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
             None => 0,
         }
     };
+    let get_arp = |crnt_t:i16, repeat_head_t:i16| -> (i16,i16) {
+        // RPT_HEAD の直後には、ARP_COM を記録しておく
+        if crnt_t == repeat_head_t {(ARP_COM, NOTHING)}
+        else {(NOTHING,repeat_head_t)}
+    };
     let mut crnt_tick = NOTHING;
     let mut note_cnt = 0;
     let mut crnt_dur = 0;
+    let mut repeat_head_tick: i16 = NOTHING;
     let mut note_all: Vec<i16> = Vec::new();
     let mut beat_analysis: Vec<Vec<i16>> = Vec::new();
     for nt in gen.iter() {
-        if nt[TICK] == crnt_tick {
+        if nt[TYPE] != TYPE_NOTE {
+            if nt[TYPE] == TYPE_INFO && nt[INFOTP] == RPT_HEAD as i16 {
+                repeat_head_tick = nt[TICK];
+            }
+        }
+        else if nt[TICK] == crnt_tick {
             note_cnt += 1;
             note_all.push(nt[NOTE]);
         }
         else {
             if note_cnt > 0 {
-                beat_analysis.push(vec![TYPE_BEAT, crnt_tick, crnt_dur,
-                    get_hi(note_all.clone()), note_cnt]);
+                let (arp, rht) = get_arp(crnt_tick, repeat_head_tick);
+                repeat_head_tick = rht;
+                beat_analysis.push(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all.clone()), note_cnt, arp]);
             }
             crnt_tick = nt[TICK];
             crnt_dur = nt[DURATION];
@@ -74,8 +87,8 @@ fn analyse_beat(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
         }
     }
     if note_cnt > 0 {
-        beat_analysis.push(vec![TYPE_BEAT, crnt_tick, crnt_dur,
-            get_hi(note_all), note_cnt]);
+        let (arp, _rht) = get_arp(crnt_tick, repeat_head_tick);
+        beat_analysis.push(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all), note_cnt, arp]);
     }
     beat_analysis
 }
@@ -113,19 +126,20 @@ fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<
         // 条件の確認と、ana への情報追加
         //println!("ana_dbg: {},{},{},{}",crnt_cnt,crnt_note,last_cnt,last_note);
         if para {
-            ana.push(ARP_PARA);    // para
+            ana[ARP_DIFF] = ARP_PARA;    // para
         }
-        else if last_note <= MAX_NOTE_NUMBER &&
+        else if ana[ARP_DIFF] != ARP_COM && // RPT_HEAD のとき、ARP_COM になるので対象外
+          last_note <= MAX_NOTE_NUMBER &&
           last_cnt == 1 &&
           crnt_note <= MAX_NOTE_NUMBER &&
           crnt_cnt == 1 &&
           (last_note as i32)-(crnt_note as i32) < 10 &&
           (crnt_note as i32)-(last_note as i32) < 10 {
-            // 過去＆現在：単音、ノート適正、差が10半音以内
-            ana.push(crnt_note as i16-last_note as i16); // arp
+            // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
+            ana[ARP_DIFF] = (crnt_note-last_note) as i16; // arp
         }
         else {
-            ana.push(ARP_COM);    // com
+            ana[ARP_DIFF] = ARP_COM;    // com
         }
         last_cnt = crnt_cnt;
         last_note = crnt_note;
@@ -149,6 +163,7 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
     let base_bpm: i16 = (bpm - MIN_BPM)*EFFECT/100;
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in rcmb.iter_mut() {
+            if dt[TYPE] != TYPE_NOTE {continue;}
             let tm: f32 = (dt[TICK] as f32 % TICK_4_4)/TICK_1BT;
             let mut vel = dt[VELOCITY];
             if tm == 0.0 {
@@ -167,6 +182,7 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
     }
     else if tick_for_onemsr == TICK_3_4 as i32 {
         for dt in rcmb.iter_mut() {
+            if dt[TYPE] != TYPE_NOTE {continue;}
             let tm: f32 = (dt[TICK] as f32 % TICK_3_4)/TICK_1BT;
             let mut vel = dt[VELOCITY];
             if tm == 0.0 {
@@ -190,6 +206,7 @@ pub fn crispy_tick(rcmb_org: &Vec<Vec<i16>>, exp_others: &Vec<String>) -> Vec<Ve
     let mut stacc = false;
     if exp_others.iter().any(|x| x=="stacc") {stacc = true;}
     for dt in rcmb.iter_mut() {
+        if dt[TYPE] != TYPE_NOTE {continue;}
         let mut return_dur = dt[DURATION];
         if stacc {
             return_dur = return_dur/2;

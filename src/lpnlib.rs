@@ -52,11 +52,13 @@ pub const MAX_NOTE_NUMBER: u8 = 108;        // C8
 pub const MIN_NOTE_NUMBER: u8 = 21;         // A0
 pub const NO_NOTE: u8 = 255;
 pub const REST: u8 = 254;
+pub const RPT_HEAD: u8 = 253;               // Head of Repeat
 pub const NO_MIDI_VALUE: u8 = 128;
 pub const DEFAULT_VEL: u8 = 100;
 
 //*******************************************************************
 //          UI->ELPS Message
+//              []: meaning, < >: index, (a/b/c): selection
 //*******************************************************************
 //  MSG1st      |  2nd        |  3rd  |
 //------------------------------------
@@ -69,9 +71,10 @@ pub const DEFAULT_VEL: u8 = 100;
 // MSG_SET      | MSG2_BPM    |[bpm]| --
 //              | MSG2_BEAT   |[numerator]|[denomirator]| --
 //              | MSG2_KEY    |[key]| --
-// MSG_PHR+part |[whole_tick] |( TYPE | TICK | DURATION | NOTE | VELOCITY )*n
-// MSG_CMP+part |[whole_tick] |( TYPE | TICK | ROOT | TABLE )*n
-// MSG_ANA+part |             |( TYPE | TICK | DURATION | NOTE | NTCNT | ARP_TYPE )*n
+// MSG_PHR+part |[whole_tick] |(( TYPE_NOTE | <TICK> | <DURATION> | <NOTE> | <VELOCITY> ) or
+//                              ( TYPE_INFO | <TICK> | [info_type] | 0 | 0 ))*n
+// MSG_CMP+part |[whole_tick] |( <TYPE> | <TICK> | <CD_ROOT> | <CD_TABLE> )*n
+// MSG_ANA+part |             |( <TYPE> | <TICK> | <DURATION> | <NOTE> | [ntcnt] | [arp_type] )*n
 // MSG_PHR_X+part|--          |
 // MSG_CMP_X+part|--          |
 // MSG_ANA_X+part|--          |
@@ -116,16 +119,21 @@ pub const NOTE: usize       = 3;
 pub const VELOCITY: usize   = 4;
 pub const TYPE_NOTE_SIZE: usize = 5;
 
+//pub const TYPE: usize       = 0;
+pub const TYPE_INFO: i16    = 1020;    // タイミングを持つ演奏以外の情報 
+//pub const TICK: usize       = 1;
+pub const INFOTP: usize     = 2;
+
 // MSG_CMP
 //pub const TYPE: usize       = 0;
-pub const TYPE_CHORD: i16   = 1002;
+pub const TYPE_CHORD: i16   = 1002;     // for index TYPE
 //pub const TICK: usize       = 1;
 pub const CD_ROOT: usize    = 2;
 pub const CD_TABLE: usize   = 3;
 pub const TYPE_CHORD_SIZE: usize = 4;
 
 //pub const TYPE: usize       = 0;
-pub const TYPE_DAMPER: i16  = 1003;
+pub const TYPE_DAMPER: i16  = 1003;     // for index TYPE
 //pub const TICK: usize       = 1;
 //pub const DURATION: usize   = 2;
 pub const POS: usize        = 3;
@@ -133,7 +141,7 @@ pub const _TYPE_DAMPER_SIZE: usize = 4;
 
 // MSG_ANA
 //pub const TYPE: usize       = 0;
-pub const TYPE_BEAT: i16    = 1004;
+pub const TYPE_BEAT: i16    = 1004;     // for index TYPE
 //pub const TICK: usize       = 1;
 //pub const DURATION: usize   = 2;
 //pub const NOTE: usize       = 3;
@@ -144,7 +152,7 @@ pub const ARP_PARA: i16     = 10000;
 pub const TYPE_BEAT_SIZE: usize = 6;
 
 //pub const TYPE: usize       = 0;
-pub const TYPE_EXP: i16     = 1010;
+pub const TYPE_EXP: i16     = 1010;     // for index TYPE
 pub const EXP: usize        = 1;
 pub const NOPED: i16        = 10;       // Note情報より先に置く
 pub const _TYPE_EXP_SIZE: usize = 2;
