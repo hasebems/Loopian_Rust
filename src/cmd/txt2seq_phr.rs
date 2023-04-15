@@ -190,17 +190,11 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
         base_dur = bdur;
         last_nt = lnt;    // 次回の音程の上下判断のため
 
-        if notes[0] >= MAX_NOTE_NUMBER || notes[0] < MIN_NOTE_NUMBER {
-            match notes[0] {
-                RPT_HEAD => {
-                    // 繰り返し指定があったことを示すイベント
-                    let nt_data: Vec<i16> = vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
-                    rcmb.push(nt_data);                    
-                }
-                _ => (),
-            }
+        if notes[0] == RPT_HEAD {   // 繰り返し指定があったことを示すイベント
+            let nt_data: Vec<i16> = vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
+            rcmb.push(nt_data);
         }
-        else {
+        else {  // NO_NOTE 含む（タイの時に使用）
             let next_msr_tick = tick_for_onemsr*msr;
             if tick < next_msr_tick {
                 // duration
@@ -242,8 +236,9 @@ fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
 fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i32, imd: InputMode)
     -> (Vec<u8>, bool, i32, i32, i32, i32)
     //(notes, mes_end, dur_cnt, diff_vel, base_dur, last_nt)
-    {
-    if note_text.chars().nth(0).unwrap_or(' ') == '$' {
+{
+    let first_ltr = note_text.chars().nth(0).unwrap_or(' ');
+    if first_ltr == '$' { // complement時に入れた特殊マーク$
         return (vec![RPT_HEAD], false, 0, 0, bdur, last_nt)
     }
 
