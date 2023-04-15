@@ -54,7 +54,6 @@ pub const NO_NOTE: u8 = 255;
 pub const REST: u8 = 254;
 pub const RPT_HEAD: u8 = 253;               // Head of Repeat
 pub const NO_MIDI_VALUE: u8 = 128;
-pub const DEFAULT_VEL: u8 = 100;
 
 //*******************************************************************
 //          UI->ELPS Message

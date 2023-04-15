@@ -230,7 +230,7 @@ fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
             break;
         }
     }
-    if vel == END_OF_DATA {vel=DEFAULT_VEL as i32;}
+    if vel == END_OF_DATA {vel=convert_exp2vel("p");}
     (vel, retvec)
 }
 fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i32, imd: InputMode)
