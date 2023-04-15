@@ -160,11 +160,11 @@ pub fn divide_brace(input_text: String) -> Option<(String, String)> {
 fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
     if cmps.len() == 0 {return vec!["".to_string()];}
 
-    //  省略を thru で補填
-    const NO_CHORD: &str = "thru";
-    let mut end_flag: bool = true;
-    let mut fill: String = "".to_string();
-    let mut chord: String = NO_CHORD.to_string();
+    const NO_CHORD: &str = "thru";                  // 省略を thru で補填
+    let mut fill: String = "".to_string();          // cmps に補填して fill に入れる
+    let mut chord: String = NO_CHORD.to_string();   // 補填用の chord
+    let mut end_flag: bool = true;                  // 補填して区切られ済み
+
     for ltr in cmps.chars() {
         if ltr == ',' {
             fill += &chord;
@@ -178,19 +178,18 @@ fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
             chord = NO_CHORD.to_string();
             end_flag = true;
         }
+        else if end_flag {
+            chord = ltr.to_string(); // 最初の文字を chord に入れる
+            end_flag = false;
+        }
         else {
-            if end_flag {
-                chord = ltr.to_string();
-                end_flag = false;
-            }
-            else {
-                chord.push(ltr);
-            }
+            chord.push(ltr);    // 文字を chord に追加
         }
     }
     if chord != "" {
-        fill += &chord;
+        fill += &chord; // 最後の文字
     }
+    fill += "|";
 
     // space を削除
     fill.retain(|c| !c.is_whitespace());
@@ -207,58 +206,63 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
     if comp.len() == 0 {
         return (0, vec![vec![0]]);
     }
-    let btcnt = tick_for_onemsr/tick_for_onebeat;
     let max_read_ptr = comp.len();
     let mut read_ptr = 0;
+
+    let mut chord: String;
+    let mut dur: i32 = 0;
     let mut tick: i32 = 0;
     let mut msr: i32 = 1;
     let mut rcmb: Vec<Vec<i16>> = Vec::new();
-    let mut same_chord: String = "x".to_string();
+    let mut same_chord: String = "path".to_string();
 
     while read_ptr < max_read_ptr {
-        let (chord, dur) = divide_chord_info(comp[read_ptr].clone(), btcnt);
-        if tick < tick_for_onemsr*msr {
-            if same_chord != chord {
-                same_chord = chord.clone();
-                let (root, table) = convert_chord_to_num(chord);
-                rcmb.push(vec![TYPE_CHORD, tick as i16, root, table]);
-            }
+        // generate new tick
+        if dur != LAST {
             tick += tick_for_onebeat*dur;
         }
-        if dur == btcnt {
+        if dur == LAST || tick >= tick_for_onemsr*msr {
             tick = tick_for_onemsr*msr;
-            same_chord = "x".to_string();
             msr += 1;
         }
-        read_ptr += 1;  // out from repeat
+
+        (chord, dur) = divide_chord_and_dur(comp[read_ptr].clone());
+        if chord == "" {chord = same_chord.clone();}
+        else {same_chord = chord.clone();}
+
+        let (root, table) = convert_chord_to_num(&chord);
+        rcmb.push(vec![TYPE_CHORD, tick as i16, root, table]);
+
+        read_ptr += 1;
     }        
 
     tick = msr*tick_for_onemsr;
     (tick, rcmb)
 }
-fn divide_chord_info(mut chord: String, btcnt: i32) -> (String, i32) {
+fn divide_chord_and_dur(mut chord: String) -> (String, i32) {
     let mut dur: i32 = 1;
     let mut ltr_count = chord.len();
-    if ltr_count == 0 {
-        return (chord, dur);
+    assert!(ltr_count!=0);
+
+    let last_ltr = chord.chars().last().unwrap_or(' ');
+    let mut msr_line: bool = false;
+    if last_ltr == '|' {
+        chord = chord[0..ltr_count-1].to_string();
+        msr_line = true;
     }
 
     let mut last_ltr = chord.chars().last().unwrap_or(' ');
-    if last_ltr == '|' {
-        dur =  btcnt;
+    while ltr_count >= 1 && last_ltr == '.' {
+        dur += 1;
         chord = chord[0..ltr_count-1].to_string();
+        last_ltr = chord.chars().last().unwrap_or(' ');
+        ltr_count = chord.len();
     }
-    else {
-        while ltr_count >= 1 && last_ltr == '.' {
-            dur += 1;
-            chord = chord[0..ltr_count-1].to_string();
-            last_ltr = chord.chars().last().unwrap_or(' ');
-            ltr_count = chord.len();
-        }
-    }
+    if msr_line {dur=LAST;}
+
     (chord, dur)
 }
-fn convert_chord_to_num(chord: String) -> (i16, i16) {
+fn convert_chord_to_num(chord: &String) -> (i16, i16) {
     let mut root: i16 = 2;
     let mut kind: String = "".to_string();
     let mut root_str: String = "".to_string();
