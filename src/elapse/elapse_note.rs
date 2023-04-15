@@ -61,7 +61,7 @@ impl Note {
             true
         }
         else {
-            println!("NoteOn: => Note Limit Failed!!");
+            println!("NoteOn: => Note Limit Failed!! Num:{}",num);
             false
         }
     }

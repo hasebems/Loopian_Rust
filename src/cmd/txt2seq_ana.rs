@@ -136,7 +136,7 @@ fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<
           (last_note as i32)-(crnt_note as i32) < 10 &&
           (crnt_note as i32)-(last_note as i32) < 10 {
             // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
-            ana[ARP_DIFF] = (crnt_note-last_note) as i16; // arp
+            ana[ARP_DIFF] = crnt_note as i16 -last_note as i16; // arp
         }
         else {
             ana[ARP_DIFF] = ARP_COM;    // com
