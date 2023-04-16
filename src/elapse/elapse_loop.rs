@@ -119,7 +119,13 @@ impl PhraseLoop {
             }
             else {
                 let option = self.identify_trans_option(next_tick, ev[NOTE]);
-                if option == ARP_COM {
+                if option == ARP_PARA {
+                    let mut tgt_nt = ev[NOTE] + root;
+                    if root > 5 {tgt_nt -= 12;}
+                    trans_note = self.translate_note_com(root, ctbl, tgt_nt);
+                    deb_txt = "para:".to_string();
+                }
+                else if option == ARP_COM {
                     trans_note = self.translate_note_com(root, ctbl, ev[NOTE]);
                     deb_txt = "com:".to_string();
                 }
