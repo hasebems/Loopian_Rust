@@ -67,6 +67,26 @@
     - 今のところ無し
 -->
 
+### Translateアルゴリズム
+
+- Compositionで和音を指定し、再生時の音程を変化させることができる
+- Tranlateは以下の種類がある
+    - Chord: 和音の種類＋ルート指定
+    - Scale: key上のスケール指定
+    - Scale&Move: key上のスケール指定＋paraによる全体移動の指定
+    - その他: 種類の指定
+- Scale&Move は以下の仕様で動作する
+    1. 教会旋法（ion,dor,lyd,mix,aeo）による指定
+    1. para指定されていなくても、自動的にpara指定になる
+    1. 各旋法において、移動しない音階は以下の通りとなり、指定された音階との相対距離で全体の移動距離が決定される
+
+        |旋法|移動しない音階指定|
+        |-|-|
+        |ion|I|
+        |dor|II|
+        |lyd|IV|
+        |mix|V|
+        |aeo|VI|
 
 
 ## Design
@@ -82,19 +102,22 @@ Loop <|-- PhraseLoop
 Loop <|-- CompositionLoop
 Elapse <|-- Note
 Elapse <|-- Damper
-ElapseStack o-- Part
-ElapseStack o-- PhraseLoop
-ElapseStack o-- CompositionLoop
-ElapseStack o-- Note
-ElapseStack o-- Damper
+ElapseStack *-- Part
+ElapseStack o-- Elapse
 LoopianCmd *-- SeqDataStock
 SeqDataStock *-- PhraseDataStock
 SeqDataStock *-- CompositionDataStock
 SeqDataStock *-- DamperDataStock
+Part *-- PhrLoopManager
+Part *-- CmpsLoopManager
+Part o-- DamperLoopManager
+PhrLoopManager o-- PhraseLoop
+CmpsLoopManager o-- CompositionLoop
 ```
 
 ### Document
 
+cargo doc で自動生成
 [html doc](../target/doc/loopian_rust/index.html)
 
 ### Elapse Object

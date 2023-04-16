@@ -110,22 +110,23 @@ impl PhraseLoop {
         }
 
         if rt != NO_ROOT || ctbl != NO_TABLE  {
-            let option = self.identify_trans_option(next_tick, ev[NOTE]);
             let trans_note: i16;
-            let root = Self::ROOT2NTNUM[rt as usize];
-            if option == ARP_PARA {
-                let mut tgt_nt = ev[NOTE] + root;
-                if root > 5 {tgt_nt -= 12;}
-                trans_note = self.translate_note_com(root, ctbl, tgt_nt);
+            let root: i16 = Self::ROOT2NTNUM[rt as usize];
+            let (movable_scale, para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
+            if  movable_scale {
+                trans_note = self.translate_note_para(para_note, ctbl, ev[NOTE]);
                 deb_txt = "para:".to_string();
             }
-            else if option == ARP_COM {
-                trans_note = self.translate_note_com(root, ctbl, ev[NOTE]);
-                deb_txt = "com:".to_string();
-            }
-            else { // Arpeggio
-                trans_note = self.translate_note_arp(root, ctbl, option);
-                deb_txt = "arp:".to_string();
+            else {
+                let option = self.identify_trans_option(next_tick, ev[NOTE]);
+                if option == ARP_COM {
+                    trans_note = self.translate_note_com(root, ctbl, ev[NOTE]);
+                    deb_txt = "com:".to_string();
+                }
+                else { // Arpeggio
+                    trans_note = self.translate_note_arp(root, ctbl, option);
+                    deb_txt = "arp:".to_string();
+                }
             }
             self.last_note = trans_note;
             crnt_ev[NOTE] = trans_note;
@@ -152,6 +153,30 @@ impl PhraseLoop {
             }
         }
         ARP_COM
+    }
+    fn translate_note_para(&self, mut para_note: i16, ctbl: i16, ntev: i16) -> i16 {
+        if para_note >= 5 {para_note -= 12;}
+        let input_nt = ntev + para_note;
+        let input_doremi = input_nt%12;
+        let input_oct = input_nt/12;
+        let mut output_doremi = 0;
+        let mut former_nt = 0;
+        let tbl = txt2seq_cmps::get_table(ctbl as usize);
+        for ntx in tbl.iter() {
+            if *ntx == input_doremi {
+                output_doremi = input_doremi;
+                break;
+            }
+            else if *ntx > input_doremi {
+                if input_doremi - former_nt > *ntx - input_doremi { // 上に近ければ
+                    output_doremi = *ntx;
+                }
+                break;
+            }
+            former_nt = *ntx;
+            output_doremi = former_nt;
+        }
+        output_doremi + input_oct*12
     }
     fn translate_note_com(&self, root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
         let mut proper_nt = tgt_nt;
@@ -357,8 +382,8 @@ impl CompositionLoop {
             next_tick_in_cmps: 0,
 
             chord_name: "".to_string(),
-            root: 0,
-            translation_tbl: 0,
+            root: NO_ROOT,
+            translation_tbl: NO_TABLE,
             already_end: false,
 
             // for super's member

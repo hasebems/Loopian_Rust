@@ -40,11 +40,11 @@ const CHORD_TABLE: [ChordTable; 39] = [
     ChordTable {name:   "_m7-5",    table:  &MIN7M5,},
     ChordTable {name:   "_sus4",    table:  &SUS4,},
     ChordTable {name:   "_7sus4",   table:  &M7SUS4,},
-    ChordTable {name:   "_ion",     table:  &IONIAN,},
-    ChordTable {name:   "_dor",     table:  &DORIAN,},
-    ChordTable {name:   "_lyd",     table:  &LYDIAN,},
-    ChordTable {name:   "_mix",     table:  &MIXOLYDIAN,},
-    ChordTable {name:   "_aeo",     table:  &AEOLIAN,},
+    ChordTable {name:   "_ion",     table:  &IONIAN,},      // Iがそのまま
+    ChordTable {name:   "_dor",     table:  &IONIAN,},      // IIがそのまま
+    ChordTable {name:   "_lyd",     table:  &IONIAN,},      // IVがそのまま
+    ChordTable {name:   "_mix",     table:  &IONIAN,},      // Vがそのまま
+    ChordTable {name:   "_aeo",     table:  &IONIAN,},      // VIがそのまま
     ChordTable {name:   "diatonic",     table:  &IONIAN,},
 
     ChordTable {name:   "dorian",       table:  &DORIAN,},
@@ -110,6 +110,24 @@ pub fn get_table_num(kind: &str) -> i16 {
         }
     }
     table
+}
+pub fn is_movable_scale(tbl_num: i16, root: i16) -> (bool, i16) {
+    println!(">>>>>>> {},{}",tbl_num, root);
+    let lo_num = get_table_num("_ion");
+    let hi_num = get_table_num("_aeo");
+    if tbl_num >= lo_num && tbl_num <= hi_num {
+        let mut rt: i16 = match tbl_num - lo_num {
+            0 => 0,
+            1 => 2, 
+            2 => 5,
+            3 => 7,
+            4 => 9,
+            _ => 0,
+        };
+        rt = (root-rt)%12;
+        (true,rt)
+    }
+    else {(false,0)}
 }
 
 //*******************************************************************
