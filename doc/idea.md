@@ -67,27 +67,6 @@
     - 今のところ無し
 -->
 
-### Translateアルゴリズム
-
-- Compositionで和音を指定し、再生時の音程を変化させることができる
-- Tranlateは以下の種類がある
-    - Chord: 和音の種類＋ルート指定
-    - Scale: key上のスケール指定
-    - Scale&Move: key上のスケール指定＋paraによる全体移動の指定
-    - その他: 種類の指定
-- Scale&Move は以下の仕様で動作する
-    1. 教会旋法（ion,dor,lyd,mix,aeo）による指定
-    1. para指定されていなくても、自動的にpara指定になる
-    1. 各旋法において、移動しない音階は以下の通りとなり、指定された音階との相対距離で全体の移動距離が決定される
-
-        |旋法|移動しない音階指定|
-        |-|-|
-        |ion|I|
-        |dor|II|
-        |lyd|IV|
-        |mix|V|
-        |aeo|VI|
-
 
 ## Design
 ### Class diagram
@@ -217,7 +196,7 @@ cargo doc で自動生成
     - Note単位での再生情報を、時間単位に変換（和音指定を一つの単位に凝縮）
     - 音程差を検出し、Phrase の起伏を走査する
 
-### Note のノート変換(note translation)
+### ノート番号変換(note translation)
 
 - ノート変換は loop object 内で発生する
     - ノート変換後に Note Object を生成
@@ -226,6 +205,7 @@ cargo doc で自動生成
         - para
 - ノート変換アルゴリズム
     - parallel: root の音高に合わせて phrase を平行移動
+        - 教会旋法を指定した場合、別の仕様で平行移動する(Scale&Move)
     - common: table の最も近い値を選ぶ
         - フレーズの冒頭
         - 四分音符以上の長さの音の後の音
@@ -233,6 +213,24 @@ cargo doc で自動生成
     - arpeggio: アルペジオ判定のとき、前の音と同じにならない処理を加味して table の値を選ぶ
         - （詳細はパワポの資料参照）
         - 四分音符未満の長さに適用
+- 変換テーブルには以下の種類がある
+    - Chord: 和音の種類＋ルート指定
+    - Scale: key上のスケール指定
+    - Scale&Move: key上のスケール指定＋paraによる全体移動の指定
+    - その他: 種類の指定
+- Scale&Move は以下の仕様で動作する
+    1. 教会旋法（ion,dor,lyd,mix,aeo）による指定
+    1. para指定されていなくても、自動的にpara指定になる
+    1. 各旋法において、移動しない音階は以下の通りとなり、指定された音階との相対距離で全体の移動距離が決定される
+
+        |旋法|移動しない音階指定|
+        |-|-|
+        |ion|I|
+        |dor|II|
+        |lyd|IV|
+        |mix|V|
+        |aeo|VI|
+
 
 ### Filter
 
