@@ -114,8 +114,8 @@ impl PhraseLoop {
             let root: i16 = Self::ROOT2NTNUM[rt as usize];
             let (movable_scale, para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
             if  movable_scale {
-                trans_note = self.translate_note_para(para_note, ctbl, ev[NOTE]);
-                deb_txt = "para:".to_string();
+                trans_note = self.translate_note_parasc(para_note, ctbl, ev[NOTE]);
+                deb_txt = "para_sc:".to_string();
             }
             else {
                 let option = self.identify_trans_option(next_tick, ev[NOTE]);
@@ -160,7 +160,7 @@ impl PhraseLoop {
         }
         ARP_COM
     }
-    fn translate_note_para(&self, mut para_note: i16, ctbl: i16, ntev: i16) -> i16 {
+    fn translate_note_parasc(&self, mut para_note: i16, ctbl: i16, ntev: i16) -> i16 {
         if para_note >= 5 {para_note -= 12;}
         let input_nt = ntev + para_note;
         let input_doremi = input_nt%12;
@@ -174,7 +174,7 @@ impl PhraseLoop {
                 break;
             }
             else if *ntx > input_doremi {
-                if input_doremi - former_nt > *ntx - input_doremi { // 上に近ければ
+                if input_doremi - former_nt >= *ntx - input_doremi { // 上に近ければ
                     output_doremi = *ntx;
                 }
                 break;
