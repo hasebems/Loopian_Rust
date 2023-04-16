@@ -184,18 +184,18 @@ impl CmpsLoopManager {
             if crnt_.msr == 0 {
                 // 今回 start したとき
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
+                self.new_loop(crnt_, estk, pbp);
             }
             else if self.max_loop_msr == 0 {
                 // データのない状態で start し、今回初めて指定された時
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
+                self.new_loop(crnt_, estk, pbp);
             }
             else if self.max_loop_msr != 0 &&
               (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) == 0 {
                 // 前小節にて Loop Obj が終了した時
                 self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
+                self.new_loop(crnt_, estk, pbp);
             }
             else if self.max_loop_msr != 0 && pbp.sync_flag {
                 // sync コマンドによる強制リセット
@@ -203,7 +203,7 @@ impl CmpsLoopManager {
                 if let Some(phr) = self.loop_cmps.as_mut() {
                     phr.borrow_mut().set_destroy();
                 }
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
+                self.new_loop(crnt_, estk, pbp);
             }
             else {
                 // 現在の Loop Obj が終了していない時
@@ -213,7 +213,7 @@ impl CmpsLoopManager {
         else if self.max_loop_msr != 0 &&
           (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) == 0 {
             // 同じ Loop.Obj を生成する
-            self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
+            self.new_loop(crnt_, estk, pbp);
         }
     }
     pub fn rcv_msg(&mut self, msg: Vec<Vec<i16>>, whole_tick: i16) {
@@ -232,17 +232,16 @@ impl CmpsLoopManager {
         }
         else {String::from("")}
     }
-    fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32,
-        estk: &mut ElapseStack, pbp: PartBasicPrm) {
+    fn new_loop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成
         if let Some(cmps) = &self.new_data_stock {
             println!("New Composition Loop!");
-            self.first_msr_num = msr;    // 計測開始の更新
+            self.first_msr_num = crnt_.msr;    // 計測開始の更新
             self.whole_tick = self.whole_tick_stock as i32;
 
             // その時の beat 情報で、whole_tick を loop_measure に換算
-            let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
-            self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
+            let plus_one = if self.whole_tick%crnt_.tick_for_onemsr == 0 {0} else {1};
+            self.max_loop_msr = self.whole_tick/crnt_.tick_for_onemsr + plus_one;
 
             if self.whole_tick == 0 {
                 self.state_reserve = true; // 次小節冒頭で呼ばれるように
@@ -251,10 +250,11 @@ impl CmpsLoopManager {
             }
 
             self.loop_cntr += 1;
-            let lp = CompositionLoop::new(self.loop_cntr, pbp.part_num, 
-                pbp.keynote, msr, cmps.to_vec(), self.whole_tick);
-            self.loop_cmps = Some(Rc::clone(&lp));
-            estk.add_elapse(lp);
+            let cmplp = CompositionLoop::new(self.loop_cntr, pbp.part_num, 
+                pbp.keynote, crnt_.msr, cmps.to_vec(), self.whole_tick);
+            cmplp.borrow_mut().process(crnt_,estk); // 起動後、初回のみ process を呼び、同タイミングの再生を行う
+            self.loop_cmps = Some(Rc::clone(&cmplp));
+            estk.add_elapse(cmplp);
         }
         else {
             // 新しい Composition が空のとき
