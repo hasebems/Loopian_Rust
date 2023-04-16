@@ -33,33 +33,35 @@ pub struct LoopianApp {
 }
 
 impl LoopianApp {
-    const WINDOW_X: f32 = 900.0;        //  Main Window
-    const WINDOW_Y: f32 = 650.0;
+    const WINDOW_X: f32 = 1000.0;        //  Main Window
+    const WINDOW_Y: f32 = 860.0;
 
     const SPACE_LEFT: f32 = 30.0;
-    const SPACE_RIGHT: f32 = 870.0;
+    const SPACE_RIGHT: f32 = 970.0;
     const _LEFT_MERGIN: f32 = 5.0;
 
-    const BLOCK_LENGTH: f32 = 210.0;
-    const NEXT_BLOCK: f32 = 220.0;
+    const BLOCK_LENGTH: f32 = 195.0;
+    const NEXT_BLOCK: f32 = 235.0;      // (SPACE_RIGHT - SPACE_LEFT)/4
+    const SPACE1_LEFT_ADJ: f32 = 20.0;  // (NEXT_BLOCK - BLOCK_LENGTH)/2
 
-    const SPACE1_UPPER: f32 = 50.0;     // eight indicator
+    const SPACE1_UPPER: f32 = 80.0;     // eight indicator
     const SPACE1_HEIGHT: f32 = 30.0;
     const SPACE1_NEXT: f32 = 50.0;
-    const SPACE2_UPPER: f32 = 165.0;    // scroll text
-    const SPACE3_UPPER: f32 = 600.0;    // input text
-    const SPACE3_LOWER: f32 = 630.0;
+    const MAX_INDICATOR: usize = 8;
+
+    const SPACE2_UPPER: f32 = 200.0;    // scroll text
+    const MAX_SCROLL_LINES: usize = 20;
+    const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
+
+    const SPACE3_UPPER: f32 = 760.0;    // input text
+    const SPACE3_LOWER: f32 = 800.0;
+    const SPACE3_TXT_LEFT_MARGIN: f32 = 5.0;
+    const INPUTTXT_FONT_SIZE: f32 = 20.0;
+    const INPUTTXT_LETTER_WIDTH: f32 = 11.95;
 
     const FONT16_HEIGHT: f32 = 25.0;
     const FONT16_WIDTH: f32 = 9.56;
     const FONT16: f32 = 16.0;
-
-    const INPUTTXT_FONT_SIZE: f32 = 20.0;
-    const INPUTTXT_LETTER_WIDTH: f32 = 11.95;
-
-    const MAX_INDICATOR: usize = 8;
-    const MAX_SCROLL_LINES: usize = 16;
-    const TXT_LEFT_MARGIN: f32 = 5.0;
 
     const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
     const TEXT_GRAY: Color32 = Color32::from_rgb(0,0,0);
@@ -171,9 +173,14 @@ impl LoopianApp {
     //*******************************************************************
     fn update_title(ui: &mut egui::Ui) {
         ui.put(
-            Rect { min: Pos2 {x:395.0, y:2.0}, max: Pos2 {x:505.0, y:47.0},}, //  location
+            Rect {
+                min: Pos2 { x:Self::WINDOW_X/2.0 - 80.0,
+                            y:5.0},
+                max: Pos2 { x:Self::WINDOW_X/2.0 + 80.0, 
+                            y:Self::SPACE1_UPPER - 5.0},
+            }, //  location
             Label::new(RichText::new("Loopian")
-                .size(32.0)
+                .size(48.0)
                 .color(Color32::WHITE)
                 .family(FontFamily::Proportional)
             )
@@ -204,9 +211,9 @@ impl LoopianApp {
                 let raw: f32 = Self::NEXT_BLOCK*(i as f32);
                 let line: f32 = Self::SPACE1_NEXT*(j as f32);
                 ui.painter().rect_filled(
-                    Rect { min: Pos2 {x:Self::SPACE_LEFT + raw,
+                    Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE1_LEFT_ADJ + raw,
                                       y:Self::SPACE1_UPPER + line}, 
-                           max: Pos2 {x:Self::BLOCK_LENGTH + raw,
+                           max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE1_LEFT_ADJ + Self::BLOCK_LENGTH + raw,
                                       y:Self::SPACE1_UPPER + Self::SPACE1_HEIGHT + line},}, //  location
                     8.0,                //  curve
                     back_color,     //  color
@@ -216,10 +223,10 @@ impl LoopianApp {
                 for k in 0..ltrcnt {
                     ui.put(Rect {
                         min: Pos2 {
-                            x:Self::SPACE_LEFT + 10.0 + raw + Self::FONT16_WIDTH*(k as f32),
+                            x:Self::SPACE_LEFT + Self::SPACE1_LEFT_ADJ + 10.0 + raw + Self::FONT16_WIDTH*(k as f32),
                             y:Self::SPACE1_UPPER + 2.0 + line},
                         max: Pos2 {
-                            x:Self::SPACE_LEFT + 10.0 + raw + Self::FONT16_WIDTH*((k+1) as f32),
+                            x:Self::SPACE_LEFT + Self::SPACE1_LEFT_ADJ + 10.0 + raw + Self::FONT16_WIDTH*((k+1) as f32),
                             y:Self::SPACE1_UPPER + 27.0 + line},},
                         Label::new(RichText::new(&tx[k..k+1])
                             .size(Self::FONT16).color(Self::TEXT_GRAY)
@@ -254,9 +261,9 @@ impl LoopianApp {
             let txt_color = if i%2==0 {Color32::WHITE} else {Self::MAZENTA};
             ui.put(
                 Rect { 
-                    min: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN,
+                    min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE2_TXT_LEFT_MARGIN,
                                y:Self::SPACE2_UPPER + Self::FONT16_HEIGHT*(i as f32)}, 
-                    max: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN + Self::FONT16_WIDTH*(cnt as f32),
+                    max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE2_TXT_LEFT_MARGIN + Self::FONT16_WIDTH*(cnt as f32),
                                y:Self::SPACE2_UPPER + Self::FONT16_HEIGHT*((i+1) as f32)},},
                 Label::new(RichText::new(&past_text)
                     .size(Self::FONT16)
@@ -313,9 +320,9 @@ impl LoopianApp {
         // Prompt Text
         ui.put(
             Rect { 
-                   min: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN - 2.0,
+                   min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN - 2.0,
                               y:Self::SPACE3_UPPER + INPUTTXT_UPPER_MARGIN},
-                   max: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN + prompt_mergin,
+                   max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + prompt_mergin,
                               y:Self::SPACE3_LOWER + INPUTTXT_LOWER_MARGIN},},
             Label::new(RichText::new(prompt_txt)
                 .size(Self::INPUTTXT_FONT_SIZE)
@@ -328,10 +335,10 @@ impl LoopianApp {
         for i in 0..ltrcnt {    // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
             ui.put(
                 Rect { 
-                    min: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN + input_mergin + 
+                    min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + input_mergin + 
                                  Self::INPUTTXT_LETTER_WIDTH*(i as f32),
                                y:Self::SPACE3_UPPER + INPUTTXT_UPPER_MARGIN},
-                    max: Pos2 {x:Self::SPACE_LEFT + Self::TXT_LEFT_MARGIN + input_mergin + 
+                    max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + input_mergin + 
                         Self::INPUTTXT_LETTER_WIDTH*((i+1) as f32),
                                y:Self::SPACE3_LOWER + INPUTTXT_LOWER_MARGIN},},
                 Label::new(RichText::new(&self.input_text[i..i+1])
