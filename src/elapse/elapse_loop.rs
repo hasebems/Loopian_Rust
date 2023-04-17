@@ -160,7 +160,9 @@ impl PhraseLoop {
         }
         ARP_COM
     }
-    fn translate_note_parasc(&self, mut para_note: i16, ctbl: i16, ntev: i16) -> i16 {
+    fn translate_note_parasc(&self, mut para_note: i16, mut ctbl: i16, ntev: i16) -> i16 {
+        let mut take_upper: bool = false;
+        if ctbl > UPPER {ctbl -= UPPER; take_upper = true;}
         if para_note >= 5 {para_note -= 12;}
         let input_nt = ntev + para_note;
         let input_doremi = input_nt%12;
@@ -174,7 +176,8 @@ impl PhraseLoop {
                 break;
             }
             else if *ntx > input_doremi {
-                if input_doremi - former_nt >= *ntx - input_doremi { // 上に近ければ
+                if (input_doremi - former_nt > *ntx - input_doremi) ||
+                   ((input_doremi - former_nt == *ntx - input_doremi) && take_upper) { //等距離なら
                     output_doremi = *ntx;
                 }
                 break;
@@ -184,7 +187,9 @@ impl PhraseLoop {
         }
         output_doremi + input_oct*12
     }
-    fn translate_note_com(&self, root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
+    fn translate_note_com(&self, root: i16, mut ctbl: i16, tgt_nt: i16) -> i16 {
+        let mut take_upper: bool = false;
+        if ctbl > UPPER {ctbl -= UPPER; take_upper = true;}
         let mut proper_nt = tgt_nt;
         let tbl = txt2seq_cmps::get_table(ctbl as usize);
         let real_root = root + DEFAULT_NOTE_NUMBER as i16;
@@ -200,8 +205,8 @@ impl PhraseLoop {
                 break;
             }
             else if proper_nt > tgt_nt {
-                if tgt_nt - former_nt <= proper_nt - tgt_nt {
-                    //等距離なら下を取る
+                if (tgt_nt - former_nt < proper_nt - tgt_nt) ||
+                   ((tgt_nt - former_nt == proper_nt - tgt_nt) && !take_upper) { //等距離なら
                     proper_nt = former_nt;
                 }
                 found = true;
@@ -211,8 +216,8 @@ impl PhraseLoop {
         }
         if !found {
             proper_nt = tbl[0] + real_root + (oct_adjust+1)*12;
-            if tgt_nt - former_nt <= proper_nt - tgt_nt {
-                // 等距離なら下を取る
+            if (tgt_nt - former_nt < proper_nt - tgt_nt) ||
+               ((tgt_nt - former_nt == proper_nt - tgt_nt) && !take_upper) { // 等距離なら
                 proper_nt = former_nt
             }
         }

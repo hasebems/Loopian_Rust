@@ -40,11 +40,11 @@ const CHORD_TABLE: [ChordTable; 39] = [
     ChordTable {name:   "_m7-5",    table:  &MIN7M5,},
     ChordTable {name:   "_sus4",    table:  &SUS4,},
     ChordTable {name:   "_7sus4",   table:  &M7SUS4,},
-    ChordTable {name:   "_ion",     table:  &IONIAN,},      // Iがそのまま
-    ChordTable {name:   "_dor",     table:  &IONIAN,},      // IIがそのまま
-    ChordTable {name:   "_lyd",     table:  &IONIAN,},      // IVがそのまま
-    ChordTable {name:   "_mix",     table:  &IONIAN,},      // Vがそのまま
-    ChordTable {name:   "_aeo",     table:  &IONIAN,},      // VIがそのまま
+    ChordTable {name:   "_ion",     table:  &IONIAN,},      // parasc()使用、Iが音程そのまま
+    ChordTable {name:   "_dor",     table:  &IONIAN,},      // parasc()使用、IIが音程そのまま
+    ChordTable {name:   "_lyd",     table:  &IONIAN,},      // parasc()使用、IVが音程そのまま
+    ChordTable {name:   "_mix",     table:  &IONIAN,},      // parasc()使用、Vが音程そのまま
+    ChordTable {name:   "_aeo",     table:  &IONIAN,},      // parasc()使用、VIが音程そのまま
     ChordTable {name:   "diatonic",     table:  &IONIAN,},
 
     ChordTable {name:   "dorian",       table:  &DORIAN,},
@@ -93,11 +93,13 @@ pub fn get_root_name(idx_num: usize) -> &'static str {
     assert!(idx_num < ROOT_NAME.len());
     ROOT_NAME[idx_num]
 }
-pub fn get_table(idx_num: usize) -> &'static [i16] {
+pub fn get_table(mut idx_num: usize) -> &'static [i16] {
+    if idx_num > UPPER as usize {idx_num -= UPPER as usize;}
     assert!(idx_num < MAX_CHORD_TABLE);
     CHORD_TABLE[idx_num].table
 }
-pub fn get_table_name(idx_num: usize) -> &'static str {
+pub fn get_table_name(mut idx_num: usize) -> &'static str {
+    if idx_num > UPPER as usize {idx_num -= UPPER as usize;}
     assert!(idx_num < MAX_CHORD_TABLE);
     CHORD_TABLE[idx_num].name
 }
@@ -111,23 +113,21 @@ pub fn get_table_num(kind: &str) -> i16 {
     }
     table
 }
-pub fn is_movable_scale(tbl_num: i16, root: i16) -> (bool, i16) {
-    println!(">>>>>>> {},{}",tbl_num, root);
+pub fn is_movable_scale(mut idx_num: i16, root: i16) -> (bool, i16) {
+    if idx_num > UPPER {idx_num -= UPPER;}
+    const CHURCH_SCALE_BASE_NOTE: [i16; 5] = [0,2,5,7,9];
     let lo_num = get_table_num("_ion");
     let hi_num = get_table_num("_aeo");
-    if tbl_num >= lo_num && tbl_num <= hi_num {
-        let mut rt: i16 = match tbl_num - lo_num {
-            0 => 0,
-            1 => 2, 
-            2 => 5,
-            3 => 7,
-            4 => 9,
-            _ => 0,
-        };
+    let mut rt: i16 = 0;
+    if idx_num >= lo_num && idx_num <= hi_num {
+        let idx = (idx_num - lo_num) as usize;
+        if idx < CHURCH_SCALE_BASE_NOTE.len() {
+            rt = CHURCH_SCALE_BASE_NOTE[idx];
+        }
         rt = (root-rt)%12;
         (true,rt)
     }
-    else {(false,0)}
+    else {(false,rt)}
 }
 
 //*******************************************************************
@@ -248,7 +248,7 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
         if chord == "" {chord = same_chord.clone();}
         else {same_chord = chord.clone();}
 
-        let (root, table) = convert_chord_to_num(&chord);
+        let (root, table) = convert_chord_to_num(chord);
         rcmb.push(vec![TYPE_CHORD, tick as i16, root, table]);
 
         read_ptr += 1;
@@ -280,12 +280,20 @@ fn divide_chord_and_dur(mut chord: String) -> (String, i32) {
 
     (chord, dur)
 }
-fn convert_chord_to_num(chord: &String) -> (i16, i16) {
+fn convert_chord_to_num(mut chord: String) -> (i16, i16) {
     let mut root: i16 = 2;
     let mut kind: String = "".to_string();
     let mut root_str: String = "".to_string();
     let mut ltr_cnt = 0;
     let length = chord.len();
+    let last_ltr = chord.chars().last().unwrap_or(' ');
+    let mut take_upper = false;
+
+    //  check up/down translate
+    if last_ltr == '!' {
+        take_upper = true;
+        chord = chord[0..length-1].to_string();
+    }
 
     // extract root from chord
     loop {
@@ -325,7 +333,7 @@ fn convert_chord_to_num(chord: &String) -> (i16, i16) {
 
     //  search chord type from Table
     //println!("*<Chord: {}, {}, {}>*", root, root_str, kind);
-    let table = get_table_num(&kind);
+    let table = get_table_num(&kind) + if take_upper {UPPER} else {0};
 
     (root, table)
 }

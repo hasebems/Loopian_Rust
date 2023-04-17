@@ -130,6 +130,7 @@ pub const TYPE_CHORD: i16   = 1002;     // for index TYPE
 pub const CD_ROOT: usize    = 2;
 pub const CD_TABLE: usize   = 3;
 pub const TYPE_CHORD_SIZE: usize = 4;
+pub const UPPER: i16        = 1000;
 
 //pub const TYPE: usize       = 0;
 pub const TYPE_DAMPER: i16  = 1003;     // for index TYPE
