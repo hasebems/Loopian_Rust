@@ -1,7 +1,7 @@
 # Loopian developping memo
 
 ## Outline
-### what's this
+### 1.what's this
 
 - text command による loop sequencer
 - 音色はピアノを想定し、ミニマルな音楽を指向する
@@ -17,48 +17,49 @@
     - Loopian::tg
     - Loopian::txt
 
-### what you can do
+### 2.what you can do
 
-- Live Coding
-- A part of Musical Performance
-- Loop Sequencer
-- Musical Education
-- Dynamic Easy Listening
-- Interactive Art(with Device)
+1. Live Coding
+1. A part of Musical Performance
+1. Loop Sequencer
+1. Musical Education
+1. Dynamic Easy Listening
+1. Interactive Art(with Device)
 
 ## Spec.
-### piano 専用 Realtime Loop Generator (Text Sequencer)
+### 1.Part
 
 - Input Part は4つ
     - L(L1), L2, R(R1), R2
 - Pedal 用隠しパートが一つ
 - MIDI ch. は一つ
 
-### 出力 MIDI
+### 2.出力 MIDI
 
 - Note On/Off
 - Sustain CC#64
-- Reverb Depth CC#91
-- Volume CC#7
+- Reverb Depth CC#91(未実装)
+- Volume CC#7(未実装)
 
-### コマンド入力
+### 3.Command入力
 
-- コマンドには以下の4種類がある
-    - Phrase Command（ [] で入力）
-    - Composition Command（{}で入力）
-    - Realtime Control Command (play/stop/fine/rit./left/right/sync)
-    - Setting Command (set [bpm/beat/oct/key/input/samenote])
+- Command には以下の4種類がある
+    1. Phrase Command（ [] で入力）
+    1. Composition Command（{}で入力）
+    1. Realtime Control Command (play/stop/fine/rit./left/right/sync)
+    1. Setting Command (set [bpm/beat/oct/key/input/samenote])
 - Phrase Command の考え方
-    - User は、ノート番号と音価、簡易な表情指示(Music Expression)を入力
-    - exp.engine は、簡易な表情指示からベロシティ、微妙なタイミング、dulation、ペダル情報を自動生成
-- Composition Command と、自動和音変換
-    - Composition で指定された和音に従って、Phrase 入力の音は自動変換される
-    - Composition も、各パートごとに設定する
-    - 全体に同じ Composition を適用したい場合、全パート入力モードにする
-- 各パートの Phrase も、Composition も、それぞれ独自の周期で loop する
+    - ノート番号と音価を指示する
+    - また、簡易な表情指示(Music Expression)をさらに [] を追加して記述できる
+    - exp.engine により、簡易な表情指示からベロシティ、微妙なタイミング、dulation、ペダル情報を自動生成
+- Composition Command の考え方
+    - Composition では和音・スケールを指示する
+    - 指定された和音に従って、Phrase 入力の音は自動変換される
+    - Composition も、各パートごとに設定できる
+- Phrase も、Composition も、それぞれ独自の周期で loop する
 - Phrase の Music Expression 一覧
     - ff,f,mf,mp,p,pp,ppp  （ベロシティ指定）
-    - ped, noped （ペダル奏法）
+    - ped, noped, halfped（未実装） （ペダル奏法）
     - para  （コード変換の指定）
     - artic: stacc,legato,marc （dulation指定）
     - p->f など音量の漸次的変化（未実装）
@@ -69,7 +70,7 @@
 
 
 ## Design
-### Class diagram
+### 1.Class diagram
 
 ```mermaid
 classDiagram
@@ -94,12 +95,12 @@ PhrLoopManager o-- PhraseLoop
 CmpsLoopManager o-- CompositionLoop
 ```
 
-### Document
+### 2.Document
 
 cargo doc で自動生成
-[html doc](../target/doc/loopian_rust/index.html)
+../target/doc/loopian_rust/index.html
 
-### Elapse Object
+### 3.Elapse Object
 
 - 用語定義
     - Elapse Object: 時間経過をもつオブジェクト
@@ -124,21 +125,21 @@ cargo doc で自動生成
         - 末端の Elapse Object から全体の Object にメッセージを送る機能追加 register_sp_cmnd() 
 
 
-### Text Parse処理の考え方
+### 4.Text Parse処理の考え方
 
 - 入力文字一覧
     - 全体区切り: [],{},(),@
-    - 複数音符を跨ぐ指定子: <,>,/,|,*,:
+    - 複数音符を跨ぐ、あるいは区切る指定子: <,>,/,|,*,:
     - 一音符内の指定子: (1:-,+)(2:',",q,h,3,5,`)(3:d,r,m,f,s,l,t,x)(3':i,a)(4:^,%)(5:.,~,o)
         - 3と3'を合わせたものは =,_ で繋いで同時発音を表現できる
         - 1は、2の後に置いても機能する
-    - まだ使われていない文字: w,e,r,y,u,p,a,j,k,z,c,v,b,n,!,?,;,\,&,$,
     - 一和音内の指定子: (1:@[n]:)(2:I,V)(3:#/b)(4:[table name])(5:!)(6:.)
         - !は、para/common時に、上下の音と等距離なら上側を採用することを表す
-    - 同じ意味に使う文字 : 小節(/,|)、同時(=,_)、タイ(.,~)
+- まだ使われていない文字: w,e,r,y,u,p,a,j,k,z,c,v,b,n,!,?,;,\,&,$,
+- 同じ意味に使う文字 : 小節(/,|)、同時(=,_)、タイ(.,~)
 
 
-### Phrase 入力から再生までの変換の流れ
+### 5.Phrase 入力から再生までの変換の流れ
 
 |変換順|name|名前|説明|変更タイミング|他原因|
 |-|-|-|-|-|-|
@@ -164,7 +165,7 @@ cargo doc で自動生成
     - コード情報があれば、ペダルを踏む
     - コード情報がない、あるいは noped 指定の場合はペダルを踏まない
 
-### Composition 入力から再生までの変換の流れ
+### 6.Composition 入力から再生までの変換の流れ
 
 |変換順|name|名前|説明|変更タイミング|他原因|
 |-|-|-|-|-|-|
@@ -173,7 +174,7 @@ cargo doc で自動生成
 |3|recombined|再構成|SMF的な、tick/chord をセットにしたデータ|入力時|beat|
 
 
-### Rust 版の Message の流れ
+### 7.Rust 版の Message の流れ
 
 - thread は以下の二つ
     - main() 内の eframe::run_native() : Main thread
@@ -183,7 +184,7 @@ cargo doc で自動生成
     - mspc::channel は複数のスレッドから、一つのスレッドにメッセージを送れるが、今回は１対１の関係とする
     - LoopianApp::new() で二つの mspc::channel() がつくられ、各スレッドが受信するよう設定される
 
-### Note 処理
+### 8.Note 処理
 
 ![note](note.png)
 
@@ -191,13 +192,13 @@ cargo doc で自動生成
 - key は、再生時に足しこむ
 
 
-### Analysed でやっていること
+### 9.Analysed でやっていること
 
 - 時間単位での Phrase 情報の整列
     - Note単位での再生情報を、時間単位に変換（和音指定を一つの単位に凝縮）
     - 音程差を検出し、Phrase の起伏を走査する
 
-### ノート番号変換(note translation)
+### 10.ノート番号変換(note translation)
 
 - ノート変換は loop object 内で発生する
     - ノート変換後に Note Object を生成
@@ -234,7 +235,7 @@ cargo doc で自動生成
         |aeo|VI|
 
 
-### Filter
+### 11.Filter
 
 - [raw] を指定しない限り、勝手に exp.engine によるフィルタがかけられる
 - Humanization Filter(5.humanizedで適用)
@@ -252,7 +253,7 @@ cargo doc で自動生成
         - フレーズの平均音高より離れていると、velocity は強くなる
 
 
-### Beat/Tempo 生成の考え方
+### 12.Beat/Tempo 生成の考え方
 
 - ElapseStack Class 内で動作する TickGenerator Class にてテンポ生成を行う
     1. Tempo 変化時の絶対時間とその時点の tick を記録
@@ -273,7 +274,7 @@ cargo doc で自動生成
             - 前のループの、次の拍に鳴るはずだった音を鳴らさせないため
         - 同じ時間のループ内にloopは回収される
 
-### 開発状況
+## 開発状況
 <!--
 - アルペジオで連続して同じ音が出ないようにする -> 同音回避型和音変換対応　10/7済
 - | を小節区切り対応　10/10済
@@ -364,7 +365,7 @@ Usages:
     - Solmization practice in music education with movable-do
 
 Loopian github:
-https://github.com/hasebems/Loopian
+https://github.com/hasebems/Loopian_rust
 
 Loopian は、テキストで音符を指定するリアルタイムループシーケンサです。
 主に Piano 音色で演奏されることを前提に開発しています。
