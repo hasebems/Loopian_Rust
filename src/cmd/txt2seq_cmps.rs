@@ -13,7 +13,7 @@ struct ChordTable {
     name: &'static str,
     table: &'static [i16],
 }
-const CHORD_TABLE: [ChordTable; 39] = [
+const CHORD_TABLE: [ChordTable; 40] = [
     ChordTable {name:   "thru",     table:  &THRU,},    // noped
     ChordTable {name:   "O",        table:  &THRU,},
     ChordTable {name:   "_",        table:  &MAJOR,},
@@ -40,13 +40,14 @@ const CHORD_TABLE: [ChordTable; 39] = [
     ChordTable {name:   "_m7-5",    table:  &MIN7M5,},
     ChordTable {name:   "_sus4",    table:  &SUS4,},
     ChordTable {name:   "_7sus4",   table:  &M7SUS4,},
+    ChordTable {name:   "_chr",     table:  &THRU,},        // parasc()使用、Iが音程そのまま
     ChordTable {name:   "_ion",     table:  &IONIAN,},      // parasc()使用、Iが音程そのまま
     ChordTable {name:   "_dor",     table:  &IONIAN,},      // parasc()使用、IIが音程そのまま
     ChordTable {name:   "_lyd",     table:  &IONIAN,},      // parasc()使用、IVが音程そのまま
     ChordTable {name:   "_mix",     table:  &IONIAN,},      // parasc()使用、Vが音程そのまま
     ChordTable {name:   "_aeo",     table:  &IONIAN,},      // parasc()使用、VIが音程そのまま
-    ChordTable {name:   "diatonic",     table:  &IONIAN,},
 
+    ChordTable {name:   "diatonic",     table:  &IONIAN,},
     ChordTable {name:   "dorian",       table:  &DORIAN,},
     ChordTable {name:   "lydian",       table:  &LYDIAN,},
     ChordTable {name:   "mixolydian",   table:  &MIXOLYDIAN,},
@@ -115,8 +116,8 @@ pub fn get_table_num(kind: &str) -> i16 {
 }
 pub fn is_movable_scale(mut idx_num: i16, root: i16) -> (bool, i16) {
     if idx_num > UPPER {idx_num -= UPPER;}
-    const CHURCH_SCALE_BASE_NOTE: [i16; 5] = [0,2,5,7,9];
-    let lo_num = get_table_num("_ion");
+    const CHURCH_SCALE_BASE_NOTE: [i16; 6] = [0,0,2,5,7,9];//parasc()使用table分
+    let lo_num = get_table_num("_chr");
     let hi_num = get_table_num("_aeo");
     let mut rt: i16 = 0;
     if idx_num >= lo_num && idx_num <= hi_num {
