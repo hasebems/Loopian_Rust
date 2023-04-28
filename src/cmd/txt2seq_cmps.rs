@@ -94,10 +94,14 @@ pub fn get_root_name(idx_num: usize) -> &'static str {
     assert!(idx_num < ROOT_NAME.len());
     ROOT_NAME[idx_num]
 }
-pub fn get_table(mut idx_num: usize) -> &'static [i16] {
-    if idx_num > UPPER as usize {idx_num -= UPPER as usize;}
+pub fn get_table(mut idx_num: usize) -> (&'static [i16], bool) {
+    let mut upper = false;
+    if idx_num > UPPER as usize {
+        idx_num -= UPPER as usize;
+        upper = true;
+    }
     assert!(idx_num < MAX_CHORD_TABLE);
-    CHORD_TABLE[idx_num].table
+    (CHORD_TABLE[idx_num].table, upper)
 }
 pub fn get_table_name(mut idx_num: usize) -> &'static str {
     if idx_num > UPPER as usize {idx_num -= UPPER as usize;}

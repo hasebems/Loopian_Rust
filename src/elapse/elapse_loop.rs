@@ -160,16 +160,14 @@ impl PhraseLoop {
         }
         ARP_COM
     }
-    fn translate_note_parasc(&self, mut para_note: i16, mut ctbl: i16, ntev: i16) -> i16 {
-        let mut take_upper: bool = false;
-        if ctbl > UPPER {ctbl -= UPPER; take_upper = true;}
+    fn translate_note_parasc(&self, mut para_note: i16, ctbl: i16, ntev: i16) -> i16 {
         if para_note >= 5 {para_note -= 12;}
         let input_nt = ntev + para_note;
         let input_doremi = input_nt%12;
         let input_oct = input_nt/12;
         let mut output_doremi = 0;
         let mut former_nt = 0;
-        let tbl = txt2seq_cmps::get_table(ctbl as usize);
+        let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
         for ntx in tbl.iter() {
             if *ntx == input_doremi {
                 output_doremi = input_doremi;
@@ -187,11 +185,9 @@ impl PhraseLoop {
         }
         output_doremi + input_oct*12
     }
-    fn translate_note_com(&self, root: i16, mut ctbl: i16, tgt_nt: i16) -> i16 {
-        let mut take_upper: bool = false;
-        if ctbl > UPPER {ctbl -= UPPER; take_upper = true;}
+    fn translate_note_com(&self, root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
         let mut proper_nt = tgt_nt;
-        let tbl = txt2seq_cmps::get_table(ctbl as usize);
+        let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
         let real_root = root + DEFAULT_NOTE_NUMBER as i16;
         let mut former_nt: i16 = 0;
         let mut found = false;
@@ -224,9 +220,11 @@ impl PhraseLoop {
         proper_nt
     }
     fn translate_note_arp(&self, root: i16, ctbl: i16, nt_diff: i16) -> i16 {
+        // nt_diff: User Input による、前に発音したノートとの差分
+        // arp_nt: 前回発音したノートに nt_diff を足したもの
         let arp_nt = self.last_note as i16 + nt_diff;
         let mut nty = DEFAULT_NOTE_NUMBER as i16;
-        let tbl = txt2seq_cmps::get_table(ctbl as usize);
+        let (tbl, _take_upper) = txt2seq_cmps::get_table(ctbl as usize);
         if nt_diff == 0 {
             arp_nt
         }
