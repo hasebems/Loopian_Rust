@@ -135,7 +135,7 @@ cargo doc で自動生成
         - 1は、2の後に置いても機能する
     - ーノート変換子内の指定子: (1:@[n]:)(2:I,V)(3:#/b)(4:[table name])(5:!)(6:.)
         - !は、para/common時に、上下の音と等距離なら上側を採用することを表す
-- まだ使われていない文字: w,e,r,y,u,p,a,j,k,z,c,v,b,n,!,?,;,\,&,$,
+- まだ使われていない文字: w,e,r,y,u,p,a,j,k,z,c,v,b,n,?,;,\,&,$,
 - 同じ意味に使う文字 : 小節(/,|)、同時(=,_)、タイ(.,~)
 
 
@@ -230,6 +230,7 @@ cargo doc で自動生成
 
         |旋法|移動しない音階指定|
         |-|-|
+        |chr|I|
         |ion|I|
         |dor|II|
         |lyd|IV|
@@ -278,6 +279,30 @@ cargo doc で自動生成
 
 ## 開発状況
 <!--
+## Rust 化の順番
+- とりあえずテキスト入力で音が鳴る(2023/2/23)
+- humanized 対応 2/25済
+- Composition のテキスト変換 2/28済
+- Part内のPhrase,Composition合体 3/3済
+- Chordのcmdからloopまでの伝達 3/4済
+- Chord情報の再生 3/4済
+- octave/key切替 3/5済
+- Analyzed対応 3/10済
+- Chord情報による音程変換 3/12済
+- Part切替 3/12済
+- Beat切替 3/13済
+- pedal 対応 3/18済
+- 8 indicator 全表示 3/19済
+- Rondamized 対応 3/21済
+- Log File対応 3/21済
+- fine 対応 3/25 済
+- rit 対応 3/25 済
+- sync 対応 3/25 済
+- input mode/same note対応 3/25 済
+- panic 対応 3/25 済
+-->
+
+<!--
 - アルペジオで連続して同じ音が出ないようにする -> 同音回避型和音変換対応　10/7済
 - | を小節区切り対応　10/10済
 - 左手用に、平行移動型の和音変換、Music Expressionへの追加(trans:para/parallel)　10/12済
@@ -290,8 +315,9 @@ cargo doc で自動生成
 - rit. の種類実装, rit. -> Fine 1/13済
 - 入力時に、Note以外のイベントをデータ内に仕込める仕組みを作る： TYPE_INFO 4/12済
 - <>*n の繰り返しのとき、繰り返しの頭のChord Translation Logic を Common にする　4/12済
-
 -->
+
+- アルペジオ時の同音回避型変換のアルゴリズムを変更 5/1済
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -318,29 +344,6 @@ cargo doc で自動生成
 - さらなる humanized アルゴリズムの追加
 - Load/Save機能、Auto Load/Play機能
 
-<!--
-## Rust 化の順番
-- とりあえずテキスト入力で音が鳴る(2023/2/23)
-- humanized 対応 2/25済
-- Composition のテキスト変換 2/28済
-- Part内のPhrase,Composition合体 3/3済
-- Chordのcmdからloopまでの伝達 3/4済
-- Chord情報の再生 3/4済
-- octave/key切替 3/5済
-- Analyzed対応 3/10済
-- Chord情報による音程変換 3/12済
-- Part切替 3/12済
-- Beat切替 3/13済
-- pedal 対応 3/18済
-- 8 indicator 全表示 3/19済
-- Rondamized 対応 3/21済
-- Log File対応 3/21済
-- fine 対応 3/25 済
-- rit 対応 3/25 済
-- sync 対応 3/25 済
-- input mode/same note対応 3/25 済
-- panic 対応 3/25 済
--->
 
 ## loopian 計画
 - loopian を使った動画制作
