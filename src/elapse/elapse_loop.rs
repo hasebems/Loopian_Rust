@@ -114,11 +114,11 @@ impl PhraseLoop {
             let root: i16 = Self::ROOT2NTNUM[rt as usize];
             let (movable_scale, para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
             if  movable_scale {
-                trans_note = self.translate_note_parasc(para_note, ctbl, ev[NOTE]);
+                trans_note = self.translate_note_parascl(para_note, ctbl, ev[NOTE]);
                 deb_txt = "para_sc:".to_string();
             }
             else {
-                let option = self.identify_trans_option(next_tick, ev[NOTE]);
+                let option = self.specify_trans_option(next_tick, ev[NOTE]);
                 if option == ARP_PARA {
                     let mut tgt_nt = ev[NOTE] + root;
                     if root > 5 {tgt_nt -= 12;}
@@ -130,7 +130,8 @@ impl PhraseLoop {
                     deb_txt = "com:".to_string();
                 }
                 else { // Arpeggio
-                    trans_note = self.translate_note_arp(root, ctbl, option);
+                    //trans_note = self.translate_note_arp(root, ctbl, option);
+                    trans_note = self.translate_note_arp2(root, ctbl, ev[NOTE], option);
                     deb_txt = "arp:".to_string();
                 }
             }
@@ -150,7 +151,7 @@ impl PhraseLoop {
             tick);
         estk.add_elapse(Rc::clone(&nt));
     }
-    fn identify_trans_option(&self, next_tick: i32, note: i16) -> i16 {
+    fn specify_trans_option(&self, next_tick: i32, note: i16) -> i16 {
         for anaone in self.analys_dt.iter() {
             if anaone[TYPE] == TYPE_BEAT &&
                anaone[TICK] == next_tick as i16 && 
@@ -160,7 +161,7 @@ impl PhraseLoop {
         }
         ARP_COM
     }
-    fn translate_note_parasc(&self, mut para_note: i16, ctbl: i16, ntev: i16) -> i16 {
+    fn translate_note_parascl(&self, mut para_note: i16, ctbl: i16, ntev: i16) -> i16 {
         if para_note >= 5 {para_note -= 12;}
         let input_nt = ntev + para_note;
         let input_doremi = input_nt%12;
@@ -219,7 +220,7 @@ impl PhraseLoop {
         }
         proper_nt
     }
-    fn translate_note_arp(&self, root: i16, ctbl: i16, nt_diff: i16) -> i16 {
+    fn _translate_note_arp(&self, root: i16, ctbl: i16, nt_diff: i16) -> i16 {
         // nt_diff: User Input による、前に発音したノートとの差分
         // arp_nt: 前回発音したノートに nt_diff を足したもの
         let arp_nt = self.last_note as i16 + nt_diff;
@@ -266,6 +267,51 @@ impl PhraseLoop {
             }
             nty
         }
+    }
+    fn translate_note_arp2(&self, root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16) -> i16 {
+        let mut proper_nt = tgt_nt;
+        let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+        let real_root = root + DEFAULT_NOTE_NUMBER as i16;
+        let mut former_nt: i16 = 0;
+        let mut found = false;
+        let oct_adjust = 
+            if tgt_nt - real_root >= 0 {(tgt_nt - (real_root+tbl[0]))/12}
+            else {((tgt_nt-11) - (real_root+tbl[0]))/12};
+        for ntx in tbl.iter() {
+            proper_nt = *ntx + real_root + oct_adjust*12;
+            if proper_nt == tgt_nt {
+                found = true;
+                break;
+            }
+            else if proper_nt > tgt_nt {
+                if (tgt_nt - former_nt < proper_nt - tgt_nt) ||
+                   ((tgt_nt - former_nt == proper_nt - tgt_nt) && !take_upper) { //等距離なら
+                    proper_nt = former_nt;
+                }
+                found = true;
+                break
+            }
+            former_nt = proper_nt;
+        }
+        if !found {
+            proper_nt = tbl[0] + real_root + (oct_adjust+1)*12;
+            if (tgt_nt - former_nt < proper_nt - tgt_nt) ||
+               ((tgt_nt - former_nt == proper_nt - tgt_nt) && !take_upper) { // 等距離なら
+                proper_nt = former_nt
+            }
+        }
+        if (proper_nt == self.last_note) ||
+           ((proper_nt > self.last_note) && (nt_diff < 0)) ||
+           ((proper_nt < self.last_note) && (nt_diff > 0)) {
+            // 前回と同じ音か、アルペジオの方向が逆のとき、方向が同じ別の音を探す
+            if nt_diff > 0 {
+                proper_nt = PhraseLoop::search_scale_nt_just_above(root, tbl, proper_nt+1);
+            }
+            else {
+                proper_nt = PhraseLoop::search_scale_nt_just_below(root, tbl, proper_nt-1);
+            }
+        }
+        proper_nt
     }
     fn search_scale_nt_just_above(root: i16, tbl:&[i16], nt: i16) -> i16 {
         // nt の音程より上にある(nt含む)、一番近い root/tbl の音程を探す
