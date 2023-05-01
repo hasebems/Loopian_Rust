@@ -59,8 +59,27 @@ pub const NO_MIDI_VALUE: u8 = 128;
 //          UI->ELPS Message
 //              []: meaning, < >: index, (a/b/c): selection
 //*******************************************************************
+// 以下を採用した場合、識別用のメッセージは必要なくなる
+pub struct _PhrEvt {mtype:i16, tick:i16, dur:i16, note:i16, vel:i16}
+pub struct _ChordEvt {mtype:i16, tick:i16, root:i16, tbl:i16}
+pub struct _AnaEvt {mtype:i16, tick:i16, dur:i16, note:i16, cnt:i16, atype:i16}
+pub enum _ElpsMsg {
+    Cntl(i16),
+    Sync([i16; 2]),
+    Rit([i16; 3]),
+    SetBpm([i16; 3]),
+    SetBeat([i16; 4]),
+    SetKey([i16; 3]),
+    Phr(i16, i16, Vec<_PhrEvt>),
+    Cmp(i16, i16, Vec<_ChordEvt>),
+    Ana(i16, i16, Vec<_AnaEvt>),
+    PhrX(i16),
+    CmpX(i16),
+    AnaX(i16),
+}
+//-------------------------------------
 //  MSG1st      |  2nd        |  3rd  |
-//------------------------------------
+//-------------------------------------
 // MSG_QUIT     | --          |
 // MSG_START    | --          |
 // MSG_STOP     | --          |
@@ -85,8 +104,8 @@ pub const MSG_PANIC: i16    = -13;
 pub const MSG_RESUME: i16   = -12;
 pub const MSG_SYNC: i16     = -8;   //  2byte
 pub const MSG_RIT: i16      = -7;   //  3byte
-pub const MSG_SET: i16      = -2;   //  3/4byte
 
+pub const MSG_SET: i16      = -2;   //  3/4byte
 pub const MSG2_BPM: i16     = 1;
 pub const MSG2_BEAT: i16    = 2;
 pub const MSG2_KEY: i16     = 3;
