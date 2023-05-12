@@ -6,47 +6,65 @@
 extern crate midir;
 
 use std::error::Error;
-//use std::io::{stdin, stdout, Write};
-use midir::{MidiOutput, MidiOutputPort, MidiOutputConnection};
+use midir::{MidiOutput, /*MidiOutputPort,*/ MidiOutputConnection};
 
 pub struct MidiTx {
-    connection: Box<MidiOutputConnection>,
+    connection_tx: Option<Box<MidiOutputConnection>>,
+    connection_tx_led: Option<Box<MidiOutputConnection>>,
+    //connection_rx_orbit: Box<MidiOutputConnection>,
 }
 
 pub const MIDI_OUT: &str = "IACdriver";
+pub const MIDI_OUT_LED: &str = "Arduino";
 
 impl MidiTx {
     pub fn connect() -> Result<Self, Box<dyn Error>> {
-        let driver = MidiOutput::new("Loopian_tx")?;
+        // Port が二つとも見つからなければ、コネクトできなければエラー
+        let mut me = MidiTx {connection_tx: None, connection_tx_led: None,};
+
         // Get an output port (read from console if multiple are available)
+        let driver = MidiOutput::new("Loopian_tx")?;
         let out_ports = driver.ports();
-        let out_port: &MidiOutputPort = match out_ports.len() {
-            0 => return Err("no output port found".into()),
-            _ => {
-                println!("\nAvailable output ports:");
-                let mut out_port: &MidiOutputPort = &out_ports[0];
-                let mut found = false;
-                for (i, p) in out_ports.iter().enumerate() {
-                    let drv_name = driver.port_name(p).unwrap();
-                    let mut selected = "";
-                    if drv_name.find(MIDI_OUT) != None {
-                        out_port = p;
-                        found = true;
-                        selected = "<selected>"
-                    }
-                    println!("{}: {} {}", i, drv_name, selected);
+        if out_ports.len() == 0 {return Err("no output port found".into());}
+
+        let mut an_least_one = false;
+        for (i, p) in out_ports.iter().enumerate() {
+            let driver = MidiOutput::new("Loopian_tx")?;
+            let drv_name = driver.port_name(p).unwrap();
+            if drv_name.find(MIDI_OUT) != None {
+                match driver.connect(p, "loopian_tx") {
+                    Ok(c) => {
+                        me.connection_tx = Some(Box::new(c));
+                        an_least_one = true;
+                        println!("{}: {} <as Piano>", i, drv_name);
+                    },
+                    Err(_e) => {
+                        println!("Connection Failed! for No.{}",i);
+                    },
                 }
-                if found {out_port}
-                else {return Err("no output port found".into());}
             }
-        };
-        match driver.connect(out_port, "loopian_tx") {
-            Ok(c) => Ok(Self {connection: Box::new(c),}),
-            Err(_e) => return Err("Connection Failed!".into()),
+            else if drv_name.find(MIDI_OUT_LED) != None {
+                match driver.connect(p, "loopian_tx") {
+                    Ok(c) => {
+                        me.connection_tx_led = Some(Box::new(c));
+                        an_least_one = true;
+                        println!("{}: {} <as LED>", i, drv_name);
+                    },
+                    Err(_e) => {
+                        println!("Connection Failed! for No.{}",i);
+                    },
+                }
+            }
+            else {
+                println!("[no connect]{}: {}", i, drv_name);
+            }
         }
+        if !an_least_one {return Err("port not connected!".into())}
+        Ok(me)
     }
     pub fn midi_out(&mut self, status: u8, dt1: u8, dt2: u8) {
-        // We're ignoring errors in here
-        let _ = self.connection.send(&[status, dt1, dt2]);
+        if let Some(cnct) = self.connection_tx.as_mut() {
+            let _ = cnct.send(&[status, dt1, dt2]);
+        }
     }
 }
