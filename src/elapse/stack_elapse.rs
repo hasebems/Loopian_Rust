@@ -7,12 +7,13 @@ use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
 use std::time::{Instant, Duration};
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
 use std::vec::Vec;
 
 use crate::lpnlib::*;
 use super::tickgen::{TickGen, CrntMsrTick};
-use super::midi::MidiTx;
+use super::midi::{MidiTx, MidiRx, MidiRxBuf};
 use super::elapse::*;
 use super::elapse_part::Part;
 use super::elapse_loop::{PhraseLoop, CompositionLoop};
@@ -31,6 +32,8 @@ pub enum SameKeyState {
 pub struct ElapseStack {
     ui_hndr: mpsc::Sender<String>,
     mdx: MidiTx,
+    _mdrx: MidiRx,
+    mdr_buf: Arc<Mutex<MidiRxBuf>>,
     _start_time: Instant,
     crnt_time: Instant,
     bpm_stock: i16,
@@ -56,9 +59,17 @@ impl ElapseStack {
                     vp.push(Rc::clone(&pt));
                     velps.push(pt as Rc<RefCell<dyn Elapse>>);
                 }
+                let mut _mdrx = MidiRx::new();
+                let mdr_buf = Arc::new(Mutex::new(MidiRxBuf::new()));
+                match _mdrx.connect(Arc::clone(&mdr_buf)) {
+                    Ok(()) => (),
+                    Err(err) => println!("{}",err),
+                };
                 Some(Self {
                     ui_hndr,
                     mdx: c,
+                    _mdrx,
+                    mdr_buf,
                     _start_time: Instant::now(),
                     crnt_time: Instant::now(),
                     bpm_stock: DEFAULT_BPM,
@@ -95,6 +106,9 @@ impl ElapseStack {
         self.crnt_time = Instant::now();
 
         // message 受信処理
+        if let Some(msg_ext) = self.mdr_buf.lock().unwrap().take() {
+            println!("{}: {:?} (len = {})", msg_ext.0, msg_ext.1, msg_ext.1.len());
+        }
         match msg {
             Ok(n)  => {
                 if n[0] == MSG_QUIT {return true;}
