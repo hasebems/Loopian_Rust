@@ -85,6 +85,7 @@ pub enum _ElpsMsg {
 // MSG_STOP     | --          |
 // MSG_FERMATA  | --          |
 // MSG_SYNC     |( [0-3] / MSG2_LFT / MSG2_RGT / MSG2_ALL )|
+// MSG_FLOW     | [0-3]       |
 // MSG_RIT      |( MSG2_NRM / MSG2_POCO / MSG2_MLT )|( MSG3_ATP | MSG3_FERMATA |[tempo])
 // MSG_SET      | MSG2_BPM    |[bpm]| --
 //              | MSG2_BEAT   |[numerator]|[denomirator]| --
@@ -103,7 +104,9 @@ pub const MSG_FERMATA: i16  = -14;
 pub const MSG_PANIC: i16    = -13;
 pub const MSG_RESUME: i16   = -12;
 pub const MSG_SYNC: i16     = -8;   //  2byte
-pub const MSG_RIT: i16      = -7;   //  3byte
+pub const MSG_FLOW: i16     = -7;   //  2byte
+pub const MSG_ENDFLOW: i16  = -6;   //  2byte
+pub const MSG_RIT: i16      = -5;   //  3byte
 
 pub const MSG_SET: i16      = -2;   //  3/4byte
 pub const MSG2_BPM: i16     = 1;

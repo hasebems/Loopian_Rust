@@ -87,12 +87,27 @@ impl LoopianCmd {
         }
         else if first_letter == "[" {self.letter_bracket(input_text)}
         else if first_letter == "{" {self.letter_brace(input_text)}
+        else if first_letter == "e" {self.letter_e(input_text)}
         else if first_letter == "f" {self.letter_f(input_text)}
         else if first_letter == "l" {self.letter_l(input_text)}
         else if first_letter == "p" {self.letter_p(input_text)}
         else if first_letter == "r" {self.letter_r(input_text)}
         else if first_letter == "s" {self.letter_s(input_text)}
         else                        {Some("what?".to_string())}
+    }
+    fn letter_e(&mut self, input_text: &str) -> Option<String> {
+        let len = input_text.chars().count();
+        if len == 3 && &input_text[0..3] == "end" {
+            // stop
+            self.send_msg_to_elapse(vec![MSG_STOP]);
+            Some("Fine.".to_string())
+        } else if len == 7 && &input_text[0..7] == "endflow" {
+            // fermata
+            self.send_msg_to_elapse(vec![MSG_ENDFLOW, self.input_part as i16]);
+            Some("End MIDI in flow!".to_string())
+        } else {
+            Some("what?".to_string())
+        }
     }
     fn letter_f(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
@@ -104,6 +119,10 @@ impl LoopianCmd {
             // fermata
             self.send_msg_to_elapse(vec![MSG_FERMATA]);
             Some("Will be longer!".to_string())
+        } else if len == 4 && &input_text[0..4] == "flow" {
+            // flow
+            self.send_msg_to_elapse(vec![MSG_FLOW, self.input_part as i16]);
+            Some("MIDI in flows!".to_string())
         } else {
             Some("what?".to_string())
         }

@@ -362,12 +362,18 @@ impl Part {
         else {format!("{}---",self.id.sid+4)}
     }
     pub fn activate_flow(&mut self, estk: &mut ElapseStack) {
-        let fl = Flow::new(0, self.id.sid);
+        let fl = Flow::new(0, self.id.sid, self.next_msr);
         self.flow = Some(Rc::clone(&fl));
         estk.add_elapse(fl);
     }
-    pub fn deactivate_flow(&mut self, estk: &mut ElapseStack) {
-        if let Some(fl) = &self.flow {fl.borrow_mut().deactivate();}
+    pub fn deactivate_flow(&mut self) {
+        if let Some(fl) = &self.flow {
+            fl.borrow_mut().deactivate();
+            self.flow = None;
+        }
+    }
+    pub fn rcv_midi_in(&mut self, note_on:bool, locate:u8, vel:u8) {
+        if let Some(fl) = &self.flow {fl.borrow_mut().rcv_midi(note_on, locate, vel);}
     }
 }
 impl Elapse for Part {

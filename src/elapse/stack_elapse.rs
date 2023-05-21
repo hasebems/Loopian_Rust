@@ -105,10 +105,15 @@ impl ElapseStack {
         let mut limit_for_deb = 0;
         self.crnt_time = Instant::now();
 
-        // message 受信処理
+        // MIDI IN 受信処理
         if let Some(msg_ext) = self.mdr_buf.lock().unwrap().take() {
-            println!("{}: {:?} (len = {})", msg_ext.0, msg_ext.1, msg_ext.1.len());
+            //println!("{}: {:?} (len = {})", msg_ext.0, msg_ext.1, msg_ext.1.len());
+            self.part_vec.iter().for_each(|x| {
+                let note_on = if (msg_ext.1[0] & 0xf0) == 0x90 {true} else {false};
+                x.borrow_mut().rcv_midi_in(note_on, msg_ext.1[1], msg_ext.1[2]);
+            });
         }
+        // message 受信処理
         match msg {
             Ok(n)  => {
                 if n[0] == MSG_QUIT {return true;}
@@ -236,6 +241,19 @@ impl ElapseStack {
             if *pt {self.part_vec[i].borrow_mut().set_sync();}
         }
     }
+    fn flow(&mut self, msg: Vec<i16>) {
+        let ptnum = msg[1] as usize;
+        if ptnum < MAX_USER_PART {
+            let pt = self.part_vec[ptnum].clone();
+            pt.borrow_mut().activate_flow(self);
+        }
+    }
+    fn endflow(&mut self, msg: Vec<i16>) {
+        let ptnum = msg[1] as usize;
+        if ptnum < MAX_USER_PART {
+            self.part_vec[ptnum].borrow_mut().deactivate_flow();
+        }
+    }
     fn rit(&mut self, msg: Vec<i16>) {
         let strength_set: [(i16, i32);3] = [(MSG2_POCO, 95),(MSG2_NRM, 80),(MSG2_MLT, 75)];
         let strength = strength_set.into_iter()
@@ -337,6 +355,8 @@ impl ElapseStack {
         else if msg[0] == MSG_FERMATA {self.fermata(msg);}
         else if msg[0] == MSG_RESUME {self.start(true);}
         else if msg[0] == MSG_SYNC {self.sync(msg);}
+        else if msg[0] == MSG_FLOW {self.flow(msg);}
+        else if msg[0] == MSG_ENDFLOW {self.endflow(msg);}
         else if msg[0] == MSG_RIT {self.rit(msg);}
         else if msg[0] == MSG_SET {self.setting_cmnd(msg);}
         else if msg1st(msg[0]) == MSG_PHR_X {self.del_phrase(msg);}
