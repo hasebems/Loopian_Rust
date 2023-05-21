@@ -13,6 +13,7 @@ pub const PRI_CMPS_LOOP: u32 = 200;
 pub const PRI_PHR_LOOP: u32 = 300;
 pub const PRI_NOTE: u32 = 400;
 pub const _PRI_DMPR: u32 = 500;
+pub const PRI_FLOW: u32 = 600;
 
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum ElapseType {
@@ -22,6 +23,7 @@ pub enum ElapseType {
     TpCompositionLoop,
     TpDamperLoop,
     TpNote,
+    TpFlow,
     _TpDamper,
 }
 
@@ -38,13 +40,22 @@ pub struct ElapseId {
 }
 
 pub trait Elapse {
-    fn id(&self) -> ElapseId;       // id を得る
-    fn prio(&self) -> u32;          // priority を得る
-    fn next(&self) -> (i32, i32);   // 次に呼ばれる小節番号、Tick数を返す
-    fn start(&mut self);            // User による start/play 時にコールされる
-    fn stop(&mut self, estk: &mut ElapseStack); // User による stop 時にコールされる
-    fn fine(&mut self, estk: &mut ElapseStack); // User による fine があった次の小節先頭でコールされる
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack); // 再生 msr/tick に達したらコールされる
-    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8); // 特定 elapse に message を送る
-    fn destroy_me(&self) -> bool;   // 自クラスが役割を終えた時に True を返す
+    /// id を得る
+    fn id(&self) -> ElapseId;
+    /// priority を得る
+    fn prio(&self) -> u32;
+    /// 次に呼ばれる小節番号、Tick数を返す
+    fn next(&self) -> (i32, i32);
+    /// User による start/play 時にコールされる
+    fn start(&mut self);
+    /// User による stop 時にコールされる
+    fn stop(&mut self, estk: &mut ElapseStack);
+    /// User による fine があった次の小節先頭でコールされる
+    fn fine(&mut self, estk: &mut ElapseStack);
+    /// 再生 msr/tick に達したらコールされる
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack);
+    /// 特定 elapse に message を送る
+    fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8);
+    /// 自クラスが役割を終えた時に True を返す
+    fn destroy_me(&self) -> bool;
 }

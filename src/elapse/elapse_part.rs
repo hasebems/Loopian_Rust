@@ -7,6 +7,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use crate::elapse::elapse_loop::Loop;
+use crate::elapse::elapse_flow::Flow;
 use crate::lpnlib::*;
 use super::elapse::*;
 use super::elapse_loop::{PhraseLoop, CompositionLoop, DamperLoop};
@@ -305,6 +306,7 @@ pub struct Part {
     pm: PhrLoopManager,
     cm: CmpsLoopManager,
     dm: Option<DamperLoopManager>,
+    flow: Option<Rc<RefCell<Flow>>>,
     sync_next_msr_flag: bool,
 }
 impl Part {
@@ -323,6 +325,7 @@ impl Part {
             pm: PhrLoopManager::new(),
             cm: CmpsLoopManager::new(),
             dm: if num as usize == DAMPER_PEDAL_PART {Some(DamperLoopManager::new())} else {None},
+            flow: None,
             sync_next_msr_flag: false,
         }))
     }
@@ -357,6 +360,14 @@ impl Part {
             format!("{}{} {}",self.id.sid+4, msrcnt, chord_name)
         }
         else {format!("{}---",self.id.sid+4)}
+    }
+    pub fn activate_flow(&mut self, estk: &mut ElapseStack) {
+        let fl = Flow::new(0, self.id.sid);
+        self.flow = Some(Rc::clone(&fl));
+        estk.add_elapse(fl);
+    }
+    pub fn deactivate_flow(&mut self, estk: &mut ElapseStack) {
+        if let Some(fl) = &self.flow {fl.borrow_mut().deactivate();}
     }
 }
 impl Elapse for Part {

@@ -10,11 +10,15 @@
 - コード(I,II..)指定で、入力に変化を与えながらループ再生
 - 自動にピアノの表現を付加
 - BPM, Key, 拍子(Beat)などの基本的な音楽指示が可能
-- Loopian全体像
+- Loopian System
     - Loopian::APP : 本アプリケーション
     - Loopian::ORBIT : PCに接続する専用ハードウェア
     - Loopian::script : スクリプト言語、及び記述されたテキスト
     - Loopian::inst : 将来作られる楽器の音源
+- Loopian::ORBIT を使ってリアルタイム演奏が可能
+    - 一つの Part を、リアルタイム用に指定
+    - 演奏を自動的にコード指定に合わせて MIDI 出力する
+
 
 ### 2.what you can do
 
@@ -45,7 +49,7 @@
 - Command には以下の4種類がある
     1. Phrase Command（ [] で入力）
     1. Composition Command（{}で入力）
-    1. Realtime Control Command (play/stop/fine/rit./left/right/sync)
+    1. Realtime Control Command (play/stop/fine/rit./left/right/sync/[end]flow)
     1. Setting Command (set [bpm/beat/oct/key/input/samenote])
 - Phrase Command の考え方
     - ノート番号と音価を指示する
@@ -56,6 +60,8 @@
     - 指定されたノート変換子に従って、Phrase 入力の音は自動変換される
     - Composition も、各パートごとに設定できる
 - Phrase も、Composition も、それぞれ独自の周期で loop する
+- "flow"指定で、Phrase 再生をやめ、MIDI In からの情報を変換して、MIDI OUT する
+    "endflow" で Phrase 再生を再開
 - Phrase の Music Expression 一覧
     - ff,f,mf,mp,p,pp,ppp  （ベロシティ指定）
     - ped, noped, halfped（未実装） （ペダル奏法）
@@ -69,7 +75,14 @@
 
 
 ## Design
-### 1.Class diagram
+
+### 1.Generated Document
+
+cargo doc で自動生成
+../target/doc/loopian_rust/index.html
+
+
+### 2.Class diagram
 
 ```mermaid
 classDiagram
@@ -81,6 +94,7 @@ Loop <|-- PhraseLoop
 Loop <|-- CompositionLoop
 Elapse <|-- Note
 Elapse <|-- Damper
+Elapse <|-- Flow
 ElapseStack *-- Part
 ElapseStack o-- Elapse
 LoopianCmd *-- SeqDataStock
@@ -90,14 +104,10 @@ SeqDataStock *-- DamperDataStock
 Part *-- PhrLoopManager
 Part *-- CmpsLoopManager
 Part o-- DamperLoopManager
+Part o-- Flow
 PhrLoopManager o-- PhraseLoop
 CmpsLoopManager o-- CompositionLoop
 ```
-
-### 2.Document
-
-cargo doc で自動生成
-../target/doc/loopian_rust/index.html
 
 ### 3.Elapse Object
 
@@ -317,6 +327,7 @@ cargo doc で自動生成
 -->
 
 - アルペジオ時の同音回避型変換のアルゴリズムを変更 5/1済
+- MIDI in受信 5/17 済
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
