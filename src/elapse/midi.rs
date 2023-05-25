@@ -78,6 +78,7 @@ impl MidiRxBuf {
     pub fn new() -> Self {
         Self { buf: Vec::new(), }
     }
+    pub fn flush(&mut self) {self.buf.clear();}
     pub fn put(&mut self, tm:u64, msg:Vec<u8>) {
         self.buf.insert(0,(tm,msg));
     }

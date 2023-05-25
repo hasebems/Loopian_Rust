@@ -372,8 +372,8 @@ impl Part {
             self.flow = None;
         }
     }
-    pub fn rcv_midi_in(&mut self, note_on:bool, locate:u8, vel:u8) {
-        if let Some(fl) = &self.flow {fl.borrow_mut().rcv_midi(note_on, locate, vel);}
+    pub fn rcv_midi_in(&mut self, crnt_: &CrntMsrTick, note_on:bool, locate:u8, vel:u8) {
+        if let Some(fl) = &self.flow {fl.borrow_mut().rcv_midi(crnt_, note_on, locate, vel);}
     }
 }
 impl Elapse for Part {

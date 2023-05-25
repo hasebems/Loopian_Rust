@@ -11,6 +11,7 @@ pub const DEFAULT_TICK_FOR_QUARTER: i32 = 480;
 pub const DEFAULT_TICK_FOR_ONE_MEASURE: i32 = 1920;  // 480 * 4
 
 pub const END_OF_DATA: i32 = -1;
+pub const NO_DATA: i32 = -1;
 pub const FULL: i32 = 10000;
 pub const _ALL_PART: i16 = -1;
 pub const KEEP: i32 = 0;

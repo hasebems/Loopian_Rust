@@ -105,14 +105,6 @@ impl ElapseStack {
         let mut limit_for_deb = 0;
         self.crnt_time = Instant::now();
 
-        // MIDI IN 受信処理
-        if let Some(msg_ext) = self.mdr_buf.lock().unwrap().take() {
-            //println!("{}: {:?} (len = {})", msg_ext.0, msg_ext.1, msg_ext.1.len());
-            self.part_vec.iter().for_each(|x| {
-                let note_on = if (msg_ext.1[0] & 0xf0) == 0x90 {true} else {false};
-                x.borrow_mut().rcv_midi_in(note_on, msg_ext.1[1], msg_ext.1[2]);
-            });
-        }
         // message 受信処理
         match msg {
             Ok(n)  => {
@@ -147,6 +139,15 @@ impl ElapseStack {
         }
         //  新tick計算
         let crnt_ = self.tg.get_crnt_msr_tick();
+
+        // MIDI IN 受信処理
+        if let Some(msg_ext) = self.mdr_buf.lock().unwrap().take() {
+            //println!("{}: {:?} (len = {})", msg_ext.0, msg_ext.1, msg_ext.1.len());
+            self.part_vec.iter().for_each(|x| {
+                let note_on = if (msg_ext.1[0] & 0xf0) == 0x90 {true} else {false};
+                x.borrow_mut().rcv_midi_in(&crnt_, note_on, msg_ext.1[1], msg_ext.1[2]);
+            });
+        }
 
         loop {
             // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
@@ -209,6 +210,9 @@ impl ElapseStack {
         self.tg.start(self.crnt_time, self.bpm_stock, resume);
         for elps in self.elapse_vec.iter() {
             elps.borrow_mut().start();
+        }
+        if let Ok(mut mb) = self.mdr_buf.lock() {
+            mb.flush(); // MIDI In Buffer をクリア
         }
     }
     fn panic(&mut self) {

@@ -27,6 +27,7 @@ pub struct TickGen {
     t0_addup_tick: i32,         // tempo=0 到達時の積算tick
     delta_tps: f32,             // Tick per sec: tick の時間あたりの変化量、bpm 変化量を８倍した値
 }
+#[derive(Clone,Copy,PartialEq)]
 pub struct CrntMsrTick {
     pub msr: i32,
     pub tick: i32,
