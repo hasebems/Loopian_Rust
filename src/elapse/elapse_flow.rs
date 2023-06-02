@@ -124,8 +124,6 @@ impl Elapse for Flow {
     fn start(&mut self) {self.during_play = true;}
     /// User による stop 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {self.during_play = false;}
-    /// User による fine があった次の小節先頭でコールされる
-    fn fine(&mut self, _estk: &mut ElapseStack) {}
     /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         if (crnt_.msr == self.next_msr &&

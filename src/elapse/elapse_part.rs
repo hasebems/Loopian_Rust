@@ -393,7 +393,6 @@ impl Elapse for Part {
         }
     }
     fn stop(&mut self, _estk: &mut ElapseStack) {}        // User による stop 時にコールされる
-    fn fine(&mut self, _estk: &mut ElapseStack) {}        // User による fine があった次の小節先頭でコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let pbp = PartBasicPrm {
                                     part_num: self.id.sid,

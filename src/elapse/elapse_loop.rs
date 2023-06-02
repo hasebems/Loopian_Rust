@@ -364,7 +364,6 @@ impl Elapse for PhraseLoop {
     }
     fn start(&mut self) {}      // User による start/play 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
-    fn fine(&mut self, _estk: &mut ElapseStack) {} // User による fine があった次の小節先頭でコールされる
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
@@ -522,7 +521,6 @@ impl Elapse for CompositionLoop {
     }
     fn start(&mut self) {}    // User による start/play 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
-    fn fine(&mut self, _estk: &mut ElapseStack) {} // User による fine があった次の小節先頭でコールされる
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
@@ -643,7 +641,7 @@ impl DamperLoop {
                 for (i, x) in chord_map.iter_mut().enumerate() {*x |= ba[i];}
             }
         }
-        println!("@@@@ Damper Map:{:?}",chord_map);
+        //println!("@@@@ Damper Map:{:?}",chord_map);
         let mut keep: usize = beat_num;
         let mut dmpr_evt: Vec<Vec<i16>> = Vec::new();
         const PDL_MARGIN_TICK: i32 = 60;
@@ -680,7 +678,6 @@ impl Elapse for DamperLoop {
     }
     fn start(&mut self) {self.first_msr_num = 0;}    // User による start/play 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
-    fn fine(&mut self, _estk: &mut ElapseStack) {} // User による fine があった次の小節先頭でコールされる
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる

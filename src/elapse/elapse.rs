@@ -50,8 +50,6 @@ pub trait Elapse {
     fn start(&mut self);
     /// User による stop 時にコールされる
     fn stop(&mut self, estk: &mut ElapseStack);
-    /// User による fine があった次の小節先頭でコールされる
-    fn fine(&mut self, estk: &mut ElapseStack);
     /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack);
     /// 特定 elapse に message を送る

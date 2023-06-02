@@ -108,12 +108,6 @@ impl Elapse for Note {
             self.note_off(estk);
         }
     }
-    /// User による fine があった次の小節先頭でコールされる
-    fn fine(&mut self, estk: &mut ElapseStack) {
-        if self.noteon_started {
-            self.note_off(estk);
-        }
-    }
     /// 再生処理 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick) || (crnt_.msr > self.next_msr) {
@@ -198,12 +192,6 @@ impl Elapse for Damper {
     fn start(&mut self) {}
     /// User による stop 時にコールされる
     fn stop(&mut self, estk: &mut ElapseStack) {
-        if self.damper_started {
-            self.damper_off(estk);
-        }
-    }
-    /// User による fine があった次の小節先頭でコールされる
-    fn fine(&mut self, estk: &mut ElapseStack) {
         if self.damper_started {
             self.damper_off(estk);
         }
