@@ -144,8 +144,7 @@ impl ElapseStack {
         if let Some(msg_ext) = self.mdr_buf.lock().unwrap().take() {
             //println!("{}: {:?} (len = {})", msg_ext.0, msg_ext.1, msg_ext.1.len());
             self.part_vec.iter().for_each(|x| {
-                let note_on = if (msg_ext.1[0] & 0xf0) == 0x90 {true} else {false};
-                x.borrow_mut().rcv_midi_in(&crnt_, note_on, msg_ext.1[1], msg_ext.1[2]);
+                x.borrow_mut().rcv_midi_in(&crnt_, msg_ext.1[0], msg_ext.1[1], msg_ext.1[2]);
             });
         }
 

@@ -298,9 +298,9 @@ pub struct Part {
     id: ElapseId,
     priority: u32,
 
+    during_play: bool,
     keynote: u8,
     _base_note: u8,
-    first_measure_num: i32,
     next_msr: i32,
     next_tick: i32,
     pm: PhrLoopManager,
@@ -317,9 +317,9 @@ impl Part {
         Rc::new(RefCell::new(Self {
             id: new_id,
             priority: PRI_PART,
+            during_play: false,
             keynote: 0,
             _base_note: DEFAULT_NOTE_NUMBER - 12*(left_part as u8),
-            first_measure_num: 0,
             next_msr: 0,
             next_tick: 0,
             pm: PhrLoopManager::new(),
@@ -362,7 +362,7 @@ impl Part {
         else {format!("{}---",self.id.sid+4)}
     }
     pub fn activate_flow(&mut self, estk: &mut ElapseStack) {
-        let fl = Flow::new(0, self.id.sid, self.next_msr);
+        let fl = Flow::new(0, self.id.sid, self.next_msr, self.during_play);
         self.flow = Some(Rc::clone(&fl));
         estk.add_elapse(fl);
     }
@@ -372,8 +372,8 @@ impl Part {
             self.flow = None;
         }
     }
-    pub fn rcv_midi_in(&mut self, crnt_: &CrntMsrTick, note_on:bool, locate:u8, vel:u8) {
-        if let Some(fl) = &self.flow {fl.borrow_mut().rcv_midi(crnt_, note_on, locate, vel);}
+    pub fn rcv_midi_in(&mut self, crnt_: &CrntMsrTick, status:u8, locate:u8, vel:u8) {
+        if let Some(fl) = &self.flow {fl.borrow_mut().rcv_midi(crnt_, status, locate, vel);}
     }
 }
 impl Elapse for Part {
@@ -383,7 +383,7 @@ impl Elapse for Part {
         (self.next_msr, self.next_tick)
     }
     fn start(&mut self) {      // User による start/play 時にコールされる
-        self.first_measure_num = 0;
+        self.during_play = true;
         self.next_msr = 0;
         self.next_tick = 0;
         self.cm.start();
