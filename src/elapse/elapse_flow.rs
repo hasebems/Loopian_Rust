@@ -34,7 +34,7 @@ use super::stack_elapse::ElapseStack;
 //                   生成後、過去の gen_state[] の値と比較し、NoteOn されていなければ MIDI OUT 出力する
 
 pub const LOCATION_ALL: usize = 96;
-pub const FLOWNOTE_ALL: usize = 72;
+pub const _FLOWNOTE_ALL: usize = 72;
 pub const TICK_RESOLUTION: i32 = 120;
 
 struct RawEv(i32, i32, u8, u8, u8); //  msr, tick, status, locate, vel
@@ -44,30 +44,30 @@ pub struct Flow {
     id: ElapseId,
     priority: u32,
 
-    during_play: bool,
     old_msr_tick: CrntMsrTick,
-    raw_state: [i32; LOCATION_ALL],    // tick
-    raw_ev: Vec<RawEv>,
-    gen_stock: Vec<GenStock>,
+    raw_state: [i32; LOCATION_ALL], // tickを格納 同じ場所に複数のイベントが来た場合に排除
+    raw_ev: Vec<RawEv>,             // 外部からの MIDI In Ev 受信爺格納し、処理後に削除
+    gen_stock: Vec<GenStock>,       // MIDI In Ev処理し、外部音源発音時に生成される
 
     // for super's member
+    during_play: bool,
     destroy: bool,
     next_msr: i32,   //   次に呼ばれる小節番号が保持される
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 
 impl Flow {
-    pub fn new(sid: u32, pid: u32, msr: i32, during_play: bool) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, during_play: bool) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpFlow,},
             priority: PRI_FLOW,
-            during_play,
             old_msr_tick: CrntMsrTick {msr:0,tick:0,tick_for_onemsr:0,},
             raw_state: [NO_DATA; LOCATION_ALL],
             raw_ev: Vec::new(),
             gen_stock: Vec::new(),
 
             // for super's member
+            during_play,
             destroy: false,
             next_msr: FULL, // not called process()
             next_tick: 0,
@@ -83,7 +83,6 @@ impl Flow {
         println!("MIDI IN: {:x}-{:x}-{:x}", status,locate,vel);
         if !self.during_play {return;}
 
-        println!("%&%&%&%&");
         self.raw_ev.insert(0,RawEv(crnt_.msr,crnt_.tick,status,locate,vel));
         let tk = (crnt_.tick/TICK_RESOLUTION + 1)*TICK_RESOLUTION;
         if tk >= crnt_.tick_for_onemsr {
@@ -102,8 +101,10 @@ impl Flow {
         loop {
             if let Some(ev) = self.raw_ev.pop() {
                 let ch_status = ev.2 & 0xf0;
+                let locate_idx = ev.3 as usize; 
                 if ch_status != 0x80 && (ch_status == 0x90 && ev.4 != 0x00) {   // on
-                    self.raw_state[ev.3 as usize] = ev.1;
+                    if self.raw_state[locate_idx] != NO_DATA {break;}
+                    self.raw_state[locate_idx] = ev.1;
                     let rnote = self.detect_real_note(estk, ev.3);
                     if !self.same_note_exists(rnote) {
                         estk.midi_out(0x90, rnote, ev.4);
@@ -112,7 +113,7 @@ impl Flow {
                     }
                 }
                 else {      // off
-                    self.raw_state[ev.3 as usize] = NO_DATA;
+                    self.raw_state[locate_idx] = NO_DATA;
                     if let Some(idx) = self.same_locate_index(ev.3) {
                         let rnote = self.gen_stock[idx].0;
                         estk.midi_out(0x90, rnote, 0); // test
@@ -124,13 +125,12 @@ impl Flow {
             }
             else {break;}
         }
-        //self.raw_state[locate as usize] = if note_on {crnt_.tick} else {END_OF_DATA};
     }
-    fn detect_real_note(&mut self, _estk: &mut ElapseStack, locate: u8) -> u8 {
-        //let (mut rt, mut ctbl) = (NO_ROOT, NO_TABLE);
-        //if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
-        //    (rt, ctbl) = cmps.borrow().get_chord();
-        //}
+    fn detect_real_note(&mut self, estk: &mut ElapseStack, locate: u8) -> u8 {
+        let (mut _rt, mut _ctbl) = (NO_ROOT, NO_TABLE);
+        if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
+            (_rt, _ctbl) = cmps.borrow().get_chord();
+        }
         locate + 12
     }
     fn same_note_exists(&self, rnote: u8) -> bool {

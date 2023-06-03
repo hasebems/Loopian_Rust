@@ -362,7 +362,7 @@ impl Part {
         else {format!("{}---",self.id.sid+4)}
     }
     pub fn activate_flow(&mut self, estk: &mut ElapseStack) {
-        let fl = Flow::new(0, self.id.sid, self.next_msr, self.during_play);
+        let fl = Flow::new(0, self.id.sid, self.during_play);
         self.flow = Some(Rc::clone(&fl));
         estk.add_elapse(fl);
     }
