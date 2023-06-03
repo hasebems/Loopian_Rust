@@ -122,16 +122,16 @@ impl PhraseLoop {
                 if option == ARP_PARA {
                     let mut tgt_nt = ev[NOTE] + root;
                     if root > 5 {tgt_nt -= 12;}
-                    trans_note = self.translate_note_com(root, ctbl, tgt_nt);
+                    trans_note = PhraseLoop::translate_note_com(root, ctbl, tgt_nt);
                     deb_txt = "para:".to_string();
                 }
                 else if option == ARP_COM {
-                    trans_note = self.translate_note_com(root, ctbl, ev[NOTE]);
+                    trans_note = PhraseLoop::translate_note_com(root, ctbl, ev[NOTE]);
                     deb_txt = "com:".to_string();
                 }
                 else { // Arpeggio
-                    //trans_note = self.translate_note_arp(root, ctbl, option);
-                    trans_note = self.translate_note_arp2(root, ctbl, ev[NOTE], option);
+                    //trans_note = PhraseLoop::translate_note_arp(root, ctbl, option);
+                    trans_note = PhraseLoop::translate_note_arp2(root, ctbl, ev[NOTE], option, self.last_note);
                     deb_txt = "arp:".to_string();
                 }
             }
@@ -186,7 +186,7 @@ impl PhraseLoop {
         }
         output_doremi + input_oct*12
     }
-    fn translate_note_com(&self, root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
+    fn translate_note_com(root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
         let mut proper_nt = tgt_nt;
         let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
         let real_root = root + DEFAULT_NOTE_NUMBER as i16;
@@ -220,17 +220,17 @@ impl PhraseLoop {
         }
         proper_nt
     }
-    fn _translate_note_arp(&self, root: i16, ctbl: i16, nt_diff: i16) -> i16 {
+    fn _translate_note_arp(root: i16, ctbl: i16, nt_diff: i16, last_note: i16) -> i16 {
         // nt_diff: User Input による、前に発音したノートとの差分
         // arp_nt: 前回発音したノートに nt_diff を足したもの
-        let arp_nt = self.last_note as i16 + nt_diff;
+        let arp_nt = last_note + nt_diff;
         let mut nty = DEFAULT_NOTE_NUMBER as i16;
         let (tbl, _take_upper) = txt2seq_cmps::get_table(ctbl as usize);
         if nt_diff == 0 {
             arp_nt
         }
         else if nt_diff > 0 {
-            let mut ntx = self.last_note as i16 + 1;
+            let mut ntx = last_note + 1;
             ntx = PhraseLoop::search_scale_nt_just_above(root, tbl, ntx);
             if ntx >= arp_nt {
                 return ntx;
@@ -249,7 +249,7 @@ impl PhraseLoop {
             nty
         }
         else {       
-            let mut ntx = self.last_note as i16 - 1;
+            let mut ntx = last_note - 1;
             ntx = PhraseLoop::search_scale_nt_just_below(root, tbl, ntx);
             if ntx <= arp_nt {
                 return ntx;
@@ -268,7 +268,7 @@ impl PhraseLoop {
             nty
         }
     }
-    fn translate_note_arp2(&self, root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16) -> i16 {
+    fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16, last_note: i16) -> i16 {
         let mut proper_nt = tgt_nt;
         let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
         let real_root = root + DEFAULT_NOTE_NUMBER as i16;
@@ -300,9 +300,9 @@ impl PhraseLoop {
                 proper_nt = former_nt
             }
         }
-        if (proper_nt == self.last_note) ||
-           ((proper_nt > self.last_note) && (nt_diff < 0)) ||
-           ((proper_nt < self.last_note) && (nt_diff > 0)) {
+        if (proper_nt == last_note) ||
+           ((proper_nt > last_note) && (nt_diff < 0)) ||
+           ((proper_nt < last_note) && (nt_diff > 0)) {
             // 前回と同じ音か、アルペジオの方向が逆のとき、方向が同じ別の音を探す
             if nt_diff > 0 {
                 proper_nt = PhraseLoop::search_scale_nt_just_above(root, tbl, proper_nt+1);
