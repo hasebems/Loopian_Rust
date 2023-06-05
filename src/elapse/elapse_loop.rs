@@ -110,37 +110,12 @@ impl PhraseLoop {
             (rt, ctbl) = cmps.borrow().get_chord();
         }
 
+        //  Note Translation
         if rt != NO_ROOT || ctbl != NO_TABLE  {
-            let trans_note: i16;
-            let root: i16 = Self::ROOT2NTNUM[rt as usize];
-            let (movable_scale, para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
-            if  movable_scale {
-                trans_note = translate_note_parascl(para_note, ctbl, ev[NOTE]);
-                deb_txt = "para_sc:".to_string();
-            }
-            else {
-                let option = self.specify_trans_option(next_tick, ev[NOTE]);
-                if option == ARP_PARA {
-                    let mut tgt_nt = ev[NOTE] + root;
-                    if root > 5 {tgt_nt -= 12;}
-                    trans_note = translate_note_com(root, ctbl, tgt_nt);
-                    deb_txt = "para:".to_string();
-                }
-                else if option == ARP_COM {
-                    trans_note = translate_note_com(root, ctbl, ev[NOTE]);
-                    deb_txt = "com:".to_string();
-                }
-                else { // Arpeggio
-                    //trans_note = NoteTranslation::translate_note_arp(root, ctbl, option);
-                    trans_note = translate_note_arp2(root, ctbl, ev[NOTE], option, self.last_note);
-                    deb_txt = "arp:".to_string();
-                }
-            }
-            self.last_note = trans_note;
-            crnt_ev[NOTE] = trans_note;
-            deb_txt += &(root.to_string() + "-" + &ctbl.to_string());
+            (crnt_ev[NOTE], deb_txt) = self.translate_note(rt, ctbl, ev, next_tick);
         }
 
+        //  Generate Note Struct
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             trace as u32,   //  read pointer
             self.id.sid,    //  loop.sid -> note.pid
@@ -151,6 +126,37 @@ impl PhraseLoop {
             msr,
             tick);
         estk.add_elapse(Rc::clone(&nt));
+    }
+    fn translate_note(&mut self, rt: i16, ctbl: i16, ev: Vec<i16>, next_tick: i32) -> (i16, String) {
+        let deb_txt: String;
+        let trans_note: i16;
+        let root: i16 = Self::ROOT2NTNUM[rt as usize];
+        let (movable_scale, para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
+        if  movable_scale {
+            trans_note = translate_note_parascl(para_note, ctbl, ev[NOTE]);
+            deb_txt = "para_sc:".to_string();
+        }
+        else {
+            let option = self.specify_trans_option(next_tick, ev[NOTE]);
+            if option == ARP_PARA {
+                let mut tgt_nt = ev[NOTE] + root;
+                if root > 5 {tgt_nt -= 12;}
+                trans_note = translate_note_com(root, ctbl, tgt_nt);
+                deb_txt = "para:".to_string();
+            }
+            else if option == ARP_COM {
+                trans_note = translate_note_com(root, ctbl, ev[NOTE]);
+                deb_txt = "com:".to_string();
+            }
+            else { // Arpeggio
+                //trans_note = NoteTranslation::translate_note_arp(root, ctbl, option);
+                trans_note = translate_note_arp2(root, ctbl, ev[NOTE], option, self.last_note);
+                deb_txt = "arp:".to_string();
+            }
+        }
+        self.last_note = trans_note;
+        //crnt_ev[NOTE] = trans_note;
+        (trans_note, deb_txt + &(root.to_string() + "-" + &ctbl.to_string()))
     }
     fn specify_trans_option(&self, next_tick: i32, note: i16) -> i16 {
         for anaone in self.analys_dt.iter() {
