@@ -99,11 +99,11 @@ impl Flow {
         loop {
             if let Some(ev) = self.raw_ev.pop() {
                 let ch_status = ev.2 & 0xf0;
-                let locate_idx = ev.3 as usize; 
+                let locate_idx = ev.3 as usize;
                 if ch_status != 0x80 && (ch_status == 0x90 && ev.4 != 0x00) {   // on
                     if self.raw_state[locate_idx] != NO_DATA {break;}
                     self.raw_state[locate_idx] = ev.1;
-                    let rnote = self.detect_real_note(estk, ev.3);
+                    let rnote = self.detect_real_note(estk, ev.3 as i16);
                     if !self.same_note_exists(rnote) {
                         estk.midi_out(0x90, rnote, ev.4);
                         println!("MIDI OUT<< 0x90:{:x}:{:x}",rnote,ev.4);
@@ -124,13 +124,15 @@ impl Flow {
             else {break;}
         }
     }
-    fn detect_real_note(&mut self, estk: &mut ElapseStack, locate: u8) -> u8 {
-        let mut real_note = (locate*12)/16;
-        if self.id.pid/2 == 0 {real_note += 24} else {real_note += 36}
+    fn detect_real_note(&mut self, estk: &mut ElapseStack, locate: i16) -> u8 {
+        let mut temp_note = (locate*12)/16;
+        if self.id.pid/2 == 0 {temp_note += 24} else {temp_note += 36}
+        if temp_note >= 128 {temp_note = 127;}
+        let mut real_note: u8 = temp_note as u8;
         if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
             let (rt, ctbl) = cmps.borrow().get_chord();
             let root: i16 = ROOT2NTNUM[rt as usize];
-            real_note = translate_note_com(root, ctbl, real_note as i16) as u8;
+            real_note = translate_note_com(root, ctbl, temp_note) as u8;
         }
         real_note
     }
