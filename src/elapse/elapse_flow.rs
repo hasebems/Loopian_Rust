@@ -10,6 +10,7 @@ use crate::lpnlib::*;
 use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
+use super::note_translation::*;
 
 //*******************************************************************
 //          Flow Struct
@@ -29,9 +30,6 @@ use super::stack_elapse::ElapseStack;
 //
 //  ・Event State
 //      raw_state[95] : Index は触った位置。イベントがあったタイミングが記載、ないときは NO_DATA
-//      gen_state[71] : Index はノート番号。
-//                   tick=120 の周期で、raw_ev に値がある位置より、Note を算出し、タイミングを記載。
-//                   生成後、過去の gen_state[] の値と比較し、NoteOn されていなければ MIDI OUT 出力する
 
 pub const LOCATION_ALL: usize = 96;
 pub const _FLOWNOTE_ALL: usize = 72;
@@ -46,7 +44,7 @@ pub struct Flow {
 
     old_msr_tick: CrntMsrTick,
     raw_state: [i32; LOCATION_ALL], // tickを格納 同じ場所に複数のイベントが来た場合に排除
-    raw_ev: Vec<RawEv>,             // 外部からの MIDI In Ev 受信爺格納し、処理後に削除
+    raw_ev: Vec<RawEv>,             // 外部からの MIDI In Ev 受信時に格納し、処理後に削除
     gen_stock: Vec<GenStock>,       // MIDI In Ev処理し、外部音源発音時に生成される
 
     // for super's member
@@ -80,7 +78,7 @@ impl Flow {
         self.during_play = false;
     }
     pub fn rcv_midi(&mut self, crnt_: &CrntMsrTick, status:u8, locate:u8, vel:u8) {
-        println!("MIDI IN: {:x}-{:x}-{:x}", status,locate,vel);
+        println!("MIDI IN >> {:x}-{:x}-{:x}", status,locate,vel);
         if !self.during_play {return;}
 
         self.raw_ev.insert(0,RawEv(crnt_.msr,crnt_.tick,status,locate,vel));
@@ -108,7 +106,7 @@ impl Flow {
                     let rnote = self.detect_real_note(estk, ev.3);
                     if !self.same_note_exists(rnote) {
                         estk.midi_out(0x90, rnote, ev.4);
-                        println!("MIDI OUT: 0x90:{:x}:{:x}",rnote,ev.4);
+                        println!("MIDI OUT<< 0x90:{:x}:{:x}",rnote,ev.4);
                         self.gen_stock.push(GenStock(rnote, ev.4, ev.3));
                     }
                 }
@@ -117,7 +115,7 @@ impl Flow {
                     if let Some(idx) = self.same_locate_index(ev.3) {
                         let rnote = self.gen_stock[idx].0;
                         estk.midi_out(0x90, rnote, 0); // test
-                        println!("MIDI OUT: 0x90:{:x}:0",rnote);
+                        println!("MIDI OUT<< 0x90:{:x}:0",rnote);
                         self.gen_stock.remove(idx);
                     }
                 }
@@ -127,11 +125,14 @@ impl Flow {
         }
     }
     fn detect_real_note(&mut self, estk: &mut ElapseStack, locate: u8) -> u8 {
-        let (mut _rt, mut _ctbl) = (NO_ROOT, NO_TABLE);
+        let mut real_note = (locate*12)/16;
+        if self.id.pid/2 == 0 {real_note += 24} else {real_note += 36}
         if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
-            (_rt, _ctbl) = cmps.borrow().get_chord();
+            let (rt, ctbl) = cmps.borrow().get_chord();
+            let root: i16 = ROOT2NTNUM[rt as usize];
+            real_note = translate_note_com(root, ctbl, real_note as i16) as u8;
         }
-        locate + 12
+        real_note
     }
     fn same_note_exists(&self, rnote: u8) -> bool {
         for x in self.gen_stock.iter() {

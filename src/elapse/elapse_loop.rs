@@ -100,7 +100,6 @@ impl PhraseLoop {
         self.play_counter = trace;
         next_tick
     }
-    const ROOT2NTNUM: [i16; 22] = [0,-1,0,1,1,2,3,3,4,5,4,5,6,6,7,8,8,9,10,10,11,12,];
     fn note_event(&mut self, estk: &mut ElapseStack, trace: usize, ev: Vec<i16>, next_tick: i32, msr: i32, tick: i32) {
         // ev: ['note', tick, duration, note, velocity]
         let mut crnt_ev = ev.clone();
@@ -130,7 +129,7 @@ impl PhraseLoop {
     fn translate_note(&mut self, rt: i16, ctbl: i16, ev: Vec<i16>, next_tick: i32) -> (i16, String) {
         let deb_txt: String;
         let trans_note: i16;
-        let root: i16 = Self::ROOT2NTNUM[rt as usize];
+        let root: i16 = ROOT2NTNUM[rt as usize];
         let (movable_scale, para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
         if  movable_scale {
             trans_note = translate_note_parascl(para_note, ctbl, ev[NOTE]);
