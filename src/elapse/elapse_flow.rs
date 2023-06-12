@@ -119,10 +119,10 @@ impl Flow {
                         self.gen_stock.remove(idx);
                     }
                 }
-                self.next_msr = FULL; // process() は呼ばれないようになる
             }
             else {break;}
         }
+        self.next_msr = FULL; // process() は呼ばれないようになる
     }
     fn detect_real_note(&mut self, estk: &mut ElapseStack, locate: i16) -> u8 {
         let mut temp_note = (locate*12)/16;
