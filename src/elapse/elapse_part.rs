@@ -359,12 +359,18 @@ impl Part {
             let chord_name = self.cm.gen_chord_name();
             format!("{}{} {}",self.id.sid+4, msrcnt, chord_name)
         }
+        else if self.flow.is_some() && self.during_play {
+            let chord_name = self.cm.gen_chord_name();
+            format!("{}Flow {}",self.id.sid+4, chord_name)
+        }
         else {format!("{}---",self.id.sid+4)}
     }
     pub fn activate_flow(&mut self, estk: &mut ElapseStack) {
-        let fl = Flow::new(0, self.id.sid, self.during_play);
-        self.flow = Some(Rc::clone(&fl));
-        estk.add_elapse(fl);
+        if self.flow.is_none() {
+            let fl = Flow::new(0, self.id.sid, self.during_play);
+            self.flow = Some(Rc::clone(&fl));
+            estk.add_elapse(fl);
+        }
     }
     pub fn deactivate_flow(&mut self) {
         if let Some(fl) = &self.flow {
@@ -392,7 +398,9 @@ impl Elapse for Part {
             dmpr.start();
         }
     }
-    fn stop(&mut self, _estk: &mut ElapseStack) {}        // User による stop 時にコールされる
+    fn stop(&mut self, _estk: &mut ElapseStack) {// User による stop 時にコールされる
+        self.during_play = false;
+    }
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         let pbp = PartBasicPrm {
                                     part_num: self.id.sid,

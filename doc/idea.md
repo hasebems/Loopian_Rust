@@ -286,6 +286,18 @@ CmpsLoopManager o-- CompositionLoop
             - 前のループの、次の拍に鳴るはずだった音を鳴らさせないため
         - 同じ時間のループ内にloopは回収される
 
+### 13.MIDI Flow機能
+
+- 専用外部デバイスを接続し、インタラクティブな演奏を楽しめる機能を提供する
+    - Loopian::ORBIT という専用デバイスを接続
+    - Loopian::ORBIT は MIDI Note On/Off を Note Number 0-95 の範囲で出力する
+    - ただし、1octaveあたり接点は16と見做すので、実際のノート番号にする際には、3/4 をかける必要がある
+- Loopian の任意のパートを、Loopian::ORBIT に接続することができる
+    - input part にて、"flow" コマンドを入力し、play すると、コードに合わせた音に変換して、MIDI OUT を行う
+    - 演奏中であってもなくても、"endflow" で、MIDI Flowは終了する
+    - 演奏中かつ MIDI Flow が指定されているパートは、Part Indicator に Flow と表示される 
+
+
 ## 開発状況
 <!--
 ## Rust 化の順番
@@ -332,6 +344,10 @@ CmpsLoopManager o-- CompositionLoop
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
 
+不具合の可能性（アサート情報）
+- stack_elapse.rs の process() 159行目付近のアサートにひっかかるとき
+    - next_msr が更新されないと、再生済みにならないので、永久ループに入ってしまう
+
 バグ情報
 - 多分前からだが、同時複数音入力の時、コード指定で同じ音を指してしまうのを回避したい。
 
@@ -355,10 +371,7 @@ CmpsLoopManager o-- CompositionLoop
     - 記録されたログファイルを、そのまま load できる機能
 
 先の話
-- コピペ対応
-- 現在のループをひとまとめで取っておき、簡単な指示で呼び出し可能とする(snapshot)
 - さらなる humanized アルゴリズムの追加
-- Load/Save機能、Auto Load/Play機能
 
 
 ## loopian 計画
