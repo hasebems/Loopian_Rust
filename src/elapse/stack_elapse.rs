@@ -115,6 +115,9 @@ impl ElapseStack {
             Err(TryRecvError::Empty) => {},                 // No event
         }
 
+        //  for GUI
+        self.update_gui();
+
         // play 中でなければ return
         if !self.during_play {return false;}
 
@@ -167,9 +170,6 @@ impl ElapseStack {
 
         // remove ended obj
         self.destroy_finished_elps();
-
-        //  for GUI
-        self.update_gui();
 
         return false
     }
