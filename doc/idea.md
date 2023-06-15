@@ -68,6 +68,24 @@
     - para  （コード変換の指定）
     - artic: stacc,legato,marc （dulation指定）
     - p->f など音量の漸次的変化（未実装）
+
+### 4.MIDI Flow機能
+
+- 専用外部デバイスを接続し、インタラクティブな演奏を楽しめる機能を提供する
+    - Loopian::ORBIT という専用デバイスを接続
+    - Loopian::ORBIT は MIDI Note On/Off を Note Number 0-95 の範囲で出力する
+    - ただし、1octaveあたり接点は16と見做すので、実際のノート番号にする際には、3/4 をかける必要がある
+- Loopian の任意のパートを、Loopian::ORBIT に接続することができる
+    - input part にて、"flow" コマンドを入力し、play すると、コードに合わせた音に変換して、MIDI OUT を行う
+    - 演奏中であってもなくても、"endflow" で、MIDI Flowは終了する
+    - 演奏中かつ MIDI Flow が指定されているパートは、Part Indicator に Flow と表示される
+- 演奏効果について
+    - 発音は16分音符単位にクオンタイズされる
+    - コード指定が無ければ、12音のNoteがそのまま鳴る
+    - コード指定があれば、その中のノートに丸め込まれる
+    - ペダルは１小節の間踏まれる
+
+
 <!--
 - Composition の Music Expression 一覧
     - 今のところ無し
@@ -286,16 +304,7 @@ CmpsLoopManager o-- CompositionLoop
             - 前のループの、次の拍に鳴るはずだった音を鳴らさせないため
         - 同じ時間のループ内にloopは回収される
 
-### 13.MIDI Flow機能
 
-- 専用外部デバイスを接続し、インタラクティブな演奏を楽しめる機能を提供する
-    - Loopian::ORBIT という専用デバイスを接続
-    - Loopian::ORBIT は MIDI Note On/Off を Note Number 0-95 の範囲で出力する
-    - ただし、1octaveあたり接点は16と見做すので、実際のノート番号にする際には、3/4 をかける必要がある
-- Loopian の任意のパートを、Loopian::ORBIT に接続することができる
-    - input part にて、"flow" コマンドを入力し、play すると、コードに合わせた音に変換して、MIDI OUT を行う
-    - 演奏中であってもなくても、"endflow" で、MIDI Flowは終了する
-    - 演奏中かつ MIDI Flow が指定されているパートは、Part Indicator に Flow と表示される 
 
 
 ## 開発状況
