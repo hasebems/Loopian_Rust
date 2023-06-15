@@ -444,7 +444,10 @@ impl DamperLoop {
 
         let mut chord_map = vec![false; beat_num];
         for i in 0..MAX_USER_PART {
-            if let Some(phr) = estk.get_phr(i) {
+            if let Some(_fl) = estk.get_flow(i) {
+                chord_map[0] = true;
+            }
+            else if let Some(phr) = estk.get_phr(i) {
                 if phr.borrow().get_noped() { // 一パートでも noped 指定があれば
                     return;
                 }

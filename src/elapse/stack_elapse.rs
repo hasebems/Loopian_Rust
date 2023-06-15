@@ -16,6 +16,7 @@ use super::tickgen::{TickGen, CrntMsrTick};
 use super::midi::{MidiTx, MidiRx, MidiRxBuf};
 use super::elapse::*;
 use super::elapse_part::Part;
+use super::elapse_flow::Flow;
 use super::elapse_loop::{PhraseLoop, CompositionLoop};
 
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
@@ -181,6 +182,9 @@ impl ElapseStack {
     }
     pub fn get_cmps(&self, part_num: usize) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.part_vec[part_num].borrow().get_cmps()
+    }
+    pub fn get_flow(&self, part_num: usize) -> Option<Rc<RefCell<Flow>>> {
+        self.part_vec[part_num].borrow().get_flow()
     }
     pub fn tg(&self) -> &TickGen {&self.tg}
     pub fn inc_key_map(&mut self, key_num: u8) {self.key_map[(key_num-MIN_NOTE_NUMBER) as usize] += 1;}

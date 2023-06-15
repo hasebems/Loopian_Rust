@@ -348,6 +348,7 @@ impl Part {
     pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.cm.get_cmps()
     }
+    pub fn get_flow(&self) -> Option<Rc<RefCell<Flow>>> {self.flow.clone()}
     pub fn set_sync(&mut self) {
         self.pm.state_reserve = true;
         self.cm.state_reserve = true;
