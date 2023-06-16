@@ -349,6 +349,12 @@ CmpsLoopManager o-- CompositionLoop
 
 - アルペジオ時の同音回避型変換のアルゴリズムを変更 5/1済
 - MIDI in受信 5/17 済
+- MIDI IN機能 6/15 ほぼ済
+    - Loopian::ORBIT からの MIDI Note を接点として受信 16×6 = 96 or 8×6 = 48 [接点]
+    - 実音 6octave 分の演奏が可能
+    - 受信後、適切なタイミング、ノートに変換して MIDI 出力
+        - ノートは、d,r,m...t のクロマティック入力がされたとみなし、特定のパートに入力(L1,L2,R1,R2)
+        - タイミングは、8分音符、16分音符のどちらかにクオンタイズされる
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -370,14 +376,8 @@ CmpsLoopManager o-- CompositionLoop
     - リアルタイムか、次のループ先頭かを選べる
     - リアルタイムの場合、まずそれが可能なデータかチェック
         - 小節数が同じ、中身が空でない
-- MIDI IN機能
-    - Loopian::ORBIT からの MIDI Note を接点として受信 16×6 = 96 or 8×6 = 48 [接点]
-    - 実音 3octave 分の演奏が可能
-    - 受信後、適切なタイミング、ノートに変換して MIDI 出力
-        - ノートは、d,r,m...t のクロマティック入力がされたとみなし、特定のパートに入力(L1,L2,R1,R2)
-        - タイミングは、8分音符、16分音符のどちらかにクオンタイズされる
 - load 機能
-    - 記録されたログファイルを、そのまま load できる機能
+    - 記録されたログファイルを、そのまま load して履歴バッファに格納できる機能
 
 先の話
 - さらなる humanized アルゴリズムの追加
