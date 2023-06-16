@@ -7,11 +7,6 @@ mod cmd;
 mod elapse;
 mod lpnlib;
 
-use std::fs;
-use std::fs::File;
-use std::io::Write;
-//use std::io::prelude::*;
-use std::path::Path;
 use std::time::{Duration, Instant};
 use std::thread;
 use std::sync::mpsc;
@@ -21,6 +16,7 @@ use eframe::egui;
 
 use cmd::cmdparse;
 use elapse::stack_elapse::ElapseStack;
+use cmd::history::History;
 
 //#[derive(Default)]
 pub struct LoopianApp {
@@ -29,7 +25,7 @@ pub struct LoopianApp {
     start_time: Instant,
     input_lines: Vec<(String, String)>,
     cmd: cmdparse::LoopianCmd,
-    history: usize,
+    history: History,
 }
 
 impl LoopianApp {
@@ -99,7 +95,7 @@ impl LoopianApp {
             start_time: Instant::now(), // Current Time
             input_lines: Vec::new(),
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui),
-            history: 0,
+            history: History::new(),
         }
     }
     fn init_font(cc: &eframe::CreationContext<'_>) {
@@ -133,39 +129,8 @@ impl LoopianApp {
         // Tell egui to use these fonts:
         cc.egui_ctx.set_fonts(fonts);
     }
-    fn gen_log(&mut self) {
-        // フォルダ作成
-        let path = Path::new("log");
-        if !path.is_dir() {
-            fs::create_dir_all(path).unwrap();
-        }
-        // 時間をファイル名に使う
-        let file = Local::now().format("%Y-%m-%d_%H-%M-%S.txt").to_string();
-        let path_str = "log/".to_string() + &file;
-        let path = Path::new(&path_str);
-        let display = path.display();
-        // log収集
-        let mut whole_txt: String = String::new();
-        for line in self.input_lines.iter() {
-            if line.0.len() > 0 {
-                whole_txt += &line.0.to_string();
-                whole_txt += &line.1.to_string();
-                whole_txt += "\n";
-            }
-        }
-        // ファイル作成
-        let mut file = match File::create(&path) {
-            Err(why) => panic!("couldn't create {}: {}", display, why),
-            Ok(file) => file,
-        };
-        // ファイル書き込み
-        match file.write_all(whole_txt.as_bytes()) {
-            Err(why) => panic!("couldn't write to {}: {}", display, why),
-            Ok(_) => println!("successfully wrote to {}", display),
-        }
-    }
     fn app_end(&mut self) {
-        self.gen_log();
+        self.history.gen_log();
         println!("That's all. Thank you!");
     }
     //*******************************************************************
@@ -355,12 +320,12 @@ impl LoopianApp {
             if self.input_text.len() == 0 {return;}
             let dt = Local::now();
             let tm = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
-            self.input_lines.push((tm, self.input_text.clone()));
+            self.input_lines.push((tm.clone(), self.input_text.clone()));
+            self.history.set_scroll_text(tm, self.input_text.clone());
             if let Some(answer) = self.cmd.set_and_responce(&self.input_text) {
                 self.input_lines.push(("".to_string(), answer));
                 self.input_text = "".to_string();
                 self.input_locate = 0;
-                self.history = self.input_lines.len();
             }
             else {  // The end of the App
                 self.app_end();
@@ -387,22 +352,15 @@ impl LoopianApp {
             //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowUp {
-            let max_count = self.input_lines.len();
-            if self.history >= 2 {self.history -= 2;}
-            if max_count > 0 && self.history < max_count {
-                self.input_text = self.input_lines[self.history].1.clone();
+            if let Some(txt) = self.history.arrow_up() {
+                self.input_text = txt;
             }
             let maxlen = self.input_text.chars().count();
             if maxlen < self.input_locate {self.input_locate = maxlen;}
         }
         else if key == &Key::ArrowDown {
-            let max_count = self.input_lines.len();
-            if self.history < max_count {self.history += 2;}
-            if max_count > 0 && self.history < max_count {
-                self.input_text = self.input_lines[self.history].1.clone();
-            }
-            else if self.history >= max_count {
-                self.input_text = "".to_string();
+            if let Some(txt) = self.history.arrow_down() {
+                self.input_text = txt;
             }
             let maxlen = self.input_text.chars().count();
             if maxlen < self.input_locate {self.input_locate = maxlen;}
