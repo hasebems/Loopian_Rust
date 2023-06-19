@@ -189,7 +189,7 @@ Composition 指定
 - 'set oct=+1' : 現状から１オクターブ上げる
     - set 以降に all を付け足すと、全 part に効果、付けなければ入力中の part に対してのみ効果
     - 'set oct=0,0,-1,+1' : 4つのパートのオクターブを一度に設定できる
-- 'set input=fixed' : 階名を入力したときのオクターブ決定法
+- 'set input=fixed' : 階名を入力したときのオクターブ決定法（和音入力の場合はfixedのみ）
     - fixed は、入力する階名の位置は固定
     - closer は、指示がない限り、前回に近い音程 (default)
 - 'set samenote=modeling' : 同音連打の動き方
