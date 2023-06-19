@@ -256,27 +256,41 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
     let notes_vec: Vec<String> = split_by_by('=', '_', ntext4);
 
     let mut notes: Vec<u8> = Vec::new();
-    let mut doremi: i32 = 0;
-    for nt in notes_vec.iter() {    // 同時発音
+    let mut next_last_nt = last_nt;
+    if notes_vec.len() == 1 {
+        let mut doremi: i32 = 0;
         if imd == InputMode::Fixed {
-            doremi = convert_doremi_fixed(nt.to_string());
+            doremi = convert_doremi_fixed(notes_vec[0].to_string());
         }
         else if imd == InputMode::Closer {
-            doremi = convert_doremi_closer(nt.to_string(), last_nt);
+            doremi = convert_doremi_closer(notes_vec[0].to_string(), last_nt);
         }
-        let mut base_pitch: i32;
-        if doremi >= NO_MIDI_VALUE as i32 { // special meaning
-            base_pitch = doremi;
-            doremi = last_nt;
+        if doremi < NO_MIDI_VALUE as i32 { // special meaning
+            next_last_nt = doremi;
         }
-        else {
-            base_pitch = base_note + doremi;
-            if base_pitch >= MAX_NOTE_NUMBER as i32 {base_pitch = MAX_NOTE_NUMBER as i32;}
-            else if base_pitch < MIN_NOTE_NUMBER as i32 {base_pitch = MIN_NOTE_NUMBER as i32;}
-        }
-        notes.push(base_pitch as u8);
+        let base_pitch = add_base_and_doremi(base_note, doremi);
+        notes.push(base_pitch);
     }
-    (notes, mes_end, dur_cnt, diff_vel, base_dur, doremi)
+    else {
+        for nt in notes_vec.iter() {    // 同時発音
+            let doremi = convert_doremi_fixed(nt.to_string());
+            let base_pitch = add_base_and_doremi(base_note, doremi);
+            notes.push(base_pitch);
+        }
+    }
+    (notes, mes_end, dur_cnt, diff_vel, base_dur, next_last_nt)
+}
+fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
+    let mut base_pitch: i32;
+    if doremi >= NO_MIDI_VALUE as i32 { // special meaning ex. NO_NOTE
+        base_pitch = doremi;
+    }
+    else {
+        base_pitch = base_note + doremi;
+        if base_pitch >= MAX_NOTE_NUMBER as i32 {base_pitch = MAX_NOTE_NUMBER as i32;}
+        else if base_pitch < MIN_NOTE_NUMBER as i32 {base_pitch = MIN_NOTE_NUMBER as i32;}
+    }
+    return base_pitch as u8;
 }
 fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
