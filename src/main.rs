@@ -24,6 +24,7 @@ pub struct LoopianApp {
     input_text: String,
     start_time: Instant,
     input_lines: Vec<(String, String)>,
+    history_cnt: usize,
     cmd: cmdparse::LoopianCmd,
     history: History,
 }
@@ -94,6 +95,7 @@ impl LoopianApp {
             input_text: String::new(),
             start_time: Instant::now(), // Current Time
             input_lines: Vec::new(),
+            history_cnt: 0,
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui),
             history: History::new(),
         }
@@ -254,7 +256,7 @@ impl LoopianApp {
 //        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
         const CURSOR_TXT_LENGTH: f32 = 11.95;   // FONT 20p
         const CURSOR_THICKNESS: f32 = 4.0;
-        const PROMPT_LETTERS: usize = 3;
+        const PROMPT_LETTERS: usize = 8;
 
         const INPUTTXT_UPPER_MARGIN: f32 = 0.0;
         const INPUTTXT_LOWER_MARGIN: f32 = 0.0;
@@ -281,7 +283,9 @@ impl LoopianApp {
         }
         // Draw Letters
         let prompt_mergin: f32 = Self::INPUTTXT_LETTER_WIDTH*(PROMPT_LETTERS as f32);
-        let prompt_txt: &str = self.cmd.get_part_txt();
+        let mut hcnt = self.history_cnt;
+        if hcnt >= 1000 {hcnt %= 1000;}
+        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + self.cmd.get_part_txt());
         // Prompt Text
         ui.put(
             Rect { 
@@ -321,7 +325,7 @@ impl LoopianApp {
             let dt = Local::now();
             let tm = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
             self.input_lines.push((tm.clone(), self.input_text.clone()));
-            self.history.set_scroll_text(tm, self.input_text.clone());
+            self.history_cnt = self.history.set_scroll_text(tm, self.input_text.clone());
             if let Some(answer) = self.cmd.set_and_responce(&self.input_text) {
                 self.input_lines.push(("".to_string(), answer));
                 self.input_text = "".to_string();
@@ -353,14 +357,16 @@ impl LoopianApp {
         }
         else if key == &Key::ArrowUp {
             if let Some(txt) = self.history.arrow_up() {
-                self.input_text = txt;
+                self.input_text = txt.0;
+                self.history_cnt = txt.1;
             }
             let maxlen = self.input_text.chars().count();
             if maxlen < self.input_locate {self.input_locate = maxlen;}
         }
         else if key == &Key::ArrowDown {
             if let Some(txt) = self.history.arrow_down() {
-                self.input_text = txt;
+                self.input_text = txt.0;
+                self.history_cnt = txt.1;
             }
             let maxlen = self.input_text.chars().count();
             if maxlen < self.input_locate {self.input_locate = maxlen;}

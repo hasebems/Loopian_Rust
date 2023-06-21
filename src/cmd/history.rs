@@ -56,26 +56,27 @@ impl History {
     pub fn _get_scroll_text(&self, line: usize) -> (String, String) {
         self.input_lines[line].clone()
     }
-    pub fn set_scroll_text(&mut self, time: String, cmd: String) {
+    pub fn set_scroll_text(&mut self, time: String, cmd: String) -> usize {
         self.input_lines.push((time, cmd));
         self.history_ptr = self.input_lines.len();
+        self.history_ptr
     }
-    pub fn arrow_up(&mut self) -> Option<String> {
+    pub fn arrow_up(&mut self) -> Option<(String, usize)> {
         let max_count = self.input_lines.len();
         if self.history_ptr >= 1 {self.history_ptr -= 1;}
         if max_count > 0 && self.history_ptr < max_count {
-            Some(self.input_lines[self.history_ptr].1.clone())
+            Some((self.input_lines[self.history_ptr].1.clone(), self.history_ptr))
         }
         else {None}
     }
-    pub fn arrow_down(&mut self) -> Option<String> {
+    pub fn arrow_down(&mut self) -> Option<(String, usize)> {
         let max_count = self.input_lines.len();
         if self.history_ptr < max_count {self.history_ptr += 1;}
         if max_count > 0 && self.history_ptr < max_count {
-            Some(self.input_lines[self.history_ptr].1.clone())
+            Some((self.input_lines[self.history_ptr].1.clone(), self.history_ptr))
         }
         else if self.history_ptr >= max_count {
-            Some("".to_string())
+            Some(("".to_string(), self.history_ptr))
         }
         else {None}
     }
