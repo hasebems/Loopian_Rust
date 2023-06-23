@@ -300,7 +300,6 @@ pub struct Part {
 
     during_play: bool,
     keynote: u8,
-    _base_note: u8,
     next_msr: i32,
     next_tick: i32,
     pm: PhrLoopManager,
@@ -311,15 +310,12 @@ pub struct Part {
 }
 impl Part {
     pub fn new(num: u32) -> Rc<RefCell<Part>> {
-        // left なら 1, でなければ 0
-        let left_part = 1-(num/(MAX_LEFT_PART as u32));
         let new_id = ElapseId {pid:0, sid:num, elps_type: ElapseType::TpPart,};
         Rc::new(RefCell::new(Self {
             id: new_id,
             priority: PRI_PART,
             during_play: false,
             keynote: 0,
-            _base_note: DEFAULT_NOTE_NUMBER - 12*(left_part as u8),
             next_msr: 0,
             next_tick: 0,
             pm: PhrLoopManager::new(),
