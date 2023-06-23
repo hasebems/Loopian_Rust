@@ -25,10 +25,10 @@ impl SeqDataStock {
     pub fn new() -> Self {
         Self {
             pdt: [
-                PhraseDataStock::new(true),
-                PhraseDataStock::new(true),
-                PhraseDataStock::new(false),
-                PhraseDataStock::new(false)
+                PhraseDataStock::new(LEFT1),
+                PhraseDataStock::new(LEFT2),
+                PhraseDataStock::new(RIGHT1),
+                PhraseDataStock::new(RIGHT2)
             ],
             cdt: Default::default(),
             input_mode: InputMode::Closer,
@@ -110,9 +110,8 @@ pub struct PhraseDataStock {
     whole_tick: i32,
 }
 impl PhraseDataStock {
-    fn new(left: bool) -> Self {
-        let base_note = if left {(DEFAULT_NOTE_NUMBER-12) as i32}
-        else {DEFAULT_NOTE_NUMBER as i32};
+    fn new(num: usize) -> Self {
+        let base_note = (DEFAULT_NOTE_NUMBER as i32) + 12*((num as i32) - 2);
         Self {
             base_note,
             raw: "".to_string(),
