@@ -43,7 +43,8 @@ loopian は、Live Coding などで使うために開発している、テキス
 - 起動
     - './target/release/loopian_rust'  : 起動アプリ名は loopian_rust
 - 入力
-    - 'L1> ' : prompt
+    - '000: L1> ' : prompt
+        - 000: は入力したコマンド history の順番を表している
         - L1> は Left 1 の入力状態であることを示す
         - このプロンプトの後に、コマンドやフレーズを書き込む
     - カーソルによる過去入力のヒストリー呼び出しが可能
@@ -81,6 +82,13 @@ loopian は、Live Coding などで使うために開発している、テキス
     - sync left  : 左手パート(left1/2)
     - sync all   : 全パート
 
+入力環境コマンド
+----------------
+
+- 'right1' 'left1' : Phrase, Composition の入力パートを指定。右手２パート、左手２パートの４パートを指定可能
+- 'panic' : 今鳴っている音を消音する
+- 'flow' 'endflow' : Loopian::ORBIT を接続した場合、そのパートに Loopian::ORBIT からの演奏情報を入力したり、解除したりする
+
 
 Phrase 追加
 -------------
@@ -90,6 +98,10 @@ Phrase 追加
     - *musical expression*: 音楽表現を入力する
         - [*musical expression*] は省略可能
     - [] : 全データ削除
+    - 冒頭でパート指定することで、プロンプトと違うパートでも入力することができる
+        - L1> : left1パート
+        - L12> : left1,left2パート二つ同時に同じ Phrase をセット
+        - ALL> : 全パートに同じ Phrase をセット
 
 - noteの階名表現
     - d,r,m,f,s,l,t: ド、レ、ミ、ファ、ソ、ラ、シ
@@ -123,7 +135,8 @@ Phrase 追加
 - 音楽表現(musical expression)
     - f,mf,mp,p,pp: フレーズの音量
     - stacc: 音価を半分にする
-
+    - para : 和音変換時、root に合わせて並行移動する 
+    - noped: Pedal Off指定
 
 
 Composition 指定
@@ -132,6 +145,10 @@ Composition 指定
 - {*chord*} : Composition の書式
     - *chord*: コードを小節ごとに / で区切って時系列で記述
     - {} : 全データ削除
+    - 冒頭でパート指定することで、プロンプトと違うパートでも入力することができる
+        - L1> : left1パート
+        - L12> : left1,left2パート二つ同時に同じ Phrase をセット
+        - ALL> : 全パートに同じ Phrase をセット
 
 - 長さの指定方法
     - '|' '/' : 小節区切り。区切りが連続するとコードがないとみなす
@@ -160,19 +177,6 @@ Composition 指定
     - Iion : Iを主音としたイオニアン(Ionian)
     - thru : 全ての音(pedalなし)
     - コードやスケールが判断不能の場合、Errorとなり主音しか出ない
-
-
-- 音楽表現(musical expression)
-    - para : 和音変換時、root に合わせて並行移動する 
-    - noped: Pedal Off指定
-
-
-入力環境コマンド
-----------------
-
-- 'right1' 'left1' : 右手２パート、左手２パートの４パートを指定可能
-- 'panic' : 今鳴っている音を消音する
-- 'flow' 'endflow' : Loopian::ORBIT を接続した場合、そのパートに Loopian::ORBIT からの演奏情報を入力したり、解除したりする
 
 
 調、テンポ、拍子、音量
