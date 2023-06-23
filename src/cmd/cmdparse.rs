@@ -93,6 +93,9 @@ impl LoopianCmd {
         else if first_letter == "p" {self.letter_p(input_text)}
         else if first_letter == "r" {self.letter_r(input_text)}
         else if first_letter == "s" {self.letter_s(input_text)}
+        else if first_letter == "L" {self.letter_part(input_text)}
+        else if first_letter == "R" {self.letter_part(input_text)}
+        else if first_letter == "A" {self.letter_part(input_text)}
         else                        {Some("what?".to_string())}
     }
     fn letter_e(&mut self, input_text: &str) -> Option<String> {
@@ -246,6 +249,58 @@ impl LoopianCmd {
         } else {
             Some("what?".to_string())
         }
+    }
+    fn letter_part(&mut self, input_text: &str) -> Option<String> {
+        let mut rtn_str = "what?".to_string();
+        for (i, ltr) in input_text.chars().enumerate() {
+            if ltr == '>' {
+                let first_letter = &input_text[i+1..i+2];
+                let part_str = &input_text[0..i];
+                let rest_text = &input_text[i+1..];
+                match part_str {
+                    "L1" => rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text),
+                    "L2" => rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text),
+                    "L12" => {
+                        rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text);
+                        if rtn_str != "what?" {
+                            rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
+                        }
+                    },
+                    "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
+                    "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),
+                    "R12" => {
+                        rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
+                        if rtn_str != "what?" {
+                            rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
+                        }
+                    },
+                    "ALL" => {
+                        for i in 0..MAX_USER_PART {
+                            rtn_str = self.call_bracket_brace(i, first_letter, rest_text);
+                        }
+                    },
+                    _ => println!("No Part!"),
+                }
+                break;
+            }
+        }
+        Some(rtn_str)
+    }
+    fn call_bracket_brace(&mut self, part_num: usize, first_letter: &str, rest_text: &str) -> String {
+        let mut rtn_str = "what?".to_string();
+        if first_letter == "[" {
+            if self.gendt.set_raw_phrase(part_num, rest_text.to_string()) {
+                self.send_phrase_to_elapse(part_num);
+                rtn_str = "Set Phrase!".to_string();
+            }
+        }
+        else if first_letter == "{" {
+            if self.gendt.set_raw_composition(part_num, rest_text.to_string()) {
+                self.send_composition_to_elapse(part_num);
+                rtn_str = "Set Composition!".to_string();
+            }
+        }
+        rtn_str
     }
     //*************************************************************************
     fn parse_set_command(&mut self, input_text: &str) -> String {
@@ -416,13 +471,13 @@ impl LoopianCmd {
     fn send_composition_to_elapse(&self, part: usize) {
         let mut cdt: Vec<i16> = self.gendt.get_cdstk(part).get_final();
         if cdt.len() > 1 {
-            let mut msg: Vec<i16> = vec![MSG_CMP+self.input_part as i16];
+            let mut msg: Vec<i16> = vec![MSG_CMP+part as i16];
             msg.append(&mut cdt);
             //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
         }
         else {
-            self.send_msg_to_elapse(vec![MSG_CMP_X+self.input_part as i16]);
+            self.send_msg_to_elapse(vec![MSG_CMP_X+part as i16]);
             println!("Part {} Composition: No Data!",part)
         }
     }
