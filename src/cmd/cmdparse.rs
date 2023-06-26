@@ -367,6 +367,12 @@ impl LoopianCmd {
         else if cv[0] == "samenote" {
             "what?".to_string()
         }
+        else if cv[0] == "turnnote" {
+            if self.change_turnnote(&cv[1]) {
+                "Turn note has changed!".to_string()
+            }
+            else {"what?".to_string()}            
+        }
         else {
             "what?".to_string()
         }
@@ -435,6 +441,13 @@ impl LoopianCmd {
         }
         else if imd == "closer" {
             self.gendt.change_input_mode(InputMode::Closer);
+            true
+        }
+        else {false}
+    }
+    fn change_turnnote(&mut self, ntnum: &str) -> bool {
+        if let Ok(turn_note) = ntnum.parse::<i16>() {
+            self.send_msg_to_elapse(vec![MSG_SET, MSG2_TURN, turn_note]);
             true
         }
         else {false}

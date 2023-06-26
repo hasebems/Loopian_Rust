@@ -45,6 +45,7 @@ pub struct PhraseLoop {
     next_tick_in_phrase: i32,
     last_note: i16,
     noped: bool,
+    turnnote: i16,
 
     // for super's member
     whole_tick: i32,
@@ -54,8 +55,8 @@ pub struct PhraseLoop {
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl PhraseLoop {
-    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<i16>>, ana: Vec<Vec<i16>>, whole_tick: i32) 
-      -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<i16>>, ana: Vec<Vec<i16>>,
+        whole_tick: i32, turnnote: i16) -> Rc<RefCell<Self>> {
         let noped = ana.iter().any(|x| x[TYPE]==TYPE_EXP && x[EXP]==NOPED);
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
@@ -67,6 +68,7 @@ impl PhraseLoop {
             next_tick_in_phrase: 0,
             last_note: NO_NOTE as i16,
             noped,
+            turnnote,
             // for super's member
             whole_tick,
             destroy: false,
@@ -130,8 +132,9 @@ impl PhraseLoop {
         let deb_txt: String;
         let trans_note: i16;
         let root: i16 = ROOT2NTNUM[rt as usize];
-        let (movable_scale, para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
+        let (movable_scale, mut para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
         if  movable_scale {
+            if para_note > self.turnnote {para_note -= 12;}
             trans_note = translate_note_parascl(para_note, ctbl, ev[NOTE]);
             deb_txt = "para_sc:".to_string();
         }
@@ -139,7 +142,7 @@ impl PhraseLoop {
             let option = self.specify_trans_option(next_tick, ev[NOTE]);
             if option == ARP_PARA {
                 let mut tgt_nt = ev[NOTE] + root;
-                if root > 5 {tgt_nt -= 12;}
+                if root > self.turnnote {tgt_nt -= 12;}
                 trans_note = translate_note_com(root, ctbl, tgt_nt);
                 deb_txt = "para:".to_string();
             }

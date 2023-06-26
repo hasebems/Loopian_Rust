@@ -34,6 +34,7 @@ struct PhrLoopManager {
     whole_tick_stock: i16,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     state_reserve: bool,
+    turnnote: i16,
 }
 impl PhrLoopManager {
     pub fn new() -> Self {
@@ -47,6 +48,7 @@ impl PhrLoopManager {
             whole_tick_stock: 0,
             loop_phrase: None,
             state_reserve: false,
+            turnnote: DEFAULT_TURNNOTE,
         }
     }
     pub fn start(&mut self) {
@@ -119,6 +121,9 @@ impl PhrLoopManager {
             String::from("---")
         }
     }
+    pub fn set_turnnote(&mut self, tn: i16) {
+        self.turnnote = tn;
+    }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         self.first_msr_num = msr;
         if let Some(phr) = &self.new_data_stock {
@@ -140,7 +145,7 @@ impl PhrLoopManager {
 
             self.loop_cntr += 1;
             let lp = PhraseLoop::new(self.loop_cntr, pbp.part_num, 
-                pbp.keynote, msr, phr.to_vec(), ana.to_vec(), self.whole_tick);
+                pbp.keynote, msr, phr.to_vec(), ana.to_vec(), self.whole_tick, self.turnnote);
             self.loop_phrase = Some(Rc::clone(&lp));
             estk.add_elapse(lp);
         }}
@@ -345,6 +350,9 @@ impl Part {
         self.cm.get_cmps()
     }
     pub fn get_flow(&self) -> Option<Rc<RefCell<Flow>>> {self.flow.clone()}
+    pub fn set_turnnote(&mut self, tn: i16) {
+        self.pm.set_turnnote(tn);
+    }
     pub fn set_sync(&mut self) {
         self.pm.state_reserve = true;
         self.cm.state_reserve = true;

@@ -55,6 +55,7 @@ pub const NO_NOTE: u8 = 255;
 pub const REST: u8 = 254;
 pub const RPT_HEAD: u8 = 253;               // Head of Repeat
 pub const NO_MIDI_VALUE: u8 = 128;
+pub const DEFAULT_TURNNOTE: i16 = 5;
 
 //*******************************************************************
 //          UI->ELPS Message
@@ -91,6 +92,7 @@ pub enum _ElpsMsg {
 // MSG_SET      | MSG2_BPM    |[bpm]| --
 //              | MSG2_BEAT   |[numerator]|[denomirator]| --
 //              | MSG2_KEY    |[key]| --
+//              | MSG2_TURN   |[turnnote(0-11)]| --
 // MSG_PHR+part |[whole_tick] |(( TYPE_NOTE | <TICK> | <DURATION> | <NOTE> | <VELOCITY> ) or
 //                              ( TYPE_INFO | <TICK> | [info_type] | 0 | 0 ))*n
 // MSG_CMP+part |[whole_tick] |( <TYPE> | <TICK> | <CD_ROOT> | <CD_TABLE> )*n
@@ -113,6 +115,7 @@ pub const MSG_SET: i16      = -2;   //  3/4byte
 pub const MSG2_BPM: i16     = 1;
 pub const MSG2_BEAT: i16    = 2;
 pub const MSG2_KEY: i16     = 3;
+pub const MSG2_TURN: i16    = 4;
 pub const MSG2_LFT: i16     = 5;
 pub const MSG2_RGT: i16     = 6;
 pub const MSG2_ALL: i16     = 7;

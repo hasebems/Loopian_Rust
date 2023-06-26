@@ -14,8 +14,7 @@ pub const ROOT2NTNUM: [i16; 22] = [0,-1,0,1,1,2,3,3,4,5,4,5,6,6,7,8,8,9,10,10,11
 //*******************************************************************
 //          Func
 //*******************************************************************
-pub fn translate_note_parascl(mut para_note: i16, ctbl: i16, ntev: i16) -> i16 {
-    if para_note >= 5 {para_note -= 12;}
+pub fn translate_note_parascl(para_note: i16, ctbl: i16, ntev: i16) -> i16 {
     let input_nt = ntev + para_note;
     let input_doremi = input_nt%12;
     let input_oct = input_nt/12;

@@ -199,7 +199,7 @@ Composition 指定
 - 'set samenote=modeling' : 同音連打の動き方
     - modeling は、モデリング音源向けで、note off は一度しか送らない（default）
     - common は、一般的なMIDI音源向けで、note off は note on の数だけ送られる
-
+- 'set turnnote=5' : para 指定時、変換後の音程を折り返す位置(0-11, default=5)
 
 アプリの内部で自動的に行われること
 -------------------------------

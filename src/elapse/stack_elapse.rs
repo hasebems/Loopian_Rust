@@ -284,6 +284,9 @@ impl ElapseStack {
         else if msg[1] == MSG2_KEY {
             self.part_vec.iter().for_each(|x| x.borrow_mut().change_key(msg[2] as u8));
         }
+        else if msg[1] == MSG2_TURN {
+            self.part_vec.iter_mut().for_each(|x| x.borrow_mut().set_turnnote(msg[2]));
+        }
     }
     fn phrase(&mut self, msg: Vec<i16>) {
         // message の２次元化
