@@ -35,22 +35,29 @@ impl History {
         let display = path.display();
         // log収集
         let mut whole_txt: String = String::new();
+        let mut txt_exist = false;
         for line in self.input_lines.iter() {
-            if line.0.len() > 0 {
+            if line.0.len() > 0 && line.1 != "quit" {
                 whole_txt += &line.0.to_string();
                 whole_txt += &line.1.to_string();
                 whole_txt += "\n";
+                txt_exist = true;
             }
         }
-        // ファイル作成
-        let mut file = match File::create(&path) {
-            Err(why) => panic!("couldn't create {}: {}", display, why),
-            Ok(file) => file,
-        };
-        // ファイル書き込み
-        match file.write_all(whole_txt.as_bytes()) {
-            Err(why) => panic!("couldn't write to {}: {}", display, why),
-            Ok(_) => println!("successfully wrote to {}", display),
+        if txt_exist {
+            // ファイル作成
+            let mut file = match File::create(&path) {
+                Err(why) => panic!("couldn't create {}: {}", display, why),
+                Ok(file) => file,
+            };
+            // ファイル書き込み
+            match file.write_all(whole_txt.as_bytes()) {
+                Err(why) => panic!("couldn't write to {}: {}", display, why),
+                Ok(_) => println!("successfully wrote to {}", display),
+            }
+        }
+        else {
+            println!("No file!");
         }
     }
     pub fn _get_scroll_text(&self, line: usize) -> (String, String) {
