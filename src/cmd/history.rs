@@ -65,8 +65,14 @@ impl History {
     }
     pub fn set_scroll_text(&mut self, time: String, cmd: String) -> usize {
         self.input_lines.push((time, cmd));
-        self.history_ptr = self.input_lines.len();
-        self.history_ptr
+        self.update_history_ptr()
+    }
+    pub fn load_and_set_history(&mut self, time: String, fname: &str) -> usize {
+        println!("Loaded File Name: {}",fname);
+        for _ in 0..10 {
+            self.input_lines.push((time.clone(), "ok".to_string()));
+        }
+        self.update_history_ptr()
     }
     pub fn arrow_up(&mut self) -> Option<(String, usize)> {
         let max_count = self.input_lines.len();
@@ -86,5 +92,9 @@ impl History {
             Some(("".to_string(), self.history_ptr))
         }
         else {None}
+    }
+    fn update_history_ptr(&mut self) -> usize {
+        self.history_ptr = self.input_lines.len();
+        self.history_ptr
     }
 }

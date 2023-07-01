@@ -23,7 +23,7 @@ pub struct LoopianApp {
     input_locate: usize,
     input_text: String,
     start_time: Instant,
-    input_lines: Vec<(String, String)>,
+    scroll_lines: Vec<(String, String)>,
     history_cnt: usize,
     cmd: cmdparse::LoopianCmd,
     history: History,
@@ -53,8 +53,6 @@ impl LoopianApp {
     const SPACE3_UPPER: f32 = 760.0;    // input text
     const SPACE3_LOWER: f32 = 800.0;
     const SPACE3_TXT_LEFT_MARGIN: f32 = 5.0;
-    const INPUTTXT_FONT_SIZE: f32 = 20.0;
-    const INPUTTXT_LETTER_WIDTH: f32 = 11.95;
 
     const FONT16_HEIGHT: f32 = 25.0;
     const FONT16_WIDTH: f32 = 9.56;
@@ -94,7 +92,7 @@ impl LoopianApp {
             input_locate: 0,
             input_text: String::new(),
             start_time: Instant::now(), // Current Time
-            input_lines: Vec::new(),
+            scroll_lines: Vec::new(),
             history_cnt: 0,
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui),
             history: History::new(),
@@ -212,17 +210,13 @@ impl LoopianApp {
 //            2.0,                //  curve
 //            Self::BACK_GRAY     //  color
 //        );
-        let mut max_count = Self::MAX_SCROLL_LINES;
-        let mut ofs_count = 0;
-        if self.input_lines.len() < Self::MAX_SCROLL_LINES {
-            max_count = self.input_lines.len();
-        }
-        else {
-            ofs_count = self.input_lines.len() - Self::MAX_SCROLL_LINES;
-        }
+
+        let lines = self.scroll_lines.len();
+        let max_count = if lines < Self::MAX_SCROLL_LINES {lines} else {Self::MAX_SCROLL_LINES};
+        let ofs_count = if lines < Self::MAX_SCROLL_LINES {0} else {lines - Self::MAX_SCROLL_LINES};
         // Draw Letters
         for i in 0..max_count {
-            let past_text_set = self.input_lines[ofs_count+i].clone();
+            let past_text_set = self.scroll_lines[ofs_count+i].clone();
             let past_text = past_text_set.0 + &past_text_set.1;
             let cnt = past_text.chars().count();
             let txt_color = if i%2==0 {Color32::WHITE} else {Self::MAZENTA};
@@ -261,6 +255,12 @@ impl LoopianApp {
         const INPUTTXT_UPPER_MARGIN: f32 = 0.0;
         const INPUTTXT_LOWER_MARGIN: f32 = 0.0;
 
+        const INPUTTXT_FONT_SIZE: f32 = 20.0;
+        const INPUTTXT_LETTER_WIDTH: f32 = 11.95;
+        const PROMPT_MERGIN: f32 = INPUTTXT_LETTER_WIDTH*(PROMPT_LETTERS as f32);
+        const INPUT_MERGIN_OFFSET: f32 = 3.25;
+        const INPUT_MERGIN: f32 = PROMPT_MERGIN + INPUT_MERGIN_OFFSET;
+
         // Paint Letter Space
         ui.painter().rect_filled(
             Rect::from_min_max(pos2(Self::SPACE_LEFT,Self::SPACE3_UPPER),
@@ -282,7 +282,6 @@ impl LoopianApp {
             );
         }
         // Draw Letters
-        let prompt_mergin: f32 = Self::INPUTTXT_LETTER_WIDTH*(PROMPT_LETTERS as f32);
         let mut hcnt = self.history_cnt;
         if hcnt >= 1000 {hcnt %= 1000;}
         let prompt_txt: &str = &(format!("{:03}: ", hcnt) + self.cmd.get_part_txt());
@@ -291,27 +290,26 @@ impl LoopianApp {
             Rect { 
                    min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN - 2.0,
                               y:Self::SPACE3_UPPER + INPUTTXT_UPPER_MARGIN},
-                   max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + prompt_mergin,
+                   max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + PROMPT_MERGIN,
                               y:Self::SPACE3_LOWER + INPUTTXT_LOWER_MARGIN},},
             Label::new(RichText::new(prompt_txt)
-                .size(Self::INPUTTXT_FONT_SIZE)
+                .size(INPUTTXT_FONT_SIZE)
                 .color(Self::MAZENTA)
                 .family(FontFamily::Monospace))
         );
         // User Input
         let ltrcnt = self.input_text.chars().count();
-        let input_mergin: f32 = prompt_mergin + 3.25;
         for i in 0..ltrcnt {    // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
             ui.put(
                 Rect { 
-                    min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + input_mergin + 
-                                 Self::INPUTTXT_LETTER_WIDTH*(i as f32),
+                    min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
+                                 INPUTTXT_LETTER_WIDTH*(i as f32),
                                y:Self::SPACE3_UPPER + INPUTTXT_UPPER_MARGIN},
-                    max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + input_mergin + 
-                        Self::INPUTTXT_LETTER_WIDTH*((i+1) as f32),
+                    max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
+                                 INPUTTXT_LETTER_WIDTH*((i+1) as f32),
                                y:Self::SPACE3_LOWER + INPUTTXT_LOWER_MARGIN},},
                 Label::new(RichText::new(&self.input_text[i..i+1])
-                    .size(Self::INPUTTXT_FONT_SIZE)
+                    .size(INPUTTXT_FONT_SIZE)
                     .color(Color32::WHITE)
                     .family(FontFamily::Monospace)
                     .text_style(TextStyle::Monospace))
@@ -320,21 +318,9 @@ impl LoopianApp {
     }
     //*******************************************************************
     fn command_key(&mut self, key: &Key, modifiers: &Modifiers) {
+        let itxt: String = self.input_text.clone();
         if key == &Key::Enter {
-            if self.input_text.len() == 0 {return;}
-            let dt = Local::now();
-            let tm = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
-            self.input_lines.push((tm.clone(), self.input_text.clone()));
-            self.history_cnt = self.history.set_scroll_text(tm, self.input_text.clone());
-            if let Some(answer) = self.cmd.set_and_responce(&self.input_text) {
-                self.input_lines.push(("".to_string(), answer));
-                self.input_text = "".to_string();
-                self.input_locate = 0;
-            }
-            else {  // The end of the App
-                self.app_end();
-                std::process::exit(0);
-            }
+            self.command_input(itxt);
         }
         else if key == &Key::Backspace {
             if self.input_locate > 0 {
@@ -372,8 +358,34 @@ impl LoopianApp {
             if maxlen < self.input_locate {self.input_locate = maxlen;}
         }
     }
-}
+    fn command_input(&mut self, itxt: String) {
+        if itxt.len() == 0 {return;}
+        let dt = Local::now();
+        let time = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
+        self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
 
+        if itxt.chars().count() >= 4 && &itxt[0..4] == "load" {
+            // load のときだけ特別処理
+            self.history_cnt = self.history.load_and_set_history(time, &itxt[5..]);
+            self.scroll_lines.push(("".to_string(), "Loaded in history.".to_string()));
+            self.input_text = "".to_string();
+            self.input_locate = 0;
+        }
+        else {
+            // 通常のコマンド入力
+            self.history_cnt = self.history.set_scroll_text(time, itxt.clone());// for history
+            if let Some(answer) = self.cmd.set_and_responce(&itxt) {// for work
+                self.scroll_lines.push(("".to_string(), answer));
+                self.input_text = "".to_string();
+                self.input_locate = 0;
+            }
+            else {  // The end of the App
+                self.app_end();
+                std::process::exit(0);
+            }
+        }
+    }
+}
 //*******************************************************************
 //     Egui/Eframe framework basic
 //*******************************************************************
