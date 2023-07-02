@@ -363,21 +363,25 @@ impl LoopianApp {
         let dt = Local::now();
         let time = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
         self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
+        self.input_text = "".to_string();
+        self.input_locate = 0;
 
-        if itxt.chars().count() >= 4 && &itxt[0..4] == "load" {
+        if itxt.chars().count() >= 5 && &itxt[0..5] == "load " {
             // load のときだけ特別処理
+            let old_cnt = self.history_cnt;
             self.history_cnt = self.history.load_and_set_history(time, &itxt[5..]);
-            self.scroll_lines.push(("".to_string(), "Loaded in history.".to_string()));
-            self.input_text = "".to_string();
-            self.input_locate = 0;
+            if old_cnt == self.history_cnt {
+                self.scroll_lines.push(("".to_string(), "No history".to_string()));
+            }
+            else {
+                self.scroll_lines.push(("".to_string(), "Loaded in history".to_string()));
+            }
         }
         else {
             // 通常のコマンド入力
             self.history_cnt = self.history.set_scroll_text(time, itxt.clone());// for history
             if let Some(answer) = self.cmd.set_and_responce(&itxt) {// for work
                 self.scroll_lines.push(("".to_string(), answer));
-                self.input_text = "".to_string();
-                self.input_locate = 0;
             }
             else {  // The end of the App
                 self.app_end();

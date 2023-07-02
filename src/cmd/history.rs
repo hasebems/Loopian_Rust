@@ -16,6 +16,9 @@ pub struct History {
 }
 
 impl History {
+    const LOG_FOLDER: &str = "log";
+    const LOAD_FOLDER: &str = "load";
+
     pub fn new() -> Self {
         Self {
             input_lines: Vec::new(),
@@ -24,13 +27,13 @@ impl History {
     }
     pub fn gen_log(&mut self) {
         // フォルダ作成
-        let path = Path::new("log");
-        if !path.is_dir() {
-            fs::create_dir_all(path).unwrap();
-        }
+        self.make_folder(Self::LOG_FOLDER);
+
         // 時間をファイル名に使う
         let file = Local::now().format("%Y-%m-%d_%H-%M-%S.txt").to_string();
-        let path_str = "log/".to_string() + &file;
+        let mut path_str = String::from(Self::LOG_FOLDER);
+        path_str += "/";
+        path_str += &file;
         let path = Path::new(&path_str);
         let display = path.display();
         // log収集
@@ -68,10 +71,23 @@ impl History {
         self.update_history_ptr()
     }
     pub fn load_and_set_history(&mut self, time: String, fname: &str) -> usize {
-        println!("Loaded File Name: {}",fname);
-        for _ in 0..10 {
-            self.input_lines.push((time.clone(), "ok".to_string()));
-        }
+        // フォルダ作成
+        self.make_folder(Self::LOAD_FOLDER);
+
+        match fs::read_to_string(Self::LOAD_FOLDER.to_string() + "/" + &fname) {
+            Ok(content) => {
+                for line in content.lines() {
+                    if line.len() > 20 {
+                        let load_cmd = &line[20..];
+                        if load_cmd != "play" && load_cmd != "stop" &&
+                            load_cmd != "right1" && load_cmd != "right2" && load_cmd != "left1" && load_cmd != "left2" {
+                            self.input_lines.push((time.clone(), line[20..].to_string()));
+                        }
+                    }
+                }
+            }
+            Err(_err) => println!("Can't open a file"),
+        };
         self.update_history_ptr()
     }
     pub fn arrow_up(&mut self) -> Option<(String, usize)> {
@@ -96,5 +112,11 @@ impl History {
     fn update_history_ptr(&mut self) -> usize {
         self.history_ptr = self.input_lines.len();
         self.history_ptr
+    }
+    fn make_folder(&self, folder_name: &str) {
+        let path = Path::new(folder_name);
+        if !path.is_dir() {
+            fs::create_dir_all(path).unwrap();
+        }
     }
 }
