@@ -201,7 +201,7 @@ CmpsLoopManager o-- CompositionLoop
 |3|recombined|再構成|SMF的な、tick/chord をセットにしたデータ|入力時|beat|
 
 
-### 7.Rust 版の Message の流れ
+### 7.Message の流れ
 
 - thread は以下の二つ
     - main() 内の eframe::run_native() : Main thread
@@ -210,6 +210,32 @@ CmpsLoopManager o-- CompositionLoop
     - スレッド間でメッセージを送る Rust の機能 mspc::channel を使用する
     - mspc::channel は複数のスレッドから、一つのスレッドにメッセージを送れるが、今回は１対１の関係とする
     - LoopianApp::new() で二つの mspc::channel() がつくられ、各スレッドが受信するよう設定される
+- Main から Elps へのメッセージ
+    - [] は中から選択
+    - () は対応する数値
+    - 大文字は定数、小文字は変数
+
+    |内容|1st|2nd|3rd,4th...|
+    |-|-|-|-|
+    |アプリ終了|MSG_QUIT|─|─|
+    |再生開始|MSG_START|─|─|
+    |再生停止|MSG_STOP|─|─|
+    |フェルマータ|MSG_FERMATA|─|─|
+    |同期|MSG_SYNC|[0-3/MSG2_LFT/MSG2_RGT/MSG2_ALL]|─|
+    |MIDI対応|MSG_FLOW|(0-3)|─|
+    |rit.|MSG_RIT|[MSG2_NRM/MSG2_POCO/MSG2_MLT]|[MSG3_ATP/MSG3_FERMATA/(tempo)]|
+    |テンポ|MSG_SET|MSG2_BPM|(bpm)|
+    |拍子||MSG2_BEAT|(分子),(分母)|
+    |調||MSG2_KEY|(key:0-11)|
+    |折り返し||MSG2_TURN|(turnnote:0-11)|
+    |Phrase|MSG_PHR+var*10+part|(whole_tick)|TYPE_NOTE,(TICK),(DURATION),(NOTE),(VELOCITY):repeat|
+    ||||TYPE_INFO,(TICK),(info_type),0,0|
+    |Composition|MSG_CMP+part|(whole_tick)|(TYPE),(TICK),(CD_ROOT),(CD_TABLE):repeat|
+    |Analyze|MSG_ANA+part||(TYPE),(TICK),(DURATION),(NOTE),(ntcnt),(arp_type):repeat|
+    |DelPhrase|MSG_PHR_X+part|─|─|
+    |DelComposition|MSG_CMP_X+part|─|─|
+    |DelAnalyze|MSG_ANA_X+part|─|─|
+
 
 ### 8.Note 処理
 
