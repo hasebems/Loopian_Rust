@@ -43,11 +43,11 @@ loopian は、Live Coding などで使うために開発している、テキス
 - 起動
     - './target/release/loopian_rust'  : 起動アプリ名は loopian_rust
 - 入力
-    - '000: L1> ' : prompt
-        - 000: は入力したコマンド history の順番を表している
+    - '000: L1> ' : 入力用プロンプト
+        - 000: は入力したコマンド history の現在の順番を表している
         - L1> は Left 1 の入力状態であることを示す
-        - このプロンプトの後に、コマンドやフレーズを書き込む
-    - カーソルによる過去入力のヒストリー呼び出しが可能
+        - このプロンプトの後に、コマンドやフレーズを書き込み、Return で入力する
+    - カーソル（上下）による過去入力のヒストリー呼び出しが可能
 - 終了
     - 'quit' : 終了
     - ウインドウの close ボタンを押しても終了
@@ -87,7 +87,6 @@ loopian は、Live Coding などで使うために開発している、テキス
 
 - 'right1' 'left1' : Phrase, Composition の入力パートを指定。右手２パート、左手２パートの４パートを指定可能
 - 'panic' : 今鳴っている音を消音する
-- 'flow' 'endflow' : Loopian::ORBIT を接続した場合、そのパートに Loopian::ORBIT からの演奏情報を入力したり、解除したりする
 
 
 Phrase 追加
@@ -98,10 +97,7 @@ Phrase 追加
     - *musical expression*: 音楽表現を入力する
         - [*musical expression*] は省略可能
     - [] : 全データ削除
-    - 冒頭でパート指定することで、プロンプトと違うパートでも入力することができる
-        - L1> : left1パート
-        - L12> : left1,left2パート二つ同時に同じ Phrase をセット
-        - ALL> : 全パートに同じ Phrase をセット
+
 
 - noteの階名表現
     - d,r,m,f,s,l,t: ド、レ、ミ、ファ、ソ、ラ、シ
@@ -145,10 +141,6 @@ Composition 指定
 - {*chord*} : Composition の書式
     - *chord*: コードを小節ごとに / で区切って時系列で記述
     - {} : 全データ削除
-    - 冒頭でパート指定することで、プロンプトと違うパートでも入力することができる
-        - L1> : left1パート
-        - L12> : left1,left2パート二つ同時に同じ Phrase をセット
-        - ALL> : 全パートに同じ Phrase をセット
 
 - 長さの指定方法
     - '|' '/' : 小節区切り。区切りが連続するとコードがないとみなす
@@ -179,6 +171,24 @@ Composition 指定
     - コードやスケールが判断不能の場合、Errorとなり主音しか出ない
 
 
+Phrase/Composition 二つに関係する書式
+---------------------------------------
+
+- Phrase/Composition ともに、冒頭でパート指定することで、プロンプトと違うパートでも入力することができる
+    - L1> : left1パート
+    - L12> : left1,left2パート二つ同時に同じ Phrase をセット
+    - ALL> : 全パートに同じ Phrase をセット
+
+- Phrase の Variation 追加と、Composition での指定
+    - Variation 機能では、ある Phrase の Loop 中に、別の Phrase(Variation) をときおり再生することができる
+    - @n[..][..] : Phrase 指定の冒頭に @n(nは0から9までの数値)を付け足すことで、Variation を追加できる
+    - 追加された Variation Phrase は、Composition で指定する
+        - {I/@n;II} 小節線の直後に @n;(n:0-9) と書くと、この小説冒頭から Variation Phrase が再生される
+        - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
+        - Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
+        - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
+
+
 調、テンポ、拍子、音量
 -------------------
 
@@ -200,6 +210,27 @@ Composition 指定
     - modeling は、モデリング音源向けで、note off は一度しか送らない（default）
     - common は、一般的なMIDI音源向けで、note off は note on の数だけ送られる
 - 'set turnnote=5' : para 指定時、変換後の音程を折り返す位置(0-11, default=5)
+
+
+ファイルのロード、セーブ
+--------------------------
+
+- Loopian を終了すると、自動的にログファイルがセーブされる
+    - アプリのあるフォルダに、/log フォルダが自動的に作られ、その中にログファイル（拡張子はlpn）がセーブされる
+    - 2023-06-02_19-56-54.lpn というように、日時がファイル名となる
+- プロンプトに 'load xxx' と書くと、ファイルがロードされる
+    - 最初のloadコマンド入力時、アプリのあるフォルダに、/load フォルダが自動的に作られる
+    - ロードファイルの拡張子はlpn限定で、ファイル指定にlpnを書く必要はない
+    - loadしたいファイルは、この /load フォルダに入れておく必要がある
+    - ログファイルと同様のファイルがロードされることを想定している
+    - ロードされた内容は、history の中に格納され、カーソル（上下）キーで一行ずつ呼び出すことができる
+
+
+Loopian::ORBIT での演奏
+--------------------------
+
+- 'flow' 'endflow' : Loopian::ORBIT を接続した場合、そのパートに Loopian::ORBIT からの演奏情報を入力したり、解除したりする
+
 
 アプリの内部で自動的に行われること
 -------------------------------
