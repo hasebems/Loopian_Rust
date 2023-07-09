@@ -30,7 +30,7 @@ impl History {
         self.make_folder(Self::LOG_FOLDER);
 
         // 時間をファイル名に使う
-        let file = Local::now().format("%Y-%m-%d_%H-%M-%S.txt").to_string();
+        let file = Local::now().format("%Y-%m-%d_%H-%M-%S.lpn").to_string();
         let mut path_str = String::from(Self::LOG_FOLDER);
         path_str += "/";
         path_str += &file;
@@ -74,7 +74,7 @@ impl History {
         // フォルダ作成
         self.make_folder(Self::LOAD_FOLDER);
 
-        match fs::read_to_string(Self::LOAD_FOLDER.to_string() + "/" + &fname) {
+        match fs::read_to_string(Self::LOAD_FOLDER.to_string() + "/" + &fname + ".lpn") {
             Ok(content) => {
                 for line in content.lines() {
                     if line.len() > 20 {
