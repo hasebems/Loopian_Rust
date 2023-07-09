@@ -110,7 +110,10 @@ impl PhrLoopManager {
             self.whole_tick_stock = whole_tick;
         }
         else {
-            // not yet
+            if vari_num >= MAX_VARI_PHRASE {return}
+            if msg.len() == 0 && whole_tick == 0 {self.vari_data_stock[vari_num] = UgContent::new();}
+            else {self.vari_data_stock[vari_num] = msg;}
+            self.vari_whole_tick_stock[vari_num] = whole_tick;
         }
     }
     pub fn rcv_ana(&mut self, msg: UgContent) {
