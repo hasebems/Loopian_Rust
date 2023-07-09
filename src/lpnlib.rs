@@ -32,6 +32,7 @@ pub const RIGHT2: usize = 3;
 pub const MAX_LEFT_PART: usize = 2;
 pub const MAX_RIGHT_PART: usize = 2;
 pub const MAX_USER_PART: usize = MAX_LEFT_PART+MAX_RIGHT_PART;
+pub const MAX_VARI_PHRASE: usize = 9;
 
 //pub const _FIRST_COMPOSITION_PART: usize = 0;
 //pub const MAX_COMPOSITION_PART: usize = MAX_USER_PART; // Normal と対応する同数のパート
@@ -126,7 +127,7 @@ pub const MSG3_ATP: i16     = 9999;
 pub const MSG3_FERMATA: i16 = 10000;
 
 pub const MSG_PART_MASK:i16 = 100;    // X-(X % MSG_PART_MASK)
-pub const MSG_PHR: i16      = 1000;   // 1桁目にパート番号
+pub const MSG_PHR: i16      = 1000;   // 1000 + 10*v + part : 1桁目にパート番号, vは @指定による Variation
 pub const MSG_CMP: i16      = 2000;   // 1桁目にパート番号
 pub const MSG_ANA: i16      = 3000;   // 1桁目にパート番号
 pub const MSG_PHR_X: i16    = 1900;   // Phrase 消去、1桁目にパート番号
@@ -135,53 +136,22 @@ pub const MSG_ANA_X: i16    = 3900;   // Analysed 消去、1桁目にパート�
 pub const MSG_HEADER: usize = 2;
 
 // MSG_PHR
-pub const TYPE: usize       = 0;
-pub const _TYPE_ID: i16     = 1000;
+pub const _TYPE_ID: i16     = 1000;     // for TYPE
 pub const TYPE_NOTE: i16    = 1001;
-pub const TICK: usize       = 1;
-pub const DURATION: usize   = 2;
-pub const NOTE: usize       = 3;
-pub const VELOCITY: usize   = 4;
-pub const TYPE_NOTE_SIZE: usize = 5;
-
-//pub const TYPE: usize       = 0;
 pub const TYPE_INFO: i16    = 1020;    // タイミングを持つ演奏以外の情報 
-//pub const TICK: usize       = 1;
-pub const INFOTP: usize     = 2;
 
 // MSG_CMP
-//pub const TYPE: usize       = 0;
 pub const TYPE_CHORD: i16   = 1002;     // for index TYPE
-//pub const TICK: usize       = 1;
-pub const CD_ROOT: usize    = 2;
-pub const CD_TABLE: usize   = 3;
-pub const TYPE_CHORD_SIZE: usize = 4;
+pub const TYPE_DAMPER: i16  = 1003;     // for index TYPE
 pub const UPPER: i16        = 1000;
 
-//pub const TYPE: usize       = 0;
-pub const TYPE_DAMPER: i16  = 1003;     // for index TYPE
-//pub const TICK: usize       = 1;
-//pub const DURATION: usize   = 2;
-pub const POS: usize        = 3;
-pub const _TYPE_DAMPER_SIZE: usize = 4;
-
 // MSG_ANA
-//pub const TYPE: usize       = 0;
 pub const TYPE_BEAT: i16    = 1004;     // for index TYPE
-//pub const TICK: usize       = 1;
-//pub const DURATION: usize   = 2;
-//pub const NOTE: usize       = 3;
-pub const ARP_NTCNT: usize  = 4;
-pub const ARP_DIFF: usize   = 5;
 pub const ARP_COM: i16      = 0;
 pub const ARP_PARA: i16     = 10000;
-pub const TYPE_BEAT_SIZE: usize = 6;
 
-//pub const TYPE: usize       = 0;
 pub const TYPE_EXP: i16     = 1010;     // for index TYPE
-pub const EXP: usize        = 1;
 pub const NOPED: i16        = 10;       // Note情報より先に置く
-pub const _TYPE_EXP_SIZE: usize = 2;
 
 //*******************************************************************
 //          Enum

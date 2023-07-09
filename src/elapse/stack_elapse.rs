@@ -18,6 +18,7 @@ use super::elapse::*;
 use super::elapse_part::Part;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{PhraseLoop, CompositionLoop};
+use super::ug_content::*;
 
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum SameKeyState {
@@ -292,7 +293,7 @@ impl ElapseStack {
         // message の２次元化
         let part_num: usize = pt(msg[0]) as usize;
         let whole_tick: i16 = msg[1];
-        let mut phr_vec: Vec<Vec<i16>> = Vec::new();
+        let mut phr_vec = UgContent::new();
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
@@ -301,7 +302,7 @@ impl ElapseStack {
             for i in 0..TYPE_NOTE_SIZE {
                 vtmp.push(msg[index(i,msg_cnt)]);
             }
-            phr_vec.push(vtmp);
+            phr_vec.add_dt(vtmp);
             msg_cnt += 1;
             if msg_size <= index(0,msg_cnt) {break;}
         }
@@ -311,7 +312,7 @@ impl ElapseStack {
         // message の２次元化
         let part_num: usize = pt(msg[0]) as usize;
         let whole_tick: i16 = msg[1];
-        let mut cmps_vec: Vec<Vec<i16>> = Vec::new();
+        let mut cmps_vec: UgContent = UgContent::new();
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
@@ -320,7 +321,7 @@ impl ElapseStack {
             for i in 0..TYPE_CHORD_SIZE {
                 vtmp.push(msg[index(i,msg_cnt)]);
             }
-            cmps_vec.push(vtmp);
+            cmps_vec.add_dt(vtmp);
             msg_cnt += 1;
             if msg_size <= index(0,msg_cnt) {break;}
         }
@@ -329,7 +330,7 @@ impl ElapseStack {
     fn ana(&mut self, msg: Vec<i16>) {
         // message の２次元化
         let part_num: usize = pt(msg[0]) as usize;
-        let mut ana_vec: Vec<Vec<i16>> = Vec::new();
+        let mut ana_vec: UgContent = UgContent::new();
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
         loop {
@@ -338,7 +339,7 @@ impl ElapseStack {
             for i in 0..TYPE_BEAT_SIZE {
                 vtmp.push(msg[index(i,msg_cnt)]);
             }
-            ana_vec.push(vtmp);
+            ana_vec.add_dt(vtmp);
             msg_cnt += 1;
             if msg_size <= index(0,msg_cnt) {break;}
         }
@@ -346,16 +347,16 @@ impl ElapseStack {
     }
     fn del_phrase(&mut self, msg: Vec<i16>) {
         let part_num: usize = pt(msg[0]) as usize;
-        self.part_vec[part_num].borrow_mut().rcv_phr_msg(Vec::new(), 0);
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new());
+        self.part_vec[part_num].borrow_mut().rcv_phr_msg(UgContent::new(), 0);
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(UgContent::new());
     }
     fn del_composition(&mut self, msg: Vec<i16>) {
         let part_num: usize = pt(msg[0]) as usize;
-        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(Vec::new(), 0);
+        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(UgContent::new(), 0);
     }
     fn del_ana(&mut self, msg: Vec<i16>) {
         let part_num: usize = pt(msg[0]) as usize;
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new());
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(UgContent::new());
     }
     fn parse_msg(&mut self, msg: Vec<i16>) {
         println!("msg {:?} has reached to Elps.", msg[0]);

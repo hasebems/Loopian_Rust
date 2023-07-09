@@ -9,6 +9,7 @@ use rand::prelude::{Distribution, thread_rng};
 use rand_distr::Normal;
 
 use crate::lpnlib::*;
+use super::ug_content::*;
 use super::{elapse::*, stack_elapse};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;

@@ -11,6 +11,7 @@ use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 use super::elapse_note::{Note, Damper};
+use super::ug_content::*;
 use crate::cmd::txt2seq_cmps;
 use super::note_translation::*;
 
@@ -38,8 +39,8 @@ pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
 
-    phrase_dt: Vec<Vec<i16>>,
-    analys_dt: Vec<Vec<i16>>,
+    phrase: UgContent,
+    analys: UgContent,
     keynote: u8,
     play_counter: usize,
     next_tick_in_phrase: i32,
@@ -55,14 +56,14 @@ pub struct PhraseLoop {
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl PhraseLoop {
-    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, msg: Vec<Vec<i16>>, ana: Vec<Vec<i16>>,
+    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, phr: UgContent, ana: UgContent,
         whole_tick: i32, turnnote: i16) -> Rc<RefCell<Self>> {
-        let noped = ana.iter().any(|x| x[TYPE]==TYPE_EXP && x[EXP]==NOPED);
+        let noped = ana.get_all().iter().any(|x| x[TYPE]==TYPE_EXP && x[EXPR]==NOPED);
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_PHR_LOOP,
-            phrase_dt: msg,
-            analys_dt: ana,
+            phrase: phr,
+            analys: ana,
             keynote,
             play_counter: 0,
             next_tick_in_phrase: 0,
@@ -81,18 +82,18 @@ impl PhraseLoop {
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut next_tick: i32;
         let mut trace: usize = self.play_counter;
-        let phr = self.phrase_dt.to_vec();
-        let max_ev = self.phrase_dt.len();
+        let phr = self.phrase.copy_to();
+        let max_ev = self.phrase.len();
         loop {
             if max_ev <= trace {
                 next_tick = END_OF_DATA;   // means sequence finished
                 break;
             }
-            next_tick = phr[trace][TICK] as i32;
+            next_tick = phr.get_dt(trace,TICK) as i32;
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                if self.phrase_dt[trace][TYPE] == TYPE_NOTE {
-                    self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
+                if self.phrase.get_dt(trace, TYPE) == TYPE_NOTE {
+                    self.note_event(estk, trace, phr.get_msg(trace), next_tick, msr, tick);
                 }
             }
             else {break;}
@@ -161,7 +162,7 @@ impl PhraseLoop {
         (trans_note, deb_txt + &(root.to_string() + "-" + &ctbl.to_string()))
     }
     fn specify_trans_option(&self, next_tick: i32, note: i16) -> i16 {
-        for anaone in self.analys_dt.iter() {
+        for anaone in self.analys.get_all().iter() {
             if anaone[TYPE] == TYPE_BEAT &&
                anaone[TICK] == next_tick as i16 && 
                anaone[NOTE] == note {
@@ -223,7 +224,7 @@ pub struct CompositionLoop {
     id: ElapseId,
     priority: u32,
 
-    cmps_dt: Vec<Vec<i16>>,
+    cmps_dt: UgContent,
     _keynote: u8,
     play_counter: usize,
     next_tick_in_cmps: i32,
@@ -241,7 +242,7 @@ pub struct CompositionLoop {
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl CompositionLoop {
-    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<Vec<i16>>, whole_tick: i32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: UgContent, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_CMPS_LOOP,
@@ -270,13 +271,13 @@ impl CompositionLoop {
         let end_tick = (msr - self.first_msr_num + 1)*tick_for_onemsr;
         let beat_num = tick_for_onemsr/tick_for_onebeat;
         let mut trace: usize = 0;
-        let cmps = self.cmps_dt.to_vec();
+        let cmps = self.cmps_dt.copy_to();
         let mut chord_map: Vec<bool> = vec![false; beat_num as usize];
         let max_ev: usize = cmps.len();
         loop {
             if max_ev <= trace {break}
-            let tick = cmps[trace][TICK] as i32;
-            if first_tick <= tick && tick < end_tick && cmps[trace][CD_TABLE] != 0 {
+            let tick = cmps.get_dt(trace,TICK) as i32;
+            if first_tick <= tick && tick < end_tick && cmps.get_dt(trace,CD_TABLE) != 0 {
                 // Chord Table が "thru" で無ければ
                 chord_map[((tick%tick_for_onemsr)/tick_for_onebeat) as usize] = true;
             }
@@ -311,15 +312,15 @@ impl CompositionLoop {
     fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut trace: usize = self.play_counter;
         let mut next_tick: i32;
-        let cmps = self.cmps_dt.to_vec();
+        let cmps = self.cmps_dt.copy_to();
         loop {
             if cmps.len() <= trace {
                 next_tick = END_OF_DATA;   // means sequence finished
                 break
             }
-            next_tick = cmps[trace][TICK] as i32;
+            next_tick = cmps.get_dt(trace,TICK) as i32;
             if next_tick <= elapsed_tick {
-                self.prepare_note_translation(cmps[trace].clone());
+                self.prepare_note_translation(cmps.get_msg(trace));
             }
             else {break;}
             trace += 1;

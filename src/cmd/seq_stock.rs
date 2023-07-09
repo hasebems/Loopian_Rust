@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
+use crate::elapse::ug_content::*;
 use super::txt2seq_phr::*;
 use super::txt2seq_cmps::*;
 use super::txt2seq_ana::*;
@@ -130,7 +131,7 @@ impl PhraseDataStock {
         let mut ret_ana: Vec<i16> = vec![self.whole_tick as i16];
         for ev in self.ana.iter() {
             if ev.len() != TYPE_BEAT_SIZE {
-                ret_ana.append(&mut vec![ev[TYPE], ev[EXP], 0,0,0,0]);
+                ret_ana.append(&mut vec![ev[TYPE], ev[EXPR], 0,0,0,0]);
             }
             else {
                 ret_ana.append(&mut ev.clone());
