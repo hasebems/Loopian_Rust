@@ -137,19 +137,19 @@ pub const MSG_HEADER: usize = 2;
 
 // MSG_PHR
 pub const _TYPE_ID: i16     = 1000;     // for TYPE
-pub const TYPE_NOTE: i16    = 1001;
-pub const TYPE_INFO: i16    = 1020;    // タイミングを持つ演奏以外の情報 
+pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
+pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報 
 
 // MSG_CMP
 pub const TYPE_CHORD: i16   = 1002;     // for index TYPE
 pub const TYPE_DAMPER: i16  = 1003;     // for index TYPE
-pub const UPPER: i16        = 1000;
+pub const _TYPE_VARI: i16    = 1004;     // for index TYPE
+pub const UPPER: i16        = 1000;     // for index CD_TABLE
 
 // MSG_ANA
-pub const TYPE_BEAT: i16    = 1004;     // for index TYPE
+pub const TYPE_BEAT: i16    = 1006;     // for index TYPE
 pub const ARP_COM: i16      = 0;
 pub const ARP_PARA: i16     = 10000;
-
 pub const TYPE_EXP: i16     = 1010;     // for index TYPE
 pub const NOPED: i16        = 10;       // Note情報より先に置く
 
@@ -165,8 +165,9 @@ pub enum InputMode {
 //*******************************************************************
 //          Func
 //*******************************************************************
-pub fn pt(msg: i16) -> i16 {msg%MSG_PART_MASK}
-pub fn msg1st(msg: i16) -> i16 {msg-pt(msg)}
+pub fn pt(msg: i16) -> usize {((msg%10)%MSG_PART_MASK) as usize}
+pub fn vari(msg: i16) -> usize {((msg/10)%10) as usize}
+pub fn msg1st(msg: i16) -> i16 {msg-(pt(msg) as i16)}
 pub fn convert_exp2vel(vel_text: &str) -> i32 {
     match vel_text {
         "ff" => 127,

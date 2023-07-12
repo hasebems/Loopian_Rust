@@ -181,9 +181,9 @@ Phrase/Composition 二つに関係する書式
 
 - Phrase の Variation 追加と、Composition での指定
     - Variation 機能では、ある Phrase の Loop 中に、別の Phrase(Variation) をときおり再生することができる
-    - @n[..][..] : Phrase 指定の冒頭に @n(nは0から9までの数値)を付け足すことで、Variation を追加できる
+    - @n[..][..] : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
     - 追加された Variation Phrase は、Composition で指定する
-        - {I/@n;II} 小節線の直後に @n;(n:0-9) と書くと、この小説冒頭から Variation Phrase が再生される
+        - {I/@n;II} 小節線の直後に @n;(n:1-9) と書くと、この小説冒頭から Variation Phrase が再生される
         - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
         - Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
         - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される

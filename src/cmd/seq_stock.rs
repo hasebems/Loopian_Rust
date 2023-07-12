@@ -15,7 +15,7 @@ use super::txt2seq_ana::*;
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
 pub struct SeqDataStock {
-    pdt: [PhraseDataStock; MAX_USER_PART],
+    pdt: Vec<Vec<PhraseDataStock>>,
     cdt: [CompositionDataStock; MAX_USER_PART],
     input_mode: InputMode,
     tick_for_onemsr: i32,
@@ -24,13 +24,16 @@ pub struct SeqDataStock {
 }
 impl SeqDataStock {
     pub fn new() -> Self {
+        let mut pd = Vec::new();
+        for i in 0..MAX_USER_PART {
+            let mut vari = Vec::new();
+            for _ in 0..MAX_VARI_PHRASE+1 {
+                vari.push(PhraseDataStock::new(i));
+            }
+            pd.push(vari);
+        }
         Self {
-            pdt: [
-                PhraseDataStock::new(LEFT1),
-                PhraseDataStock::new(LEFT2),
-                PhraseDataStock::new(RIGHT1),
-                PhraseDataStock::new(RIGHT2)
-            ],
+            pdt: pd,
             cdt: Default::default(),
             input_mode: InputMode::Closer,
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
@@ -38,12 +41,12 @@ impl SeqDataStock {
             bpm: DEFAULT_BPM,
         }
     }
-    pub fn get_pdstk(&self, part: usize) -> &PhraseDataStock {&self.pdt[part]}
+    pub fn get_pdstk(&self, part: usize, vari: usize) -> &PhraseDataStock {&self.pdt[part][vari]}
     pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {&self.cdt[part]}
-    pub fn set_raw_phrase(&mut self, part: usize, input_text: String) -> bool {
+    pub fn set_raw_phrase(&mut self, part: usize, vari: usize, input_text: String) -> bool {
         if part < MAX_USER_PART {
-            if self.pdt[part].set_raw(input_text) {
-                self.pdt[part].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            if self.pdt[part][vari].set_raw(input_text) {
+                self.pdt[part][vari].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
                 return true
             }
         }
@@ -69,15 +72,17 @@ impl SeqDataStock {
         self.recombine_phr_all();
     }
     pub fn change_oct(&mut self, oct: i32, relative: bool, part: usize) -> bool {
-        let old = self.pdt[part].base_note/12 - 1;
+        let old = self.pdt[part][0].base_note/12 - 1;
         let mut new = old;
         if relative {new += oct;}
         else        {new = oct;}
         if new >= 8 {new = 7;}
         else if new < 1 {new = 1;}
         if old != new {
-            self.pdt[part].base_note = (new+1)*12;
-            self.pdt[part].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            for epd in self.pdt[part].iter_mut() {
+                epd.base_note = (new+1)*12;
+                epd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            }
             true
         }
         else {false}
@@ -87,12 +92,16 @@ impl SeqDataStock {
     }
     fn recombine_phr_all(&mut self) {
         for pd in self.pdt.iter_mut() {
-            pd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            for epd in pd.iter_mut() {
+                epd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            }
         }
     }
     fn recombine_all(&mut self) {
         for (i, pd) in self.pdt.iter_mut().enumerate() {
-            pd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            for epd in pd.iter_mut() {
+                epd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+            }
             self.cdt[i].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
         }
     }

@@ -291,7 +291,8 @@ impl ElapseStack {
     }
     fn phrase(&mut self, msg: Vec<i16>) {
         // message の２次元化
-        let part_num: usize = pt(msg[0]) as usize;
+        let part_num = pt(msg[0]);
+        let vari_num = vari(msg[0]);
         let whole_tick: i16 = msg[1];
         let mut phr_vec = UgContent::new();
         let mut msg_cnt: usize = 0;
@@ -306,11 +307,11 @@ impl ElapseStack {
             msg_cnt += 1;
             if msg_size <= index(0,msg_cnt) {break;}
         }
-        self.part_vec[part_num].borrow_mut().rcv_phr_msg(phr_vec, whole_tick);
+        self.part_vec[part_num].borrow_mut().rcv_phr_msg(phr_vec, whole_tick, vari_num);
     }
     fn composition(&mut self, msg: Vec<i16>) {
         // message の２次元化
-        let part_num: usize = pt(msg[0]) as usize;
+        let part_num = pt(msg[0]);
         let whole_tick: i16 = msg[1];
         let mut cmps_vec: UgContent = UgContent::new();
         let mut msg_cnt: usize = 0;
@@ -329,7 +330,8 @@ impl ElapseStack {
     }
     fn ana(&mut self, msg: Vec<i16>) {
         // message の２次元化
-        let part_num: usize = pt(msg[0]) as usize;
+        let part_num = pt(msg[0]);
+        let vari_num = vari(msg[0]);
         let mut ana_vec: UgContent = UgContent::new();
         let mut msg_cnt: usize = 0;
         let msg_size = msg.len();
@@ -343,12 +345,13 @@ impl ElapseStack {
             msg_cnt += 1;
             if msg_size <= index(0,msg_cnt) {break;}
         }
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(ana_vec);
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(ana_vec, vari_num);
     }
     fn del_phrase(&mut self, msg: Vec<i16>) {
-        let part_num: usize = pt(msg[0]) as usize;
-        self.part_vec[part_num].borrow_mut().rcv_phr_msg(UgContent::new(), 0);
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(UgContent::new());
+        let part_num = pt(msg[0]);
+        let vari_num = vari(msg[0]); 
+        self.part_vec[part_num].borrow_mut().rcv_phr_msg(UgContent::new(), 0, vari_num);
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(UgContent::new(), vari_num);
     }
     fn del_composition(&mut self, msg: Vec<i16>) {
         let part_num: usize = pt(msg[0]) as usize;
@@ -356,7 +359,8 @@ impl ElapseStack {
     }
     fn del_ana(&mut self, msg: Vec<i16>) {
         let part_num: usize = pt(msg[0]) as usize;
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(UgContent::new());
+        let vari_num = vari(msg[0]); 
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(UgContent::new(), vari_num);
     }
     fn parse_msg(&mut self, msg: Vec<i16>) {
         println!("msg {:?} has reached to Elps.", msg[0]);

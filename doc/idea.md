@@ -228,10 +228,10 @@ CmpsLoopManager o-- CompositionLoop
     |拍子||MSG2_BEAT|(分子),(分母)|
     |調||MSG2_KEY|(key:0-11)|
     |折り返し||MSG2_TURN|(turnnote:0-11)|
-    |Phrase|MSG_PHR+var*10+part|(whole_tick)|TYPE_NOTE,(TICK),(DURATION),(NOTE),(VELOCITY):repeat|
+    |Phrase|MSG_PHR+vari*10+part|(whole_tick)|TYPE_NOTE,(TICK),(DURATION),(NOTE),(VELOCITY):repeat|
     ||||TYPE_INFO,(TICK),(info_type),0,0|
     |Composition|MSG_CMP+part|(whole_tick)|(TYPE),(TICK),(CD_ROOT),(CD_TABLE):repeat|
-    |Analyze|MSG_ANA+part||(TYPE),(TICK),(DURATION),(NOTE),(ntcnt),(arp_type):repeat|
+    |Analyze|MSG_ANA+vari*10+part||(TYPE),(TICK),(DURATION),(NOTE),(ntcnt),(arp_type):repeat|
     |DelPhrase|MSG_PHR_X+part|─|─|
     |DelComposition|MSG_CMP_X+part|─|─|
     |DelAnalyze|MSG_ANA_X+part|─|─|
@@ -389,6 +389,12 @@ CmpsLoopManager o-- CompositionLoop
     - テキスト入力Boxに、001 R1> というように番号を追加し、現在がバッファの何行目かを表示 6/21 済
     - 記録されたログファイルを、そのまま load して履歴バッファに格納できる機能 7/2 済
     - ファイルをロードした時、ロード行数だけ、上記の数値が増える 7/2 済
+- Variation Phrase 機能
+    - Elps 内でのデータ受信と格納 7/9 済
+    - cmdparse にて、seq_stock 内(PhraseDataStock)に９つのインスタンスを生成しデータ格納 7/12 済
+    - Message 受信処理、oct,key,composition などへも対応
+    - Elps で Composition 再生時に、Variation 自動再生
+
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -401,11 +407,6 @@ CmpsLoopManager o-- CompositionLoop
 - 多分前からだが、同時複数音入力の時、コード指定で同じ音を指してしまうのを回避したい。
 
 次の対応、考えられる新機能
-- 1part内に複数ループを登録し、Compositionの中でセレクト出来るようにする
-    - '+' で連結するのを止める 1/14済
-    - @n[....] と、phrase前に@+番号(n=1,2,3...9)を記載。ただし入力しただけでは再生されない
-    - {I/@n;V7} 小節線の後ろに@付き番号があったら、このタイミングでその番号の phrase の変更を行う
-        - 同じタイミングのノート変換子は ; で区切って記述
 - 次のループからではなく、リアルタイムでフレーズを変える機能（優先度低）
     - リアルタイムか、次のループ先頭かを選べる
     - リアルタイムの場合、まずそれが可能なデータかチェック

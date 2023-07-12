@@ -235,8 +235,7 @@ impl LoopianCmd {
         }
     }
     fn letter_bracket(&mut self, input_text: &str) -> Option<String> {
-        if self.gendt.set_raw_phrase(self.input_part, input_text.to_string()) {
-            self.send_phrase_to_elapse(self.input_part);
+        if self.set_phrase(self.input_part, 0, input_text) {
             Some("Set Phrase!".to_string())
         } else {
             Some("what?".to_string())
@@ -289,8 +288,7 @@ impl LoopianCmd {
     fn call_bracket_brace(&mut self, part_num: usize, first_letter: &str, rest_text: &str) -> String {
         let mut rtn_str = "what?".to_string();
         if first_letter == "[" {
-            if self.gendt.set_raw_phrase(part_num, rest_text.to_string()) {
-                self.send_phrase_to_elapse(part_num);
+            if self.set_phrase(part_num, 0, rest_text) {
                 rtn_str = "Set Phrase!".to_string();
             }
         }
@@ -301,6 +299,13 @@ impl LoopianCmd {
             }
         }
         rtn_str
+    }
+    fn set_phrase(&mut self, part_num: usize, vari: usize, input_text: &str) -> bool {
+        if self.gendt.set_raw_phrase(part_num, vari, input_text.to_string()) {
+            self.send_phrase_to_elapse(part_num, vari);
+            true
+        }
+        else {false}
     }
     //*************************************************************************
     fn parse_set_command(&mut self, input_text: &str) -> String {
@@ -332,9 +337,7 @@ impl LoopianCmd {
                 Ok(msg) => {
                     self.gendt.change_bpm(msg);
                     self.send_msg_to_elapse(vec![MSG_SET, MSG2_BPM, msg]);
-                    for i in 0..MAX_USER_PART {
-                        self.send_phrase_to_elapse(i);
-                    }
+                    self.send_all_vari_and_phrase(self.input_part);
                     "BPM has changed!".to_string()
                 },
                 Err(e) => {
@@ -350,9 +353,7 @@ impl LoopianCmd {
                 (Ok(numerator),Ok(denomirator)) => {
                     self.gendt.change_beat(numerator, denomirator);
                     self.send_msg_to_elapse(vec![MSG_SET, MSG2_BEAT, numerator, denomirator]);
-                    for i in 0..MAX_USER_PART {
-                        self.send_phrase_to_elapse(i);
-                    }
+                    self.send_all_vari_and_phrase(self.input_part);
                     "Beat has changed!".to_string()
                 },
                 _ => "Number is wrong.".to_string()
@@ -410,7 +411,7 @@ impl LoopianCmd {
             // phrase 再生成(新oct込み)
             if oct != 0 {
                 if self.gendt.change_oct(oct, false, self.input_part) {
-                    self.send_phrase_to_elapse(self.input_part);
+                    self.send_all_vari_and_phrase(self.input_part);
                 }
             }
             // elapse に key を送る
@@ -427,13 +428,13 @@ impl LoopianCmd {
         if let Ok(oct_num) = oct_txt.parse::<i32>() {oct = oct_num;}
         if oct != FULL {
             if self.gendt.change_oct(oct, true, self.input_part) {
-                self.send_phrase_to_elapse(self.input_part);
+                self.send_all_vari_and_phrase(self.input_part);
                 true
             }
             else {false}
         }
         else {false}
-    }
+    }                                  
     fn change_input_mode(&mut self, imd: &str) -> bool {
         if imd == "fixed" {
             self.gendt.change_input_mode(InputMode::Fixed);
@@ -459,24 +460,30 @@ impl LoopianCmd {
             _ => {},
         }
     }
-    fn send_phrase_to_elapse(&self, part: usize) {
-        let (mut pdt, mut ana): (Vec<i16>, Vec<i16>) = self.gendt.get_pdstk(part).get_final();
+    fn send_all_vari_and_phrase(&self, part: usize) {
+        for i in 0..MAX_VARI_PHRASE+1 {
+            self.send_phrase_to_elapse(part, i);
+        }
+    }
+    fn send_phrase_to_elapse(&self, part: usize, vari: usize) {
+        let (mut pdt, mut ana): (Vec<i16>, Vec<i16>) = self.gendt.get_pdstk(part, vari).get_final();
+        let msg_pv = (part as i16) + 10*(vari as i16);
         if pdt.len() > 1 {
-            let mut msg: Vec<i16> = vec![MSG_PHR+part as i16];
+            let mut msg: Vec<i16> = vec![MSG_PHR + msg_pv];
             msg.append(&mut pdt);
             //println!("msg check: {:?}",msg);
             self.send_msg_to_elapse(msg);
             if ana.len() > 1 {
-                let mut msgana: Vec<i16> = vec![MSG_ANA+part as i16];
+                let mut msgana: Vec<i16> = vec![MSG_ANA + msg_pv];
                 msgana.append(&mut ana);
                 //println!("msg check ana: {:?}",msgana);
                 self.send_msg_to_elapse(msgana);                
             }
         }
         else {
-            self.send_msg_to_elapse(vec![MSG_PHR_X+part as i16]);
+            self.send_msg_to_elapse(vec![MSG_PHR_X + msg_pv]);
             if ana.len() == 0 {
-                self.send_msg_to_elapse(vec![MSG_ANA_X+part as i16]);
+                self.send_msg_to_elapse(vec![MSG_ANA_X + msg_pv]);
             }
             println!("Part {} Phrase: No Data!",part);
         }

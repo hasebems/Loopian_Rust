@@ -34,14 +34,15 @@ struct PhrLoopManager {
     vari_data_stock: Vec<UgContent>,
     vari_whole_tick_stock: [i16;MAX_VARI_PHRASE],
     new_ana_stock: Option<UgContent>,
+    vari_ana_stock: Vec<UgContent>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     state_reserve: bool,
     turnnote: i16,
 }
 impl PhrLoopManager {
     pub fn new() -> Self {
-        let mut vd: Vec<UgContent> = Vec::new();
-        for _ in 0..MAX_VARI_PHRASE {vd.push(UgContent::new());}
+        let mut no_data: Vec<UgContent> = Vec::new();
+        for _ in 0..MAX_VARI_PHRASE {no_data.push(UgContent::new());}
         Self {
             first_msr_num: 0,
             max_loop_msr: 0,
@@ -49,9 +50,10 @@ impl PhrLoopManager {
             loop_cntr: 0,
             new_data_stock: None,
             whole_tick_stock: 0,
-            vari_data_stock: vd,
+            vari_data_stock: no_data.clone(),
             vari_whole_tick_stock: [0;MAX_VARI_PHRASE],
             new_ana_stock: None,
+            vari_ana_stock: no_data,
             loop_phrase: None,
             state_reserve: false,
             turnnote: DEFAULT_TURNNOTE,
@@ -109,18 +111,23 @@ impl PhrLoopManager {
             self.state_reserve = true;
             self.whole_tick_stock = whole_tick;
         }
-        else {
-            if vari_num >= MAX_VARI_PHRASE {return}
+        else if vari_num < MAX_VARI_PHRASE {
             if msg.len() == 0 && whole_tick == 0 {self.vari_data_stock[vari_num] = UgContent::new();}
             else {self.vari_data_stock[vari_num] = msg;}
             self.vari_whole_tick_stock[vari_num] = whole_tick;
         }
     }
-    pub fn rcv_ana(&mut self, msg: UgContent) {
+    pub fn rcv_ana(&mut self, msg: UgContent, vari_num: usize) {
         //println!("Analysed Msg: {:?}", msg);
-        if msg.len() == 0 {self.new_ana_stock = None;}
-        else {self.new_ana_stock = Some(msg);}
-        self.state_reserve = true;
+        if vari_num == 0 {
+            if msg.len() == 0 {self.new_ana_stock = None;}
+            else {self.new_ana_stock = Some(msg);}
+            self.state_reserve = true;
+        }
+        else if vari_num < MAX_VARI_PHRASE {
+            if msg.len() == 0 {self.vari_ana_stock[vari_num] = UgContent::new();}
+            else {self.vari_ana_stock[vari_num] = msg;}
+        }
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.loop_phrase.clone()    // 重いclone()?
@@ -348,14 +355,14 @@ impl Part {
         self.keynote = knt;          // 0-11
         self.pm.state_reserve = true;
     }
-    pub fn rcv_phr_msg(&mut self, msg: UgContent, whole_tick: i16) {
-        self.pm.rcv_msg(msg, whole_tick, 0);
+    pub fn rcv_phr_msg(&mut self, msg: UgContent, whole_tick: i16, vari_num: usize) {
+        self.pm.rcv_msg(msg, whole_tick, vari_num);
     }
     pub fn rcv_cmps_msg(&mut self, msg: UgContent, whole_tick: i16) {
         self.cm.rcv_msg(msg, whole_tick);
     }
-    pub fn rcv_ana_msg(&mut self, msg_ana: UgContent) {
-        self.pm.rcv_ana(msg_ana);
+    pub fn rcv_ana_msg(&mut self, msg_ana: UgContent, vari_num: usize) {
+        self.pm.rcv_ana(msg_ana, vari_num);
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.pm.get_phr()
