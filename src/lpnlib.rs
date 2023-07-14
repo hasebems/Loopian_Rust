@@ -143,7 +143,7 @@ pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外�
 // MSG_CMP
 pub const TYPE_CHORD: i16   = 1002;     // for index TYPE
 pub const TYPE_DAMPER: i16  = 1003;     // for index TYPE
-pub const _TYPE_VARI: i16    = 1004;     // for index TYPE
+pub const TYPE_VARI: i16    = 1004;     // for index TYPE
 pub const UPPER: i16        = 1000;     // for index CD_TABLE
 
 // MSG_ANA
