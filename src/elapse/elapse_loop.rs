@@ -342,15 +342,24 @@ impl Elapse for CompositionLoop {
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
         if self.destroy {return;}
 
-        let elapsed_tick = self.calc_serial_tick(crnt_);
+        //  現在の tick を 1tick 後ろにずらす
+        let mut cm_crnt = crnt_.clone();
+        if cm_crnt.tick == crnt_.tick_for_onemsr - 1 {
+            cm_crnt.msr += 1;
+            cm_crnt.tick = 0;
+        }
+        else if crnt_.msr != 0 {
+            cm_crnt.tick += 1;
+        }
+
+        //  経過 tick の算出
+        let elapsed_tick = self.calc_serial_tick(&cm_crnt);
         if elapsed_tick >= self.whole_tick { // =をつけないと、loop終了直後の小節頭で無限ループになる
             self.next_msr = FULL;
             self.destroy = true;
-            return
         }
-
-        if !self.already_end && elapsed_tick >= self.next_tick_in_cmps {
-            let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
+        else if !self.already_end && (elapsed_tick >= self.next_tick_in_cmps) {
+            let next_tick = self.generate_event(&cm_crnt, estk, elapsed_tick);
             if next_tick == END_OF_DATA {
                 self.already_end = true;
                 self.next_tick_in_cmps = self.whole_tick;
@@ -358,11 +367,19 @@ impl Elapse for CompositionLoop {
             else {
                 self.next_tick_in_cmps = next_tick;
             }
-            let (next_msr, next_tick) = self.gen_msr_tick(crnt_, self.next_tick_in_cmps);
-            self.next_msr = next_msr;
-            self.next_tick = next_tick;
+
+            // 次回 msr, tick の算出
+            let (next_msr, next_tick) = self.gen_msr_tick(&cm_crnt, self.next_tick_in_cmps);
+            // next_tick を 1tick 前に設定
+            if self.next_tick == 0 {
+                self.next_msr = next_msr - 1;
+                self.next_tick = crnt_.tick_for_onemsr - 1;
+            }
+            else {
+                self.next_msr = next_msr;
+                self.next_tick = next_tick - 1;
+            }
         }
-        //assert!(self.next_msr > crnt_.msr);
     }
 }
 impl Loop for CompositionLoop {

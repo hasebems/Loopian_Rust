@@ -333,6 +333,7 @@ pub struct Part {
     dm: Option<DamperLoopManager>,
     flow: Option<Rc<RefCell<Flow>>>,
     sync_next_msr_flag: bool,
+    start_flag: bool,
 }
 impl Part {
     pub fn new(num: u32) -> Rc<RefCell<Part>> {
@@ -349,6 +350,7 @@ impl Part {
             dm: if num as usize == DAMPER_PEDAL_PART {Some(DamperLoopManager::new())} else {None},
             flow: None,
             sync_next_msr_flag: false,
+            start_flag: false,
         }))
     }
     pub fn change_key(&mut self, knt: u8) {
@@ -416,6 +418,7 @@ impl Elapse for Part {
     }
     fn start(&mut self) {      // User による start/play 時にコールされる
         self.during_play = true;
+        self.start_flag = true;
         self.next_msr = 0;
         self.next_tick = 0;
         self.cm.start();
@@ -433,15 +436,37 @@ impl Elapse for Part {
                                     keynote: self.keynote,
                                     sync_flag: self.sync_next_msr_flag,
                                 };
-        self.cm.process(crnt_, estk, pbp);
-        self.pm.process(crnt_, estk, pbp);
-        if let Some(dmpr) = self.dm.as_mut() {
-            dmpr.process(crnt_, estk, pbp);
+        if self.start_flag {
+            // Start 直後
+            self.cm.process(crnt_, estk, pbp);
+            self.pm.process(crnt_, estk, pbp);
+            if let Some(dmpr) = self.dm.as_mut() {
+                dmpr.process(crnt_, estk, pbp);
+            }
+            self.start_flag = false;
+        }
+        else if self.next_tick != 0 {
+            // 小節最後のみ
+            let cm_crnt = CrntMsrTick {msr:crnt_.msr+1, tick:0, tick_for_onemsr:crnt_.tick_for_onemsr};
+            self.cm.process(&cm_crnt, estk, pbp);
+        }
+        else {
+            // 小節先頭のみ
+            self.pm.process(crnt_, estk, pbp);
+            if let Some(dmpr) = self.dm.as_mut() {
+                dmpr.process(crnt_, estk, pbp);
+            }
+            self.sync_next_msr_flag = false;
         }
 
-        self.sync_next_msr_flag = false;
-        // 毎小節の頭で process() がコール
-        self.next_msr = crnt_.msr + 1
+        // 次回 process を呼ぶタイミング
+        if self.next_tick == 0 {    // 小節最後の tick
+            self.next_tick = crnt_.tick_for_onemsr - 1;
+        }
+        else {                      // 小節最初の tick
+            self.next_msr = crnt_.msr + 1;
+            self.next_tick = 0;
+        }
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     fn destroy_me(&self) -> bool {   // 自クラスが役割を終えた時に True を返す
