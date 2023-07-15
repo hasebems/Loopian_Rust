@@ -13,12 +13,16 @@ pub struct UgContent {
 }
 impl UgContent {
     pub fn new() -> Self {Self {dt: Vec::new(),}}
+    pub fn new_with_dt(dt: Vec<Vec<i16>>) -> Self {Self {dt}}
     pub fn len(&self) -> usize {self.dt.len()}
     pub fn copy_to(&self) -> UgContent {Self{dt: self.dt.to_vec()}}
+    pub fn mix_with(&mut self, uc: &mut UgContent) {self.dt.append(&mut uc.dt);}
     pub fn add_dt(&mut self, new_dt: Vec<i16>) {self.dt.push(new_dt);}
     pub fn get_all(&self) -> Vec<Vec<i16>> {self.dt.clone()}
     pub fn get_msg(&self, msg: usize) -> Vec<i16> {self.dt[msg].clone()}
     pub fn get_dt(&self, msg: usize, element: usize) -> i16 {self.dt[msg][element]}
+    pub fn set_dt(&mut self, msg: usize, element: usize, dt:i16) {self.dt[msg][element] = dt;}
+    pub fn naked(&self) -> &Vec<Vec<i16>> {&self.dt}
 }
 
 //*******************************************************************

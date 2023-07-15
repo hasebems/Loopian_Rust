@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
+use crate::elapse::ug_content::*;
 
 //*******************************************************************
 //          complement_phrase
@@ -171,7 +172,7 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
 //          recombine_to_internal_format
 //*******************************************************************
 pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: InputMode,
-    base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<Vec<i16>>) {
+    base_note: i32, tick_for_onemsr: i32) -> (i32, UgContent) {
     let max_read_ptr = ntvec.len();
     let (exp_vel, _exp_others) = get_exp_info(expvec.clone());
     let mut read_ptr = 0;
@@ -179,7 +180,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
     let mut tick: i32 = 0;
     let mut msr: i32 = 1;
     let mut base_dur: i32 = DEFAULT_TICK_FOR_QUARTER;
-    let mut rcmb: Vec<Vec<i16>> = Vec::new();
+    let mut rcmb = UgContent::new();
     let mut mes_top: bool = false;
 
     while read_ptr < max_read_ptr {
@@ -192,7 +193,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
 
         if notes[0] == RPT_HEAD {   // 繰り返し指定があったことを示すイベント
             let nt_data: Vec<i16> = vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
-            rcmb.push(nt_data);
+            rcmb.add_dt(nt_data);
         }
         else {  // NO_NOTE 含む（タイの時に使用）
             let next_msr_tick = tick_for_onemsr*msr;
@@ -393,8 +394,8 @@ fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
     else if base_dur == KEEP {base_dur*dur_cnt}
     else {base_dur*dur_cnt}
 }
-fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16, mes_top: bool)
-    -> Vec<Vec<i16>> {
+fn add_note(rcmb: UgContent, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16, mes_top: bool)
+    -> UgContent {
     assert!(notes.len() != 0);
     let mut return_rcmb = rcmb.clone();
     for note in notes.iter() {
@@ -406,10 +407,10 @@ fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_
                 // 小節先頭にタイがあった場合、前の音の音価を増やす
                 // 前回の入力が '=' による和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
                 let mut search_idx = return_rcmb.len()-1;
-                let last_tick = return_rcmb[search_idx][1];
+                let last_tick = return_rcmb.get_dt(search_idx, 1);
                 loop {
-                    if return_rcmb[search_idx][1] == last_tick {
-                        return_rcmb[search_idx][2] += note_dur as i16;
+                    if return_rcmb.get_dt(search_idx, 1) == last_tick {
+                        return_rcmb.set_dt(search_idx, 2, note_dur as i16);
                     }
                     else {break;}
                     if search_idx == 0 {break;}
@@ -421,7 +422,7 @@ fn add_note(rcmb: Vec<Vec<i16>>, tick: i32, notes: Vec<u8>, note_dur: i32, last_
         else {
             let nt_data: Vec<i16> = 
                 vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
-            return_rcmb.push(nt_data);
+            return_rcmb.add_dt(nt_data);
         }
     }
     return_rcmb

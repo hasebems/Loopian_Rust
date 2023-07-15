@@ -9,10 +9,10 @@ use crate::elapse::ug_content::*;
 //*******************************************************************
 //          analyse_data
 //*******************************************************************
-pub fn analyse_data(generated: &Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<Vec<i16>> {
+pub fn analyse_data(generated: &UgContent, exps: &Vec<String>) -> UgContent {
     let mut exp_analysis = put_exp_data(exps);
     let mut beat_analysis = analyse_beat(&generated);
-    beat_analysis.append(&mut exp_analysis);
+    beat_analysis.mix_with(&mut exp_analysis);
     let rcmb = arp_translation(beat_analysis.clone(), exps);
     rcmb
 }
@@ -21,14 +21,13 @@ pub fn analyse_data(generated: &Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<Vec<i1
 //      1st     TYPE_BEAT:  TYPE_EXP
 //      2nd     EXP:        NOPED
 //*******************************************************************
-fn put_exp_data(exps: &Vec<String>) -> Vec<Vec<i16>> {
+fn put_exp_data(exps: &Vec<String>) -> UgContent {
     let noped = exps.iter().any(|exp| exp == "noped");
-    let mut exp: Vec<Vec<i16>> = Vec::new();
+    let mut exp = UgContent::new();
     if noped {
-        let npd = vec![TYPE_EXP, NOPED];
-        exp.push(npd);
+        exp.add_dt(vec![TYPE_EXP, NOPED]);
     }
-    exp.clone()
+    exp.copy_to()
 }
 //*******************************************************************
 // beat analysis data format: 
@@ -47,7 +46,7 @@ fn put_exp_data(exps: &Vec<String>) -> Vec<Vec<i16>> {
 //       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
 //       $DIFF: arp の場合の、前の音との音程の差分
 //*******************************************************************
-fn analyse_beat(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
+fn analyse_beat(gen: &UgContent) -> UgContent {
     let get_hi = |na:Vec<i16>| -> i16 {
         match na.iter().max() {
             Some(x) => *x,
@@ -64,8 +63,8 @@ fn analyse_beat(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
     let mut crnt_dur = 0;
     let mut repeat_head_tick: i16 = NOTHING;
     let mut note_all: Vec<i16> = Vec::new();
-    let mut beat_analysis: Vec<Vec<i16>> = Vec::new();
-    for nt in gen.iter() {
+    let mut beat_analysis = UgContent::new();
+    for nt in gen.naked().iter() {
         if nt[TYPE] != TYPE_NOTE {
             if nt[TYPE] == TYPE_INFO && nt[INFOTP] == RPT_HEAD as i16 {
                 repeat_head_tick = nt[TICK];
@@ -79,7 +78,7 @@ fn analyse_beat(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
             if note_cnt > 0 {
                 let (arp, rht) = get_arp(crnt_tick, repeat_head_tick);
                 repeat_head_tick = rht;
-                beat_analysis.push(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all.clone()), note_cnt, arp]);
+                beat_analysis.add_dt(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all.clone()), note_cnt, arp])
             }
             crnt_tick = nt[TICK];
             crnt_dur = nt[DURATION];
@@ -89,18 +88,19 @@ fn analyse_beat(gen: &Vec<Vec<i16>>) -> Vec<Vec<i16>> {
     }
     if note_cnt > 0 {
         let (arp, _rht) = get_arp(crnt_tick, repeat_head_tick);
-        beat_analysis.push(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all), note_cnt, arp]);
+        beat_analysis.add_dt(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all), note_cnt, arp])
     }
     beat_analysis
 }
-fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<Vec<i16>> {
+fn arp_translation(beat_analysis: UgContent, exps: &Vec<String>) -> UgContent {
     let para = exps.iter().any(|exp| exp == "para");
     let mut last_note = REST;
     let mut last_cnt = 0;
     let mut crnt_note;
     let mut crnt_cnt;
     let mut total_tick = 0;
-    for ana in beat_analysis.iter_mut() {
+    let mut all_dt = beat_analysis.get_all();
+    for ana in all_dt.iter_mut() {
         if ana[TYPE] != TYPE_BEAT {continue;}
         // total_tick の更新
         if total_tick != ana[TICK] {
@@ -145,25 +145,25 @@ fn arp_translation(mut beat_analysis: Vec<Vec<i16>>, exps: &Vec<String>) -> Vec<
         last_cnt = crnt_cnt;
         last_note = crnt_note;
     }
-    beat_analysis.clone()
+    UgContent::new_with_dt(all_dt)
 }
 //*******************************************************************
 //          beat_filter
 //*******************************************************************
-pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> Vec<Vec<i16>> {
+pub fn beat_filter(rcmb: &UgContent, bpm: i16, tick_for_onemsr: i32) -> UgContent {
     const EFFECT: i16 = 20;     // bigger(1..100), stronger
     const MIN_BPM: i16 = 60;
     const MIN_AVILABLE_VELO: i16 = 30;
     const TICK_4_4: f32 = (DEFAULT_TICK_FOR_QUARTER*4) as f32;
     const TICK_3_4: f32 = (DEFAULT_TICK_FOR_QUARTER*3) as f32;
     const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
-    let mut rcmb = rcmb_org.clone();
-    if bpm < MIN_BPM {return rcmb;}
+    if bpm < MIN_BPM {return rcmb.clone();}
 
     // 純粋な四拍子、三拍子のみ対応
     let base_bpm: i16 = (bpm - MIN_BPM)*EFFECT/100;
+    let mut all_dt = rcmb.get_all();
     if tick_for_onemsr == TICK_4_4 as i32 {
-        for dt in rcmb.iter_mut() {
+        for dt in all_dt.iter_mut() {
             if dt[TYPE] != TYPE_NOTE {continue;}
             let tm: f32 = (dt[TICK] as f32 % TICK_4_4)/TICK_1BT;
             let mut vel = dt[VELOCITY];
@@ -182,7 +182,7 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
         }
     }
     else if tick_for_onemsr == TICK_3_4 as i32 {
-        for dt in rcmb.iter_mut() {
+        for dt in all_dt.iter_mut() {
             if dt[TYPE] != TYPE_NOTE {continue;}
             let tm: f32 = (dt[TICK] as f32 % TICK_3_4)/TICK_1BT;
             let mut vel = dt[VELOCITY];
@@ -200,13 +200,13 @@ pub fn beat_filter(rcmb_org: &Vec<Vec<i16>>, bpm: i16, tick_for_onemsr: i32) -> 
             dt[VELOCITY] = vel;
         }
     }
-    rcmb
+    UgContent::new_with_dt(all_dt)
 }
-pub fn crispy_tick(rcmb_org: &Vec<Vec<i16>>, exp_others: &Vec<String>) -> Vec<Vec<i16>> {
-    let mut rcmb = rcmb_org.clone();
+pub fn crispy_tick(rcmb: &UgContent, exp_others: &Vec<String>) -> UgContent {
     let mut stacc = false;
     if exp_others.iter().any(|x| x=="stacc") {stacc = true;}
-    for dt in rcmb.iter_mut() {
+    let mut all_dt = rcmb.get_all();
+    for dt in all_dt.iter_mut() {
         if dt[TYPE] != TYPE_NOTE {continue;}
         let mut return_dur = dt[DURATION];
         if stacc {
@@ -217,5 +217,5 @@ pub fn crispy_tick(rcmb_org: &Vec<Vec<i16>>, exp_others: &Vec<String>) -> Vec<Ve
         }
         dt[DURATION] = return_dur;
     }
-    rcmb.clone()
+    UgContent::new_with_dt(all_dt)
 }
