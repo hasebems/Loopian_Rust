@@ -168,6 +168,7 @@ Composition 指定
     - lydian : d=r=m=fi=s=l=t (Lydian Scale)
     - Iion : Iを主音としたイオニアン(Ionian)
     - thru : 全ての音(pedalなし)
+    - ! をコードの最後に追加すると、当てはまる音が等距離の場合、上側を採用する（通常は下側を採用）
     - コードやスケールが判断不能の場合、Errorとなり主音しか出ない
 
 
