@@ -286,29 +286,6 @@ impl CompositionLoop {
         }
         chord_map
     }
-    fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
-    fn prepare_note_translation(&mut self, cd: Vec<i16>) {
-        if cd[TYPE] == TYPE_CHORD {
-            self.root = cd[CD_ROOT];
-            self.translation_tbl = cd[CD_TABLE];
-
-            let tbl_num: usize = self.translation_tbl as usize;
-            let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
-            let cname = tbl_name.to_string();
-            if cname.chars().nth(0).unwrap_or(' ') == '_' {
-                let root_index = ((self.root-1)/3) as usize;
-                let alteration = (self.root+1)%3;
-                let mut root = crate::cmd::txt2seq_cmps::get_root_name(root_index).to_string();
-                if alteration == 1 {root += "#";}
-                else if alteration == 2 {root += "b";}
-                self.chord_name = root.to_string() + &cname[1..];
-            }
-            else {
-                self.chord_name = cname;
-            }
-            println!("Chord Data: {}, {}, {}",self.chord_name, cd[CD_ROOT], cd[CD_TABLE]);
-        }
-    }
     fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut trace: usize = self.play_counter;
         let mut next_tick: i32;
@@ -320,7 +297,13 @@ impl CompositionLoop {
             }
             next_tick = cmps.get_dt(trace,TICK) as i32;
             if next_tick <= elapsed_tick {
-                self.prepare_note_translation(cmps.get_msg(trace));
+                let cd = cmps.get_msg(trace);
+                if cd[TYPE] == TYPE_CHORD {
+                    self.prepare_note_translation(cd);
+                }
+                else if cd[TYPE] == TYPE_VARI {
+                    _estk.set_phrase_vari(self.id.pid as usize ,cd[VARI] as usize);
+                }
             }
             else {break;}
             trace += 1;
@@ -328,6 +311,27 @@ impl CompositionLoop {
         self.play_counter = trace;
         next_tick
     }
+    fn prepare_note_translation(&mut self, cd: Vec<i16>) {
+        self.root = cd[CD_ROOT];
+        self.translation_tbl = cd[CD_TABLE];
+
+        let tbl_num: usize = self.translation_tbl as usize;
+        let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
+        let cname = tbl_name.to_string();
+        if cname.chars().nth(0).unwrap_or(' ') == '_' {
+            let root_index = ((self.root-1)/3) as usize;
+            let alteration = (self.root+1)%3;
+            let mut root = crate::cmd::txt2seq_cmps::get_root_name(root_index).to_string();
+            if alteration == 1 {root += "#";}
+            else if alteration == 2 {root += "b";}
+            self.chord_name = root.to_string() + &cname[1..];
+        }
+        else {
+            self.chord_name = cname;
+        }
+        println!("Chord Data: {}, {}, {}",self.chord_name, cd[CD_ROOT], cd[CD_TABLE]);
+    }
+    fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
 }
 impl Elapse for CompositionLoop {
     fn id(&self) -> ElapseId {self.id}     // id を得る

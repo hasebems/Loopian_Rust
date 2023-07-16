@@ -201,6 +201,9 @@ impl ElapseStack {
         }
         else {SameKeyState::NOTHING}
     }
+    pub fn set_phrase_vari(&self, part_num: usize, vari_num: usize) {
+        self.part_vec[part_num].borrow_mut().set_phrase_vari(vari_num);
+    }
 
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {

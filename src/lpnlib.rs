@@ -167,7 +167,7 @@ pub enum InputMode {
 //*******************************************************************
 pub fn pt(msg: i16) -> usize {((msg%10)%MSG_PART_MASK) as usize}
 pub fn vari(msg: i16) -> usize {((msg/10)%10) as usize}
-pub fn msg1st(msg: i16) -> i16 {msg-(pt(msg) as i16)}
+pub fn msg1st(msg: i16) -> i16 {msg-(pt(msg) as i16)-(vari(msg) as i16)*10}
 pub fn convert_exp2vel(vel_text: &str) -> i32 {
     match vel_text {
         "ff" => 127,

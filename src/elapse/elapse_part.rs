@@ -33,6 +33,7 @@ struct PhrLoopManager {
     whole_tick_stock: i16,
     vari_data_stock: Vec<UgContent>,
     vari_whole_tick_stock: [i16;MAX_VARI_PHRASE],
+    vari_reserve: usize,      // 0:no rsv, 1-9: rsv
     new_ana_stock: Option<UgContent>,
     vari_ana_stock: Vec<UgContent>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
@@ -52,6 +53,7 @@ impl PhrLoopManager {
             whole_tick_stock: 0,
             vari_data_stock: no_data.clone(),
             vari_whole_tick_stock: [0;MAX_VARI_PHRASE],
+            vari_reserve: 0,
             new_ana_stock: None,
             vari_ana_stock: no_data,
             loop_phrase: None,
@@ -63,7 +65,13 @@ impl PhrLoopManager {
         self.first_msr_num = 0;
     }
     pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        if self.state_reserve {
+        if self.vari_reserve != 0 {
+            if let Some(phr) = self.loop_phrase.as_mut() {
+                phr.borrow_mut().set_destroy();
+            }
+            self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
+        }
+        else if self.state_reserve {
             // 前小節にて phrase/pattern 指定された時
             if crnt_.msr == 0 {
                 // 今回 start したとき
@@ -100,7 +108,7 @@ impl PhrLoopManager {
             self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
         }
         else {
-            // 通常の Loop 中
+               // 通常の Loop 中
         }
     }
     pub fn rcv_msg(&mut self, msg: UgContent, whole_tick: i16, vari_num: usize) {
@@ -113,8 +121,8 @@ impl PhrLoopManager {
         }
         else if vari_num < MAX_VARI_PHRASE {
             if msg.len() == 0 && whole_tick == 0 {self.vari_data_stock[vari_num] = UgContent::new();}
-            else {self.vari_data_stock[vari_num] = msg;}
-            self.vari_whole_tick_stock[vari_num] = whole_tick;
+            else {self.vari_data_stock[vari_num-1] = msg;}
+            self.vari_whole_tick_stock[vari_num-1] = whole_tick;
         }
     }
     pub fn rcv_ana(&mut self, msg: UgContent, vari_num: usize) {
@@ -125,8 +133,8 @@ impl PhrLoopManager {
             self.state_reserve = true;
         }
         else if vari_num < MAX_VARI_PHRASE {
-            if msg.len() == 0 {self.vari_ana_stock[vari_num] = UgContent::new();}
-            else {self.vari_ana_stock[vari_num] = msg;}
+            if msg.len() == 0 {self.vari_ana_stock[vari_num-1] = UgContent::new();}
+            else {self.vari_ana_stock[vari_num-1] = msg;}
         }
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
@@ -145,34 +153,66 @@ impl PhrLoopManager {
     pub fn set_turnnote(&mut self, tn: i16) {
         self.turnnote = tn;
     }
+    pub fn reserve_vari(&mut self, vari_num: usize) {
+        self.vari_reserve = vari_num; // 1-9
+    }
     fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        let mut new_loop = false;
         self.first_msr_num = msr;
-        if let Some(phr) = &self.new_data_stock {
-        if let Some(ana) = &self.new_ana_stock {
-            // 新しいデータが来ていれば、新たに Loop Obj.を生成
-            self.whole_tick = self.whole_tick_stock as i32;
-            println!("New Phrase Loop! --whole tick: {}", self.whole_tick_stock);
 
-            // その時の beat 情報で、whole_tick を loop_measure に換算
-            let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
-            self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
-
-            //self.update_loop_for_gui(); // for 8indicator
-            if self.whole_tick == 0 {
-                self.state_reserve = true; // 次小節冒頭で呼ばれるように
-                self.loop_phrase = None;
-                return;
+        if self.vari_reserve != 0 {
+            // Variation 指定があった場合
+            let phr = self.vari_data_stock[self.vari_reserve-1].clone();
+            let ana = self.vari_ana_stock[self.vari_reserve-1].clone();
+            if phr.len() != 0 && ana.len() != 0 {
+                self.gen_new_loop(&phr, &ana, msr, tick_for_onemsr, estk, pbp);                
+                new_loop = true;
             }
-
-            self.loop_cntr += 1;
-            let lp = PhraseLoop::new(self.loop_cntr, pbp.part_num, 
-                pbp.keynote, msr, phr.copy_to(), ana.copy_to(), self.whole_tick, self.turnnote);
-            self.loop_phrase = Some(Rc::clone(&lp));
-            estk.add_elapse(lp);
-        }}
+            self.vari_reserve = 0;
+        }
         else {
+            // Phrase の更新があった場合
+            let phr_stk = self.new_data_stock.clone();
+            let ana_stk = self.new_ana_stock.clone();
+            if let Some(phr) = &phr_stk {
+            if let Some(ana) = &ana_stk {
+                self.gen_new_loop(phr, ana, msr, tick_for_onemsr, estk, pbp);
+                new_loop = true;
+            }}
+        }
+
+        if !new_loop {
             self.whole_tick = 0;
         }
+    }
+    fn gen_new_loop(&mut self, phr: &UgContent, ana: &UgContent, 
+        msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        // 新しいデータが来ていれば、新たに Loop Obj.を生成
+        self.whole_tick = self.whole_tick_stock as i32;
+        if self.whole_tick == 0 {
+            self.state_reserve = true; // 次小節冒頭で呼ばれるように
+            self.loop_phrase = None;
+            self.max_loop_msr = 0;
+            return;
+        }
+
+        // その時の beat 情報で、whole_tick を loop_measure に換算
+        let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
+        self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
+
+        self.loop_cntr += 1;
+        let lp = PhraseLoop::new(
+            self.loop_cntr, 
+            pbp.part_num, 
+            pbp.keynote,
+            msr,
+            phr.copy_to(),
+            ana.copy_to(),
+            self.whole_tick,
+            self.turnnote);
+        self.loop_phrase = Some(Rc::clone(&lp));
+        estk.add_elapse(lp);
+        println!("New Phrase Loop! --whole tick: {}", self.whole_tick);
     }
 }
 
@@ -408,6 +448,9 @@ impl Part {
     }
     pub fn rcv_midi_in(&mut self, crnt_: &CrntMsrTick, status:u8, locate:u8, vel:u8) {
         if let Some(fl) = &self.flow {fl.borrow_mut().rcv_midi(crnt_, status, locate, vel);}
+    }
+    pub fn set_phrase_vari(&mut self, vari_num: usize) {
+        self.pm.reserve_vari(vari_num);
     }
 }
 impl Elapse for Part {

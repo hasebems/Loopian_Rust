@@ -7,7 +7,7 @@
 //*******************************************************************
 //         User Generate Content
 //*******************************************************************
-#[derive(Default,Clone)]
+#[derive(Default,Clone,Debug)]
 pub struct UgContent {
     dt: Vec<Vec<i16>>,
 }
@@ -44,6 +44,7 @@ pub const CD_ROOT: usize        = 2;
 pub const CD_TABLE: usize       = 3;
 pub const TYPE_CHORD_SIZE: usize = 4;
 pub const POS: usize            = 3;
+pub const VARI: usize           = 2;
 pub const _TYPE_DAMPER_SIZE: usize = 4;
 
 // MSG_ANA
