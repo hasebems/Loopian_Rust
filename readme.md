@@ -1,7 +1,7 @@
 <!--
 ![loopian_logo](loopian_logo.gif)
 -->
-<img src="doc/loopian_logo.png" width="50%">
+<img src="doc/window.png" width="80%">
 
 loopian Alpha-version written in Rust
 ========================================
