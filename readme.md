@@ -1,10 +1,11 @@
 <!--
 ![loopian_logo](loopian_logo.gif)
 -->
-<img src="doc/window.png" width="80%">
 
 loopian Alpha-version written in Rust
 ========================================
+
+<img src="doc/window.png" width="80%">
 
 about loopian
 --------------
