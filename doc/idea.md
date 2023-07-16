@@ -125,6 +125,12 @@ Part o-- DamperLoopManager
 Part o-- Flow
 PhrLoopManager o-- PhraseLoop
 CmpsLoopManager o-- CompositionLoop
+PhrLoopManager *-- UgContent
+CmpsLoopManager *-- UgContent
+PhraseLoop *-- UgContent
+CompositionLoop *-- UgContent
+PhraseDataStock *-- UgContent
+CompositionDataStock *-- UgContent
 ```
 
 ### 3.Elapse Object
@@ -147,9 +153,24 @@ CmpsLoopManager o-- CompositionLoop
         - 各 Elapse Object は、next_tick, next_msr で次回に呼ばれるタイミングを返す
         - next_tick/next_msr の値に準じて、estk は順序通りに Elapse Object をコール
     - estk が Elapse Object をコールしてメッセージを送る、という流れが基本
-        - Elapse Object が、逆流してメッセージを流したいとき、estk へのポインタは保持できないので、process() の引数の 
+        - Elapse Object が、集約元に逆流してメッセージを流したいとき、estk へのポインタは保持できないので、process() の引数の 
           estk で処理を完結させる
         - 末端の Elapse Object から全体の Object にメッセージを送る機能追加 register_sp_cmnd() 
+
+- Compositionの1tick先行の仕組み
+    - Part 内に、PhrLoopManager, CmpsLoopManager, DamperLoopManager というクラスが保持されている、
+        - Loop 先頭で、Phrase, Composition, Damper の Loop Elapse の生成を行っている
+    - Composition は、常に Phrase より先に process() が呼ばれる必要がある
+        - CmpsLoopManager は Loop 先頭の 1tick 前に process() が呼ばれている
+            - 呼ばれた後、現在の位置を 1tick 後に化かして、Composition の生成を行う
+            - Composition の最初の process() は生成時(1tick前)にコールされる
+        - Composition の process() 内において
+            - 呼ばれた時の時間を 1tick 後ろにずらす
+            - 次に呼ばれるべき時間を 1tick 前にずらす
+            - これで全イベントが 1tick 前に動作している
+        - Composition から Variation Phrase の番号を再生する場合
+            - 1tick 先行して再生
+            - Phrase の小節先頭で、Variation 変更のイベントを処理できる
 
 
 ### 4.Text Parse処理の考え方
@@ -228,10 +249,11 @@ CmpsLoopManager o-- CompositionLoop
     |拍子||MSG2_BEAT|(分子),(分母)|
     |調||MSG2_KEY|(key:0-11)|
     |折り返し||MSG2_TURN|(turnnote:0-11)|
-    |Phrase|MSG_PHR+vari*10+part|(whole_tick)|TYPE_NOTE,(TICK),(DURATION),(NOTE),(VELOCITY):repeat|
+    |Phrase|MSG_PHR+vari*10+part|(whole_tick)|TYPE_NOTE,(TICK),(DURATION),(NOTE),(VELOCITY)×repeat|
     ||||TYPE_INFO,(TICK),(info_type),0,0|
-    |Composition|MSG_CMP+part|(whole_tick)|(TYPE),(TICK),(CD_ROOT),(CD_TABLE):repeat|
-    |Analyze|MSG_ANA+vari*10+part||(TYPE),(TICK),(DURATION),(NOTE),(ntcnt),(arp_type):repeat|
+    |Composition|MSG_CMP+part|(whole_tick)|TYPE_CHORD,(TICK),(CD_ROOT),(CD_TABLE)×repeat|
+    ||||TYPE_VARI,(TICK),(variation),0|
+    |Analyze|MSG_ANA+vari*10+part||(TYPE),(TICK),(DURATION),(NOTE),(ntcnt),(arp_type)×repeat|
     |DelPhrase|MSG_PHR_X+part|─|─|
     |DelComposition|MSG_CMP_X+part|─|─|
     |DelAnalyze|MSG_ANA_X+part|─|─|
@@ -392,8 +414,8 @@ CmpsLoopManager o-- CompositionLoop
 - Variation Phrase 機能
     - Elps 内でのデータ受信と格納 7/9 済
     - cmdparse にて、seq_stock 内(PhraseDataStock)に９つのインスタンスを生成しデータ格納 7/12 済
-    - Message 受信処理、oct,key,composition などへも対応
-    - Elps で Composition 再生時に、Variation 自動再生
+    - Message 送信処理、oct,key,composition などへも対応 7/14 済
+    - Elps で Composition 再生時に、Variation 自動再生 7/16 済
 
 
 パス
