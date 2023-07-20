@@ -410,7 +410,8 @@ fn add_note(rcmb: UgContent, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel:
                 let last_tick = return_rcmb.get_dt(search_idx, 1);
                 loop {
                     if return_rcmb.get_dt(search_idx, 1) == last_tick {
-                        return_rcmb.set_dt(search_idx, 2, note_dur as i16);
+                        let dur = return_rcmb.get_dt(search_idx, 2);
+                        return_rcmb.set_dt(search_idx, 2, dur + note_dur as i16);
                     }
                     else {break;}
                     if search_idx == 0 {break;}
