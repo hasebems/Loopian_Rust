@@ -133,10 +133,10 @@ impl LoopianCmd {
     }
     fn letter_l(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
-        if len >= 5 && &input_text[0..5] == "left1" {
+        if len == 5 && &input_text[0..5] == "left1" {
             self.input_part = LEFT1;
             Some("Changed current part to left1.".to_string())
-        } else if len >= 5 && &input_text[0..5] == "left2" {
+        } else if len == 5 && &input_text[0..5] == "left2" {
             self.input_part = LEFT2;
             Some("Changed current part to left2.".to_string())
         } else {
@@ -145,11 +145,11 @@ impl LoopianCmd {
     }
     fn letter_p(&self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
-        if len >= 4 && &input_text[0..4] == "play" {
+        if len == 4 && &input_text[0..4] == "play" {
             // play
             self.send_msg_to_elapse(vec![MSG_START]);
             Some("Phrase has started!".to_string())
-        } else if len >= 5 && &input_text[0..5] == "panic" {
+        } else if len == 5 && &input_text[0..5] == "panic" {
             // panic
             self.send_msg_to_elapse(vec![MSG_PANIC]);
             Some("All Sound Off!".to_string())
@@ -262,40 +262,60 @@ impl LoopianCmd {
         }
     }
     fn letter_part(&mut self, input_text: &str) -> Option<String> {
-        let mut rtn_str = "what?".to_string();
-        for (i, ltr) in input_text.chars().enumerate() {
-            if ltr == '>' {
-                let first_letter = &input_text[i+1..i+2];
-                let part_str = &input_text[0..i];
-                let rest_text = &input_text[i+1..];
-                match part_str {
-                    "L1" => rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text),
-                    "L2" => rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text),
-                    "L12" => {
-                        rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text);
-                        if rtn_str != "what?" {
-                            rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
-                        }
-                    },
-                    "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
-                    "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),
-                    "R12" => {
-                        rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
-                        if rtn_str != "what?" {
-                            rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
-                        }
-                    },
-                    "ALL" => {
-                        for i in 0..MAX_USER_PART {
-                            rtn_str = self.call_bracket_brace(i, first_letter, rest_text);
-                        }
-                    },
-                    _ => println!("No Part!"),
-                }
-                break;
-            }
+        let len = input_text.chars().count();
+        if len == 2 && &input_text[0..2] == "L1" {
+            self.input_part = LEFT1;
+            Some("Changed current part to left1.".to_string())
         }
-        Some(rtn_str)
+        else if len == 2 && &input_text[0..2] == "L2" {
+            self.input_part = LEFT2;
+            Some("Changed current part to left2.".to_string())
+        }
+        else if len == 2 && &input_text[0..2] == "R1" {
+            self.input_part = RIGHT1;
+            Some("Changed current part to right1.".to_string())
+        }
+        else if len == 2 && &input_text[0..2] == "R2" {
+            self.input_part = RIGHT2;
+            Some("Changed current part to right2.".to_string())
+        }
+        else {
+            // shortcut input
+            let mut rtn_str = "what?".to_string();
+            for (i, ltr) in input_text.chars().enumerate() {
+                if ltr == '>' {
+                    let first_letter = &input_text[i+1..i+2];
+                    let part_str = &input_text[0..i];
+                    let rest_text = &input_text[i+1..];
+                    match part_str {
+                        "L1" => rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text),
+                        "L2" => rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text),
+                        "L12" => {
+                            rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text);
+                            if rtn_str != "what?" {
+                                rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
+                            }
+                        },
+                        "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
+                        "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),
+                        "R12" => {
+                            rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
+                            if rtn_str != "what?" {
+                                rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
+                            }
+                        },
+                        "ALL" => {
+                            for i in 0..MAX_USER_PART {
+                                rtn_str = self.call_bracket_brace(i, first_letter, rest_text);
+                            }
+                        },
+                        _ => println!("No Part!"),
+                    }
+                    break;
+                }
+            }
+            Some(rtn_str)
+        }
     }
     fn call_bracket_brace(&mut self, part_num: usize, first_letter: &str, rest_text: &str) -> String {
         let mut rtn_str = "what?".to_string();

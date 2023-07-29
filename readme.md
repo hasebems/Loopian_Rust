@@ -86,7 +86,9 @@ loopian は、Live Coding などで使うために開発している、テキス
 入力環境コマンド
 ----------------
 
-- 'right1' 'left1' : Phrase, Composition の入力パートを指定。右手２パート、左手２パートの４パートを指定可能
+- Phrase, Composition の入力パート指定コマンドは以下。右手２パート、左手２パートの４パートを指定可能
+    - 'left1','L1' : 左手 1 Part に変更（２も同様）
+    - 'right1','R1' : 右手 1 Part に変更（２も同様）
 - 'panic' : 今鳴っている音を消音する
 
 
@@ -182,12 +184,13 @@ Phrase/Composition 二つに関係する書式
     - ALL> : 全パートに同じ Phrase をセット
 
 - Phrase の Variation 追加と、Composition での指定
-    - Variation 機能では、ある Phrase の Loop 中に、別の Phrase(Variation) をときおり再生することができる
+    - Variation 機能とは、一つのパートに複数の Phrase を入力し、それらの再生順を Composition で指定できる機能である。
+        - これにより Loop 内で、定期的に異なる Phrase を再生することができる
     - @n[..][..] : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
-    - 追加された Variation Phrase は、Composition で指定する
+    - 追加された Variation Phrase は、Composition で以下のように指定する
         - {I/@n;II} 小節線の直後に @n;(n:1-9) と書くと、この小説冒頭から Variation Phrase が再生される
         - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
-        - Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
+        - Phrase より Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
         - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
 
 
@@ -203,8 +206,6 @@ Phrase/Composition 二つに関係する書式
     - 音名の後ろの数値はオクターブを指示するが、省略可能
         - 省略した場合、今設定されているオクターブがそのまま適用される
 - 'set oct=+1' : 現状から１オクターブ上げる
-    - set 以降に all を付け足すと、全 part に効果、付けなければ入力中の part に対してのみ効果
-    - 'set oct=0,0,-1,+1' : 4つのパートのオクターブを一度に設定できる
 - 'set input=fixed' : 階名を入力したときのオクターブ決定法（和音入力の場合はfixedのみ）
     - fixed は、入力する階名の位置は固定
     - closer は、指示がない限り、前回に近い音程 (default)
