@@ -67,28 +67,24 @@ impl History {
         self.input_lines[line].clone()
     }
     pub fn set_scroll_text(&mut self, time: String, cmd: String) -> usize {
-        self.input_lines.push((time, cmd));
+        self.input_lines.push((time.clone(), cmd));
         self.update_history_ptr()
     }
-    pub fn load_and_set_history(&mut self, time: String, fname: &str) -> usize {
-        // フォルダ作成
-        self.make_folder(Self::LOAD_FOLDER);
-
+    pub fn load_lpn(&mut self, fname: &str) -> Vec<String> {
+        let mut command: Vec<String> = Vec::new();
+        self.make_folder(Self::LOAD_FOLDER);    // フォルダ作成
         match fs::read_to_string(Self::LOAD_FOLDER.to_string() + "/" + &fname + ".lpn") {
             Ok(content) => {
                 for line in content.lines() {
                     if line.len() > 20 {
-                        let load_cmd = &line[20..];
-                        if load_cmd != "play" && load_cmd != "stop" &&
-                            load_cmd != "right1" && load_cmd != "right2" && load_cmd != "left1" && load_cmd != "left2" {
-                            self.input_lines.push((time.clone(), line[20..].to_string()));
-                        }
+                        let cmnd = line[20..].to_string();
+                        command.push(cmnd);
                     }
                 }
             }
             Err(_err) => println!("Can't open a file"),
         };
-        self.update_history_ptr()
+        command
     }
     pub fn arrow_up(&mut self) -> Option<(String, usize)> {
         let max_count = self.input_lines.len();

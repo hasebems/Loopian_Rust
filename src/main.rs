@@ -317,10 +317,10 @@ impl LoopianApp {
         }
     }
     //*******************************************************************
-    fn command_key(&mut self, key: &Key, modifiers: &Modifiers) {
+    fn pressed_key(&mut self, key: &Key, modifiers: &Modifiers) {
         let itxt: String = self.input_text.clone();
         if key == &Key::Enter {
-            self.command_input(itxt);
+            self.pressed_enter(itxt);
         }
         else if key == &Key::Backspace {
             if self.input_locate > 0 {
@@ -358,35 +358,42 @@ impl LoopianApp {
             if maxlen < self.input_locate {self.input_locate = maxlen;}
         }
     }
-    fn command_input(&mut self, itxt: String) {
+    fn pressed_enter(&mut self, itxt: String) {
         if itxt.len() == 0 {return;}
         let dt = Local::now();
         let time = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
-        self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
         self.input_text = "".to_string();
         self.input_locate = 0;
 
         if itxt.chars().count() >= 5 && &itxt[0..5] == "load " {
+            self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
             // load のときだけ特別処理
-            let old_cnt = self.history_cnt;
-            self.history_cnt = self.history.load_and_set_history(time, &itxt[5..]);
-            if old_cnt == self.history_cnt {
+            let command_stk: Vec<String>;
+            command_stk = self.history.load_lpn(&itxt[5..]);
+            if command_stk.len() == 0 {
                 self.scroll_lines.push(("".to_string(), "No history".to_string()));
             }
             else {
                 self.scroll_lines.push(("".to_string(), "Loaded in history".to_string()));
+                for cmd in command_stk.iter() {
+                    self.one_command(time.clone(), cmd.clone());
+                }
             }
         }
         else {
-            // 通常のコマンド入力
-            self.history_cnt = self.history.set_scroll_text(time, itxt.clone());// for history
-            if let Some(answer) = self.cmd.set_and_responce(&itxt) {// for work
-                self.scroll_lines.push(("".to_string(), answer));
-            }
-            else {  // The end of the App
-                self.app_end();
-                std::process::exit(0);
-            }
+            self.one_command(time, itxt);
+        }
+    }
+    fn one_command(&mut self, time: String, itxt: String) {
+        // 通常のコマンド入力
+        self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone());// for history
+        if let Some(answer) = self.cmd.set_and_responce(&itxt) {// for work
+            self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
+            self.scroll_lines.push(("".to_string(), answer));
+        }
+        else {  // The end of the App
+            self.app_end();
+            std::process::exit(0);
         }
     }
 }
@@ -409,7 +416,7 @@ impl eframe::App for LoopianApp {
             match ev {
                 Event::Text(ltr) => letters.push(ltr),
                 Event::Key {key,pressed, modifiers} => {
-                    if pressed == &true { self.command_key(key, modifiers);}
+                    if pressed == &true { self.pressed_key(key, modifiers);}
                 },
                 _ => {},
             }
