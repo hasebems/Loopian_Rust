@@ -181,7 +181,7 @@ CompositionDataStock *-- UgContent
     - 一音符内の指定子: (1:-,+)(2:',",q,h,3,5,`)(3:d,r,m,f,s,l,t,x)(3':i,a)(4:^,%)(5:.,~,o)
         - 3と3'を合わせたものは =,_ で繋いで同時発音を表現できる
         - 1は、2の後に置いても機能する
-    - ーノート変換子内の指定子: (1:@[n]:)(2:I,V)(3:#/b)(4:[table name])(5:!)(6:.)
+    - ーノート変換子内の指定子: (1:@[n];)(2:I,V)(3:#/b)(4:[table name])(5:!)(6:.)
         - !は、para/common時に、上下の音と等距離なら上側を採用することを表す
 - まだ使われていない文字: w,e,r,y,u,p,a,j,k,z,c,v,b,n,?,;,\,&,$,
 - 同じ意味に使う文字 : 小節(/,|)、同時(=,_)、タイ(.,~)
@@ -275,29 +275,28 @@ CompositionDataStock *-- UgContent
 
 ### 10.ノート番号変換(note translation)
 
-- ノート変換は loop object 内で発生する
-    - ノート変換後に Note Object を生成
-    - コード情報と、Phrase Analysed情報をベースにノート変換を行う
-    - Phrase の Music Expression 内にあるノート変換情報は Analysed に反映される
-        - para
-    - Chord の最後に ! を付けたとき、parallel/common の table と上下とも等距離ならば上側の音を採用
 - ノート変換アルゴリズム
     - common: table の最も近い値を選ぶ
-        - フレーズの冒頭
-        - 四分音符以上の長さの音の後の音
-        - 繰り返し指定の冒頭
+        - フレーズの冒頭の音に適用
+        - 四分音符以上の長さの音の後の音にも適用
+        - 繰り返し指定の冒頭に適用
     - parallel: phrase を平行移動した後、テーブルを通して音程を算出
         - 平行移動した後は、common と同じ処理
     - Scale&Parallel: テーブルを通した後、phrase を平行移動して音程を算出（詳細は下記）
     - arpeggio: アルペジオ判定のとき、前の音と同じにならない処理を加味して table の値を選ぶ
         - （詳細はパワポの資料参照）
         - 四分音符未満の長さに適用
+- ノート変換の詳細仕様
+    - コード情報と、Phrase Analysed情報をベースにノート変換を行う
+    - Phrase の Music Expression 内にあるノート変換情報は Analysed に反映される
+        - para
+    - Chord の最後に ! を付けたとき、parallel/common の table と上下とも等距離ならば上側の音を採用
 - 変換テーブルには以下の種類がある
     - Chord: 和音の種類＋ルート指定
     - Scale: key上のスケール指定
     - Scale&Parallel: key上のスケール指定＋paraによる全体移動の指定
     - その他: 種類の指定
-- Scale&Parallel は以下の仕様で動作する
+- Scale&Parallel 仕様
     1. 教会旋法（chr,ion,dor,lyd,mix,aeo）による指定
     1. chr のみ、クロマティックスケールとなり、教会旋法ではなく、単に phrase が指定した主音だけ平行移動する
     1. para指定されていなくても、Scale&Parallel対応のノート変換が選ばれれば、自動的にpara指定になる
@@ -311,6 +310,9 @@ CompositionDataStock *-- UgContent
         |lyd|IV|
         |mix|V|
         |aeo|VI|
+
+- ノート変換は loop object 内で発生する
+    - ノート変換後に Note Object を生成
 
 
 ### 11.Filter
@@ -416,7 +418,8 @@ CompositionDataStock *-- UgContent
     - cmdparse にて、seq_stock 内(PhraseDataStock)に９つのインスタンスを生成しデータ格納 7/12 済
     - Message 送信処理、oct,key,composition などへも対応 7/14 済
     - Elps で Composition 再生時に、Variation 自動再生 7/16 済
-
+- 入力パートの設定を、left1 の場合 L1 でもOKとした 7/29 済
+- load 時、historyに入れるだけでなく、コマンド処理まで行う仕様に変更 8/5 済
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -427,6 +430,11 @@ CompositionDataStock *-- UgContent
 
 バグ情報
 - 多分前からだが、同時複数音入力の時、コード指定で同じ音を指してしまうのを回避したい。
+- ときどき、上書きされる前の Phrase が重なって鳴ることがある
+    - 一回だけ起き、しばらくすると消える
+- Variation Phrase 絡みでいまひとつな挙動
+    - [] で、Phrase を消すと、Variation も再生されなくなる。それでいい？
+    - @n;Cd というように、前と同じコードでも必ず ; 付きで記述する必要がある
 
 次の対応、考えられる新機能
 - 次のループからではなく、リアルタイムでフレーズを変える機能（優先度低）
@@ -448,7 +456,7 @@ CompositionDataStock *-- UgContent
   Pianoteq8付きサイズ 1600 * 900
   全体で録画して、iMovieの中で単体を切り出し、Pianoteq8の切り出しをピクチャインピクチャで上に載せてもいい
 - オーディオ出力 : 複数出力装置（BlackHole & xxxのスピーカー）
-    - DAWの出力も確認
+    - DAW/Soft音源(Pianoteq)の出力も確認
 - 録音設定 : オプションから BlackHole 2ch を選択
 - Audio MIDI -> オーディオ装置 -> 「複数出力装置」選択 -> マスター装置: BlackHole 2ch
 - iMovieに入れるが、YouTubeではなく、ファイル出力指定にする(1080p 60)
@@ -472,4 +480,4 @@ Loopian は、テキストで音符を指定するリアルタイムループシ
     - ループベースのフレーズをリアルタイムに変容させるパフォーマンス、インタラクティブアートなどへの応用
     - 音楽教育における、移動ドによるソルミゼーション実践
 
-tag: #livecoding  #midi  #piano  #python  #pianoteq
+tag: #livecoding  #midi  #piano  #rust  #pianoteq
