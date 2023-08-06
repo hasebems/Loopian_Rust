@@ -46,7 +46,7 @@ pub struct ElapseStack {
     tg: TickGen,
     part_vec: Vec<Rc<RefCell<Part>>>,           // Part Instance が繋がれた Vec
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>,   // dyn Elapse Instance が繋がれた Vec
-    key_map: [i32; (MAX_NOTE_NUMBER-MIN_NOTE_NUMBER) as usize],
+    key_map: [i32; (MAX_NOTE_NUMBER-MIN_NOTE_NUMBER+1) as usize],
 }
 
 impl ElapseStack {
@@ -82,7 +82,7 @@ impl ElapseStack {
                     tg: TickGen::new(),
                     part_vec: vp,
                     elapse_vec: velps,
-                    key_map: [0; (MAX_NOTE_NUMBER-MIN_NOTE_NUMBER) as usize],
+                    key_map: [0; (MAX_NOTE_NUMBER-MIN_NOTE_NUMBER+1) as usize],
                 })
             }
             Err(_e) => None,
