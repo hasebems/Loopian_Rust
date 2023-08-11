@@ -129,8 +129,9 @@ impl LoopianApp {
         // Tell egui to use these fonts:
         cc.egui_ctx.set_fonts(fonts);
     }
-    fn app_end(&mut self) {
-        self.history.gen_log();
+    fn app_end(&mut self, save: bool) {
+        if save {self.history.gen_log();}
+        else {println!("File wasn't saved.");}
         println!("That's all. Thank you!");
     }
     //*******************************************************************
@@ -388,11 +389,17 @@ impl LoopianApp {
         // 通常のコマンド入力
         self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone());// for history
         if let Some(answer) = self.cmd.set_and_responce(&itxt) {// for work
-            self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
-            self.scroll_lines.push(("".to_string(), answer));
+            if answer == "nosave" {  // The end of the App
+                self.app_end(false);
+                std::process::exit(0);
+            }
+            else {  // normal command
+                self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
+                self.scroll_lines.push(("".to_string(), answer));
+            }
         }
         else {  // The end of the App
-            self.app_end();
+            self.app_end(true);
             std::process::exit(0);
         }
     }
@@ -402,7 +409,7 @@ impl LoopianApp {
 //*******************************************************************
 impl eframe::App for LoopianApp {
     fn on_close_event(&mut self) -> bool {
-        self.app_end();
+        self.app_end(true);
         true
     }
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {

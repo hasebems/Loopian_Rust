@@ -79,9 +79,13 @@ impl LoopianCmd {
         println!("Set Text: {}",input_text);
         let first_letter = &input_text[0..1];
         if first_letter == "q" {
-            if &input_text[..] == "quit" {
+            if &input_text[0..4] == "quit" {
                 self.send_msg_to_elapse(vec![MSG_QUIT]);
-                None    //  The End of the App
+                let option = input_text[4..].to_string();
+                if option.trim() == "nosave" {
+                    Some("nosave".to_string())
+                }
+                else {None} //  The End of the App
             }
             else {Some("what?".to_string())}
         }
