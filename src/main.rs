@@ -11,8 +11,7 @@ use std::time::{Duration, Instant};
 use std::thread;
 use std::sync::mpsc;
 use chrono::Local;
-use eframe::{egui::*};
-use eframe::egui;
+use eframe::{egui,egui::*};
 
 use cmd::cmdparse;
 use elapse::stack_elapse::ElapseStack;
