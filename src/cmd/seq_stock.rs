@@ -27,8 +27,9 @@ impl SeqDataStock {
         let mut pd = Vec::new();
         for i in 0..MAX_USER_PART {
             let mut vari = Vec::new();
+            let base_note = Self::default_base_note(i);
             for _ in 0..MAX_VARI_PHRASE+1 {
-                vari.push(PhraseDataStock::new(i));
+                vari.push(PhraseDataStock::new(base_note));
             }
             pd.push(vari);
         }
@@ -72,20 +73,32 @@ impl SeqDataStock {
         self.recombine_phr_all();
     }
     pub fn change_oct(&mut self, oct: i32, relative: bool, part: usize) -> bool {
-        let old = self.pdt[part][0].base_note/12 - 1;
-        let mut new = old;
-        if relative {new += oct;}
-        else        {new = oct;}
-        if new >= 8 {new = 7;}
-        else if new < 1 {new = 1;}
-        if old != new {
+        let mut update = false;
+        let new_bd: i32;
+        if oct == 0 {   // Reset Octave
+            new_bd = Self::default_base_note(part);
+            let dbn_now = self.pdt[part][0].base_note;
+            if new_bd != dbn_now {
+                update = true;
+            }
+        }
+        else {
+            let old = self.pdt[part][0].base_note/12 - 1;
+            let mut new = old;
+            if relative {new += oct;}
+            else        {new = oct;}
+            if new >= 8 {new = 7;}
+            else if new < 1 {new = 1;}
+            update = old != new;
+            new_bd = (new+1)*12;
+        }
+        if update {
             for epd in self.pdt[part].iter_mut() {
-                epd.base_note = (new+1)*12;
+                epd.base_note = new_bd;
                 epd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
             }
-            true
         }
-        else {false}
+        update
     }
     pub fn change_input_mode(&mut self, input_mode: InputMode) {
         self.input_mode = input_mode;
@@ -105,6 +118,9 @@ impl SeqDataStock {
             self.cdt[i].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
         }
     }
+    fn default_base_note(part_num: usize) -> i32 {
+        (DEFAULT_NOTE_NUMBER as i32) + 12*((part_num as i32) - 2)
+    }
 }
 
 //*******************************************************************
@@ -120,8 +136,7 @@ pub struct PhraseDataStock {
     whole_tick: i32,
 }
 impl PhraseDataStock {
-    fn new(num: usize) -> Self {
-        let base_note = (DEFAULT_NOTE_NUMBER as i32) + 12*((num as i32) - 2);
+    fn new(base_note: i32) -> Self {
         Self {
             base_note,
             raw: "".to_string(),
@@ -211,7 +226,7 @@ impl Default for CompositionDataStock {
             rcmb: UgContent::new(),
             whole_tick: 0,
         }
-    }    
+    }
 }
 impl CompositionDataStock {
     pub fn get_final(&self) -> Vec<i16> {
