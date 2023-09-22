@@ -11,7 +11,7 @@ use midir::{MidiOutput, /*MidiOutputPort,*/ MidiOutputConnection};
 use midir::{MidiInput, MidiInputPort, Ignore, MidiInputConnection};
 
 pub const MIDI_OUT: &str = "IACdriver";
-pub const MIDI_OUT_LED: &str = "Arduino";
+pub const MIDI_DEVICE: &str = "Loopian-ORBIT";
 
 pub struct MidiTx {
     connection_tx: Option<Box<MidiOutputConnection>>,
@@ -45,7 +45,7 @@ impl MidiTx {
                     },
                 }
             }
-            else if drv_name.find(MIDI_OUT_LED) != None {
+            else if drv_name.find(MIDI_DEVICE) != None {
                 match driver.connect(p, "loopian_tx") {
                     Ok(c) => {
                         me.connection_tx_led = Some(Box::new(c));
@@ -108,7 +108,7 @@ impl MidiRx {
         let mut in_port: Option<&MidiInputPort> = None;
         for (i, p) in in_ports.iter().enumerate() {
             let drv_name = midi_in.port_name(p).unwrap();
-            if drv_name.find(MIDI_OUT_LED) != None {
+            if drv_name.find(MIDI_DEVICE) != None {
                 println!("{}: {}", i, midi_in.port_name(p).unwrap());
                 in_port = in_ports.get(i);
                 break;
