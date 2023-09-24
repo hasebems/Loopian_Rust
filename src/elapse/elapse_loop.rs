@@ -470,14 +470,15 @@ impl DamperLoop {
         let mut chord_map = vec![false; beat_num];
         for i in 0..MAX_USER_PART {
             if let Some(_fl) = estk.get_flow(i) {
-                chord_map[0] = true;
+                //chord_map[0] = true;
+                chord_map = DamperLoop::merge_chord_map(crnt_, estk, i,
+                    tick_for_onemsr, tick_for_onebeat, chord_map);
             }
             else if let Some(phr) = estk.get_phr(i) {
                 if phr.borrow().get_noped() { // 一パートでも noped 指定があれば
                     return;
                 }
                 else {
-                    // 各パートのChord情報より、Damper 情報を beat にどんどん足していく
                     chord_map = DamperLoop::merge_chord_map(crnt_, estk, i,
                         tick_for_onemsr, tick_for_onebeat, chord_map);
                 }
@@ -486,6 +487,7 @@ impl DamperLoop {
         }
         self.evt = self.gen_real_damper_track(chord_map, tick_for_onebeat, beat_num);
     }
+    /// 各パートのChord情報より、Damper 情報を beat にどんどん足していく
     fn merge_chord_map(crnt_: &CrntMsrTick, estk: &mut ElapseStack, part_num: usize, 
         tick_for_onemsr: i32, tick_for_onebeat: i32, mut chord_map: Vec<bool>) -> Vec<bool> {
         if let Some(cmps) = estk.get_cmps(part_num) {
