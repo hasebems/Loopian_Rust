@@ -118,7 +118,6 @@ ElapseStack o-- Elapse
 LoopianCmd *-- SeqDataStock
 SeqDataStock *-- PhraseDataStock
 SeqDataStock *-- CompositionDataStock
-SeqDataStock *-- DamperDataStock
 Part *-- PhrLoopManager
 Part *-- CmpsLoopManager
 Part o-- DamperLoopManager
@@ -173,7 +172,7 @@ CompositionDataStock *-- UgContent
             - Phrase の小節先頭で、Variation 変更のイベントを処理できる
 
 
-### 4.Text Parse処理の考え方
+### 4.Text Parse 処理の考え方
 
 - 入力文字一覧
     - 全体区切り: [],{},(),@
@@ -259,12 +258,22 @@ CompositionDataStock *-- UgContent
     |DelAnalyze|MSG_ANA_X+part|─|─|
 
 
-### 8.Note 処理
+### 8.Note/Damper 処理
 
 ![note](note.png)
 
-- octave は、Phrase生成時に足しこむ
-- key は、再生時に足しこむ
+- Note 処理
+    - octave は、Phrase生成時に足しこむ
+    - key は、再生時に足しこむ
+
+- Damper 処理について
+    - DamperLoop Class にて、小節の冒頭で Damper Event を生成する
+    - 各パートのコード情報をマージして Damper Event 生成
+        - Beat数の要素を持った MergeMap 作成
+        - コード情報があれば、MergeMap のコード情報がある Beat に True 追加
+        - 上記の調査結果、コードイベントごとに Pedal を踏み直す Damper Event 生成
+    - 1part でも noped があれば、Damper Event は生成しない
+    - MIDI flow 設定時、phrase のデータがなくても、コード情報から Damper Event 作成する
 
 
 ### 9.Analysed でやっていること
@@ -420,6 +429,9 @@ CompositionDataStock *-- UgContent
     - Elps で Composition 再生時に、Variation 自動再生 7/16 済
 - 入力パートの設定を、left1 の場合 L1 でもOKとした 7/29 済
 - load 時、historyに入れるだけでなく、コマンド処理まで行う仕様に変更 8/5 済
+- [] でフレーズを消したのに、get_phr() では、データが残っているような値が返る
+    - Damper Pedal の処理で get_phr() を使っていて、起動後は何もデータが無いと、Some(x) で None が返るのに、何かのフレーズを消した後だと、None は返らない。-> 返るように修正 9/24 済
+- flow で MIDI を鳴らす時、Phrase が None でも、Chord が送られていれば Pedal は送られる仕様に変更 9/24 済
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
