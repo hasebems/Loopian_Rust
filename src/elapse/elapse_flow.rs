@@ -35,8 +35,8 @@ pub const LOCATION_ALL: usize = 96;
 pub const _FLOWNOTE_ALL: usize = 72;
 pub const TICK_RESOLUTION: i32 = 120;
 
-struct RawEv(i32, i32, u8, u8, u8); //  msr, tick, status, locate, vel
-struct GenStock(u8, u8, u8); // note, vel, locate
+struct RawEv(i32, i32, u8, u8, u8); //  0:msr, 1:tick, 2:status, 3:locate, 4: vel
+struct GenStock(u8, u8, u8); // 0:note, 1:vel, 2:locate
 
 pub struct Flow {
     id: ElapseId,
@@ -94,6 +94,7 @@ impl Flow {
     }
     /// 考え方：
     ///  on なら、まずノート変換し、同じ音が現在鳴っていなければ発音
+    ///  鳴っていれば、位置を新しいイベントのものに差し替え
     ///  off なら、この音を鳴らしたイベントを locate から探し、その音を消す
     fn convert_evt(&mut self, estk: &mut ElapseStack) {
         loop {
@@ -104,7 +105,10 @@ impl Flow {
                     if self.raw_state[locate_idx] != NO_DATA {break;}
                     self.raw_state[locate_idx] = ev.1;
                     let rnote = self.detect_real_note(estk, ev.3 as i16);
-                    if !self.same_note_exists(rnote) {
+                    if let Some(idx) = self.same_note_index(rnote) {
+                        self.gen_stock[idx].2 = ev.3;   // locate 差し替え
+                    }
+                    else {
                         estk.midi_out(0x90, rnote, ev.4);
                         println!("MIDI OUT<< 0x90:{:x}:{:x}",rnote,ev.4);
                         self.gen_stock.push(GenStock(rnote, ev.4, ev.3));
@@ -136,11 +140,11 @@ impl Flow {
         }
         real_note
     }
-    fn same_note_exists(&self, rnote: u8) -> bool {
-        for x in self.gen_stock.iter() {
-            if x.0 == rnote {return true;}
+    fn same_note_index(&self, rnote: u8) -> Option<usize> {
+        for (i, x) in self.gen_stock.iter().enumerate() {
+            if x.0 == rnote {return Some(i);}
         }
-        false
+        None
     }
     fn same_locate_index(&self, locate: u8) -> Option<usize> {
         for (i, x) in self.gen_stock.iter().enumerate() {
