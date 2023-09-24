@@ -182,6 +182,7 @@ impl PhrLoopManager {
 
         if !new_loop {
             self.whole_tick = 0;
+            self.loop_phrase = None;
         }
     }
     fn gen_new_loop(&mut self, phr: &UgContent, ana: &UgContent, 
