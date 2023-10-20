@@ -242,9 +242,14 @@ impl LoopianCmd {
     fn letter_at(&mut self, input_text: &str) -> Option<String> {
         if let Some(ltr) = input_text.chars().nth(1) {
             if let Some(vari) = ltr.to_digit(10) {
-                let brachet_text = &input_text[2..];
-                if self.set_phrase(self.input_part, vari as usize, brachet_text) {
-                    return Some("Set Phrase!".to_string())
+                let itxt = input_text.trim();
+                if let Some(ltr2) = itxt.chars().nth(2) {
+                    if ltr2 == '=' {    // @n= 
+                        let brachet_text = &itxt[3..];
+                        if self.set_phrase(self.input_part, vari as usize, brachet_text) {
+                            return Some("Set Phrase!".to_string())
+                        }
+                    }
                 }
             }
         }

@@ -276,9 +276,9 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
         }
 
         let mut msgs = comp[read_ptr].clone();
-        if msgs.chars().any(|x| x==';') {
+        if msgs.chars().any(|x| x==':') {
             // Variation 指定があるか
-            let msgs_in_same: Vec<&str> = msgs.split(';').collect();
+            let msgs_in_same: Vec<&str> = msgs.split(':').collect();
             let ltr = msgs_in_same[0].chars().nth(0).unwrap_or(' ');
             let num = msgs_in_same[0][1..].parse().unwrap_or(0);
             if msgs_in_same[0].len() == 2 && ltr == '@' && num > 0 {
