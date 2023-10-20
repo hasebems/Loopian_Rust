@@ -14,7 +14,7 @@ struct ChordTable {
     name: &'static str,
     table: &'static [i16],
 }
-const CHORD_TABLE: [ChordTable; 40] = [
+const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "thru",     table:  &THRU,},    // noped
     ChordTable {name:   "O",        table:  &THRU,},
     ChordTable {name:   "_",        table:  &MAJOR,},
@@ -56,8 +56,22 @@ const CHORD_TABLE: [ChordTable; 40] = [
     ChordTable {name:   "comdim",       table:  &COMDIM,},
     ChordTable {name:   "pentatonic",   table:  &PENTATONIC,},
     ChordTable {name:   "blues",        table:  &BLUES,},
-    ChordTable {name:   "Err",          table:  &ERR,},
-    ChordTable {name:   "None",         table:  &NONE,},
+    ChordTable {name:   "sc0",      table:  &IONIAN,},      // scale n: n seminote above
+    ChordTable {name:   "sc1",      table:  &SC1,},
+
+    ChordTable {name:   "sc2",      table:  &SC2,},
+    ChordTable {name:   "sc3",      table:  &SC3,},
+    ChordTable {name:   "sc4",      table:  &SC4,},
+    ChordTable {name:   "sc5",      table:  &MIXOLYDIAN,},
+    ChordTable {name:   "sc6",      table:  &SC6,},
+    ChordTable {name:   "sc7",      table:  &LYDIAN,},
+    ChordTable {name:   "sc8",      table:  &SC8,},
+    ChordTable {name:   "sc9",      table:  &SC9,},
+    ChordTable {name:   "sc10",     table:  &SC10,},
+    ChordTable {name:   "sc11",     table:  &SC11,},
+ 
+    ChordTable {name:   "Err",      table:  &ERR,},
+    ChordTable {name:   "None",     table:  &NONE,},
 ];
 pub const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
 
@@ -90,6 +104,15 @@ const PENTATONIC:[i16; 5] = [0, 2, 4, 7, 9];
 const BLUES:  [i16; 6]  = [0, 3, 5, 6, 7, 10];
 const ERR:    [i16; 1]  = [0];
 const NONE:   [i16; 1]  = [0];
+const SC1:    [i16; 7]  = [0, 1, 3, 5, 6, 8, 10];
+const SC2:    [i16; 7]  = [1, 2, 4, 6, 7, 9, 11];
+const SC3:    [i16; 7]  = [0, 2, 3, 5, 7, 8, 10];
+const SC4:    [i16; 7]  = [1, 3, 4, 6, 8, 9, 11];
+const SC6:    [i16; 7]  = [1, 3, 5, 6, 8, 10,11];
+const SC8:    [i16; 7]  = [0, 1, 3, 5, 7, 8, 10];
+const SC9:    [i16; 7]  = [1, 2, 4, 6, 8, 9, 11];
+const SC10:   [i16; 7]  = [0, 2, 3, 5, 7, 9, 10];
+const SC11:   [i16; 7]  = [1, 3, 4, 6, 8, 10,11];
 
 pub fn get_root_name(idx_num: usize) -> &'static str {
     assert!(idx_num < ROOT_NAME.len());
