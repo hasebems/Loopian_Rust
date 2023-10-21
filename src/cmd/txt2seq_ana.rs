@@ -22,7 +22,7 @@ pub fn analyse_data(generated: &UgContent, exps: &Vec<String>) -> UgContent {
 //      2nd     EXP:        NOPED
 //*******************************************************************
 fn put_exp_data(exps: &Vec<String>) -> UgContent {
-    let noped = exps.iter().any(|exp| exp == "noped");
+    let noped = exps.iter().any(|exp| exp == "dmp(off)");
     let mut exp = UgContent::new();
     if noped {
         exp.add_dt(vec![TYPE_EXP, NOPED]);
@@ -93,7 +93,7 @@ fn analyse_beat(gen: &UgContent) -> UgContent {
     beat_analysis
 }
 fn arp_translation(beat_analysis: UgContent, exps: &Vec<String>) -> UgContent {
-    let para = exps.iter().any(|exp| exp == "para");
+    let para = exps.iter().any(|exp| exp == "para()" || exp == "trns(para)");
     let mut last_note = REST;
     let mut last_cnt = 0;
     let mut crnt_note;
@@ -204,7 +204,9 @@ pub fn beat_filter(rcmb: &UgContent, bpm: i16, tick_for_onemsr: i32) -> UgConten
 }
 pub fn crispy_tick(rcmb: &UgContent, exp_others: &Vec<String>) -> UgContent {
     let mut stacc = false;
-    if exp_others.iter().any(|x| x=="stacc") {stacc = true;}
+    if exp_others.iter().any(|x| x=="stacc()" || x=="artic(stacc)") {
+        stacc = true;
+    }
     let mut all_dt = rcmb.get_all();
     for dt in all_dt.iter_mut() {
         if dt[TYPE] != TYPE_NOTE {continue;}

@@ -197,18 +197,6 @@ fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
     }
     nnv
 }
-fn extract_number_from_parentheses(ne: &str) -> usize {
-    if let Some(i) = ne.find('(') {
-        if let Some(e) = ne.find(')'){
-            if i<=e {
-                let numtxt = ne[(i+1)..e].to_string();
-                return numtxt.parse().unwrap_or(0);
-            }
-            else {return 1;}
-        }
-    }
-    0
-}
 
 //*******************************************************************
 //          recombine_to_internal_format
@@ -216,7 +204,7 @@ fn extract_number_from_parentheses(ne: &str) -> usize {
 pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: InputMode,
     base_note: i32, tick_for_onemsr: i32) -> (i32, UgContent) {
     let max_read_ptr = ntvec.len();
-    let (exp_vel, _exp_others) = get_exp_info(expvec.clone());
+    let (exp_vel, _exp_others) = get_dyn_info(expvec.clone());
     let mut read_ptr = 0;
     let mut last_nt: i32 = 0;
     let mut tick: i32 = 0;
@@ -263,14 +251,17 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
     }
     (tick, rcmb)
 }
-fn get_exp_info(expvec: Vec<String>) -> (i32, Vec<String>) {
+fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     let mut vel = END_OF_DATA;
     let mut retvec = expvec.clone();
     for (i, txt) in expvec.iter().enumerate() {
-        vel = convert_exp2vel(txt);
-        if vel != END_OF_DATA {
-            retvec.remove(i);
-            break;
+        if &txt[0..3] == "dyn" {
+            let dyntxt = extract_texts_from_parentheses(txt);
+            vel = convert_exp2vel(dyntxt);
+            if vel != END_OF_DATA {
+                retvec.remove(i);
+                break;
+            }
         }
     }
     if vel == END_OF_DATA {vel=convert_exp2vel("p");}
@@ -542,3 +533,28 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
     base_pitch
 }
 
+//*******************************************************************
+//          extract_xxx_from_parentheses
+//*******************************************************************
+fn extract_number_from_parentheses(ne: &str) -> usize {
+    if let Some(i) = ne.find('(') {
+        if let Some(e) = ne.find(')'){
+            if i<=e {
+                let numtxt = ne[(i+1)..e].to_string();
+                return numtxt.parse().unwrap_or(0);
+            }
+            else {return 1;}
+        }
+    }
+    0
+}
+fn extract_texts_from_parentheses(ne: &str) -> &str {
+    if let Some(i) = ne.find('(') {
+        if let Some(e) = ne.find(')'){
+            if i<=e {
+                return &ne[(i+1)..e];
+            }
+        }
+    }
+    ""
+}
