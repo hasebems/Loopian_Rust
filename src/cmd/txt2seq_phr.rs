@@ -10,59 +10,62 @@ use crate::elapse::ug_content::*;
 //          complement_phrase
 //*******************************************************************
 pub fn complement_phrase(input_text: String) -> [Vec<String>;2] {
-    // 1. [] を抜き出し、２つ分の brackets を Vec に入れて戻す
-    let (ni, ne) = divide_brackets(input_text);
+    // 1. space 削除
+    let phr = input_text.trim().to_string();
 
-    // 2. ,| 重複による休符指示の補填
-    let mut nf = fill_omitted_note_data(ni);
-    nf.retain(|c| !c.is_whitespace());  // space を削除
+    // 2. [] を検出し、音符情報と、その他の情報を分けて Vec に入れて戻す
+    let (nt, ne) = divide_brackets(phr);
 
-    // 3. , で分割
-    let mut nvec = split_by(',', nf);
+    // 3. 関数を . で分割し、音符変調と音楽表現に分ける
+    let mut nev = split_by('.', ne);
+    nev.retain(|nt| nt!="");
+    let (nmvec, nevec) = divide_notemod_and_musicex(nev);
+
+    // 4. ,| 重複による休符指示の補填、音符のVector化
+    let nt2 = fill_omitted_note_data(nt);
+    let mut ntvec = split_by(',', nt2);
 
     // 4. < >*n を展開
-    loop {
-        let (nvr_tmp, no_exist) = expand_repeat(nvec.clone());
-        nvec = nvr_tmp.clone();
-        if no_exist {break;}
-    }
+    //loop {
+    //    let (nvr_tmp, no_exist) = expand_repeat(nvec.clone());
+    //    nvec = nvr_tmp.clone();
+    //    if no_exist {break;}
+    //}
 
     // 5. 同音繰り返しの展開
     loop {
-        let (nvr_tmp, no_exist) = note_repeat(nvec.clone());
-        nvec = nvr_tmp.clone();
+        let (nvr_tmp, no_exist) = note_repeat(ntvec.clone());
+        ntvec = nvr_tmp.clone();
         if no_exist {break;}
     }
 
-    // 6. Expression を , で分割
-    ne.clone().retain(|c| !c.is_whitespace());  // space を削除
-    let nevec = split_by(',', ne);
+    // 6. 音符変調関数の適用
+    for ne in nmvec.iter() {
+        if &ne[0..3] == "rpt" {
+            ntvec = repeat_ntimes(ntvec, ne);
+        }
+    }
 
-    return [nvec,nevec];
+    return [ntvec, nevec];
 }
 fn divide_brackets(input_text: String) -> (String, String) {
     let mut note_info: Vec<String> = Vec::new();
 
-    // [] のセットを抜き出し、中身を note_info に入れる
+    // [] のセットを抜き出し、中身と、その後の文字列を note_info に入れる
     let mut isx: &str = &input_text;
-    loop {
-        if let Some(n2) = isx.find(']') {
-            note_info.push(isx[1..n2].to_string());
-            isx = &isx[n2+1..];
-            if isx.len() == 0 {break;}
-            if let Some(n3) = isx.find('[') {
-                if n3 != 0 {break;}
-            }
-            else {break;}
+    if let Some(n2) = isx.find(']') {
+        note_info.push(isx[1..n2].to_string());
+        isx = &isx[n2+1..];
+        if isx.len() != 0 {
+            note_info.push(isx.to_string());
         }
-        else {break;}
     }
 
     let bracket_num = note_info.len();
     if bracket_num == 1 {
-        note_info.push("raw".to_string());
+        note_info.push("".to_string());
     }
-    else if bracket_num == 0 || bracket_num > 2 {
+    else if bracket_num == 0 {
         return ("".to_string(), "".to_string());
     }
     return (note_info[0].clone(), note_info[1].clone());
@@ -101,7 +104,25 @@ fn fill_omitted_note_data(nf: String) -> String {
     }
     fill
 }
-fn expand_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
+/// Note Modulation Function と Music Expression Function を分離する
+fn divide_notemod_and_musicex(nev :Vec<String>) -> (Vec<String>, Vec<String>) {
+    let mut nm: Vec<String> = Vec::new();
+    let mut ne: Vec<String> = Vec::new();
+
+    for nx in nev.iter() {
+        if &nx[0..3] == "rpt" {
+            nm.push(nx.to_string());
+        }
+        else {
+            ne.push(nx.to_string());
+        }
+    }
+    if ne.len() == 0 {
+        ne.push("raw".to_string());
+    }
+    (nm, ne)
+}
+fn _expand_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
     let mut new_vec = nv.clone();
     let mut repeat_start: usize = nv.len();
     let mut first_bracket: bool = false;
@@ -166,6 +187,27 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
         }
     }
     (new_vec, no_exist)
+}
+fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
+    let mut nnv: Vec<String> = Vec::new();
+    let mut num = extract_number_from_parentheses(ne);
+    if num >= 1 {num += 1;}
+    for _ in 0..num {
+        nnv.extend(nv.clone());
+    }
+    nnv
+}
+fn extract_number_from_parentheses(ne: &str) -> usize {
+    if let Some(i) = ne.find('(') {
+        if let Some(e) = ne.find(')'){
+            if i<=e {
+                let numtxt = ne[(i+1)..e].to_string();
+                return numtxt.parse().unwrap_or(0);
+            }
+            else {return 1;}
+        }
+    }
+    0
 }
 
 //*******************************************************************
