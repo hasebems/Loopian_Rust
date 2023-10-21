@@ -409,16 +409,17 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
 fn gen_diff_vel(nt: String) -> (String, i32) {
     let mut ntext = nt;
     let mut diff_vel = 0;
-    let mut last_ltr = ntext.chars().nth(ntext.len()-1).unwrap_or(' ');
+    let mut last_ltr = if ntext.len() > 0 
+        { ntext.chars().nth(ntext.len()-1).unwrap_or(' ')} else {' '};
     while last_ltr == '^' {
         diff_vel += 10;
         ntext.pop();
-        last_ltr = ntext.chars().nth(ntext.len()-1).unwrap_or(' ');
+        last_ltr = if ntext.len() > 0 {ntext.chars().nth(ntext.len()-1).unwrap_or(' ')} else {' '};
     }
     while last_ltr == '%' {
         diff_vel -= 20;
         ntext.pop();
-        last_ltr = ntext.chars().nth(ntext.len()-1).unwrap_or(' ');
+        last_ltr = if ntext.len() > 0 {ntext.chars().nth(ntext.len()-1).unwrap_or(' ')} else {' '};
     }
     (ntext, diff_vel)
 }
