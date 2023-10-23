@@ -188,11 +188,13 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
     }
     (new_vec, no_exist)
 }
+/// 同じ Phrase を指定回数回、コピーし追加する
 fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
     let mut nnv: Vec<String> = Vec::new();
-    let mut num = extract_number_from_parentheses(ne);
-    if num >= 1 {num += 1;}
+    let num = extract_number_from_parentheses(ne);
+    nnv.extend(nv.clone()); //  repeat前
     for _ in 0..num {
+        nnv.push("$RPT".to_string());
         nnv.extend(nv.clone());
     }
     nnv
@@ -224,6 +226,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
         if notes[0] == RPT_HEAD {   // 繰り返し指定があったことを示すイベント
             let nt_data: Vec<i16> = vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
             rcmb.add_dt(nt_data);
+            last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         }
         else {  // NO_NOTE 含む（タイの時に使用）
             let next_msr_tick = tick_for_onemsr*msr;
@@ -540,8 +543,8 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
 fn extract_number_from_parentheses(ne: &str) -> usize {
     if let Some(i) = ne.find('(') {
         if let Some(e) = ne.find(')'){
-            if i<=e {
-                let numtxt = ne[(i+1)..e].to_string();
+            if i<e {
+                let numtxt = if i+1<e { ne[(i+1)..e].to_string()} else {'1'.to_string()};
                 return numtxt.parse().unwrap_or(0);
             }
             else {return 1;}
