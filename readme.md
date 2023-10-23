@@ -95,10 +95,11 @@ loopian は、Live Coding などで使うために開発している、テキス
 Phrase 追加
 -------------
 
-- [*note*][*musical expression*] : phrase 追加の書式
+- [*note*].*func1*().*func2*() : phrase 追加の書式
     - *note*: 音符ごとの階名、音価表現、音量情報を入力する
-    - *musical expression*: 音楽表現を入力する
-        - [*musical expression*] は省略可能
+    - *func*: 関数（音符変調関数、音楽表現関数）
+        - 関数は省略可能
+        - 関数は、"."で繋げて、複数の関数が追記可能
     - [] : 全データ削除
 
 
@@ -111,7 +112,6 @@ Phrase 追加
     - , : 各音の区切り。１小節を超えたら捨てられる。区切りが連続すると休符が省略されたとみなす
     - |, / : 小節区切り。区切りが連続すると休符が省略されたとみなす
     - d=m=s, d_m_s : 同時演奏
-    - <d,r,m>*4 : ドレミを４回演奏
     - d*4 : ドを４回連続して発音
 
 
@@ -127,15 +127,21 @@ Phrase 追加
         - [3'd,r,m] : 'の前に3を書くと、３連符の音価になる
             - 同様に、5連符が可能
 
+
 - note単位の音量表現
     - d^ : 階名の後ろに '^' をつけると音量が大きくなる。複数個つけることも可能
     - d% : 階名の後ろに '%' をつけると音量が小さくなる。複数個つけることも可能
 
-- 音楽表現(musical expression)
-    - f,mf,mp,p,pp: フレーズの音量
-    - stacc: 音価を半分にする
-    - para : 和音変換時、root に合わせて並行移動する 
-    - noped: Pedal Off指定
+
+- 音符変調関数(note modulation function)
+    - rpt(*n*) :n=繰り返し回数、2ならそれ自身を含め合計3回繰り返し
+
+
+- 音楽表現関数(musical expression function)
+    - dyn(*x*) :x=f,mf,mp,p,pp: フレーズの音量
+    - artic(stacc) / stacc() : 音価を半分にする
+    - trns(para) : para() : 和音変換時、root に合わせて並行移動する 
+    - dmp(on/off): off: 和音指定時でも Pedal Off指定
 
 
 Composition 指定
@@ -175,25 +181,6 @@ Composition 指定
     - コードやスケールが判断不能の場合、Errorとなり主音しか出ない
 
 
-Phrase/Composition 二つに関係する書式
----------------------------------------
-
-- Phrase/Composition ともに、冒頭でパート指定することで、プロンプトと違うパートでも入力することができる
-    - L1> : left1パート
-    - L12> : left1,left2パート二つ同時に同じ Phrase をセット
-    - ALL> : 全パートに同じ Phrase をセット
-
-- Phrase の Variation 追加と、Composition での指定
-    - Variation 機能とは、一つのパートに複数の Phrase を入力し、それらの再生順を Composition で指定できる機能である。
-        - これにより Loop 内で、定期的に異なる Phrase を再生することができる
-    - @n[..][..] : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
-    - 追加された Variation Phrase は、Composition で以下のように指定する
-        - {I/@n;II} 小節線の直後に @n;(n:1-9) と書くと、この小説冒頭から Variation Phrase が再生される
-        - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
-        - Phrase より Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
-        - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
-
-
 調、テンポ、拍子、音量
 -------------------
 
@@ -229,6 +216,29 @@ Phrase/Composition 二つに関係する書式
     - loadしたいファイルは、この /load フォルダに入れておく必要がある
     - ログファイルと同様のファイルがロードされることを想定している
     - ロードされた内容は、history の中に格納され、カーソル（上下）キーで一行ずつ呼び出すことができる
+
+
+拡張仕様
+-------------
+
+- Phrase/Composition ともに、冒頭でパート指定することで、プロンプトと違うパートでも入力することができる
+    - L1> : left1パート
+    - L12> : left1,left2パート二つ同時に同じ Phrase をセット
+    - ALL> : 全パートに同じ Phrase をセット
+
+- Phrase の Macro 機能（未実装）
+    - Macro 機能とは、[]による特定の音符指定を Macro として保持し、パートを跨いでその指定を使い回すことができる機能である
+    - &n=[..] : Phrase 指定の冒頭に &n(nは1から9までの数値)を付け足すことで、Macro を追加できる
+
+- Phrase の Variation 機能
+    - Variation 機能とは、一つのパートに複数の Phrase を入力し、それらの再生順を Composition で指定できる機能である
+        - これにより Loop 内で、定期的に異なる Phrase を再生することができる
+    - @n=[..] : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
+    - 追加された Variation Phrase は、Composition で以下のように指定する
+        - {I/@n:II} 小節線の直後に @n:(n:1-9) と書くと、この小説冒頭から Variation Phrase が再生される
+        - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
+        - Phrase より Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
+        - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
 
 
 Loopian::ORBIT での演奏

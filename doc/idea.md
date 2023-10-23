@@ -33,43 +33,48 @@
 ### 1.Part
 
 - Input Part は4つ
-    - L(L1), L2, R(R1), R2
-- Pedal 用隠しパートが一つ
-- MIDI ch. は一つ
+    - L1, L2, R1, R2
+    - Pedal 用隠しパートが一つ
+- MIDI
+    - Note On/Off
+    - Sustain CC#64
+    - Reverb Depth CC#91(未実装)
+    - Volume CC#7(未実装)
+    - MIDI ch. は一つ
 
-### 2.出力 MIDI
-
-- Note On/Off
-- Sustain CC#64
-- Reverb Depth CC#91(未実装)
-- Volume CC#7(未実装)
-
-### 3.Command入力
+### 2.Command入力
 
 - Command には以下の4種類がある
     1. Phrase Command（ [] で入力）
     1. Composition Command（{}で入力）
-    1. Realtime Control Command (play/stop/fine/rit./left/right/sync/[end]flow)
+    1. Realtime Control Command (play/stop/fine/rit./left(right,L1,R1..)/sync/[end]flow)
     1. Setting Command (set [bpm/beat/oct/key/input/samenote])
 - Phrase Command の考え方
     - ノート番号と音価を指示する
-    - また、簡易な表情指示(Music Expression)をさらに [] を追加して記述できる
+    - また、表情指示(Music Expression)を、さらに関数を追加して記述できる
     - exp.engine により、簡易な表情指示からベロシティ、微妙なタイミング、dulation、ペダル情報を自動生成
+    - &n で phrase の [] をマクロとして格納できる（パートを超えて使用可能）
+    - @n で phrase + Music Expression を Variation として格納できる（パート内でのみ使用可能）
 - Composition Command の考え方
     - Composition では和音・スケール（ノート変換子）を指示する
     - 指定されたノート変換子に従って、Phrase 入力の音は自動変換される
     - Composition も、各パートごとに設定できる
+    - @n の変数を指定することで、特定の箇所で特定の phrase 再生ができる
 - Phrase も、Composition も、それぞれ独自の周期で loop する
 - "flow"指定で、Phrase 再生をやめ、MIDI In からの情報を変換して、MIDI OUT する
     "endflow" で Phrase 再生を再開
-- Phrase の Music Expression 一覧
-    - ff,f,mf,mp,p,pp,ppp  （ベロシティ指定）
-    - ped, noped, halfped（未実装） （ペダル奏法）
-    - para  （コード変換の指定）
-    - artic: stacc,legato,marc （dulation指定）
-    - p->f など音量の漸次的変化（未実装）
+- 音符変調関数
+    - rpt(n) : repeat
+    - 一つの音を複数に分割
+- 音楽表現関数
+    - artic() : stacc, legato
+    - dyn() : ff,f,mf,mp,p,pp, ^, %, cresc, dim などVelocity指定
+    - dmp() : on,off,half などdamper pedal奏法
+    - trns() : para などコード変換方法の指定
+- 条件処理
+    - xxx?yyy : xxx-条件、yyy-処理
 
-### 4.MIDI Flow機能
+### 3.MIDI Flow機能
 
 - 専用外部デバイスを接続し、インタラクティブな演奏を楽しめる機能を提供する
     - Loopian::ORBIT という専用デバイスを接続
@@ -432,6 +437,14 @@ CompositionDataStock *-- UgContent
 - [] でフレーズを消したのに、get_phr() では、データが残っているような値が返る
     - Damper Pedal の処理で get_phr() を使っていて、起動後は何もデータが無いと、Some(x) で None が返るのに、何かのフレーズを消した後だと、None は返らない。-> 返るように修正 9/24 済
 - flow で MIDI を鳴らす時、Phrase が None でも、Chord が送られていれば Pedal は送られる仕様に変更 9/24 済
+- 文法の変更
+    - [][mf] => [].dyn(mf) 10/21 済
+    - [][noped] => [].dmp(off)  10/21 済
+    - [<m,f>*5] => [m,f].rpt(5)  10/21 済
+    - [][para] => [].trns(para) / [].para()  10/21 済
+    - [][stacc] => [].artic(stacc) / [].stacc()  10/21 済
+    - @2[...] => @2=[...] : 音符列(+関数)を格納できる変数 10/20 済
+        - {I/@2;II} => {I/@2:II} 10/20 済
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -453,10 +466,26 @@ CompositionDataStock *-- UgContent
     - リアルタイムか、次のループ先頭かを選べる
     - リアルタイムの場合、まずそれが可能なデータかチェック
         - 小節数が同じ、中身が空でない
+- 文法の変更
+    - [][mf] => [].dyn(mf) 10/21 済
+    - [][noped] => [].dmp(off)  10/21 済
+    - [][para] => [].trns(para) / [].para()  10/21 済
+    - [][stacc] => [].artic(stacc) / [].stacc()  10/21 済
+    - [<m,f>*5] => [m,f].rpt(5)  10/21 済
+    - [d^,r,m,f^,s,l] => [d,r,m,f,s,l].dyn(X.idx%3==0?X^)
+        - 各音のiteratorは X で表現される
+        - X.idx は順番の数値、X.beat は拍数
+    - &2=[...] : 音符列のみを格納できる変数
+        - &2.dyn(mp) : 音符の[]と同等に使用できる
+        - <&2+&3> : 二つの音符列を時系列に足し合わせる
+        - <&2.rpt(5)+&3> : 音符変調関数を使用可能
+        - &n の音符列は、複数パートを跨いで使用可能
+    - @2[...] => @2=[...] : 音符列(+関数)を格納できる変数 10/20 済
+        - {I/@2;II} => {I/@2:II} 10/20 済
+        - @2=@2.dyn(pp) : 再代入可能
 
 先の話
 - さらなる humanized アルゴリズムの追加
-
 
 ## loopian 計画
 - loopian を使った動画制作
