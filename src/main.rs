@@ -5,6 +5,7 @@
 //
 mod cmd;
 mod elapse;
+mod graphic;
 mod lpnlib;
 
 use std::time::{Duration, Instant};
@@ -16,21 +17,25 @@ use eframe::{egui,egui::*};
 use cmd::cmdparse;
 use elapse::stack_elapse::ElapseStack;
 use cmd::history::History;
+use graphic::graphic::Graphic;
+
+pub const WINDOW_X: f32 = 1000.0;        //  Main Window
+pub const WINDOW_Y: f32 = 860.0;
 
 //#[derive(Default)]
 pub struct LoopianApp {
     input_locate: usize,
     input_text: String,
     start_time: Instant,
+    total_frame: i32,
     scroll_lines: Vec<(String, String)>,
     history_cnt: usize,
     cmd: cmdparse::LoopianCmd,
     history: History,
+    graph: Graphic,
 }
 
 impl LoopianApp {
-    const WINDOW_X: f32 = 1000.0;        //  Main Window
-    const WINDOW_Y: f32 = 860.0;
 
     const SPACE_LEFT: f32 = 30.0;
     const SPACE_RIGHT: f32 = 970.0;
@@ -90,11 +95,13 @@ impl LoopianApp {
         Self {
             input_locate: 0,
             input_text: String::new(),
-            start_time: Instant::now(), // Current Time
+            start_time: Instant::now(),
+            total_frame: 0,
             scroll_lines: Vec::new(),
             history_cnt: 0,
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui),
             history: History::new(),
+            graph: Graphic::new(),
         }
     }
     fn init_font(cc: &eframe::CreationContext<'_>) {
@@ -135,22 +142,6 @@ impl LoopianApp {
     }
     //*******************************************************************
     //      Update Screen
-    //*******************************************************************
-    fn update_title(ui: &mut egui::Ui) {
-        ui.put(
-            Rect {
-                min: Pos2 { x:Self::WINDOW_X/2.0 - 80.0,
-                            y:5.0},
-                max: Pos2 { x:Self::WINDOW_X/2.0 + 80.0, 
-                            y:Self::SPACE1_UPPER - 5.0},
-            }, //  location
-            Label::new(RichText::new("Loopian")
-                .size(48.0)
-                .color(Color32::WHITE)
-                .family(FontFamily::Proportional)
-            )
-        );
-    }
     //*******************************************************************
     fn text_for_eight_indicator(&mut self, num: i32) -> String {
         let indi_txt;
@@ -411,23 +402,27 @@ impl eframe::App for LoopianApp {
         self.app_end(true);
         true
     }
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        // repaint 100msec interval
-        ctx.request_repaint_after(Duration::from_millis(100));
+    fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
+        // 50fps で画面更新
+        const FPS: u128 = 1000/50;
+        ctx.request_repaint_after(Duration::from_millis(25));
+        let time = self.start_time.elapsed();
+        self.total_frame = (time.as_millis()/FPS) as i32;
 
         //  Get Keyboard Event from Egui::Context
-        let evts = ctx.input().events.clone();  
-        let mut letters: Vec<&String> = vec![];
-        for ev in evts.iter() {
-            match ev {
-                Event::Text(ltr) => letters.push(ltr),
-                Event::Key {key,pressed, modifiers} => {
-                    if pressed == &true { self.pressed_key(key, modifiers);}
-                },
-                _ => {},
+        ctx.input(|i|{ 
+            let mut letters: Vec<&String> = vec![];
+            for ev in i.events.iter() {
+                match ev {
+                    Event::Text(ltr) => letters.push(ltr),
+                    Event::Key {key,pressed, modifiers, repeat:_} => {
+                        if pressed == &true { self.pressed_key(&key, &modifiers);}
+                    },
+                    _ => {},
+                }
             }
-        }
-        if letters.len() >= 1 {self.input_letter(letters);}
+            if letters.len() >= 1 {self.input_letter(letters);}
+        }); 
 
         // Configuration for CentralPanel
         let my_frame = egui::containers::Frame {
@@ -441,7 +436,8 @@ impl eframe::App for LoopianApp {
 
         // Draw CentralPanel
         CentralPanel::default().frame(my_frame).show(ctx, |ui| {
-            Self::update_title(ui);
+            //Self::update_title(ui);
+            self.graph.update(ui, &mut self.cmd, frame, self.total_frame);
             self.update_eight_indicator(ui);
 
             //  scroll text
@@ -458,11 +454,11 @@ impl eframe::App for LoopianApp {
 //*******************************************************************
 fn main() {
     let options = eframe::NativeOptions {
-        initial_window_size: Some((LoopianApp::WINDOW_X, LoopianApp::WINDOW_Y).into()),
-        resizable: false,
+        initial_window_size: Some((WINDOW_X, WINDOW_Y).into()),
+//        resizable: false,
 //        follow_system_theme: false,
         ..eframe::NativeOptions::default()
     };
-    eframe::run_native("Loopian", options, 
+    let _ = eframe::run_native("Loopian", options, 
         Box::new(|cc| Box::new(LoopianApp::new(cc))));
 }
