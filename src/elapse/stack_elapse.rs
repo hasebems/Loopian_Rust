@@ -188,7 +188,11 @@ impl ElapseStack {
         self.part_vec[part_num].borrow().get_flow()
     }
     pub fn tg(&self) -> &TickGen {&self.tg}
-    pub fn inc_key_map(&mut self, key_num: u8) {self.key_map[(key_num-MIN_NOTE_NUMBER) as usize] += 1;}
+    pub fn inc_key_map(&mut self, key_num: u8, vel: u8) {
+        self.key_map[(key_num-MIN_NOTE_NUMBER) as usize] += 1;
+        let key_disp = format!("9{}/{}", key_num, vel);
+        self.send_msg_to_ui(&key_disp);
+    }
     pub fn dec_key_map(&mut self, key_num: u8) -> SameKeyState {
         let idx = (key_num-MIN_NOTE_NUMBER) as usize;
         if self.key_map[idx] > 1 {

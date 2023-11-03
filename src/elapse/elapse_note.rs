@@ -55,8 +55,8 @@ impl Note {
         let num = self.note_num + self.keynote;
         if Note::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
             self.real_note = num;
-            estk.inc_key_map(num);
             let vel = self.random_velocity(self.velocity);
+            estk.inc_key_map(num, vel);
             estk.midi_out(0x90, self.real_note, vel);
             println!("On: {},{} Trns: {}, ", num, vel, self.deb_txt);
             true

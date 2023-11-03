@@ -19,6 +19,7 @@ pub struct LoopianCmd {
     ui_hndr: mpsc::Receiver<String>,
     input_part: usize,
     gendt: SeqDataStock,
+    graphic_ev: Vec<String>,
 }
 
 impl LoopianCmd {
@@ -34,6 +35,18 @@ impl LoopianCmd {
             ui_hndr,
             input_part: RIGHT1,
             gendt: SeqDataStock::new(),
+            graphic_ev: Vec::new(),
+        }
+    }
+    pub fn get_ev_from_gev(&self) -> Option<String> {
+        if self.graphic_ev.len() > 0 {
+            return Some(self.graphic_ev[0].clone());
+        }
+        else {None}
+    }
+    pub fn remove_from_gev(&mut self, idx: usize) {
+        if self.graphic_ev.len() > idx {
+            self.graphic_ev.remove(idx);
         }
     }
     pub fn get_input_part(&self) -> usize {self.input_part}
@@ -65,6 +78,9 @@ impl LoopianCmd {
                             }
                             else if ind_num < LoopianApp::MAX_INDICATOR {
                                 self.indicator[ind_num] = txt;
+                            }
+                            else if ind_num == 9 {
+                                self.graphic_ev.push(txt);
                             }
                         }
                     }
