@@ -18,6 +18,7 @@
 - Loopian::ORBIT を使ってリアルタイム演奏が可能
     - 一つの Part を、リアルタイム用に指定
     - 演奏を自動的にコード指定に合わせて MIDI 出力する
+- テキストと同時に、音再生とリンクしたグラフィックを表示
 
 
 ### 2.what you can do
@@ -111,6 +112,7 @@ cargo doc で自動生成
 classDiagram
 LoopianApp *-- LoopianCmd
 LoopianApp *-- ElapseStack
+LoopianApp *-- Graphic
 Elapse <|-- Part
 Elapse <|-- Loop
 Loop <|-- PhraseLoop
@@ -181,11 +183,11 @@ CompositionDataStock *-- UgContent
 
 - 入力文字一覧
     - 全体区切り: [],{},(),@
-    - 複数音符を跨ぐ、あるいは区切る指定子: <,>,/,|,*,:
+    - 複数音符を跨ぐ、あるいは区切る指定子: /,|,*,:
     - 一音符内の指定子: (1:-,+)(2:',",q,h,3,5,`)(3:d,r,m,f,s,l,t,x)(3':i,a)(4:^,%)(5:.,~,o)
         - 3と3'を合わせたものは =,_ で繋いで同時発音を表現できる
         - 1は、2の後に置いても機能する
-    - ーノート変換子内の指定子: (1:@[n];)(2:I,V)(3:#/b)(4:[table name])(5:!)(6:.)
+    - ーノート変換子内の指定子: (1:@[n]:)(2:I,V)(3:#/b)(4:[table name])(5:!)(6:.)
         - !は、para/common時に、上下の音と等距離なら上側を採用することを表す
 - まだ使われていない文字: w,e,r,y,u,p,a,j,k,z,c,v,b,n,?,;,\,&,$,
 - 同じ意味に使う文字 : 小節(/,|)、同時(=,_)、タイ(.,~)
@@ -445,9 +447,12 @@ CompositionDataStock *-- UgContent
     - [][stacc] => [].artic(stacc) / [].stacc()  10/21 済
     - @2[...] => @2=[...] : 音符列(+関数)を格納できる変数 10/20 済
         - {I/@2;II} => {I/@2:II} 10/20 済
+- Windowの背景に、水紋を表示させる 11/3 済
+
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
+- cd /users/hasebems/coding/livecoding/Loopian_Rust
 
 不具合の可能性（アサート情報）
 - stack_elapse.rs の process() 159行目付近のアサートにひっかかるとき
@@ -466,23 +471,15 @@ CompositionDataStock *-- UgContent
     - リアルタイムか、次のループ先頭かを選べる
     - リアルタイムの場合、まずそれが可能なデータかチェック
         - 小節数が同じ、中身が空でない
-- 文法の変更
-    - [][mf] => [].dyn(mf) 10/21 済
-    - [][noped] => [].dmp(off)  10/21 済
-    - [][para] => [].trns(para) / [].para()  10/21 済
-    - [][stacc] => [].artic(stacc) / [].stacc()  10/21 済
-    - [<m,f>*5] => [m,f].rpt(5)  10/21 済
-    - [d^,r,m,f^,s,l] => [d,r,m,f,s,l].dyn(X.idx%3==0?X^)
-        - 各音のiteratorは X で表現される
-        - X.idx は順番の数値、X.beat は拍数
-    - &2=[...] : 音符列のみを格納できる変数
-        - &2.dyn(mp) : 音符の[]と同等に使用できる
-        - <&2+&3> : 二つの音符列を時系列に足し合わせる
-        - <&2.rpt(5)+&3> : 音符変調関数を使用可能
-        - &n の音符列は、複数パートを跨いで使用可能
-    - @2[...] => @2=[...] : 音符列(+関数)を格納できる変数 10/20 済
-        - {I/@2;II} => {I/@2:II} 10/20 済
-        - @2=@2.dyn(pp) : 再代入可能
+- [d^,r,m,f^,s,l] => [d,r,m,f,s,l].dyn(X.idx%3==0?X^)
+    - 各音のiteratorは X で表現される
+    - X.idx は順番の数値、X.beat は拍数
+- &2=[...] : 音符列のみを格納できる変数
+    - &2.dyn(mp) : 音符の[]と同等に使用できる
+    - <&2+&3> : 二つの音符列を時系列に足し合わせる
+    - <&2.rpt(5)+&3> : 音符変調関数を使用可能
+    - &n の音符列は、複数パートを跨いで使用可能
+- @2=@2.dyn(pp) : 再代入可能
 
 先の話
 - さらなる humanized アルゴリズムの追加
