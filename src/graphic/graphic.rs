@@ -5,10 +5,13 @@
 //
 use eframe::{egui,egui::*};
 use std::time::Instant;
+use rand::{thread_rng, Rng, rngs};
 use crate::{WINDOW_X, WINDOW_Y};
 use crate::lpnlib::*;
 use crate::cmd::cmdparse::LoopianCmd;
 use super::waterripple::WaterRipple;
+
+pub const MAX_INDICATOR: usize = 8;
 
 const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
 const TEXT_GRAY: Color32 = Color32::from_rgb(0,0,0);
@@ -23,8 +26,6 @@ const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
 
 const FONT16: f32 = 16.0;
 const FONT16_WIDTH: f32 = 9.56;
-const SPACE_LEFT: f32 = 30.0;
-const SPACE_RIGHT: f32 = 970.0;
 
 const _LEFT_MERGIN: f32 = 5.0;
 
@@ -33,8 +34,16 @@ pub struct Graphic {
     nobj: Vec<WaterRipple>,
     start_time: Instant,
     frame_counter: i32,
+    rndm: rngs::ThreadRng,
 }
-
+struct Resize {
+    eight_indic_top: f32,
+    eight_indic_left: f32,
+    scroll_txt_top: f32,
+    scroll_txt_left: f32,
+    input_txt_top: f32,
+    input_txt_left: f32,
+}
 impl Graphic {
     pub fn new() -> Graphic {
         Self {
@@ -42,15 +51,17 @@ impl Graphic {
             nobj: Vec::new(),
             start_time: Instant::now(),
             frame_counter: 0,
+            rndm: thread_rng(),
         }
     }
     pub fn update(&mut self, ui: &mut Ui, 
         infs : (usize, &String, &Vec<(String, String)>, usize, &LoopianCmd),
         frame: &mut eframe::Frame, ntev: Option<String>) {
 
-            // window size を得る
+        // window size を得る
         self.full_size.x = frame.info().window_info.size.x;
         self.full_size.y = frame.info().window_info.size.y;
+        let rs = self.resize();
 
         // frame_counter の更新
         const FPS: i32 = 1000/50;
@@ -62,12 +73,13 @@ impl Graphic {
             let nt_vel = split_by('/', kmsg);
             let nt: i32 = nt_vel[0].parse().unwrap();
             let vel: i32 = nt_vel[1].parse().unwrap();
-            self.nobj.push(WaterRipple::new(nt as f32, vel as f32, self.frame_counter));
+            let rnd: f32 = self.rndm.gen();
+            self.nobj.push(WaterRipple::new(nt as f32, vel as f32, rnd, self.frame_counter));
         }
         let nlen = self.nobj.len();
         let mut rls = vec![true; nlen];
         for (i, obj) in self.nobj.iter_mut().enumerate() {
-            if obj.disp(self.frame_counter, ui) == false {
+            if obj.disp(self.frame_counter, ui, self.full_size) == false {
                 rls[i] = false;
             }
         }
@@ -79,13 +91,29 @@ impl Graphic {
         self.update_title(ui);
 
         // Eight Indicator 描画
-        self.update_eight_indicator(ui, infs.4);
+        self.update_eight_indicator(ui, infs.4, &rs);
 
         // Scroll Text 描画
-        self.update_scroll_text(ui, infs.2);
+        self.update_scroll_text(ui, infs.2, &rs);
 
         // Input Text 描画
-        self.update_input_text(ui, infs.0, infs.1, infs.3, infs.4);
+        self.update_input_text(ui, infs, &rs);
+    }
+    fn resize(&self) -> Resize {
+        const EIGHT_INDIC_TOP: f32 = 40.0;     // eight indicator
+        const SCROLL_TXT_TOP: f32 = 200.0;    // scroll text
+        const INPUT_TXT_TOP_SZ: f32 = 100.0;    // input text
+
+        //let half_x = self.full_size.x/2.0;
+        let half_rest = (self.full_size.x - 940.0)/2.0;
+        Resize {
+            eight_indic_top: EIGHT_INDIC_TOP,
+            eight_indic_left: half_rest,
+            scroll_txt_top: SCROLL_TXT_TOP,
+            scroll_txt_left: 200.0,
+            input_txt_top: self.full_size.y - INPUT_TXT_TOP_SZ,
+            input_txt_left: half_rest,
+        }
     }
     //*******************************************************************
     //      Update Screen
@@ -106,27 +134,26 @@ impl Graphic {
         );
     }
     //*******************************************************************
-    fn update_eight_indicator(&mut self, ui: &mut egui::Ui, cmd: &LoopianCmd) {
+    fn update_eight_indicator(&mut self, ui: &mut egui::Ui, cmd: &LoopianCmd, rs: &Resize) {
 
-        const NEXT_BLOCK: f32 = 235.0;      // (SPACE_RIGHT - SPACE_LEFT)/4
+        const NEXT_BLOCK: f32 = 235.0;      // 940/4
         const SPACE1_NEXT: f32 = 50.0;
-        const SPACE1_LEFT_ADJ: f32 = 20.0;  // (NEXT_BLOCK - BLOCK_LENGTH)/2
-        const SPACE1_UPPER: f32 = 80.0;     // eight indicator
         const BLOCK_LENGTH: f32 = 195.0;
-        const SPACE1_HEIGHT: f32 = 30.0;
+        const BLOCK_HEIGHT: f32 = 30.0;
+        const SPACE1_LEFT_ADJ: f32 = 20.0;  // (NEXT_BLOCK - BLOCK_LENGTH)/2
 
         let input_part = cmd.get_input_part();
-        for i in 0..4 {
+        for i in 0..MAX_INDICATOR/2 {
             for j in 0..2 {
                 let mut back_color = BACK_WHITE;
                 if i as usize != input_part && j == 1 {back_color = BACK_WHITE2;}
                 let raw: f32 = NEXT_BLOCK*(i as f32);
                 let line: f32 = SPACE1_NEXT*(j as f32);
                 ui.painter().rect_filled(
-                    Rect { min: Pos2 {x:SPACE_LEFT + SPACE1_LEFT_ADJ + raw,
-                                      y:SPACE1_UPPER + line}, 
-                           max: Pos2 {x:SPACE_LEFT + SPACE1_LEFT_ADJ + BLOCK_LENGTH + raw,
-                                      y:SPACE1_UPPER + SPACE1_HEIGHT + line},}, //  location
+                    Rect { min: Pos2 {x:rs.eight_indic_left + SPACE1_LEFT_ADJ + raw,
+                                      y:rs.eight_indic_top + line}, 
+                           max: Pos2 {x:rs.eight_indic_left + SPACE1_LEFT_ADJ + BLOCK_LENGTH + raw,
+                                      y:rs.eight_indic_top + BLOCK_HEIGHT + line},}, //  location
                     8.0,                //  curve
                     back_color,     //  color
                 );
@@ -135,11 +162,11 @@ impl Graphic {
                 for k in 0..ltrcnt {
                     ui.put(Rect {
                         min: Pos2 {
-                            x:SPACE_LEFT + SPACE1_LEFT_ADJ + 10.0 + raw + FONT16_WIDTH*(k as f32),
-                            y:SPACE1_UPPER + 2.0 + line},
+                            x:rs.eight_indic_left + SPACE1_LEFT_ADJ + 10.0 + raw + FONT16_WIDTH*(k as f32),
+                            y:rs.eight_indic_top + 2.0 + line},
                         max: Pos2 {
-                            x:SPACE_LEFT + SPACE1_LEFT_ADJ + 10.0 + raw + FONT16_WIDTH*((k+1) as f32),
-                            y:SPACE1_UPPER + 27.0 + line},},
+                            x:rs.eight_indic_left + SPACE1_LEFT_ADJ + 10.0 + raw + FONT16_WIDTH*((k+1) as f32),
+                            y:rs.eight_indic_top + 27.0 + line},},
                         Label::new(RichText::new(&tx[k..k+1])
                             .size(FONT16).color(TEXT_GRAY)
                             .family(FontFamily::Monospace).text_style(TextStyle::Monospace))
@@ -148,7 +175,7 @@ impl Graphic {
             }
         }
     }
-    fn text_for_eight_indicator(&mut self, num: i32, cmd: &LoopianCmd) -> String {
+    fn text_for_eight_indicator(&mut self, num: usize, cmd: &LoopianCmd) -> String {
         let indi_txt;
         match num {
             0 => indi_txt = "key: ".to_string() + cmd.get_indicator(0),
@@ -164,19 +191,10 @@ impl Graphic {
         indi_txt
     }
     //*******************************************************************
-    fn update_scroll_text(&self, ui: &mut egui::Ui, scroll_lines: &Vec<(String,String)>) {
+    fn update_scroll_text(&self, ui: &mut egui::Ui, scroll_lines: &Vec<(String,String)>, rs: &Resize) {
         const MAX_SCROLL_LINES: usize = 20;
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
-        const SPACE2_UPPER: f32 = 200.0;    // scroll text
         const FONT16_HEIGHT: f32 = 25.0;
-
-        // Paint Letter Space
-//        ui.painter().rect_filled(
-//            Rect::from_min_max( pos2(Self::SPACE_LEFT, Self::SPACE2_UPPER),
-//                                pos2(Self::SPACE_RIGHT, Self::SPACE2_LOWER)),
-//            2.0,                //  curve
-//            Self::BACK_GRAY     //  color
-//        );
 
         let lines = scroll_lines.len();
         let max_count = if lines < MAX_SCROLL_LINES {lines} else {MAX_SCROLL_LINES};
@@ -189,10 +207,10 @@ impl Graphic {
             let txt_color = if i%2==0 {Color32::WHITE} else {MAZENTA};
             ui.put(
                 Rect { 
-                    min: Pos2 {x:SPACE_LEFT + SPACE2_TXT_LEFT_MARGIN,
-                               y:SPACE2_UPPER + FONT16_HEIGHT*(i as f32)}, 
-                    max: Pos2 {x:SPACE_LEFT + SPACE2_TXT_LEFT_MARGIN + FONT16_WIDTH*(cnt as f32),
-                               y:SPACE2_UPPER + FONT16_HEIGHT*((i+1) as f32)},},
+                    min: Pos2 {x:rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN,
+                               y:rs.scroll_txt_top + FONT16_HEIGHT*(i as f32)},
+                    max: Pos2 {x:rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN + FONT16_WIDTH*(cnt as f32),
+                               y:rs.scroll_txt_top + FONT16_HEIGHT*((i+1) as f32)},},
                 Label::new(RichText::new(&past_text)
                     .size(FONT16)
                     .color(txt_color)
@@ -202,10 +220,11 @@ impl Graphic {
         }
     }
     //*******************************************************************
-    fn update_input_text(&mut self, ui: &mut egui::Ui,
-        input_locate: usize, input_text: &String, history_cnt: usize, cmd: &LoopianCmd) {
+    fn update_input_text(&mut self, ui: &mut egui::Ui, infs:
+        (usize, &String, &Vec<(String,String)>, usize, &LoopianCmd),
+        rs: &Resize) {
 
-            const CURSOR_LEFT_MARGIN: f32 = 10.0;
+        const CURSOR_LEFT_MARGIN: f32 = 10.0;
         const CURSOR_LOWER_MERGIN: f32 = 6.0;
 //        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
         const CURSOR_TXT_LENGTH: f32 = 11.95;   // FONT 20p
@@ -221,62 +240,63 @@ impl Graphic {
         const INPUT_MERGIN_OFFSET: f32 = 3.25;
         const INPUT_MERGIN: f32 = PROMPT_MERGIN + INPUT_MERGIN_OFFSET;
 
-        const SPACE3_UPPER: f32 = 760.0;    // input text
-        const SPACE3_LOWER: f32 = 800.0;
+        const INPUT_TXT_Y_SZ: f32 = 40.0;
+        const INPUT_TXT_X_SZ: f32 = 940.0;
 
         const SPACE3_TXT_LEFT_MARGIN: f32 = 5.0;
 
         // Paint Letter Space
         ui.painter().rect_filled(
-            Rect::from_min_max(pos2(SPACE_LEFT,SPACE3_UPPER),
-                               pos2(SPACE_RIGHT,SPACE3_LOWER)),
+            Rect::from_min_max(
+                pos2(rs.input_txt_left, rs.input_txt_top),
+                pos2(rs.input_txt_left + INPUT_TXT_X_SZ, rs.input_txt_top + INPUT_TXT_Y_SZ)),
             2.0,                       //  curve
             BACK_DARK_GRAY     //  color
         );
 
         // Paint cursor
-        let cursor = input_locate + PROMPT_LETTERS;
+        let cursor = infs.0 + PROMPT_LETTERS;
         let elapsed_time = self.start_time.elapsed().as_millis();
         if elapsed_time%500 > 200 {
             ui.painter().rect_filled(
-                Rect { min: Pos2 {x:SPACE_LEFT + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*(cursor as f32),
-                                y:SPACE3_LOWER - CURSOR_LOWER_MERGIN},
-                       max: Pos2 {x:SPACE_LEFT + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*((cursor+1) as f32) - 2.0,
-                                y:SPACE3_LOWER - CURSOR_LOWER_MERGIN + CURSOR_THICKNESS},},
+                Rect { min: Pos2 {x:rs.input_txt_left + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*(cursor as f32),
+                                  y:rs.input_txt_top + INPUT_TXT_Y_SZ - CURSOR_LOWER_MERGIN},
+                       max: Pos2 {x:rs.input_txt_left + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*((cursor+1) as f32) - 2.0,
+                                  y:rs.input_txt_top + INPUT_TXT_Y_SZ - CURSOR_LOWER_MERGIN + CURSOR_THICKNESS},},
                 0.0,                              //  curve
                 BACK_GRAY2,  //  color
             );
         }
 
         // Draw Letters
-        let mut hcnt = history_cnt;
+        let mut hcnt = infs.3;
         if hcnt >= 1000 {hcnt %= 1000;}
-        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + cmd.get_part_txt());
+        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + infs.4.get_part_txt());
 
         // Prompt Text
         ui.put(
             Rect { 
-                   min: Pos2 {x:SPACE_LEFT + SPACE3_TXT_LEFT_MARGIN - 2.0,
-                              y:SPACE3_UPPER + INPUTTXT_UPPER_MARGIN},
-                   max: Pos2 {x:SPACE_LEFT + SPACE3_TXT_LEFT_MARGIN + PROMPT_MERGIN,
-                              y:SPACE3_LOWER + INPUTTXT_LOWER_MARGIN},},
+                   min: Pos2 {x:rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN - 2.0,
+                              y:rs.input_txt_top + INPUTTXT_UPPER_MARGIN},
+                   max: Pos2 {x:rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN + PROMPT_MERGIN,
+                              y:rs.input_txt_top + INPUT_TXT_Y_SZ + INPUTTXT_LOWER_MARGIN},},
             Label::new(RichText::new(prompt_txt)
                 .size(INPUTTXT_FONT_SIZE)
                 .color(MAZENTA)
                 .family(FontFamily::Monospace))
         );
         // User Input
-        let ltrcnt = input_text.chars().count();
+        let ltrcnt = infs.1.chars().count();
         for i in 0..ltrcnt {    // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
             ui.put(
                 Rect { 
-                    min: Pos2 {x:SPACE_LEFT + SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
+                    min: Pos2 {x:rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
                                  INPUTTXT_LETTER_WIDTH*(i as f32),
-                               y:SPACE3_UPPER + INPUTTXT_UPPER_MARGIN},
-                    max: Pos2 {x:SPACE_LEFT + SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
+                               y:rs.input_txt_top + INPUTTXT_UPPER_MARGIN},
+                    max: Pos2 {x:rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
                                  INPUTTXT_LETTER_WIDTH*((i+1) as f32),
-                               y:SPACE3_LOWER + INPUTTXT_LOWER_MARGIN},},
-                Label::new(RichText::new(input_text[i..i+1].to_string())
+                               y:rs.input_txt_top + INPUT_TXT_Y_SZ + INPUTTXT_LOWER_MARGIN},},
+                Label::new(RichText::new(infs.1[i..i+1].to_string())
                     .size(INPUTTXT_FONT_SIZE)
                     .color(Color32::WHITE)
                     .family(FontFamily::Monospace)

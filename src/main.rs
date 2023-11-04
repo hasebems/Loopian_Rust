@@ -34,8 +34,6 @@ pub struct LoopianApp {
 }
 
 impl LoopianApp {
-    pub const MAX_INDICATOR: usize = 8;
-
     //*******************************************************************
     //      App Initialize / Log File /  App End
     //*******************************************************************

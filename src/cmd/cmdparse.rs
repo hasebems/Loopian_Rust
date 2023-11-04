@@ -3,10 +3,10 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::LoopianApp;
 use crate::lpnlib::*;
 use std::sync::{mpsc, mpsc::*};
 use super::seq_stock::*;
+use crate::graphic::graphic;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -24,7 +24,7 @@ pub struct LoopianCmd {
 
 impl LoopianCmd {
     pub fn new(msg_hndr: mpsc::Sender<Vec<i16>>, ui_hndr: mpsc::Receiver<String>) -> Self {
-        let mut indicator = vec![String::from("---"); LoopianApp::MAX_INDICATOR];
+        let mut indicator = vec![String::from("---"); graphic::MAX_INDICATOR];
         indicator[0] = "C".to_string();
         indicator[1] = DEFAULT_BPM.to_string();
         indicator[3] = "1 : 1 : 000".to_string();
@@ -75,7 +75,7 @@ impl LoopianCmd {
                             if ind_num == 0 && txt == "_" {
                                 self.indicator[0] = self.indicator_key_stock.clone();
                             }
-                            else if ind_num < LoopianApp::MAX_INDICATOR {
+                            else if ind_num < graphic::MAX_INDICATOR {
                                 self.indicator[ind_num] = txt;
                             }
                             else if ind_num == 9 {
