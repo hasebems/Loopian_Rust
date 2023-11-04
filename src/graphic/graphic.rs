@@ -103,16 +103,15 @@ impl Graphic {
         const EIGHT_INDIC_TOP: f32 = 40.0;     // eight indicator
         const SCROLL_TXT_TOP: f32 = 200.0;    // scroll text
         const INPUT_TXT_TOP_SZ: f32 = 100.0;    // input text
-
-        //let half_x = self.full_size.x/2.0;
-        let half_rest = (self.full_size.x - 940.0)/2.0;
+        const MIN_LEFT_MERGIN: f32 = 140.0;
+        let left_mergin = (self.full_size.x - 940.0)/2.0;
         Resize {
             eight_indic_top: EIGHT_INDIC_TOP,
-            eight_indic_left: half_rest,
+            eight_indic_left: MIN_LEFT_MERGIN,
             scroll_txt_top: SCROLL_TXT_TOP,
             scroll_txt_left: 200.0,
             input_txt_top: self.full_size.y - INPUT_TXT_TOP_SZ,
-            input_txt_left: half_rest,
+            input_txt_left: left_mergin,
         }
     }
     //*******************************************************************
@@ -135,26 +134,34 @@ impl Graphic {
     }
     //*******************************************************************
     fn update_eight_indicator(&mut self, ui: &mut egui::Ui, cmd: &LoopianCmd, rs: &Resize) {
-
-        const NEXT_BLOCK: f32 = 235.0;      // 940/4
         const SPACE1_NEXT: f32 = 50.0;
-        const BLOCK_LENGTH: f32 = 195.0;
+        const BLOCK_LENGTH: f32 = 200.0;
         const BLOCK_HEIGHT: f32 = 30.0;
-        const SPACE1_LEFT_ADJ: f32 = 20.0;  // (NEXT_BLOCK - BLOCK_LENGTH)/2
+        const MIN_MERGIN: f32 = 20.0;  // (NEXT_BLOCK - BLOCK_LENGTH)/2
+
+        let mut interval: f32 = 240.0;
+        let mut min_left: f32 = rs.eight_indic_left;
+        if self.full_size.x > 1000.0 {
+            let times = (self.full_size.x - 1000.0)/1500.0 + 1.0;
+            let center = self.full_size.x/2.0;
+            interval = (BLOCK_LENGTH + MIN_MERGIN)*times;
+            min_left = center - interval*1.5;
+        }
 
         let input_part = cmd.get_input_part();
         for i in 0..MAX_INDICATOR/2 {
             for j in 0..2 {
                 let mut back_color = BACK_WHITE;
                 if i as usize != input_part && j == 1 {back_color = BACK_WHITE2;}
-                let raw: f32 = NEXT_BLOCK*(i as f32);
+
+                let raw: f32 = interval*(i as f32);
                 let line: f32 = SPACE1_NEXT*(j as f32);
                 ui.painter().rect_filled(
-                    Rect { min: Pos2 {x:rs.eight_indic_left + SPACE1_LEFT_ADJ + raw,
+                    Rect { min: Pos2 {x:min_left + raw - BLOCK_LENGTH/2.0,
                                       y:rs.eight_indic_top + line}, 
-                           max: Pos2 {x:rs.eight_indic_left + SPACE1_LEFT_ADJ + BLOCK_LENGTH + raw,
+                           max: Pos2 {x:min_left + raw- BLOCK_LENGTH/2.0 + BLOCK_LENGTH,
                                       y:rs.eight_indic_top + BLOCK_HEIGHT + line},}, //  location
-                    8.0,                //  curve
+                    8.0,              //  curve
                     back_color,     //  color
                 );
                 let tx = self.text_for_eight_indicator(i + j*4, cmd);
@@ -162,10 +169,10 @@ impl Graphic {
                 for k in 0..ltrcnt {
                     ui.put(Rect {
                         min: Pos2 {
-                            x:rs.eight_indic_left + SPACE1_LEFT_ADJ + 10.0 + raw + FONT16_WIDTH*(k as f32),
+                            x:min_left + raw - BLOCK_LENGTH/2.0 + 10.0 + FONT16_WIDTH*(k as f32),
                             y:rs.eight_indic_top + 2.0 + line},
                         max: Pos2 {
-                            x:rs.eight_indic_left + SPACE1_LEFT_ADJ + 10.0 + raw + FONT16_WIDTH*((k+1) as f32),
+                            x:min_left + raw - BLOCK_LENGTH/2.0 + 10.0 + FONT16_WIDTH*((k+1) as f32),
                             y:rs.eight_indic_top + 27.0 + line},},
                         Label::new(RichText::new(&tx[k..k+1])
                             .size(FONT16).color(TEXT_GRAY)
@@ -250,8 +257,8 @@ impl Graphic {
             Rect::from_min_max(
                 pos2(rs.input_txt_left, rs.input_txt_top),
                 pos2(rs.input_txt_left + INPUT_TXT_X_SZ, rs.input_txt_top + INPUT_TXT_Y_SZ)),
-            2.0,                       //  curve
-            BACK_DARK_GRAY     //  color
+            2.0,              //  curve
+            BACK_DARK_GRAY  //  color
         );
 
         // Paint cursor

@@ -13,15 +13,12 @@ pub struct WaterRipple {
 }
 
 impl WaterRipple {
-    const DISAPPEAR_RATE: f32 = 300.0;
-    const RIPPLE_SIZE: i32 = 32;
+    const DISAPPEAR_RATE: f32 = 500.0;  // Bigger, Slower
+    const RIPPLE_SIZE: i32 = 64;        // Bigger, Thicker
     const BRIGHTNESS: f32 = 255.0;  // Max 255
     const RIPPLE_SIZE_F: f32 = (WaterRipple::RIPPLE_SIZE-1) as f32;
     pub fn new(nt: f32, vel: f32, rnd: f32, tm: i32) -> Self {
-        //println!("%%%%%:{}-{}-{}",nt,vel,rnd);
-        Self {
-            para1: nt/128.0, para2: rnd, para3: vel/128.0, time: tm,
-        }
+        Self {para1: nt/128.0, para2: rnd, para3: (vel*vel/16384.0), time: tm,} // velは小さい時に薄くするため二乗
     }
     pub fn disp(&self, crnt_time: i32, ui: &mut Ui, fsz: Pos2) -> bool {
         let cnt = (crnt_time - self.time)*4;
