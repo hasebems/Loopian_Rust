@@ -22,7 +22,6 @@ use graphic::graphic::Graphic;
 pub const WINDOW_X: f32 = 1000.0;        //  Main Window
 pub const WINDOW_Y: f32 = 860.0;
 
-//#[derive(Default)]
 pub struct LoopianApp {
     input_locate: usize,
     input_text: String,
@@ -97,11 +96,6 @@ impl LoopianApp {
         else {println!("File wasn't saved.");}
         println!("That's all. Thank you!");
     }
-//    pub fn history_cnt(&self) -> usize {self.history_cnt}
-//    pub fn input_locate(&self) -> usize {self.input_locate}
-//    pub fn input_text(&self) -> String {self.input_text.clone()}
-//    pub fn scroll_lines(&self) -> Vec<(String, String)> {self.scroll_lines.clone()}
-//    pub fn cmd(&self) -> &cmdparse::LoopianCmd {&self.cmd}
     //*******************************************************************
     //      Input Text
     //*******************************************************************
