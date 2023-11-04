@@ -59,11 +59,10 @@ impl LoopianCmd {
             _ => "__>",
         }
     }
-    pub fn get_indicator(&mut self, num: usize) -> &str {
-        self.read_from_ui_hndr();
+    pub fn get_indicator(&self, num: usize) -> &str {
         &self.indicator[num]
     }
-    fn read_from_ui_hndr(&mut self) {
+    pub fn read_from_ui_hndr(&mut self) {
         // Play Thread からの、8indicator表示用メッセージを受信する処理
         loop {
             match self.ui_hndr.try_recv() {

@@ -8,9 +8,9 @@ mod elapse;
 mod graphic;
 mod lpnlib;
 
-use std::time::{Duration, Instant};
 use std::thread;
 use std::sync::mpsc;
+use std::time::Duration;
 use chrono::Local;
 use eframe::{egui,egui::*};
 
@@ -26,8 +26,6 @@ pub const WINDOW_Y: f32 = 860.0;
 pub struct LoopianApp {
     input_locate: usize,
     input_text: String,
-    start_time: Instant,
-    total_frame: i32,
     scroll_lines: Vec<(String, String)>,
     history_cnt: usize,
     cmd: cmdparse::LoopianCmd,
@@ -36,44 +34,7 @@ pub struct LoopianApp {
 }
 
 impl LoopianApp {
-
-    const SPACE_LEFT: f32 = 30.0;
-    const SPACE_RIGHT: f32 = 970.0;
-    const _LEFT_MERGIN: f32 = 5.0;
-
-    const BLOCK_LENGTH: f32 = 195.0;
-    const NEXT_BLOCK: f32 = 235.0;      // (SPACE_RIGHT - SPACE_LEFT)/4
-    const SPACE1_LEFT_ADJ: f32 = 20.0;  // (NEXT_BLOCK - BLOCK_LENGTH)/2
-
-    const SPACE1_UPPER: f32 = 80.0;     // eight indicator
-    const SPACE1_HEIGHT: f32 = 30.0;
-    const SPACE1_NEXT: f32 = 50.0;
-    const MAX_INDICATOR: usize = 8;
-
-    const SPACE2_UPPER: f32 = 200.0;    // scroll text
-    const MAX_SCROLL_LINES: usize = 20;
-    const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
-
-    const SPACE3_UPPER: f32 = 760.0;    // input text
-    const SPACE3_LOWER: f32 = 800.0;
-    const SPACE3_TXT_LEFT_MARGIN: f32 = 5.0;
-
-    const FONT16_HEIGHT: f32 = 25.0;
-    const FONT16_WIDTH: f32 = 9.56;
-    const FONT16: f32 = 16.0;
-
-    const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
-    const TEXT_GRAY: Color32 = Color32::from_rgb(0,0,0);
-    const _TEXT_BG: Color32 = Color32::from_rgb(0,200,200);
-
-    const BACK_WHITE: Color32 = Color32::from_rgb(180, 180, 180);
-    const BACK_WHITE2: Color32 = Color32::from_rgb(128,128,128);
-    const _BACK_MAZENTA: Color32 = Color32::from_rgb(180, 160, 180);
-    const _BACK_GRAY: Color32 = Color32::from_rgb(48,48,48);
-    const BACK_DARK_GRAY: Color32 = Color32::from_rgb(32,32,32);
-    const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
-
-    const CURSOR_MAX_LOCATE: usize = 65;
+    pub const MAX_INDICATOR: usize = 8;
 
     //*******************************************************************
     //      App Initialize / Log File /  App End
@@ -95,8 +56,6 @@ impl LoopianApp {
         Self {
             input_locate: 0,
             input_text: String::new(),
-            start_time: Instant::now(),
-            total_frame: 0,
             scroll_lines: Vec::new(),
             history_cnt: 0,
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui),
@@ -140,94 +99,17 @@ impl LoopianApp {
         else {println!("File wasn't saved.");}
         println!("That's all. Thank you!");
     }
+//    pub fn history_cnt(&self) -> usize {self.history_cnt}
+//    pub fn input_locate(&self) -> usize {self.input_locate}
+//    pub fn input_text(&self) -> String {self.input_text.clone()}
+//    pub fn scroll_lines(&self) -> Vec<(String, String)> {self.scroll_lines.clone()}
+//    pub fn cmd(&self) -> &cmdparse::LoopianCmd {&self.cmd}
     //*******************************************************************
-    //      Update Screen
-    //*******************************************************************
-    fn text_for_eight_indicator(&mut self, num: i32) -> String {
-        let indi_txt;
-        match num {
-            0 => indi_txt = "key: ".to_string() + self.cmd.get_indicator(0),
-            1 => indi_txt = "bpm: ".to_string() + self.cmd.get_indicator(1),
-            2 => indi_txt = "beat:".to_string() + self.cmd.get_indicator(2),
-            4 => indi_txt = "L1:".to_string() + self.cmd.get_indicator(4),
-            5 => indi_txt = "L2:".to_string() + self.cmd.get_indicator(5),
-            6 => indi_txt = "R1:".to_string() + self.cmd.get_indicator(6),
-            7 => indi_txt = "R2:".to_string() + self.cmd.get_indicator(7),
-            3 => indi_txt = self.cmd.get_indicator(3).to_string(),
-            _ => indi_txt = "".to_string(),
-        }
-        indi_txt
-    }
-    fn update_eight_indicator(&mut self, ui: &mut egui::Ui) {
-        let input_part = self.cmd.get_input_part();
-        for i in 0..4 {
-            for j in 0..2 {
-                let mut back_color = Self::BACK_WHITE;
-                if i as usize != input_part && j == 1 {back_color = Self::BACK_WHITE2;}
-                let raw: f32 = Self::NEXT_BLOCK*(i as f32);
-                let line: f32 = Self::SPACE1_NEXT*(j as f32);
-                ui.painter().rect_filled(
-                    Rect { min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE1_LEFT_ADJ + raw,
-                                      y:Self::SPACE1_UPPER + line}, 
-                           max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE1_LEFT_ADJ + Self::BLOCK_LENGTH + raw,
-                                      y:Self::SPACE1_UPPER + Self::SPACE1_HEIGHT + line},}, //  location
-                    8.0,                //  curve
-                    back_color,     //  color
-                );
-                let tx = self.text_for_eight_indicator(i + j*4);
-                let ltrcnt = tx.chars().count();
-                for k in 0..ltrcnt {
-                    ui.put(Rect {
-                        min: Pos2 {
-                            x:Self::SPACE_LEFT + Self::SPACE1_LEFT_ADJ + 10.0 + raw + Self::FONT16_WIDTH*(k as f32),
-                            y:Self::SPACE1_UPPER + 2.0 + line},
-                        max: Pos2 {
-                            x:Self::SPACE_LEFT + Self::SPACE1_LEFT_ADJ + 10.0 + raw + Self::FONT16_WIDTH*((k+1) as f32),
-                            y:Self::SPACE1_UPPER + 27.0 + line},},
-                        Label::new(RichText::new(&tx[k..k+1])
-                            .size(Self::FONT16).color(Self::TEXT_GRAY)
-                            .family(FontFamily::Monospace).text_style(TextStyle::Monospace))
-                    );
-                }
-            }
-        }
-    }
-    //*******************************************************************
-    fn update_scroll_text(&self, ui: &mut egui::Ui) {
-        // Paint Letter Space
-//        ui.painter().rect_filled(
-//            Rect::from_min_max( pos2(Self::SPACE_LEFT, Self::SPACE2_UPPER),
-//                                pos2(Self::SPACE_RIGHT, Self::SPACE2_LOWER)),
-//            2.0,                //  curve
-//            Self::BACK_GRAY     //  color
-//        );
-
-        let lines = self.scroll_lines.len();
-        let max_count = if lines < Self::MAX_SCROLL_LINES {lines} else {Self::MAX_SCROLL_LINES};
-        let ofs_count = if lines < Self::MAX_SCROLL_LINES {0} else {lines - Self::MAX_SCROLL_LINES};
-        // Draw Letters
-        for i in 0..max_count {
-            let past_text_set = self.scroll_lines[ofs_count+i].clone();
-            let past_text = past_text_set.0 + &past_text_set.1;
-            let cnt = past_text.chars().count();
-            let txt_color = if i%2==0 {Color32::WHITE} else {Self::MAZENTA};
-            ui.put(
-                Rect { 
-                    min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE2_TXT_LEFT_MARGIN,
-                               y:Self::SPACE2_UPPER + Self::FONT16_HEIGHT*(i as f32)}, 
-                    max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE2_TXT_LEFT_MARGIN + Self::FONT16_WIDTH*(cnt as f32),
-                               y:Self::SPACE2_UPPER + Self::FONT16_HEIGHT*((i+1) as f32)},},
-                Label::new(RichText::new(&past_text)
-                    .size(Self::FONT16)
-                    .color(txt_color)
-                    .family(FontFamily::Monospace)
-                )
-            );
-        }
-    }
+    //      Input Text
     //*******************************************************************
     fn input_letter(&mut self, letters: Vec<&String>) {
-        if self.input_locate <= Self::CURSOR_MAX_LOCATE {
+        const CURSOR_MAX_LOCATE: usize = 65;
+        if self.input_locate <= CURSOR_MAX_LOCATE {
             //println!("Letters:{:?}",letters);
             letters.iter().for_each(|ltr| {
                 self.input_text.insert_str(self.input_locate,ltr);
@@ -235,79 +117,6 @@ impl LoopianApp {
             });
         }
     }
-    fn update_input_text(&mut self, ui: &mut egui::Ui) {
-        const CURSOR_LEFT_MARGIN: f32 = 10.0;
-        const CURSOR_LOWER_MERGIN: f32 = 6.0;
-//        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
-        const CURSOR_TXT_LENGTH: f32 = 11.95;   // FONT 20p
-        const CURSOR_THICKNESS: f32 = 4.0;
-        const PROMPT_LETTERS: usize = 8;
-
-        const INPUTTXT_UPPER_MARGIN: f32 = 0.0;
-        const INPUTTXT_LOWER_MARGIN: f32 = 0.0;
-
-        const INPUTTXT_FONT_SIZE: f32 = 20.0;
-        const INPUTTXT_LETTER_WIDTH: f32 = 11.95;
-        const PROMPT_MERGIN: f32 = INPUTTXT_LETTER_WIDTH*(PROMPT_LETTERS as f32);
-        const INPUT_MERGIN_OFFSET: f32 = 3.25;
-        const INPUT_MERGIN: f32 = PROMPT_MERGIN + INPUT_MERGIN_OFFSET;
-
-        // Paint Letter Space
-        ui.painter().rect_filled(
-            Rect::from_min_max(pos2(Self::SPACE_LEFT,Self::SPACE3_UPPER),
-                               pos2(Self::SPACE_RIGHT,Self::SPACE3_LOWER)),
-            2.0,                       //  curve
-            Self::BACK_DARK_GRAY     //  color
-        );
-        // Paint cursor
-        let cursor = self.input_locate + PROMPT_LETTERS;
-        let elapsed_time = self.start_time.elapsed().as_millis();
-        if elapsed_time%500 > 200 {
-            ui.painter().rect_filled(
-                Rect { min: Pos2 {x:Self::SPACE_LEFT + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*(cursor as f32),
-                                y:Self::SPACE3_LOWER - CURSOR_LOWER_MERGIN},
-                       max: Pos2 {x:Self::SPACE_LEFT + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*((cursor+1) as f32) - 2.0,
-                                y:Self::SPACE3_LOWER - CURSOR_LOWER_MERGIN + CURSOR_THICKNESS},},
-                0.0,                              //  curve
-                Self::BACK_GRAY2,  //  color
-            );
-        }
-        // Draw Letters
-        let mut hcnt = self.history_cnt;
-        if hcnt >= 1000 {hcnt %= 1000;}
-        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + self.cmd.get_part_txt());
-        // Prompt Text
-        ui.put(
-            Rect { 
-                   min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN - 2.0,
-                              y:Self::SPACE3_UPPER + INPUTTXT_UPPER_MARGIN},
-                   max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + PROMPT_MERGIN,
-                              y:Self::SPACE3_LOWER + INPUTTXT_LOWER_MARGIN},},
-            Label::new(RichText::new(prompt_txt)
-                .size(INPUTTXT_FONT_SIZE)
-                .color(Self::MAZENTA)
-                .family(FontFamily::Monospace))
-        );
-        // User Input
-        let ltrcnt = self.input_text.chars().count();
-        for i in 0..ltrcnt {    // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
-            ui.put(
-                Rect { 
-                    min: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
-                                 INPUTTXT_LETTER_WIDTH*(i as f32),
-                               y:Self::SPACE3_UPPER + INPUTTXT_UPPER_MARGIN},
-                    max: Pos2 {x:Self::SPACE_LEFT + Self::SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
-                                 INPUTTXT_LETTER_WIDTH*((i+1) as f32),
-                               y:Self::SPACE3_LOWER + INPUTTXT_LOWER_MARGIN},},
-                Label::new(RichText::new(&self.input_text[i..i+1])
-                    .size(INPUTTXT_FONT_SIZE)
-                    .color(Color32::WHITE)
-                    .family(FontFamily::Monospace)
-                    .text_style(TextStyle::Monospace))
-            );
-        }
-    }
-    //*******************************************************************
     fn pressed_key(&mut self, key: &Key, modifiers: &Modifiers) {
         let itxt: String = self.input_text.clone();
         if key == &Key::Enter {
@@ -393,6 +202,32 @@ impl LoopianApp {
             std::process::exit(0);
         }
     }
+    fn draw_central_panel(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
+        let mut ntev: Option<String> = None;
+        if let Some(kmsg) = self.cmd.get_ev_from_gev() {
+            self.cmd.remove_from_gev(0);
+            ntev = Some(kmsg);
+        }
+
+        // Configuration for CentralPanel
+        let my_frame = egui::containers::Frame {
+            inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
+            outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
+            rounding: egui::Rounding { nw: 0.0, ne: 0.0, sw: 0.0, se: 0.0 },
+            shadow: eframe::epaint::Shadow { extrusion: 0.0, color: Color32::BLACK },
+            fill: Color32::BLACK,
+            stroke: egui::Stroke::new(0.0, Color32::BLACK),
+        };
+        CentralPanel::default().frame(my_frame).show(ctx, |ui| {
+            self.graph.update(ui,
+                (self.input_locate, 
+                &self.input_text,
+                &self.scroll_lines,
+                self.history_cnt,
+                &self.cmd),
+                frame, ntev);
+        });
+    }
 }
 //*******************************************************************
 //     Egui/Eframe framework basic
@@ -403,11 +238,8 @@ impl eframe::App for LoopianApp {
         true
     }
     fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
-        // 50fps で画面更新
-        const FPS: u128 = 1000/50;
+        // 40fps で画面更新
         ctx.request_repaint_after(Duration::from_millis(25));
-        let time = self.start_time.elapsed();
-        self.total_frame = (time.as_millis()/FPS) as i32;
 
         //  Get Keyboard Event from Egui::Context
         ctx.input(|i|{ 
@@ -424,31 +256,13 @@ impl eframe::App for LoopianApp {
             if letters.len() >= 1 {self.input_letter(letters);}
         }); 
 
-        // Configuration for CentralPanel
-        let my_frame = egui::containers::Frame {
-            inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
-            outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
-            rounding: egui::Rounding { nw: 0.0, ne: 0.0, sw: 0.0, se: 0.0 },
-            shadow: eframe::epaint::Shadow { extrusion: 0.0, color: Color32::BLACK },
-            fill: Color32::BLACK,
-            stroke: egui::Stroke::new(0.0, Color32::BLACK),
-        };
+        //  Read imformation from StackElapse
+        self.cmd.read_from_ui_hndr();
 
-        // Draw CentralPanel
-        CentralPanel::default().frame(my_frame).show(ctx, |ui| {
-            //Self::update_title(ui);
-            self.graph.update(ui, &mut self.cmd, frame, self.total_frame);
-            self.update_eight_indicator(ui);
-
-            //  scroll text
-            self.update_scroll_text(ui);
-
-            //  input text
-            self.update_input_text(ui);
-        });
+        //  Draw CentralPanel
+        self.draw_central_panel(ctx, frame);
     }
 }
-
 //*******************************************************************
 //      Main
 //*******************************************************************
