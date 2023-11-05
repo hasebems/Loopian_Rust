@@ -195,10 +195,10 @@ impl LoopianApp {
         }
     }
     fn draw_central_panel(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
-        let mut ntev: Option<String> = None;
-        if let Some(kmsg) = self.cmd.get_ev_from_gev() {
+        let mut ntev: Vec<String> = Vec::new();
+        while let Some(kmsg) = self.cmd.get_ev_from_gev() {
             self.cmd.remove_from_gev(0);
-            ntev = Some(kmsg);
+            ntev.push(kmsg);
         }
 
         // Configuration for CentralPanel

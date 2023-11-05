@@ -56,7 +56,7 @@ impl Graphic {
     }
     pub fn update(&mut self, ui: &mut Ui, 
         infs : (usize, &String, &Vec<(String, String)>, usize, &LoopianCmd),
-        frame: &mut eframe::Frame, ntev: Option<String>) {
+        frame: &mut eframe::Frame, ntev: Vec<String>) {
 
         // window size を得る
         self.full_size.x = frame.info().window_info.size.x;
@@ -69,8 +69,8 @@ impl Graphic {
         self.frame_counter = (time.as_millis() as i32)/FPS;
 
         //  Note Object の描画
-        if let Some(kmsg) = ntev {
-            let nt_vel = split_by('/', kmsg);
+        for ev in ntev.iter() {
+            let nt_vel = split_by('/', ev.clone());
             let nt: i32 = nt_vel[0].parse().unwrap();
             let vel: i32 = nt_vel[1].parse().unwrap();
             let rnd: f32 = self.rndm.gen();
