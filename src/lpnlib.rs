@@ -32,7 +32,7 @@ pub const RIGHT2: usize = 3;
 pub const MAX_LEFT_PART: usize = 2;
 pub const MAX_RIGHT_PART: usize = 2;
 pub const MAX_USER_PART: usize = MAX_LEFT_PART+MAX_RIGHT_PART;
-pub const MAX_VARI_PHRASE: usize = 9;
+pub const MAX_PHRASE: usize = 10;   // normal + vari(1-9)
 
 //pub const _FIRST_COMPOSITION_PART: usize = 0;
 //pub const MAX_COMPOSITION_PART: usize = MAX_USER_PART; // Normal と対応する同数のパート
@@ -94,7 +94,7 @@ pub enum _ElpsMsg {
 //              | MSG2_BEAT   |[numerator]|[denomirator]| --
 //              | MSG2_KEY    |[key]| --
 //              | MSG2_TURN   |[turnnote(0-11)]| --
-// MSG_PHR+part |[whole_tick] |(( TYPE_NOTE | <TICK> | <DURATION> | <NOTE> | <VELOCITY> ) or
+// MSG_PHR+var+part |[whole_tick] |(( TYPE_NOTE | <TICK> | <DURATION> | <NOTE> | <VELOCITY> ) or
 //                              ( TYPE_INFO | <TICK> | [info_type] | 0 | 0 ))*n
 // MSG_CMP+part |[whole_tick] |( <TYPE> | <TICK> | <CD_ROOT> | <CD_TABLE> )*n
 // MSG_ANA+part |             |( <TYPE> | <TICK> | <DURATION> | <NOTE> | [ntcnt] | [arp_type] )*n
@@ -127,10 +127,10 @@ pub const MSG3_ATP: i16     = 9999;
 pub const MSG3_FERMATA: i16 = 10000;
 
 pub const MSG_PART_MASK:i16 = 100;    // X-(X % MSG_PART_MASK)
-pub const MSG_PHR: i16      = 1000;   // 1000 + 10*v + part : 1桁目にパート番号, vは @指定による Variation
+pub const MSG_PHR: i16      = 1000;   // 1000 + 10*v + part : vは @指定による Variation、1桁目にパート番号
 pub const MSG_CMP: i16      = 2000;   // 1桁目にパート番号
 pub const MSG_ANA: i16      = 3000;   // 1桁目にパート番号
-pub const MSG_PHR_X: i16    = 1900;   // Phrase 消去、1桁目にパート番号
+pub const MSG_PHR_X: i16    = 1900;   // Phrase 消去、1000 + 10*v + part
 pub const MSG_CMP_X: i16    = 2900;   // Composition 消去、1桁目にパート番号
 pub const MSG_ANA_X: i16    = 3900;   // Analysed 消去、1桁目にパート番号
 pub const MSG_HEADER: usize = 2;

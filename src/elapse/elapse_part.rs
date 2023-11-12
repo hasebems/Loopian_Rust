@@ -29,12 +29,9 @@ struct PhrLoopManager {
     max_loop_msr: i32,
     whole_tick: i32,
     loop_cntr: u32,         // loop sid
-    new_data_stock: UgContent,
-    whole_tick_stock: i16,
-    vari_data_stock: Vec<UgContent>,
-    vari_whole_tick_stock: [i16;MAX_VARI_PHRASE],
-    new_ana_stock: UgContent,
-    vari_ana_stock: Vec<UgContent>,
+    new_data_stock: Vec<UgContent>,
+    whole_tick_stock: [i16;MAX_PHRASE],
+    new_ana_stock: Vec<UgContent>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     vari_reserve: usize,      // 0:no rsv, 1-9: rsv
     state_reserve: bool,
@@ -43,18 +40,15 @@ struct PhrLoopManager {
 impl PhrLoopManager {
     pub fn new() -> Self {
         let mut no_data: Vec<UgContent> = Vec::new();
-        for _ in 0..MAX_VARI_PHRASE {no_data.push(UgContent::new());}
+        for _ in 0..MAX_PHRASE {no_data.push(UgContent::new());}
         Self {
             first_msr_num: 0,
             max_loop_msr: 0,
             whole_tick: 0,
             loop_cntr: 0,
-            new_data_stock: UgContent::new(),
-            whole_tick_stock: 0,
-            vari_data_stock: no_data.clone(),
-            vari_whole_tick_stock: [0;MAX_VARI_PHRASE],
-            new_ana_stock: UgContent::new(),
-            vari_ana_stock: no_data,
+            new_data_stock: no_data.clone(),
+            whole_tick_stock: [0;MAX_PHRASE],
+            new_ana_stock: no_data,
             loop_phrase: None,
             vari_reserve: 0,
             state_reserve: false,
@@ -112,29 +106,18 @@ impl PhrLoopManager {
         }
     }
     pub fn rcv_msg(&mut self, msg: UgContent, whole_tick: i16, vari_num: usize) {
-        //println!("Phrase Msg: {:?}", msg);
-        if vari_num == 0 {
-            if msg.len() == 0 && whole_tick == 0 {self.new_data_stock = UgContent::new();}
-            else {self.new_data_stock = msg;}
-            self.state_reserve = true;
-            self.whole_tick_stock = whole_tick;
-        }
-        else if vari_num < MAX_VARI_PHRASE {
-            if msg.len() == 0 && whole_tick == 0 {self.vari_data_stock[vari_num] = UgContent::new();}
-            else {self.vari_data_stock[vari_num-1] = msg;}
-            self.vari_whole_tick_stock[vari_num-1] = whole_tick;
+        if vari_num < MAX_PHRASE {
+            if msg.len() == 0 && whole_tick == 0 {self.new_data_stock[vari_num] = UgContent::new();}
+            else {self.new_data_stock[vari_num] = msg;}
+            self.whole_tick_stock[vari_num] = whole_tick;
+            if vari_num == 0 {self.state_reserve = true;}
         }
     }
     pub fn rcv_ana(&mut self, msg: UgContent, vari_num: usize) {
-        //println!("Analysed Msg: {:?}", msg);
-        if vari_num == 0 {
-            if msg.len() == 0 {self.new_ana_stock = UgContent::new();}
-            else {self.new_ana_stock = msg;}
-            self.state_reserve = true;
-        }
-        else if vari_num < MAX_VARI_PHRASE {
-            if msg.len() == 0 {self.vari_ana_stock[vari_num-1] = UgContent::new();}
-            else {self.vari_ana_stock[vari_num-1] = msg;}
+        if vari_num < MAX_PHRASE {
+            if msg.len() == 0 {self.new_ana_stock[vari_num] = UgContent::new();}
+            else {self.new_ana_stock[vari_num] = msg;}
+            if vari_num == 0 {self.state_reserve = true;}
         }
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
@@ -160,35 +143,25 @@ impl PhrLoopManager {
         let mut new_loop = false;
         self.first_msr_num = msr;
 
-        if self.vari_reserve != 0 {
-            // Variation 指定があった場合
-            let phr = self.vari_data_stock[self.vari_reserve-1].clone();
-            let ana = self.vari_ana_stock[self.vari_reserve-1].clone();
-            if phr.len() != 0 && ana.len() != 0 {
-                self.gen_new_loop(&phr, &ana, msr, tick_for_onemsr, estk, pbp);                
-                new_loop = true;
-            }
-            self.vari_reserve = 0;
+        // Phrase の更新
+        let phrlen = self.new_data_stock[self.vari_reserve].len();
+        let analen = self.new_ana_stock[self.vari_reserve].len();
+        if phrlen != 0 && analen != 0 {
+            self.gen_new_loop(msr, tick_for_onemsr, estk, pbp);
+            new_loop = true;
         }
-        else {
-            // Phrase の更新があった場合
-            let phr = self.new_data_stock.clone();
-            let ana = self.new_ana_stock.clone();
-            if phr.len() != 0 && ana.len() != 0 {
-                self.gen_new_loop(&phr, &ana, msr, tick_for_onemsr, estk, pbp);
-                new_loop = true;
-            }
-        }
+        self.vari_reserve = 0;
 
         if !new_loop {
             self.whole_tick = 0;
             self.loop_phrase = None;
         }
     }
-    fn gen_new_loop(&mut self, phr: &UgContent, ana: &UgContent, 
-        msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+    fn gen_new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        let phr = &self.new_data_stock[self.vari_reserve];
+        let ana = &self.new_ana_stock[self.vari_reserve];
         // 新しいデータが来ていれば、新たに Loop Obj.を生成
-        self.whole_tick = self.whole_tick_stock as i32;
+        self.whole_tick = self.whole_tick_stock[self.vari_reserve] as i32;
         if self.whole_tick == 0 {
             self.state_reserve = true; // 次小節冒頭で呼ばれるように
             self.loop_phrase = None;

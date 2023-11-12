@@ -517,7 +517,7 @@ impl LoopianCmd {
         }
     }
     fn send_all_vari_and_phrase(&self, part: usize) {
-        for i in 0..MAX_VARI_PHRASE+1 {
+        for i in 0..MAX_PHRASE {
             self.send_phrase_to_elapse(part, i);
         }
     }
