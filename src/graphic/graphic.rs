@@ -9,6 +9,7 @@ use rand::{thread_rng, Rng, rngs};
 use crate::{WINDOW_X, WINDOW_Y};
 use crate::lpnlib::*;
 use crate::cmd::cmdparse::LoopianCmd;
+use super::noteobj::NoteObj;
 use super::waterripple::WaterRipple;
 
 pub const MAX_INDICATOR: usize = 8;
@@ -31,7 +32,7 @@ const _LEFT_MERGIN: f32 = 5.0;
 
 pub struct Graphic {
     full_size: Pos2,
-    nobj: Vec<WaterRipple>,
+    nobj: Vec<Box<dyn NoteObj>>,
     start_time: Instant,
     frame_counter: i32,
     rndm: rngs::ThreadRng,
@@ -74,7 +75,7 @@ impl Graphic {
             let nt: i32 = nt_vel[0].parse().unwrap();
             let vel: i32 = nt_vel[1].parse().unwrap();
             let rnd: f32 = self.rndm.gen();
-            self.nobj.push(WaterRipple::new(nt as f32, vel as f32, rnd, self.frame_counter));
+            self.nobj.push(Box::new(WaterRipple::new(nt as f32, vel as f32, rnd, self.frame_counter)));
         }
         let nlen = self.nobj.len();
         let mut rls = vec![true; nlen];

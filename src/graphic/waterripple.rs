@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use eframe::egui::*;
+use super::noteobj::NoteObj;
 
 pub struct WaterRipple {
     para1: f32, // 0.0 - 1.0
@@ -20,7 +21,9 @@ impl WaterRipple {
     pub fn new(nt: f32, vel: f32, rnd: f32, tm: i32) -> Self {
         Self {para1: nt/128.0, para2: rnd, para3: (vel*vel/16384.0), time: tm,} // velは小さい時に薄くするため二乗
     }
-    pub fn disp(&self, crnt_time: i32, ui: &mut Ui, fsz: Pos2) -> bool {
+}
+impl NoteObj for WaterRipple {
+    fn disp(&self, crnt_time: i32, ui: &mut Ui, fsz: Pos2) -> bool {
         let cnt = (crnt_time - self.time)*4;
         if cnt as f32 > WaterRipple::DISAPPEAR_RATE {return false;}
         for i in 0..WaterRipple::RIPPLE_SIZE {
@@ -33,7 +36,7 @@ impl WaterRipple {
             if i < cnt {
                 ui.painter().circle_stroke(
                     Pos2 {
-                        x:self.para1*(fsz.x*1.0),
+                        x:self.para1*(fsz.x*1.4),
                         y:self.para2*(fsz.y*0.6) + (fsz.y*0.2),
                     },  // location
                     (cnt-i) as f32,                                   // radius
