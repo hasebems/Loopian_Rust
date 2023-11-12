@@ -120,13 +120,13 @@ impl Graphic {
     fn update_title(&self, ui: &mut egui::Ui) {
         ui.put(
             Rect {
-                min: Pos2 { x:self.full_size.x/2.0 - 40.0,
+                min: Pos2 { x:self.full_size.x/2.0 - 50.0,
                             y:self.full_size.y - 50.0},
-                max: Pos2 { x:self.full_size.x/2.0 + 40.0, 
+                max: Pos2 { x:self.full_size.x/2.0 + 50.0, 
                             y:self.full_size.y - 10.0},
             }, //  location
             Label::new(RichText::new("Loopian")
-                .size(24.0)
+                .size(28.0)
                 .color(Color32::WHITE)
                 .family(FontFamily::Proportional)
             )
