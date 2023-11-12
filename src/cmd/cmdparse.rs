@@ -341,9 +341,16 @@ impl LoopianCmd {
             Some(rtn_str)
         }
     }
-    fn call_bracket_brace(&mut self, part_num: usize, first_letter: &str, rest_text: &str) -> String {
+    fn call_bracket_brace(&mut self, part_num: usize, _first_letter: &str, rest_text: &str) -> String {
         let mut rtn_str = "what?".to_string();
-        if first_letter == "[" {
+        let org_part = self.input_part;
+        self.input_part = part_num;
+        if let Some(ans) = self.set_and_responce(rest_text) {
+            rtn_str = ans;
+        }
+        self.input_part = org_part;
+
+        /*if first_letter == "[" {
             if self.set_phrase(part_num, 0, rest_text) {
                 rtn_str = "Set Phrase!".to_string();
             }
@@ -353,7 +360,7 @@ impl LoopianCmd {
                 self.send_composition_to_elapse(part_num);
                 rtn_str = "Set Composition!".to_string();
             }
-        }
+        }*/
         rtn_str
     }
     fn set_phrase(&mut self, part_num: usize, vari: usize, input_text: &str) -> bool {
