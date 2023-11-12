@@ -41,7 +41,7 @@ impl History {
         let mut txt_exist = false;
         for line in self.input_lines.iter() {
             if line.0.len() > 0 && line.1 != "quit" {
-                whole_txt += &line.0.to_string();
+                //whole_txt += &line.0.to_string(); // 日付時刻の挿入
                 whole_txt += &line.1.to_string();
                 whole_txt += "\n";
                 txt_exist = true;
@@ -76,9 +76,9 @@ impl History {
         match fs::read_to_string(Self::LOAD_FOLDER.to_string() + "/" + &fname + ".lpn") {
             Ok(content) => {
                 for line in content.lines() {
-                    if line.len() > 20 {
-                        let cmnd = line[20..].to_string();
-                        command.push(cmnd);
+                    let notxt = line[0..2].to_string();
+                    if line.len() > 0 && notxt != "//" && notxt != "20" {
+                        command.push(line.to_string());
                     }
                 }
             }
