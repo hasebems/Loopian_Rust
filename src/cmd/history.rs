@@ -76,9 +76,11 @@ impl History {
         match fs::read_to_string(Self::LOAD_FOLDER.to_string() + "/" + &fname + ".lpn") {
             Ok(content) => {
                 for line in content.lines() {
-                    let notxt = line[0..2].to_string();
-                    if line.len() > 0 && notxt != "//" && notxt != "20" {
-                        command.push(line.to_string());
+                    if line.len() > 0 {
+                        let notxt = line[0..2].to_string();
+                        if notxt != "//" && notxt != "20" {
+                           command.push(line.to_string());
+                        }
                     }
                 }
             }
