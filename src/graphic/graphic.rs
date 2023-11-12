@@ -105,14 +105,17 @@ impl Graphic {
         const SCROLL_TXT_TOP: f32 = 200.0;    // scroll text
         const INPUT_TXT_TOP_SZ: f32 = 100.0;    // input text
         const MIN_LEFT_MERGIN: f32 = 140.0;
-        let left_mergin = (self.full_size.x - 940.0)/2.0;
+        let it_left_mergin = (self.full_size.x - 940.0)/2.0;
+        let mut st_left_mertin = 0.0;
+        if self.full_size.x > 1200.0 {st_left_mertin = 200.0;}
+        else if self.full_size.x > 1000.0 {st_left_mertin = self.full_size.x - 1000.0;}
         Resize {
             eight_indic_top: EIGHT_INDIC_TOP,
             eight_indic_left: MIN_LEFT_MERGIN,
             scroll_txt_top: SCROLL_TXT_TOP,
-            scroll_txt_left: 200.0,
+            scroll_txt_left: st_left_mertin,
             input_txt_top: self.full_size.y - INPUT_TXT_TOP_SZ,
-            input_txt_left: left_mergin,
+            input_txt_left: it_left_mergin,
         }
     }
     //*******************************************************************
