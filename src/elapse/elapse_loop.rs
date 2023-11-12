@@ -373,15 +373,15 @@ impl Elapse for CompositionLoop {
             }
 
             // 次回 msr, tick の算出
-            let (next_msr, next_tick) = self.gen_msr_tick(&cm_crnt, self.next_tick_in_cmps);
+            let (nxtmsr, nxttick) = self.gen_msr_tick(&cm_crnt, self.next_tick_in_cmps);
             // next_tick を 1tick 前に設定
-            if self.next_tick == 0 {
-                self.next_msr = next_msr - 1;
+            if nxttick == 0 {
+                self.next_msr = nxtmsr - 1;
                 self.next_tick = crnt_.tick_for_onemsr - 1;
             }
             else {
-                self.next_msr = next_msr;
-                self.next_tick = next_tick - 1;
+                self.next_msr = nxtmsr;
+                self.next_tick = nxttick - 1;
             }
         }
     }
