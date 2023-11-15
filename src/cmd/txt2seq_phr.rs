@@ -332,16 +332,19 @@ fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
 fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
     let first_ltr = nt.chars().nth(0).unwrap_or(' ');
-    if first_ltr == 'o' {return ("".to_string(), bdur, LAST);}
-    if first_ltr == '.' {
+    if first_ltr == 'o' {
+        return ("".to_string(), bdur, LAST);
+    }
+    else if first_ltr == '.' {
         let mut dot_cnt = 0;
         for ltr in nt.chars() {if ltr == '.' {dot_cnt += 1;}}
         return ("".to_string(), bdur, dot_cnt);
     }
+
+    // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
+    // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
     let mut excnt = 0;
     if first_ltr == '+' || first_ltr == '-' {
-        // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
-        // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
         for (i, ltr) in nt.chars().enumerate() {
             if ltr == '+' || ltr == '-' {continue;}
             else {
@@ -378,29 +381,7 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
     let mut base_dur = bdur;
     let txtlen = ntext.len();
     if txtlen > 0 {
-        let mut triplet: i16 = 0;
-        let mut idx = 1;
-        let mut fst_ltr = ntext.chars().nth(0).unwrap_or(' ');
-        if fst_ltr == '3' || fst_ltr == '5' {
-            triplet = fst_ltr.to_digit(10).unwrap_or(1) as i16;
-            fst_ltr = ntext.chars().nth(1).unwrap_or(' ');
-        }
-        if fst_ltr == '\'' {
-            if ntext.chars().nth(2).unwrap_or(' ') == '\"' {
-                base_dur = DEFAULT_TICK_FOR_QUARTER/8;
-                idx = 2;
-            }
-            else {base_dur = DEFAULT_TICK_FOR_QUARTER/2;}
-        }
-        else if fst_ltr == '\"' {base_dur = DEFAULT_TICK_FOR_QUARTER/4;}
-        else if fst_ltr == 'q' {base_dur = DEFAULT_TICK_FOR_QUARTER;}
-        else if fst_ltr == 'h' {base_dur = DEFAULT_TICK_FOR_QUARTER*2;}
-        else {idx = 0;}
-        if triplet != 0 {
-            base_dur = (base_dur*2)/triplet as i32;
-            idx = 2;
-        }
-        ntext = ntext[idx..].to_string();
+        (ntext, base_dur) = decide_dur(ntext, base_dur);
     }
 
     //  +- を戻す
@@ -408,6 +389,50 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         ntext = nt[0..excnt].to_string() + &ntext;
     }
     (ntext, base_dur, dur_cnt)
+}
+fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
+    let mut triplet: i16 = 0;
+    let mut idx = 1;
+    let mut fst_ltr = ntext.chars().nth(0).unwrap_or(' ');
+    if fst_ltr == '3' || fst_ltr == '5' {
+        triplet = fst_ltr.to_digit(10).unwrap_or(1) as i16;
+        fst_ltr = ntext.chars().nth(1).unwrap_or(' ');
+    }
+    if fst_ltr == '\'' {
+        if ntext.chars().nth(1).unwrap_or(' ') == '\"' {
+            base_dur = DEFAULT_TICK_FOR_QUARTER/8;
+            idx = 2;
+        }
+        else {base_dur = DEFAULT_TICK_FOR_QUARTER/2;}
+    }
+    else if fst_ltr == '\"' {
+        if ntext.chars().nth(1).unwrap_or(' ') == '\"' {
+            base_dur = DEFAULT_TICK_FOR_QUARTER/16;
+            idx = 2;
+        }
+        else {base_dur = DEFAULT_TICK_FOR_QUARTER/4;}
+    }
+    else if fst_ltr == 'q' {
+        if ntext.chars().nth(1).unwrap_or(' ') == '\'' {
+            base_dur = DEFAULT_TICK_FOR_QUARTER*3/2;
+            idx = 2;
+        }
+        else {base_dur = DEFAULT_TICK_FOR_QUARTER;}
+    }
+    else if fst_ltr == 'h' {
+        if ntext.chars().nth(1).unwrap_or(' ') == '\'' {
+            base_dur = DEFAULT_TICK_FOR_QUARTER*3;
+            idx = 2;
+        }
+        else {base_dur = DEFAULT_TICK_FOR_QUARTER*2;}
+    }
+    else {idx = 0;}
+    if triplet != 0 {
+        base_dur = (base_dur*2)/triplet as i32;
+        idx = 2;
+    }
+    ntext = ntext[idx..].to_string();
+    (ntext, base_dur)
 }
 fn gen_diff_vel(nt: String) -> (String, i32) {
     let mut ntext = nt;
