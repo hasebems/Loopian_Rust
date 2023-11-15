@@ -151,7 +151,7 @@ fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
 }
 
 //*******************************************************************
-//          recombine_to_internal_format
+///          recombine_to_internal_format
 //*******************************************************************
 pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: InputMode,
     base_note: i32, tick_for_onemsr: i32) -> (i32, UgContent) {
@@ -182,8 +182,11 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
             let next_msr_tick = tick_for_onemsr*msr;
             if tick < next_msr_tick {
                 // duration
-                let note_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
-    
+                let mut note_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
+                if next_msr_tick - tick < note_dur {
+                    note_dur = next_msr_tick - tick;    // 小節線を超えたら、音価をそこでリミット
+                }    
+
                 // velocity
                 let mut last_vel: i32 = exp_vel + diff_vel;
                 if last_vel > 127 {last_vel = 127;}
