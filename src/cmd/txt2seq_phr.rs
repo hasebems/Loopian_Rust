@@ -25,13 +25,6 @@ pub fn complement_phrase(input_text: String) -> [Vec<String>;2] {
     let nt2 = fill_omitted_note_data(nt);
     let mut ntvec = split_by(',', nt2);
 
-    // 4. < >*n を展開
-    //loop {
-    //    let (nvr_tmp, no_exist) = expand_repeat(nvec.clone());
-    //    nvec = nvr_tmp.clone();
-    //    if no_exist {break;}
-    //}
-
     // 5. 同音繰り返しの展開
     loop {
         let (nvr_tmp, no_exist) = note_repeat(ntvec.clone());
@@ -121,49 +114,6 @@ fn divide_notemod_and_musicex(nev :Vec<String>) -> (Vec<String>, Vec<String>) {
         ne.push("raw".to_string());
     }
     (nm, ne)
-}
-fn _expand_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
-    let mut new_vec = nv.clone();
-    let mut repeat_start: usize = nv.len();
-    let mut first_bracket: bool = false;
-    let mut no_exist: bool = true;
-    for (i, one) in nv.iter().enumerate() {
-        if one.contains("<") {
-            if let Some(ltr) = &one.chars().nth(0) {
-                if *ltr == '<' {
-                    new_vec[i] = one[1..].to_string();
-                    repeat_start = i;
-                    first_bracket = true;
-                }
-            }
-        }
-        else if first_bracket && one.contains(">") {
-            no_exist = false;
-            let mut remain_num: usize = one.len();
-            for (j, ltr) in one.chars().enumerate() {
-                if ltr == '>' {
-                    new_vec[i] = one[0..j].to_string();
-                    remain_num = j;
-                }
-                else if j == remain_num+1 && ltr == '*' {
-                    let number: i32 = one[j+1..].parse().unwrap_or(0);
-                    if number > 1 {
-                        for _ in 0..number-1 {
-                            // 繰り返しマーク(&RPT)の挿入
-                            new_vec.insert(i+1, "$RPT".to_string());
-                            for h in (repeat_start..(i+1)).rev() {
-                                // 繰り返しの後ろから、同じindexに挿入していく
-                                new_vec.insert(i+2, new_vec[h].clone());
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-            break;
-        }
-    }
-    (new_vec, no_exist)
 }
 fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
     let mut new_vec = nv.clone();
