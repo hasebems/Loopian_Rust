@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use crate::lpnlib::*;
 use super::elapse::*;
 use super::tickgen::CrntMsrTick;
+use super::stack_elapse;
 use super::stack_elapse::ElapseStack;
 use super::note_translation::*;
 
@@ -109,6 +110,7 @@ impl Flow {
                         self.gen_stock[idx].2 = ev.3;   // locate 差し替え
                     }
                     else {
+                        estk.inc_key_map(rnote, ev.4);
                         estk.midi_out(0x90, rnote, ev.4);
                         println!("MIDI OUT<< 0x90:{:x}:{:x}",rnote,ev.4);
                         self.gen_stock.push(GenStock(rnote, ev.4, ev.3));
@@ -118,7 +120,10 @@ impl Flow {
                     self.raw_state[locate_idx] = NO_DATA;
                     if let Some(idx) = self.same_locate_index(ev.3) {
                         let rnote = self.gen_stock[idx].0;
-                        estk.midi_out(0x90, rnote, 0); // test
+                        let snk = estk.dec_key_map(rnote);
+                        if snk == stack_elapse::SameKeyState::LAST {
+                            estk.midi_out(0x90, rnote, 0); // test
+                        }
                         println!("MIDI OUT<< 0x90:{:x}:0",rnote);
                         self.gen_stock.remove(idx);
                     }
