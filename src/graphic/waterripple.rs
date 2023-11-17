@@ -36,7 +36,7 @@ impl NoteObj for WaterRipple {
             if i < cnt {
                 ui.painter().circle_stroke(
                     Pos2 {
-                        x:self.para1*(fsz.x*1.4),
+                        x:((self.para1-0.5)*1.4 + 0.5)*fsz.x,
                         y:self.para2*(fsz.y*0.6) + (fsz.y*0.2),
                     },  // location
                     (cnt-i) as f32,                                   // radius
