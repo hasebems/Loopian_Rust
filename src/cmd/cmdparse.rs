@@ -107,6 +107,7 @@ impl LoopianCmd {
         else if first_letter == "@" {self.letter_at(input_text)}
         else if first_letter == "[" {self.letter_bracket(input_text)}
         else if first_letter == "{" {self.letter_brace(input_text)}
+        else if first_letter == "c" {self.letter_c(input_text)}
         else if first_letter == "e" {self.letter_e(input_text)}
         else if first_letter == "f" {self.letter_f(input_text)}
         else if first_letter == "l" {self.letter_l(input_text)}
@@ -117,6 +118,25 @@ impl LoopianCmd {
         else if first_letter == "R" {self.letter_part(input_text)}
         else if first_letter == "A" {self.letter_part(input_text)}
         else                        {Some("what?".to_string())}
+    }
+    fn letter_c(&mut self, input_text: &str) -> Option<String> {
+        let len = input_text.chars().count();
+        if len == 5 && &input_text[0..5] == "clear" {
+            // stop
+            self.send_msg_to_elapse(vec![MSG_STOP]);
+            // clear
+            for i in 0..MAX_USER_PART {
+                for j in 0..MAX_PHRASE {
+                    let empty_phr = "[]";
+                    self.set_phrase(i, j, empty_phr);
+                }
+                let empty_cmp = "{}".to_string();
+                if self.gendt.set_raw_composition(i, empty_cmp) {
+                    self.send_composition_to_elapse(i);
+                }
+            }
+        }
+        Some("all data erased!".to_string())
     }
     fn letter_e(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
