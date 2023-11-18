@@ -7,6 +7,7 @@ mod cmd;
 mod elapse;
 mod graphic;
 mod lpnlib;
+mod test;
 
 use std::thread;
 use std::sync::mpsc;
