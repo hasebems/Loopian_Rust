@@ -15,6 +15,7 @@ struct ChordTable {
     table: &'static [i16],
 }
 const CHORD_TABLE: [ChordTable; 52] = [
+    //  No.0-9
     ChordTable {name:   "thru",     table:  &THRU,},    // noped
     ChordTable {name:   "O",        table:  &THRU,},
     ChordTable {name:   "_",        table:  &MAJOR,},
@@ -26,6 +27,7 @@ const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "_maj7",    table:  &MAJ7TH,},
     ChordTable {name:   "_add9",    table:  &ADD9TH,},
 
+    // No.10-19
     ChordTable {name:   "_9",       table:  &M9TH,},
     ChordTable {name:   "_m9",      table:  &MIN9TH,},
     ChordTable {name:   "_M9",      table:  &MAJ9TH,},
@@ -37,17 +39,20 @@ const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "_7-9",     table:  &M7MNS9,},
     ChordTable {name:   "_7+9",     table:  &M7PLS9,},
 
+    // No.20-29
     ChordTable {name:   "_dim",     table:  &DIM,},
     ChordTable {name:   "_m7-5",    table:  &MIN7M5,},
     ChordTable {name:   "_sus4",    table:  &SUS4,},
     ChordTable {name:   "_7sus4",   table:  &M7SUS4,},
-    ChordTable {name:   "_chr",     table:  &THRU,},        // parasc()使用、Iが音程そのまま
-    ChordTable {name:   "_ion",     table:  &IONIAN,},      // parasc()使用、Iが音程そのまま
-    ChordTable {name:   "_dor",     table:  &IONIAN,},      // parasc()使用、IIが音程そのまま
-    ChordTable {name:   "_lyd",     table:  &IONIAN,},      // parasc()使用、IVが音程そのまま
-    ChordTable {name:   "_mix",     table:  &IONIAN,},      // parasc()使用、Vが音程そのまま
-    ChordTable {name:   "_aeo",     table:  &IONIAN,},      // parasc()使用、VIが音程そのまま
+    // parasc(24-29): para() を付けなくても、para機能
+    ChordTable {name:   "_chr",     table:  &THRU,},    // Iのとき音程そのまま。音程関係を保持したまま並行移動
+    ChordTable {name:   "_ion",     table:  &IONIAN,},  // Iが音程そのまま。Iとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name:   "_dor",     table:  &IONIAN,},  // IIが音程そのまま。IIとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name:   "_lyd",     table:  &IONIAN,},  // IVが音程そのまま。IVとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name:   "_mix",     table:  &IONIAN,},  // Vが音程そのまま。Vとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name:   "_aeo",     table:  &IONIAN,},  // VIが音程そのまま。VIとの差分分並行移動し、音程をkeyに合わせる
 
+    // No.30-39
     ChordTable {name:   "diatonic",     table:  &IONIAN,},
     ChordTable {name:   "dorian",       table:  &DORIAN,},
     ChordTable {name:   "lydian",       table:  &LYDIAN,},
@@ -56,9 +61,11 @@ const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "comdim",       table:  &COMDIM,},
     ChordTable {name:   "pentatonic",   table:  &PENTATONIC,},
     ChordTable {name:   "blues",        table:  &BLUES,},
-    ChordTable {name:   "sc0",      table:  &IONIAN,},      // scale n: n seminote above
+    // scale n(38-49): n半音分上の diatonic scale
+    ChordTable {name:   "sc0",      table:  &IONIAN,},
     ChordTable {name:   "sc1",      table:  &SC1,},
 
+    // No.40-49
     ChordTable {name:   "sc2",      table:  &SC2,},
     ChordTable {name:   "sc3",      table:  &SC3,},
     ChordTable {name:   "sc4",      table:  &SC4,},
@@ -70,6 +77,7 @@ const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "sc10",     table:  &SC10,},
     ChordTable {name:   "sc11",     table:  &SC11,},
  
+    // No.50-
     ChordTable {name:   "Err",      table:  &ERR,},
     ChordTable {name:   "None",     table:  &NONE,},
 ];
