@@ -243,11 +243,15 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
     //  duration 情報、 Velocity 情報の抽出
     let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur);
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
-    let notes_vec: Vec<String> = split_by_by('=', '_', ntext4);
+    let mut notes_vec: Vec<String> = split_by_by('=', '_', ntext4);
+    if notes_vec.len() == 1 {
+        notes_vec = split_note(notes_vec[0].clone());
+    }
 
     let mut notes: Vec<u8> = Vec::new();
     let mut next_last_nt = last_nt;
-    if notes_vec.len() == 1 {
+    let notes_num = notes_vec.len();
+    if notes_num == 1 {
         let mut doremi: i32 = 0;
         if imd == InputMode::Fixed {
             doremi = convert_doremi_fixed(notes_vec[0].to_string());
@@ -261,7 +265,7 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
         let base_pitch = add_base_and_doremi(base_note, doremi);
         notes.push(base_pitch);
     }
-    else {
+    else if notes_num != 0 {
         for nt in notes_vec.iter() {    // 同時発音
             let doremi = convert_doremi_fixed(nt.to_string());
             let base_pitch = add_base_and_doremi(base_note, doremi);
@@ -294,21 +298,8 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         return ("".to_string(), bdur, dot_cnt);
     }
 
-    // +- は、最初にあっても、音価指定の後にあってもいいので、一番前にある +- を削除して、
-    // 音価情報を分析、除去した後、あらためて削除した +- を元に戻す
-    let mut excnt = 0;
-    if first_ltr == '+' || first_ltr == '-' {
-        for (i, ltr) in nt.chars().enumerate() {
-            if ltr == '+' || ltr == '-' {continue;}
-            else {
-                excnt = i;
-                break;
-            }
-        }
-    }
-    let mut ntext = nt[excnt..].to_string();
-
     //  タイなどの音価を解析し、dur_cnt を確定
+    let mut ntext = nt;
     let mut dur_cnt: i32 = 1;
     let txtlen = ntext.len(); 
     if txtlen > 0 {
@@ -337,10 +328,6 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
         (ntext, base_dur) = decide_dur(ntext, base_dur);
     }
 
-    //  +- を戻す
-    if excnt != 0 {
-        ntext = nt[0..excnt].to_string() + &ntext;
-    }
     (ntext, base_dur, dur_cnt)
 }
 fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
@@ -443,6 +430,10 @@ fn add_note(rcmb: UgContent, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel:
     }
     return_rcmb
 }
+
+//*******************************************************************
+//          convert_doremi
+//*******************************************************************
 fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
     if doremi.len() == 0 {return NO_NOTE as i32;}
     let mut last_doremi = last_nt;
@@ -513,6 +504,46 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
         base_pitch = doremi_semi_number(pure_doremi.chars().nth(1).unwrap_or(' '), base_pitch);
     }
     base_pitch
+}
+pub fn split_note(txt: String) -> Vec<String> {
+    let mut splitted: Vec<String> = Vec::new();
+    let mut first_locate: usize = 0;
+    let mut pm_flg = false;
+    let mut semi_flg = false;
+    let mut set_vec = |i: usize| {
+        if first_locate < i {
+            splitted.push((&txt[first_locate..i]).to_string());
+        }
+        first_locate = i;
+    };
+    for (i, ltr) in txt.chars().enumerate() {
+        if ltr == '+' || ltr == '-' {
+            if !pm_flg {
+                set_vec(i);
+            }
+            pm_flg = true;
+            semi_flg = false;
+        }
+        else if ltr == 'd' || ltr == 'r' || ltr == 'm' || ltr == 'f' || ltr == 's' || ltr == 'l' || ltr == 't' {
+            if semi_flg {
+                set_vec(i);
+            }
+            else if !pm_flg {
+                set_vec(i);
+            }
+            pm_flg = false;
+            semi_flg = false;
+        }
+        else if ltr == 'i' || ltr == 'a' {
+            pm_flg = false;
+            semi_flg = true;
+        }
+        else {
+            return vec!["".to_string()];
+        }
+    }
+    set_vec(txt.len());
+    splitted
 }
 
 //*******************************************************************
