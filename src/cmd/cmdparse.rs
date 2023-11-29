@@ -52,11 +52,11 @@ impl LoopianCmd {
     pub fn get_input_part(&self) -> usize {self.input_part}
     pub fn get_part_txt(&self) -> &str {
         match self.input_part {
-            LEFT1 => "L1>",            
-            LEFT2 => "L2>",
-            RIGHT1 => "R1>",
-            RIGHT2 => "R2>",
-            _ => "__>",
+            LEFT1 => "L1",            
+            LEFT2 => "L2",
+            RIGHT1 => "R1",
+            RIGHT2 => "R2",
+            _ => "__",
         }
     }
     pub fn get_indicator(&self, num: usize) -> &str {
@@ -166,7 +166,8 @@ impl LoopianCmd {
         } else if len == 4 && &input_text[0..4] == "flow" {
             // flow
             self.send_msg_to_elapse(vec![MSG_FLOW, self.input_part as i16]);
-            Some("MIDI in flows!".to_string())
+            let res = format!("MIDI in flows on Part {}!", self.get_part_txt());
+            Some(res.to_string())
         } else {
             Some("what?".to_string())
         }

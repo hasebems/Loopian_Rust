@@ -282,7 +282,7 @@ impl Graphic {
         // Draw Letters
         let mut hcnt = infs.3;
         if hcnt >= 1000 {hcnt %= 1000;}
-        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + infs.4.get_part_txt());
+        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + infs.4.get_part_txt() + ">");
 
         // Prompt Text
         ui.put(

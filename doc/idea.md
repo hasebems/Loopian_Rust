@@ -82,7 +82,7 @@
     - Loopian::ORBIT は MIDI Note On/Off を Note Number 0-95 の範囲で出力する
     - ただし、1octaveあたり接点は16と見做すので、実際のノート番号にする際には、3/4 をかける必要がある
 - Loopian の任意のパートを、Loopian::ORBIT に接続することができる
-    - input part にて、"flow" コマンドを入力し、play すると、コードに合わせた音に変換して、MIDI OUT を行う
+    - "flow" コマンドを入力すると、そのときの input part のコードに合わせた音に変換して、MIDI OUT を行う
     - 演奏中であってもなくても、"endflow" で、MIDI Flowは終了する
     - 演奏中かつ MIDI Flow が指定されているパートは、Part Indicator に Flow と表示される
 - 演奏効果について
@@ -475,6 +475,8 @@ CompositionDataStock *-- UgContent
     - @n;Cd というように、前と同じコードでも必ず ; 付きで記述する必要がある
 
 次の対応、考えられる新機能
+- load フォルダ名の指定
+- 画面の色合いを変更
 - 次のループからではなく、リアルタイムでフレーズを変える機能（優先度低）
     - リアルタイムか、次のループ先頭かを選べる
     - リアルタイムの場合、まずそれが可能なデータかチェック
@@ -491,6 +493,7 @@ CompositionDataStock *-- UgContent
 
 先の話
 - さらなる humanized アルゴリズムの追加
+- さらなるアニメーションの追加
 
 ## loopian 計画
 - loopian を使った動画制作
