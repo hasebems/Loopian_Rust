@@ -134,6 +134,7 @@ impl LoopianCmd {
                 if self.gendt.set_raw_composition(i, empty_cmp) {
                     self.send_composition_to_elapse(i);
                 }
+                self.gendt.change_oct(0, true, i);
             }
         }
         Some("all data erased!".to_string())
