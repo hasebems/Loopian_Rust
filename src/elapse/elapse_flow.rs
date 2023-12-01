@@ -47,6 +47,7 @@ pub struct Flow {
     raw_state: [i32; LOCATION_ALL], // tickを格納 同じ場所に複数のイベントが来た場合に排除
     raw_ev: Vec<RawEv>,             // 外部からの MIDI In Ev 受信時に格納し、処理後に削除
     gen_stock: Vec<GenStock>,       // MIDI In Ev処理し、外部音源発音時に生成される
+    keynote: u8,
 
     // for super's member
     during_play: bool,
@@ -64,6 +65,7 @@ impl Flow {
             raw_state: [NO_DATA; LOCATION_ALL],
             raw_ev: Vec::new(),
             gen_stock: Vec::new(),
+            keynote: 0,
 
             // for super's member
             during_play,
@@ -77,6 +79,9 @@ impl Flow {
         // 発音中の音をキャンセル
         self.destroy = true;
         self.during_play = false;
+    }
+    pub fn set_keynote(&mut self, keynote:u8) {
+        self.keynote = keynote;
     }
     pub fn rcv_midi(&mut self, crnt_: &CrntMsrTick, status:u8, locate:u8, vel:u8) {
         println!("MIDI IN >> {:x}-{:x}-{:x}", status,locate,vel);
@@ -143,6 +148,9 @@ impl Flow {
             let root: i16 = ROOT2NTNUM[rt as usize];
             real_note = translate_note_com(root, ctbl, temp_note) as u8;
         }
+        real_note += self.keynote;
+        if real_note >= MAX_NOTE_NUMBER     {real_note = MAX_NOTE_NUMBER;}
+        else if real_note < MIN_NOTE_NUMBER {real_note = MIN_NOTE_NUMBER;}
         real_note
     }
     fn same_note_index(&self, rnote: u8) -> Option<usize> {

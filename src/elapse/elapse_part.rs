@@ -373,6 +373,9 @@ impl Part {
     }
     pub fn change_key(&mut self, knt: u8) {
         self.keynote = knt;          // 0-11
+        if let Some(fl) = &self.flow {
+            fl.borrow_mut().set_keynote(knt);
+        }
         self.pm.state_reserve = true;
     }
     pub fn rcv_phr_msg(&mut self, msg: UgContent, whole_tick: i16, vari_num: usize) {
@@ -414,6 +417,7 @@ impl Part {
     pub fn activate_flow(&mut self, estk: &mut ElapseStack) {
         if self.flow.is_none() {
             let fl = Flow::new(0, self.id.sid, self.during_play);
+            fl.borrow_mut().set_keynote(self.keynote);
             self.flow = Some(Rc::clone(&fl));
             estk.add_elapse(fl);
         }
@@ -425,7 +429,9 @@ impl Part {
         }
     }
     pub fn rcv_midi_in(&mut self, crnt_: &CrntMsrTick, status:u8, locate:u8, vel:u8) {
-        if let Some(fl) = &self.flow {fl.borrow_mut().rcv_midi(crnt_, status, locate, vel);}
+        if let Some(fl) = &self.flow {
+            fl.borrow_mut().rcv_midi(crnt_, status, locate, vel);
+        }
     }
     pub fn set_phrase_vari(&mut self, vari_num: usize) {
         self.pm.reserve_vari(vari_num);
