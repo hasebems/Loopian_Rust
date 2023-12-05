@@ -186,7 +186,7 @@ impl LoopianCmd {
     }
     fn letter_p(&self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
-        if len == 4 && &input_text[0..4] == "play" {
+        if (len == 4 && &input_text[0..4] == "play") || (len == 1 && &input_text[0..1] == "p") {
             // play
             self.send_msg_to_elapse(vec![MSG_START]);
             Some("Phrase has started!".to_string())
