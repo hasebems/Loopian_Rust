@@ -173,6 +173,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
         base_dur = bdur;
         last_nt = lnt;    // 次回の音程の上下判断のため
 
+        assert!(notes.len() != 0);
         if notes[0] == RPT_HEAD {   // 繰り返し指定があったことを示すイベント
             let nt_data: Vec<i16> = vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
             rcmb.add_dt(nt_data);
@@ -251,7 +252,10 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
     let mut notes: Vec<u8> = Vec::new();
     let mut next_last_nt = last_nt;
     let notes_num = notes_vec.len();
-    if notes_num == 1 {
+    if notes_num == 0 {
+        notes.push(NO_NOTE);
+    }
+    else if notes_num == 1 {
         let mut doremi: i32 = 0;
         if imd == InputMode::Fixed {
             doremi = convert_doremi_fixed(notes_vec[0].to_string());
@@ -265,7 +269,7 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
         let base_pitch = add_base_and_doremi(base_note, doremi);
         notes.push(base_pitch);
     }
-    else if notes_num != 0 {
+    else {
         for nt in notes_vec.iter() {    // 同時発音
             let doremi = convert_doremi_fixed(nt.to_string());
             let base_pitch = add_base_and_doremi(base_note, doremi);
@@ -398,7 +402,6 @@ fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
 }
 fn add_note(rcmb: UgContent, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16, mes_top: bool)
     -> UgContent {
-    assert!(notes.len() != 0);
     let mut return_rcmb = rcmb.clone();
     for note in notes.iter() {
         if *note == REST {
