@@ -36,6 +36,7 @@ pub struct Graphic {
     start_time: Instant,
     frame_counter: i32,
     rndm: rngs::ThreadRng,
+    mode: i16,
 }
 struct Resize {
     eight_indic_top: f32,
@@ -53,11 +54,17 @@ impl Graphic {
             start_time: Instant::now(),
             frame_counter: 0,
             rndm: thread_rng(),
+            mode: DARK_MODE,
         }
     }
     pub fn update(&mut self, ui: &mut Ui, 
         infs : (usize, &String, &Vec<(String, String)>, usize, &LoopianCmd),
-        frame: &mut eframe::Frame, ntev: Vec<String>) {
+        msg: i16, frame: &mut eframe::Frame, ntev: Vec<String>) {
+
+        if msg != NO_MSG {
+            if msg == DARK_MODE {self.mode = DARK_MODE;}
+            else if msg == LIGHT_MODE {self.mode = LIGHT_MODE;}
+        }
 
         // window size を得る
         self.full_size.x = frame.info().window_info.size.x;
@@ -99,6 +106,14 @@ impl Graphic {
 
         // Input Text 描画
         self.update_input_text(ui, infs, &rs);
+    }
+    pub fn back_color(&self) -> Color32 {
+        if self.mode == DARK_MODE {
+            Color32::BLACK
+        }
+        else {
+            Color32::GRAY
+        }
     }
     fn resize(&self) -> Resize {
         const EIGHT_INDIC_TOP: f32 = 40.0;     // eight indicator

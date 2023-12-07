@@ -153,6 +153,11 @@ pub const ARP_PARA: i16     = 10000;
 pub const TYPE_EXP: i16     = 1010;     // for index TYPE
 pub const NOPED: i16        = 10;       // Note情報より先に置く
 
+// Graphic Message
+pub const NO_MSG: i16       = -1;
+pub const LIGHT_MODE: i16   = 1;
+pub const DARK_MODE: i16    = 2;
+
 //*******************************************************************
 //          Enum
 //*******************************************************************

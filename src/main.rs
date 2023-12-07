@@ -197,19 +197,19 @@ impl LoopianApp {
     }
     fn draw_central_panel(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         let mut ntev: Vec<String> = Vec::new();
-        while let Some(kmsg) = self.cmd.get_ev_from_gev() {
-            self.cmd.remove_from_gev(0);
+        while let Some(kmsg) = self.cmd.move_ev_from_gev() {
             ntev.push(kmsg);
         }
 
         // Configuration for CentralPanel
+        let back_color = self.graph.back_color();
         let my_frame = egui::containers::Frame {
             inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
             outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
             rounding: egui::Rounding { nw: 0.0, ne: 0.0, sw: 0.0, se: 0.0 },
-            shadow: eframe::epaint::Shadow { extrusion: 0.0, color: Color32::BLACK },
-            fill: Color32::BLACK,
-            stroke: egui::Stroke::new(0.0, Color32::BLACK),
+            shadow: eframe::epaint::Shadow { extrusion: 0.0, color: back_color },
+            fill: back_color,
+            stroke: egui::Stroke::new(0.0, back_color),
         };
         CentralPanel::default().frame(my_frame).show(ctx, |ui| {
             self.graph.update(ui,
@@ -218,6 +218,7 @@ impl LoopianApp {
                 &self.scroll_lines,
                 self.history_cnt,
                 &self.cmd),
+                self.cmd.get_graphic_msg(),
                 frame, ntev);
         });
     }

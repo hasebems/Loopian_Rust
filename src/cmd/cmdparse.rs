@@ -20,6 +20,7 @@ pub struct LoopianCmd {
     input_part: usize,
     gendt: SeqDataStock,
     graphic_ev: Vec<String>,
+    graphic_msg: i16,
 }
 
 impl LoopianCmd {
@@ -36,18 +37,16 @@ impl LoopianCmd {
             input_part: RIGHT1,
             gendt: SeqDataStock::new(),
             graphic_ev: Vec::new(),
+            graphic_msg: NO_MSG,
         }
     }
-    pub fn get_ev_from_gev(&self) -> Option<String> {
+    pub fn move_ev_from_gev(&mut self) -> Option<String> {
         if self.graphic_ev.len() > 0 {
-            return Some(self.graphic_ev[0].clone());
+            let gev = self.graphic_ev[0].clone();
+            self.graphic_ev.remove(0);
+            return Some(gev);
         }
         else {None}
-    }
-    pub fn remove_from_gev(&mut self, idx: usize) {
-        if self.graphic_ev.len() > idx {
-            self.graphic_ev.remove(idx);
-        }
     }
     pub fn get_input_part(&self) -> usize {self.input_part}
     pub fn get_part_txt(&self) -> &str {
@@ -62,6 +61,7 @@ impl LoopianCmd {
     pub fn get_indicator(&self, num: usize) -> &str {
         &self.indicator[num]
     }
+    pub fn get_graphic_msg(&self) -> i16 {self.graphic_msg}
     pub fn read_from_ui_hndr(&mut self) {
         // Play Thread からの、8indicator表示用メッセージを受信する処理
         loop {
@@ -79,6 +79,7 @@ impl LoopianCmd {
                                 self.indicator[ind_num] = txt;
                             }
                             else if ind_num == 9 {
+                                // ElapseStack からの発音 Note Number/Velocity
                                 self.graphic_ev.push(txt);
                             }
                         }
@@ -110,6 +111,7 @@ impl LoopianCmd {
         else if first_letter == "c" {self.letter_c(input_text)}
         else if first_letter == "e" {self.letter_e(input_text)}
         else if first_letter == "f" {self.letter_f(input_text)}
+        else if first_letter == "g" {self.letter_g(input_text)}
         else if first_letter == "l" {self.letter_l(input_text)}
         else if first_letter == "p" {self.letter_p(input_text)}
         else if first_letter == "r" {self.letter_r(input_text)}
@@ -168,6 +170,24 @@ impl LoopianCmd {
             self.send_msg_to_elapse(vec![MSG_FLOW, self.input_part as i16]);
             let res = format!("MIDI in flows on Part {}!", self.get_part_txt());
             Some(res.to_string())
+        } else {
+            Some("what?".to_string())
+        }
+    }
+    fn letter_g(&mut self, input_text: &str) -> Option<String> {
+        let len = input_text.chars().count();
+        if len >= 6 && &input_text[0..6] == "graph " {
+            if len >= 11 && &input_text[6..11] == "light" {
+                self.graphic_msg = LIGHT_MODE;
+                Some("Changed Graphic!".to_string())
+            }
+            else if len >= 10 && &input_text[6..10] == "dark" {
+                self.graphic_msg = DARK_MODE;
+                Some("Changed Graphic!".to_string())
+            }
+            else {
+                Some("what?".to_string())
+            }
         } else {
             Some("what?".to_string())
         }
