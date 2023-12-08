@@ -18,8 +18,9 @@ const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
 const TEXT_GRAY: Color32 = Color32::from_rgb(0,0,0);
 const _TEXT_BG: Color32 = Color32::from_rgb(0,200,200);
 
-const BACK_WHITE: Color32 = Color32::from_rgb(180, 180, 180);
-const BACK_WHITE2: Color32 = Color32::from_rgb(128,128,128);
+const BACK_WHITE0: Color32 = Color32::from_rgb(220, 220, 220);  // LIGHTの明るいグレー
+const BACK_WHITE1: Color32 = Color32::from_rgb(180, 180, 180);  // DARKの明るいグレー
+const BACK_WHITE2: Color32 = Color32::from_rgb(128,128,128);    // DARKの薄暗いグレー
 const _BACK_MAZENTA: Color32 = Color32::from_rgb(180, 160, 180);
 const _BACK_GRAY: Color32 = Color32::from_rgb(48,48,48);
 const BACK_DARK_GRAY: Color32 = Color32::from_rgb(32,32,32);
@@ -82,7 +83,9 @@ impl Graphic {
             let nt: i32 = nt_vel[0].parse().unwrap();
             let vel: i32 = nt_vel[1].parse().unwrap();
             let rnd: f32 = self.rndm.gen();
-            self.nobj.push(Box::new(WaterRipple::new(nt as f32, vel as f32, rnd, self.frame_counter)));
+            self.nobj.push(Box::new(
+                WaterRipple::new(nt as f32, vel as f32, rnd, self.frame_counter, self.mode))
+            );
         }
         let nlen = self.nobj.len();
         let mut rls = vec![true; nlen];
@@ -112,8 +115,24 @@ impl Graphic {
             Color32::BLACK
         }
         else {
-            Color32::GRAY
+            Color32::WHITE
         }
+    }
+    fn letter_color(&self) -> Color32 {
+        if self.mode == DARK_MODE {
+            Color32::WHITE
+        }
+        else {
+            Color32::BLACK
+        }        
+    }
+    fn light_box_color(&self) -> Color32 {
+        if self.mode == DARK_MODE {
+            BACK_WHITE1
+        }
+        else {
+            BACK_WHITE0
+        }        
     }
     fn resize(&self) -> Resize {
         const EIGHT_INDIC_TOP: f32 = 40.0;     // eight indicator
@@ -146,7 +165,7 @@ impl Graphic {
             }, //  location
             Label::new(RichText::new("Loopian")
                 .size(28.0)
-                .color(Color32::WHITE)
+                .color(self.letter_color())
                 .family(FontFamily::Proportional)
             )
         );
@@ -168,9 +187,10 @@ impl Graphic {
         }
 
         let input_part = cmd.get_input_part();
+        let mut back_color;
         for i in 0..MAX_INDICATOR/2 {
             for j in 0..2 {
-                let mut back_color = BACK_WHITE;
+                back_color = self.light_box_color();
                 if i as usize != input_part && j == 1 {back_color = BACK_WHITE2;}
 
                 let raw: f32 = interval*(i as f32);
@@ -222,6 +242,7 @@ impl Graphic {
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
         const FONT16_HEIGHT: f32 = 25.0;
 
+        let letter_color = self.letter_color();
         let lines = scroll_lines.len();
         let max_count = if lines < MAX_SCROLL_LINES {lines} else {MAX_SCROLL_LINES};
         let ofs_count = if lines < MAX_SCROLL_LINES {0} else {lines - MAX_SCROLL_LINES};
@@ -230,7 +251,7 @@ impl Graphic {
             let past_text_set = scroll_lines[ofs_count+i].clone();
             let past_text = past_text_set.0.clone() + &past_text_set.1;
             let cnt = past_text.chars().count();
-            let txt_color = if i%2==0 {Color32::WHITE} else {MAZENTA};
+            let txt_color = if i%2==0 {letter_color} else {MAZENTA};
             ui.put(
                 Rect { 
                     min: Pos2 {x:rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN,
