@@ -19,7 +19,7 @@ pub struct WaterRipple {
 impl WaterRipple {
     const DISAPPEAR_RATE: f32 = 500.0;  // Bigger, Slower
     const RIPPLE_SIZE: i32 = 32;        // Bigger, Thicker
-    const BRIGHTNESS: f32 = 1000.0;     // 明るさ
+    const BRIGHTNESS: f32 = 500.0;     // 明るさ
     const RIPPLE_SIZE_F: f32 = (WaterRipple::RIPPLE_SIZE-1) as f32;
     pub fn new(nt: f32, vel: f32, rnd: f32, tm: i32, mode: i16) -> Self {
         Self {
@@ -28,6 +28,17 @@ impl WaterRipple {
             para3: (vel*vel/16384.0),   // velは小さい時に薄くするため二乗
             time: tm,
             mode,
+        }
+    }
+    fn gray(&self, gray_scl: u8) -> Color32 {
+        if self.mode == LIGHT_MODE {
+            Color32::from_black_alpha(gray_scl)
+        }
+        else if self.mode == DARK_MODE {
+            Color32::from_white_alpha(gray_scl)
+        }
+        else {
+            Color32::from_white_alpha(gray_scl)
         }
     }
 }
@@ -43,22 +54,15 @@ impl NoteObj for WaterRipple {
                 ((WaterRipple::DISAPPEAR_RATE-(cnt as f32))/WaterRipple::DISAPPEAR_RATE)  // 消えゆく速さ
             ) as u8;  // 白/Alpha値への変換
             if i < cnt {
-                let mut color = Color32::WHITE;
-                if self.mode == LIGHT_MODE {
-                    color = Color32::from_black_alpha(gray_scl);
-                }
-                else if self.mode == DARK_MODE {
-                    color = Color32::from_white_alpha(gray_scl);
-                }
                 ui.painter().circle_stroke(
                     Pos2 {
                         x:((self.para1-0.5)*1.4 + 0.5)*fsz.x,
                         y:self.para2*(fsz.y*0.6) + (fsz.y*0.2),
                     },  // location
-                    (cnt-i) as f32,                                   // radius
+                    (cnt-i) as f32, // radius
                     Stroke {
-                        width:1.0,
-                        color,
+                        width: 1.0,
+                        color: self.gray(gray_scl),
                     }
                 );
             }
