@@ -6,5 +6,9 @@
 use eframe::egui::*;
 
 pub trait NoteObj {
-    fn disp(&self, crnt_time: i32, ui: &mut Ui, fsz: Pos2) -> bool;
+    fn disp(&self,
+        crnt_time: i32, //  const FPS(50msec) のカウンター
+        ui: &mut Ui,    //  egui における Ui 
+        fsz: Pos2)      //  画面サイズ　fsz.x/fsz.y
+        -> bool;        //  false: 消去可能
 }
