@@ -14,7 +14,7 @@ struct ChordTable {
     name: &'static str,
     table: &'static [i16],
 }
-const CHORD_TABLE: [ChordTable; 52] = [
+const CHORD_TABLE: [ChordTable; 53] = [
     //  No.0-9
     ChordTable {name:   "thru",     table:  &THRU,},    // noped
     ChordTable {name:   "O",        table:  &THRU,},
@@ -40,6 +40,7 @@ const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "_7+9",     table:  &M7PLS9,},
 
     // No.20-29
+    ChordTable {name:   "_M96",     table:  &MAJ9ADD6,},
     ChordTable {name:   "_dim",     table:  &DIM,},
     ChordTable {name:   "_m7-5",    table:  &MIN7M5,},
     ChordTable {name:   "_sus4",    table:  &SUS4,},
@@ -50,9 +51,9 @@ const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "_dor",     table:  &IONIAN,},  // IIが音程そのまま。IIとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name:   "_lyd",     table:  &IONIAN,},  // IVが音程そのまま。IVとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name:   "_mix",     table:  &IONIAN,},  // Vが音程そのまま。Vとの差分分並行移動し、音程をkeyに合わせる
-    ChordTable {name:   "_aeo",     table:  &IONIAN,},  // VIが音程そのまま。VIとの差分分並行移動し、音程をkeyに合わせる
 
     // No.30-39
+    ChordTable {name:   "_aeo",     table:  &IONIAN,},  // VIが音程そのまま。VIとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name:   "diatonic",     table:  &IONIAN,},
     ChordTable {name:   "dorian",       table:  &DORIAN,},
     ChordTable {name:   "lydian",       table:  &LYDIAN,},
@@ -63,9 +64,9 @@ const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "blues",        table:  &BLUES,},
     // scale n(38-49): n半音分上の diatonic scale
     ChordTable {name:   "sc0",      table:  &IONIAN,},
-    ChordTable {name:   "sc1",      table:  &SC1,},
 
     // No.40-49
+    ChordTable {name:   "sc1",      table:  &SC1,},
     ChordTable {name:   "sc2",      table:  &SC2,},
     ChordTable {name:   "sc3",      table:  &SC3,},
     ChordTable {name:   "sc4",      table:  &SC4,},
@@ -75,9 +76,9 @@ const CHORD_TABLE: [ChordTable; 52] = [
     ChordTable {name:   "sc8",      table:  &SC8,},
     ChordTable {name:   "sc9",      table:  &SC9,},
     ChordTable {name:   "sc10",     table:  &SC10,},
-    ChordTable {name:   "sc11",     table:  &SC11,},
  
     // No.50-
+    ChordTable {name:   "sc11",     table:  &SC11,},
     ChordTable {name:   "Err",      table:  &ERR,},
     ChordTable {name:   "None",     table:  &NONE,},
 ];
@@ -102,6 +103,7 @@ const DIM:    [i16; 4]  = [0, 3, 6, 9];
 const MIN7M5: [i16; 4]  = [0, 3, 6, 10];
 const SUS4:   [i16; 3]  = [0, 5, 7];
 const M7SUS4: [i16; 4]  = [0, 5, 7, 10];
+const MAJ9ADD6:[i16; 6]  = [0, 2, 4, 7, 9, 11];  // Ionian-F
 const IONIAN: [i16; 7]  = [0, 2, 4, 5, 7, 9, 11]; // Ionian
 const DORIAN: [i16; 7]  = [0, 2, 3, 5, 7, 9, 10]; // Dorian
 const LYDIAN: [i16; 7]  = [0, 2, 4, 6, 7, 9, 11]; // Lydian
