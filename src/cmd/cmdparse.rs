@@ -123,23 +123,32 @@ impl LoopianCmd {
     }
     fn letter_c(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
-        if len == 5 && &input_text[0..5] == "clear" {
-            // stop
-            self.send_msg_to_elapse(vec![MSG_STOP]);
-            // clear
-            for i in 0..MAX_USER_PART {
-                for j in 0..MAX_PHRASE {
-                    let empty_phr = "[]";
-                    self.set_phrase(i, j, empty_phr);
+        if len >= 5 && &input_text[0..5] == "clear" {
+            if len == 5 {
+                // stop
+                self.send_msg_to_elapse(vec![MSG_STOP]);
+                // clear
+                for i in 0..MAX_USER_PART {
+                    self.clear_part(i);
                 }
-                let empty_cmp = "{}".to_string();
-                if self.gendt.set_raw_composition(i, empty_cmp) {
-                    self.send_composition_to_elapse(i);
-                }
-                self.gendt.change_oct(0, true, i);
+                Some("all data erased!".to_string())
             }
+            else {
+                let part_letter = &input_text[6..];
+                println!("clear>>{}",part_letter);
+                let pnum = Self::detect_part(part_letter);
+                if pnum != MAX_USER_PART {self.clear_part(pnum);}
+                match pnum {
+                    LEFT1  => Some("part L1 data erased!".to_string()),
+                    LEFT2  => Some("part L2 data erased!".to_string()),
+                    RIGHT1 => Some("part R1 data erased!".to_string()),
+                    RIGHT2 => Some("part R2 data erased!".to_string()),
+                    _ => Some("what?".to_string()),
+                }
+            }
+        } else {
+            Some("what?".to_string())
         }
-        Some("all data erased!".to_string())
     }
     fn letter_e(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
@@ -328,60 +337,73 @@ impl LoopianCmd {
         }
     }
     fn letter_part(&mut self, input_text: &str) -> Option<String> {
-        let len = input_text.chars().count();
-        if len == 2 && &input_text[0..2] == "L1" {
-            self.input_part = LEFT1;
-            Some("Changed current part to left1.".to_string())
+        let pnum = Self::detect_part(input_text);
+        if pnum != MAX_USER_PART {self.input_part = pnum;}
+        match pnum {
+            LEFT1  => Some("Changed current part to left1.".to_string()),
+            LEFT2  => Some("Changed current part to left2.".to_string()),
+            RIGHT1 => Some("Changed current part to right1.".to_string()),
+            RIGHT2 => Some("Changed current part to right2.".to_string()),
+            _ => self.shortcut_input(input_text),
         }
-        else if len == 2 && &input_text[0..2] == "L2" {
-            self.input_part = LEFT2;
-            Some("Changed current part to left2.".to_string())
-        }
-        else if len == 2 && &input_text[0..2] == "R1" {
-            self.input_part = RIGHT1;
-            Some("Changed current part to right1.".to_string())
-        }
-        else if len == 2 && &input_text[0..2] == "R2" {
-            self.input_part = RIGHT2;
-            Some("Changed current part to right2.".to_string())
-        }
-        else {
-            // shortcut input
-            let mut rtn_str = "what?".to_string();
-            for (i, ltr) in input_text.chars().enumerate() {
-                if ltr == '>' {
-                    let first_letter = &input_text[i+1..i+2];
-                    let part_str = &input_text[0..i];
-                    let rest_text = &input_text[i+1..];
-                    match part_str {
-                        "L1" => rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text),
-                        "L2" => rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text),
-                        "L12" => {
-                            rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text);
-                            if rtn_str != "what?" {
-                                rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
-                            }
-                        },
-                        "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
-                        "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),
-                        "R12" => {
-                            rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
-                            if rtn_str != "what?" {
-                                rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
-                            }
-                        },
-                        "ALL" => {
-                            for i in 0..MAX_USER_PART {
-                                rtn_str = self.call_bracket_brace(i, first_letter, rest_text);
-                            }
-                        },
-                        _ => println!("No Part!"),
-                    }
-                    break;
+    }
+    fn shortcut_input(&mut self, input_text: &str) -> Option<String> {
+        // shortcut input
+        let mut rtn_str = "what?".to_string();
+        for (i, ltr) in input_text.chars().enumerate() {
+            if ltr == '>' {
+                let first_letter = &input_text[i+1..i+2];
+                let part_str = &input_text[0..i];
+                let rest_text = &input_text[i+1..];
+                match part_str {
+                    "L1" => rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text),
+                    "L2" => rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text),
+                    "L12" => {
+                        rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text);
+                        if rtn_str != "what?" {
+                            rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
+                        }
+                    },
+                    "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
+                    "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),
+                    "R12" => {
+                        rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
+                        if rtn_str != "what?" {
+                            rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
+                        }
+                    },
+                    "ALL" => {
+                        for i in 0..MAX_USER_PART {
+                            rtn_str = self.call_bracket_brace(i, first_letter, rest_text);
+                        }
+                    },
+                    _ => println!("No Part!"),
                 }
+                break;
             }
-            Some(rtn_str)
         }
+        Some(rtn_str)
+    }
+    fn detect_part(part_str: &str) -> usize {
+        let len = part_str.chars().count();
+        if len == 5 {
+            if      &part_str[0..5] == "left1" {LEFT1}
+            else if &part_str[0..5] == "left2" {LEFT2}
+            else {MAX_USER_PART}
+        }
+        else if len == 6 {
+            if      &part_str[0..6] == "right1" {RIGHT1}
+            else if &part_str[0..6] == "right2" {RIGHT2}
+            else {MAX_USER_PART}
+        }
+        else if len == 2 {
+            if      &part_str[0..2] == "L1" {LEFT1}
+            else if &part_str[0..2] == "L2" {LEFT2}
+            else if &part_str[0..2] == "R1" {RIGHT1}
+            else if &part_str[0..2] == "R2" {RIGHT2}
+            else {MAX_USER_PART}
+        }
+        else {MAX_USER_PART}
     }
     fn call_bracket_brace(&mut self, part_num: usize, _first_letter: &str, rest_text: &str) -> String {
         let mut rtn_str = "what?".to_string();
@@ -411,6 +433,17 @@ impl LoopianCmd {
             true
         }
         else {false}
+    }
+    fn clear_part(&mut self, part_num: usize) {
+        for j in 0..MAX_PHRASE {
+            let empty_phr = "[]";
+            self.set_phrase(part_num, j, empty_phr);
+        }
+        let empty_cmp = "{}".to_string();
+        if self.gendt.set_raw_composition(part_num, empty_cmp) {
+            self.send_composition_to_elapse(part_num);
+        }
+        self.gendt.change_oct(0, true, part_num);
     }
     //*************************************************************************
     fn parse_set_command(&mut self, input_text: &str) -> String {
