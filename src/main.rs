@@ -25,6 +25,7 @@ pub const WINDOW_Y: f32 = 860.0;
 
 pub struct LoopianApp {
     input_locate: usize,
+    visible_locate: usize,
     input_text: String,
     scroll_lines: Vec<(String, String)>,
     history_cnt: usize,
@@ -53,6 +54,7 @@ impl LoopianApp {
         Self::init_font(cc);
         Self {
             input_locate: 0,
+            visible_locate: 0,
             input_text: String::new(),
             scroll_lines: Vec::new(),
             history_cnt: 0,
@@ -100,15 +102,13 @@ impl LoopianApp {
     //*******************************************************************
     //      Input Text
     //*******************************************************************
+    const CURSOR_MAX_VISIBLE_LOCATE: usize = 65;
     fn input_letter(&mut self, letters: Vec<&String>) {
-        const CURSOR_MAX_LOCATE: usize = 65;
-        if self.input_locate <= CURSOR_MAX_LOCATE {
-            //println!("Letters:{:?}",letters);
-            letters.iter().for_each(|ltr| {
-                self.input_text.insert_str(self.input_locate,ltr);
-                self.input_locate+=1;
-            });
-        }
+        letters.iter().for_each(|ltr| {
+            self.input_text.insert_str(self.input_locate,ltr);
+            self.input_locate += 1;
+            self.update_visible_locate();
+        });
     }
     fn pressed_key(&mut self, key: &Key, modifiers: &Modifiers) {
         let itxt: String = self.input_text.clone();
@@ -119,25 +119,35 @@ impl LoopianApp {
             if self.input_locate > 0 {
                 self.input_locate -= 1;
                 self.input_text.remove(self.input_locate);
+                self.update_visible_locate();
             }
             //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowLeft {
-            if modifiers.shift {self.input_locate = 0;}
-            else if self.input_locate > 0 {self.input_locate -= 1;}
+            if modifiers.shift {
+                self.input_locate = 0;
+            }
+            else if self.input_locate > 0 {
+                self.input_locate -= 1;
+            }
+            self.update_visible_locate();
             //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowRight {
             let maxlen = self.input_text.chars().count();
-            if modifiers.shift {self.input_locate = maxlen;}
-            else {self.input_locate += 1;}
+            if modifiers.shift {
+                self.input_locate = maxlen;
+            }
+            else {
+                self.input_locate += 1;
+            }
+            self.update_visible_locate();
             if self.input_locate > maxlen {self.input_locate = maxlen;}
             //println!("Key>>{:?}",key);
         }
         else if key == &Key::ArrowUp {
             if let Some(txt) = self.history.arrow_up() {
                 self.input_text = txt.0;
-                self.history_cnt = txt.1;
             }
             let maxlen = self.input_text.chars().count();
             if maxlen < self.input_locate {self.input_locate = maxlen;}
@@ -149,6 +159,22 @@ impl LoopianApp {
             }
             let maxlen = self.input_text.chars().count();
             if maxlen < self.input_locate {self.input_locate = maxlen;}
+        }
+    }
+    fn update_visible_locate(&mut self) {
+        if self.input_locate >= Self::CURSOR_MAX_VISIBLE_LOCATE {
+            self.visible_locate = self.input_locate - Self::CURSOR_MAX_VISIBLE_LOCATE;
+        }
+        else if self.input_locate < self.visible_locate {
+            self.visible_locate = self.input_locate;
+        }
+    }
+    fn get_cursor_locate(&self) -> usize {
+        if self.input_locate > Self::CURSOR_MAX_VISIBLE_LOCATE {
+            Self::CURSOR_MAX_VISIBLE_LOCATE
+        }
+        else {
+            self.input_locate
         }
     }
     fn pressed_enter(&mut self, itxt: String) {
@@ -212,9 +238,10 @@ impl LoopianApp {
             stroke: egui::Stroke::new(0.0, back_color),
         };
         CentralPanel::default().frame(my_frame).show(ctx, |ui| {
+            let visible_text = &self.input_text[self.visible_locate..];
             self.graph.update(ui,
-                (self.input_locate, 
-                &self.input_text,
+                (self.get_cursor_locate(), 
+                &visible_text.to_string(),
                 &self.scroll_lines,
                 self.history_cnt,
                 &self.cmd),
