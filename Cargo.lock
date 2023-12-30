@@ -1390,8 +1390,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "loopian_rust"
-version = "0.1.0"
+name = "loopian"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "device_query",
