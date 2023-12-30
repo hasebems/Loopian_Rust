@@ -5,8 +5,9 @@
 //
 use crate::lpnlib::*;
 use std::sync::{mpsc, mpsc::*};
-use super::seq_stock::*;
 use crate::graphic::graphic;
+use super::seq_stock::*;
+use super::send_msg::*;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -15,12 +16,13 @@ use crate::graphic::graphic;
 pub struct LoopianCmd {
     indicator: Vec<String>,
     indicator_key_stock: String,
-    msg_hndr: mpsc::Sender<Vec<i16>>,
+    //msg_hndr: mpsc::Sender<Vec<i16>>,
     ui_hndr: mpsc::Receiver<String>,
     input_part: usize,
     gendt: SeqDataStock,
     graphic_ev: Vec<String>,
     graphic_msg: i16,
+    sndr: MessageSender,
 }
 
 impl LoopianCmd {
@@ -32,12 +34,13 @@ impl LoopianCmd {
         Self {
             indicator,
             indicator_key_stock: "C".to_string(),
-            msg_hndr,
+            //msg_hndr,
             ui_hndr,
             input_part: RIGHT1,
             gendt: SeqDataStock::new(),
             graphic_ev: Vec::new(),
             graphic_msg: NO_MSG,
+            sndr: MessageSender::new(msg_hndr),
         }
     }
     pub fn move_ev_from_gev(&mut self) -> Option<String> {
@@ -96,7 +99,7 @@ impl LoopianCmd {
         let first_letter = &input_text[0..1];
         if first_letter == "q" {
             if &input_text[0..4] == "quit" {
-                self.send_msg_to_elapse(vec![MSG_QUIT]);
+                self.sndr.send_msg_to_elapse(vec![MSG_QUIT]);
                 let option = input_text[4..].to_string();
                 if option.trim() == "nosave" {
                     Some("nosave".to_string())
@@ -126,7 +129,7 @@ impl LoopianCmd {
         if len >= 5 && &input_text[0..5] == "clear" {
             if len == 5 {
                 // stop
-                self.send_msg_to_elapse(vec![MSG_STOP]);
+                self.sndr.send_msg_to_elapse(vec![MSG_STOP]);
                 // clear
                 for i in 0..MAX_USER_PART {
                     self.clear_part(i);
@@ -154,11 +157,11 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len == 3 && &input_text[0..3] == "end" {
             // stop
-            self.send_msg_to_elapse(vec![MSG_STOP]);
+            self.sndr.send_msg_to_elapse(vec![MSG_STOP]);
             Some("Fine.".to_string())
         } else if len == 7 && &input_text[0..7] == "endflow" {
             // fermata
-            self.send_msg_to_elapse(vec![MSG_ENDFLOW, self.input_part as i16]);
+            self.sndr.send_msg_to_elapse(vec![MSG_ENDFLOW, self.input_part as i16]);
             Some("End MIDI in flow!".to_string())
         } else {
             Some("what?".to_string())
@@ -168,15 +171,15 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "fine" {
             // stop
-            self.send_msg_to_elapse(vec![MSG_STOP]);
+            self.sndr.send_msg_to_elapse(vec![MSG_STOP]);
             Some("Fine.".to_string())
         } else if len == 7 && &input_text[0..7] == "fermata" {
             // fermata
-            self.send_msg_to_elapse(vec![MSG_FERMATA]);
+            self.sndr.send_msg_to_elapse(vec![MSG_FERMATA]);
             Some("Will be longer!".to_string())
         } else if len == 4 && &input_text[0..4] == "flow" {
             // flow
-            self.send_msg_to_elapse(vec![MSG_FLOW, self.input_part as i16]);
+            self.sndr.send_msg_to_elapse(vec![MSG_FLOW, self.input_part as i16]);
             let res = format!("MIDI in flows on Part {}!", self.get_part_txt());
             Some(res.to_string())
         } else {
@@ -217,11 +220,11 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if (len == 4 && &input_text[0..4] == "play") || (len == 1 && &input_text[0..1] == "p") {
             // play
-            self.send_msg_to_elapse(vec![MSG_START]);
+            self.sndr.send_msg_to_elapse(vec![MSG_START]);
             Some("Phrase has started!".to_string())
         } else if len == 5 && &input_text[0..5] == "panic" {
             // panic
-            self.send_msg_to_elapse(vec![MSG_PANIC]);
+            self.sndr.send_msg_to_elapse(vec![MSG_PANIC]);
             Some("All Sound Off!".to_string())
         } else {
             Some("what?".to_string())
@@ -230,7 +233,7 @@ impl LoopianCmd {
     fn letter_r(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
         if len >= 6 && &input_text[0..6] == "resume" {
-            self.send_msg_to_elapse(vec![MSG_RESUME]);
+            self.sndr.send_msg_to_elapse(vec![MSG_RESUME]);
             Some("Resume.".to_string())
         } else if len >= 6 && &input_text[0..6] == "right1" {
             self.input_part = RIGHT1;
@@ -263,7 +266,7 @@ impl LoopianCmd {
             }
             if strength_txt == "poco" {strength_value = MSG2_POCO;}
             else if strength_txt == "molto" {strength_value = MSG2_MLT;}
-            self.send_msg_to_elapse(vec![MSG_RIT, strength_value, aft_rit]);
+            self.sndr.send_msg_to_elapse(vec![MSG_RIT, strength_value, aft_rit]);
             Some("rit. has started!".to_string())
         } else {
             Some("what?".to_string())
@@ -273,7 +276,7 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "stop" {
             // stop
-            self.send_msg_to_elapse(vec![MSG_STOP]);
+            self.sndr.send_msg_to_elapse(vec![MSG_STOP]);
             Some("Stopped!".to_string())
         } else if len >= 3 && &input_text[0..3] == "set" {
             // set
@@ -287,16 +290,16 @@ impl LoopianCmd {
                     s
                 });
             if vectxt.len() < 2 {
-                self.send_msg_to_elapse(vec![MSG_SYNC, self.input_part as i16]);
+                self.sndr.send_msg_to_elapse(vec![MSG_SYNC, self.input_part as i16]);
                 Some("Synchronized!".to_string())
             } else if vectxt[1] == "right" {
-                self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_RGT]);
+                self.sndr.send_msg_to_elapse(vec![MSG_SYNC, MSG2_RGT]);
                 Some("Right Part Synchronized!".to_string())
             } else if vectxt[1] == "left" {
-                self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_LFT]);
+                self.sndr.send_msg_to_elapse(vec![MSG_SYNC, MSG2_LFT]);
                 Some("Left Part Synchronized!".to_string())
             } else if vectxt[1] == "all" {
-                self.send_msg_to_elapse(vec![MSG_SYNC, MSG2_ALL]);
+                self.sndr.send_msg_to_elapse(vec![MSG_SYNC, MSG2_ALL]);
                 Some("All Part Synchronized!".to_string())
             } else {
                 Some("what?".to_string())
@@ -330,7 +333,7 @@ impl LoopianCmd {
     }
     fn letter_brace(&mut self, input_text: &str) -> Option<String> {
         if self.gendt.set_raw_composition(self.input_part, input_text.to_string()) {
-            self.send_composition_to_elapse(self.input_part);
+            self.sndr.send_composition_to_elapse(self.input_part, &self.gendt);
             Some("Set Composition!".to_string())
         } else {
             Some("what?".to_string())
@@ -429,7 +432,7 @@ impl LoopianCmd {
     }
     fn set_phrase(&mut self, part_num: usize, vari: usize, input_text: &str) -> bool {
         if self.gendt.set_raw_phrase(part_num, vari, input_text.to_string()) {
-            self.send_phrase_to_elapse(part_num, vari);
+            self.sndr.send_phrase_to_elapse(part_num, vari, &self.gendt);
             true
         }
         else {false}
@@ -441,7 +444,7 @@ impl LoopianCmd {
         }
         let empty_cmp = "{}".to_string();
         if self.gendt.set_raw_composition(part_num, empty_cmp) {
-            self.send_composition_to_elapse(part_num);
+            self.sndr.send_composition_to_elapse(part_num, &self.gendt);
         }
         self.gendt.change_oct(0, true, part_num);
     }
@@ -474,8 +477,8 @@ impl LoopianCmd {
             match cv[1].parse::<i16>() {
                 Ok(msg) => {
                     self.gendt.change_bpm(msg);
-                    self.send_msg_to_elapse(vec![MSG_SET, MSG2_BPM, msg]);
-                    self.send_all_vari_and_phrase(self.input_part);
+                    self.sndr.send_msg_to_elapse(vec![MSG_SET, MSG2_BPM, msg]);
+                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
                     "BPM has changed!".to_string()
                 },
                 Err(e) => {
@@ -490,8 +493,8 @@ impl LoopianCmd {
             match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
                 (Ok(numerator),Ok(denomirator)) => {
                     self.gendt.change_beat(numerator, denomirator);
-                    self.send_msg_to_elapse(vec![MSG_SET, MSG2_BEAT, numerator, denomirator]);
-                    self.send_all_vari_and_phrase(self.input_part);
+                    self.sndr.send_msg_to_elapse(vec![MSG_SET, MSG2_BEAT, numerator, denomirator]);
+                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
                     "Beat has changed!".to_string()
                 },
                 _ => "Number is wrong.".to_string()
@@ -549,11 +552,11 @@ impl LoopianCmd {
             // phrase 再生成(新oct込み)
             if oct != 0 {
                 if self.gendt.change_oct(oct, false, self.input_part) {
-                    self.send_all_vari_and_phrase(self.input_part);
+                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
                 }
             }
             // elapse に key を送る
-            self.send_msg_to_elapse(vec![MSG_SET, MSG2_KEY, key as i16]);
+            self.sndr.send_msg_to_elapse(vec![MSG_SET, MSG2_KEY, key as i16]);
             self.indicator_key_stock = key_text.to_string();
             true
         }
@@ -566,7 +569,7 @@ impl LoopianCmd {
         if let Ok(oct_num) = oct_txt.parse::<i32>() {oct = oct_num;}
         if oct != FULL {
             if self.gendt.change_oct(oct, true, self.input_part) {
-                self.send_all_vari_and_phrase(self.input_part);
+                self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
                 true
             }
             else {false}
@@ -586,57 +589,9 @@ impl LoopianCmd {
     }
     fn change_turnnote(&mut self, ntnum: &str) -> bool {
         if let Ok(turn_note) = ntnum.parse::<i16>() {
-            self.send_msg_to_elapse(vec![MSG_SET, MSG2_TURN, turn_note]);
+            self.sndr.send_msg_to_elapse(vec![MSG_SET, MSG2_TURN, turn_note]);
             true
         }
         else {false}
-    }
-    //*************************************************************************
-    fn send_msg_to_elapse(&self, msg: Vec<i16>) {
-        match self.msg_hndr.send(msg) {
-            Err(e) => println!("Something happened on MPSC for Elps! {}",e),
-            _ => {},
-        }
-    }
-    fn send_all_vari_and_phrase(&self, part: usize) {
-        for i in 0..MAX_PHRASE {
-            self.send_phrase_to_elapse(part, i);
-        }
-    }
-    fn send_phrase_to_elapse(&self, part: usize, vari: usize) {
-        let (mut pdt, mut ana): (Vec<i16>, Vec<i16>) = self.gendt.get_pdstk(part, vari).get_final();
-        let msg_pv = (part as i16) + 10*(vari as i16);
-        if pdt.len() > 1 {
-            let mut msg: Vec<i16> = vec![MSG_PHR + msg_pv];
-            msg.append(&mut pdt);
-            //println!("msg check: {:?}",msg);
-            self.send_msg_to_elapse(msg);
-            if ana.len() > 1 {
-                let mut msgana: Vec<i16> = vec![MSG_ANA + msg_pv];
-                msgana.append(&mut ana);
-                //println!("msg check ana: {:?}",msgana);
-                self.send_msg_to_elapse(msgana);                
-            }
-        }
-        else {
-            self.send_msg_to_elapse(vec![MSG_PHR_X + msg_pv]);
-            if ana.len() == 0 {
-                self.send_msg_to_elapse(vec![MSG_ANA_X + msg_pv]);
-            }
-            println!("Part {} Phrase: No Data!",part);
-        }
-    }
-    fn send_composition_to_elapse(&self, part: usize) {
-        let mut cdt: Vec<i16> = self.gendt.get_cdstk(part).get_final();
-        if cdt.len() > 1 {
-            let mut msg: Vec<i16> = vec![MSG_CMP+part as i16];
-            msg.append(&mut cdt);
-            //println!("msg check: {:?}",msg);
-            self.send_msg_to_elapse(msg);
-        }
-        else {
-            self.send_msg_to_elapse(vec![MSG_CMP_X+part as i16]);
-            println!("Part {} Composition: No Data!",part)
-        }
     }
 }
