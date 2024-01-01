@@ -26,7 +26,7 @@ pub struct LoopianCmd {
 }
 
 impl LoopianCmd {
-    pub fn new(msg_hndr: mpsc::Sender<Vec<i16>>, ui_hndr: mpsc::Receiver<String>) -> Self {
+    pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>, ui_hndr: mpsc::Receiver<String>) -> Self {
         let mut indicator = vec![String::from("---"); graphic::MAX_INDICATOR];
         indicator[0] = "C".to_string();
         indicator[1] = DEFAULT_BPM.to_string();
@@ -99,7 +99,7 @@ impl LoopianCmd {
         let first_letter = &input_text[0..1];
         if first_letter == "q" {
             if &input_text[0..4] == "quit" {
-                self.sndr.send_msg_to_elapse(vec![MSG_QUIT]);
+                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
                 let option = input_text[4..].to_string();
                 if option.trim() == "nosave" {
                     Some("nosave".to_string())
@@ -129,7 +129,7 @@ impl LoopianCmd {
         if len >= 5 && &input_text[0..5] == "clear" {
             if len == 5 {
                 // stop
-                self.sndr.send_msg_to_elapse(vec![MSG_STOP]);
+                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
                 // clear
                 for i in 0..MAX_USER_PART {
                     self.clear_part(i);
@@ -157,11 +157,11 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len == 3 && &input_text[0..3] == "end" {
             // stop
-            self.sndr.send_msg_to_elapse(vec![MSG_STOP]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
             Some("Fine.".to_string())
         } else if len == 7 && &input_text[0..7] == "endflow" {
             // fermata
-            self.sndr.send_msg_to_elapse(vec![MSG_ENDFLOW, self.input_part as i16]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_ENDFLOW+self.input_part as i16));
             Some("End MIDI in flow!".to_string())
         } else {
             Some("what?".to_string())
@@ -171,15 +171,15 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "fine" {
             // stop
-            self.sndr.send_msg_to_elapse(vec![MSG_STOP]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
             Some("Fine.".to_string())
         } else if len == 7 && &input_text[0..7] == "fermata" {
             // fermata
-            self.sndr.send_msg_to_elapse(vec![MSG_FERMATA]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_NRM, MSG2_RIT_FERMATA]));
             Some("Will be longer!".to_string())
         } else if len == 4 && &input_text[0..4] == "flow" {
             // flow
-            self.sndr.send_msg_to_elapse(vec![MSG_FLOW, self.input_part as i16]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FLOW+self.input_part as i16));
             let res = format!("MIDI in flows on Part {}!", self.get_part_txt());
             Some(res.to_string())
         } else {
@@ -220,11 +220,11 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if (len == 4 && &input_text[0..4] == "play") || (len == 1 && &input_text[0..1] == "p") {
             // play
-            self.sndr.send_msg_to_elapse(vec![MSG_START]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
             Some("Phrase has started!".to_string())
         } else if len == 5 && &input_text[0..5] == "panic" {
             // panic
-            self.sndr.send_msg_to_elapse(vec![MSG_PANIC]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_PANIC));
             Some("All Sound Off!".to_string())
         } else {
             Some("what?".to_string())
@@ -233,7 +233,7 @@ impl LoopianCmd {
     fn letter_r(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
         if len >= 6 && &input_text[0..6] == "resume" {
-            self.sndr.send_msg_to_elapse(vec![MSG_RESUME]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_RESUME));
             Some("Resume.".to_string())
         } else if len >= 6 && &input_text[0..6] == "right1" {
             self.input_part = RIGHT1;
@@ -266,7 +266,7 @@ impl LoopianCmd {
             }
             if strength_txt == "poco" {strength_value = MSG2_POCO;}
             else if strength_txt == "molto" {strength_value = MSG2_MLT;}
-            self.sndr.send_msg_to_elapse(vec![MSG_RIT, strength_value, aft_rit]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Rit([strength_value, aft_rit]));
             Some("rit. has started!".to_string())
         } else {
             Some("what?".to_string())
@@ -276,7 +276,7 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "stop" {
             // stop
-            self.sndr.send_msg_to_elapse(vec![MSG_STOP]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
             Some("Stopped!".to_string())
         } else if len >= 3 && &input_text[0..3] == "set" {
             // set
@@ -290,16 +290,16 @@ impl LoopianCmd {
                     s
                 });
             if vectxt.len() < 2 {
-                self.sndr.send_msg_to_elapse(vec![MSG_SYNC, self.input_part as i16]);
+                self.sndr.send_msg_to_elapse(ElpsMsg::Sync(self.input_part as i16));
                 Some("Synchronized!".to_string())
             } else if vectxt[1] == "right" {
-                self.sndr.send_msg_to_elapse(vec![MSG_SYNC, MSG2_RGT]);
+                self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_RGT));
                 Some("Right Part Synchronized!".to_string())
             } else if vectxt[1] == "left" {
-                self.sndr.send_msg_to_elapse(vec![MSG_SYNC, MSG2_LFT]);
+                self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_LFT));
                 Some("Left Part Synchronized!".to_string())
             } else if vectxt[1] == "all" {
-                self.sndr.send_msg_to_elapse(vec![MSG_SYNC, MSG2_ALL]);
+                self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_ALL));
                 Some("All Part Synchronized!".to_string())
             } else {
                 Some("what?".to_string())
@@ -477,7 +477,7 @@ impl LoopianCmd {
             match cv[1].parse::<i16>() {
                 Ok(msg) => {
                     self.gendt.change_bpm(msg);
-                    self.sndr.send_msg_to_elapse(vec![MSG_SET, MSG2_BPM, msg]);
+                    self.sndr.send_msg_to_elapse(ElpsMsg::Set([MSG_SET_BPM, msg]));
                     self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
                     "BPM has changed!".to_string()
                 },
@@ -493,7 +493,7 @@ impl LoopianCmd {
             match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
                 (Ok(numerator),Ok(denomirator)) => {
                     self.gendt.change_beat(numerator, denomirator);
-                    self.sndr.send_msg_to_elapse(vec![MSG_SET, MSG2_BEAT, numerator, denomirator]);
+                    self.sndr.send_msg_to_elapse(ElpsMsg::SetBeat([numerator, denomirator]));
                     self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
                     "Beat has changed!".to_string()
                 },
@@ -556,7 +556,7 @@ impl LoopianCmd {
                 }
             }
             // elapse に key を送る
-            self.sndr.send_msg_to_elapse(vec![MSG_SET, MSG2_KEY, key as i16]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Set([MSG_SET_KEY, key as i16]));
             self.indicator_key_stock = key_text.to_string();
             true
         }
@@ -589,7 +589,7 @@ impl LoopianCmd {
     }
     fn change_turnnote(&mut self, ntnum: &str) -> bool {
         if let Ok(turn_note) = ntnum.parse::<i16>() {
-            self.sndr.send_msg_to_elapse(vec![MSG_SET, MSG2_TURN, turn_note]);
+            self.sndr.send_msg_to_elapse(ElpsMsg::Set([MSG_SET_TURN, turn_note]));
             true
         }
         else {false}

@@ -7,4 +7,3 @@ pub mod elapse_loop;
 pub mod elapse_note;
 pub mod elapse_flow;
 pub mod note_translation;
-pub mod ug_content;

@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
-use crate::elapse::ug_content::*;
+//use crate::elapse::ug_content::*;
 
 //*******************************************************************
 //          Chord Tables and IF
@@ -259,11 +259,11 @@ fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
 //          recombine_to_chord_loop
 //*******************************************************************
 pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_for_onebeat: i32)
-    -> (i32, UgContent) {
+    -> (i32, Vec<ChordEvt>) {
     if comp.len() == 0 {
-        let mut zero = UgContent::new();
-        zero.add_dt(vec![0]);
-        return (0, zero);
+        //let mut zero = ChordEvt::new();
+        //zero.add_dt(vec![0]);
+        return (0, Vec::new());
     }
     let max_read_ptr = comp.len();
     let mut read_ptr = 0;
@@ -272,7 +272,7 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
     let mut dur: i32 = 0;
     let mut tick: i32 = 0;
     let mut msr: i32 = 1;
-    let mut rcmb = UgContent::new();
+    let mut rcmb = Vec::new();
     let mut same_chord: String = "path".to_string();
 
     while read_ptr < max_read_ptr {
@@ -293,7 +293,8 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
             let num = msgs_in_same[0][1..].parse().unwrap_or(0);
             if msgs_in_same[0].len() == 2 && ltr == '@' && num > 0 {
                 // 2文字で、1文字目は'@' 2文字目は 1-9 の数字
-                rcmb.add_dt(vec![TYPE_VARI, tick as i16, num, 0]);
+                //rcmb.add_dt(vec![TYPE_VARI, tick as i16, num, 0]);
+                rcmb.push(ChordEvt{mtype:TYPE_VARI, tick: tick as i16, root: num, tbl:0})
             }
             msgs = msgs_in_same[1].to_string();
         }
@@ -303,13 +304,14 @@ pub fn recombine_to_chord_loop(comp: &Vec<String>, tick_for_onemsr: i32, tick_fo
         else {same_chord = chord.clone();}
 
         let (root, table) = convert_chord_to_num(chord);
-        rcmb.add_dt(vec![TYPE_CHORD, tick as i16, root, table]);
+        //rcmb.add_dt(vec![TYPE_CHORD, tick as i16, root, table]);
+        rcmb.push(ChordEvt{mtype: TYPE_CHORD, tick: tick as i16, root, tbl: table});
 
         read_ptr += 1;
     }        
 
     tick = msr*tick_for_onemsr;
-    (tick, rcmb)
+    (tick as i32, rcmb)
 }
 fn divide_chord_and_dur(mut chord: String) -> (String, i32) {
     let mut dur: i32 = 1;

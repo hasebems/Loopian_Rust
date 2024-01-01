@@ -62,24 +62,91 @@ pub const DEFAULT_TURNNOTE: i16 = 5;
 //          UI->ELPS Message
 //              []: meaning, < >: index, (a/b/c): selection
 //*******************************************************************
-// 以下を採用した場合、識別用のメッセージは必要なくなる
-pub struct _PhrEvt {mtype:i16, tick:i16, dur:i16, note:i16, vel:i16}
-pub struct _ChordEvt {mtype:i16, tick:i16, root:i16, tbl:i16}
-pub struct _AnaEvt {mtype:i16, tick:i16, dur:i16, note:i16, cnt:i16, atype:i16}
-pub enum _ElpsMsg {
-    Cntl(i16),
-    Sync([i16; 2]),
-    Rit([i16; 3]),
-    SetBpm([i16; 3]),
-    SetBeat([i16; 4]),
-    SetKey([i16; 3]),
-    Phr(i16, i16, Vec<_PhrEvt>),
-    Cmp(i16, i16, Vec<_ChordEvt>),
-    Ana(i16, i16, Vec<_AnaEvt>),
-    PhrX(i16),
-    CmpX(i16),
-    AnaX(i16),
+pub const TYPE_NONE: i16    = 0;        // 共用
+#[derive(Default,Clone,Debug)]
+pub struct PhrEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub vel:i16}
+impl PhrEvt {
+    pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, vel:0}}
 }
+// MSG_PHR
+pub const _TYPE_ID: i16     = 1000;     // for TYPE
+pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
+pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報
+
+#[derive(Default,Clone,Debug)]
+pub struct DmprEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub position:i16}
+impl DmprEvt {
+    pub fn _new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, position:0}}
+}
+
+#[derive(Default,Clone,Debug)]
+pub struct ChordEvt {pub mtype:i16, pub tick:i16, pub root:i16, pub tbl:i16}
+impl ChordEvt {
+    pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, root:0, tbl:0}}
+}
+// MSG_CMP
+pub const TYPE_CHORD: i16   = 1002;     // for mtype
+pub const TYPE_DAMPER: i16  = 1003;     // for mtype
+pub const TYPE_VARI: i16    = 1004;     // for mtype, root: vari number
+pub const UPPER: i16        = 1000;     // for tbl
+
+#[derive(Default,Clone,Debug)]
+pub struct AnaEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub cnt:i16, pub atype:i16}
+impl AnaEvt {
+    pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, cnt:0, atype:0}}
+}
+// MSG_ANA
+pub const TYPE_BEAT: i16    = 1006;     // for index TYPE
+pub const ARP_COM: i16      = 0;
+pub const ARP_PARA: i16     = 10000;
+pub const TYPE_EXP: i16     = 1010;     // for index TYPE
+pub const NOPED: i16        = 10;       // Note情報より先に置く
+
+//*******************************************************************
+#[derive(Clone,Debug)]
+pub enum ElpsMsg {
+    Ctrl(i16),
+    Sync(i16),
+    Rit([i16; 2]),
+    Set([i16; 2]),
+//    SetBpm([i16; 3]),
+    SetBeat([i16; 2]),
+//    SetKey([i16; 3]),
+    Phr(i16, i16, Vec<PhrEvt>),     //  Phr : var/part, whole_tick, ()
+    Cmp(i16, i16, Vec<ChordEvt>),   //  Cmp : part, whole_tick, ()
+    Ana(i16, Vec<AnaEvt>),          //  Ana : part, ()
+    PhrX(i16),  //  PhrX : part
+    CmpX(i16),  //  CmpX : part
+    AnaX(i16),  //  AnaX : part
+}
+//  Ctrl
+pub const MSG_CTRL_QUIT: i16     = -1;
+pub const MSG_CTRL_START:i16     = -16;  //  1byte msg
+pub const MSG_CTRL_STOP: i16     = -15;
+//pub const MSG_CTRL_FERMATA: i16  = -14;
+pub const MSG_CTRL_PANIC: i16    = -13;
+pub const MSG_CTRL_RESUME: i16   = -12;
+pub const MSG_CTRL_FLOW: i16     = 100; // 100-104
+pub const MSG_CTRL_ENDFLOW: i16  = 110;
+//  Sync
+// 0-4 : Part0-4
+pub const MSG_SYNC_LFT: i16      = 5;
+pub const MSG_SYNC_RGT: i16      = 6;
+pub const MSG_SYNC_ALL: i16      = 7;
+//  Rit
+pub const MSG_RIT_NRM: i16      = 8;
+//pub const MSG_RIT_POCO: i16     = 9;
+//pub const MSG_RIT_MLT: i16      = 10;
+//pub const MSG2_RIT_ATP: i16     = 9999;
+pub const MSG2_RIT_FERMATA: i16 = 10000;
+//  Set
+pub const MSG_SET_BPM: i16      = 1;
+pub const MSG_SET_KEY: i16      = 2;
+pub const MSG_SET_TURN: i16     = 3;
+//  Set BEAT  : numerator, denomirator
+
+
+
 //-------------------------------------
 //  MSG1st      |  2nd        |  3rd  |
 //-------------------------------------
@@ -101,22 +168,7 @@ pub enum _ElpsMsg {
 // MSG_PHR_X+part|--          |
 // MSG_CMP_X+part|--          |
 // MSG_ANA_X+part|--          |
-pub const MSG_QUIT: i16     = -1;
-pub const MSG_START:i16     = -16;  //  1byte msg
-pub const MSG_STOP: i16     = -15;
-pub const MSG_FERMATA: i16  = -14;
-pub const MSG_PANIC: i16    = -13;
-pub const MSG_RESUME: i16   = -12;
-pub const MSG_SYNC: i16     = -8;   //  2byte
-pub const MSG_FLOW: i16     = -7;   //  2byte
-pub const MSG_ENDFLOW: i16  = -6;   //  2byte
-pub const MSG_RIT: i16      = -5;   //  3byte
 
-pub const MSG_SET: i16      = -2;   //  3/4byte
-pub const MSG2_BPM: i16     = 1;
-pub const MSG2_BEAT: i16    = 2;
-pub const MSG2_KEY: i16     = 3;
-pub const MSG2_TURN: i16    = 4;
 pub const MSG2_LFT: i16     = 5;
 pub const MSG2_RGT: i16     = 6;
 pub const MSG2_ALL: i16     = 7;
@@ -127,31 +179,6 @@ pub const MSG3_ATP: i16     = 9999;
 pub const MSG3_FERMATA: i16 = 10000;
 
 pub const MSG_PART_MASK:i16 = 100;    // X-(X % MSG_PART_MASK)
-pub const MSG_PHR: i16      = 1000;   // 1000 + 10*v + part : vは @指定による Variation、1桁目にパート番号
-pub const MSG_CMP: i16      = 2000;   // 1桁目にパート番号
-pub const MSG_ANA: i16      = 3000;   // 1桁目にパート番号
-pub const MSG_PHR_X: i16    = 1900;   // Phrase 消去、1000 + 10*v + part
-pub const MSG_CMP_X: i16    = 2900;   // Composition 消去、1桁目にパート番号
-pub const MSG_ANA_X: i16    = 3900;   // Analysed 消去、1桁目にパート番号
-pub const MSG_HEADER: usize = 2;
-
-// MSG_PHR
-pub const _TYPE_ID: i16     = 1000;     // for TYPE
-pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
-pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報 
-
-// MSG_CMP
-pub const TYPE_CHORD: i16   = 1002;     // for index TYPE
-pub const TYPE_DAMPER: i16  = 1003;     // for index TYPE
-pub const TYPE_VARI: i16    = 1004;     // for index TYPE
-pub const UPPER: i16        = 1000;     // for index CD_TABLE
-
-// MSG_ANA
-pub const TYPE_BEAT: i16    = 1006;     // for index TYPE
-pub const ARP_COM: i16      = 0;
-pub const ARP_PARA: i16     = 10000;
-pub const TYPE_EXP: i16     = 1010;     // for index TYPE
-pub const NOPED: i16        = 10;       // Note情報より先に置く
 
 // Graphic Message
 pub const NO_MSG: i16       = -1;
@@ -172,7 +199,7 @@ pub enum InputMode {
 //*******************************************************************
 pub fn pt(msg: i16) -> usize {((msg%10)%MSG_PART_MASK) as usize}
 pub fn vari(msg: i16) -> usize {((msg/10)%10) as usize}
-pub fn msg1st(msg: i16) -> i16 {msg-(pt(msg) as i16)-(vari(msg) as i16)*10}
+pub fn _msg1st(msg: i16) -> i16 {msg-(pt(msg) as i16)-(vari(msg) as i16)*10}
 pub fn convert_exp2vel(vel_text: &str) -> i32 {
     match vel_text {
         "ff" => 127,

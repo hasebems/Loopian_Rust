@@ -4,16 +4,16 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
-use crate::elapse::ug_content::*;
+//use crate::elapse::ug_content::*;
 
 //*******************************************************************
 //          analyse_data
 //*******************************************************************
-pub fn analyse_data(generated: &UgContent, exps: &Vec<String>) -> UgContent {
+pub fn analyse_data(generated: &Vec<PhrEvt>, exps: &Vec<String>) -> Vec<AnaEvt> {
     let mut exp_analysis = put_exp_data(exps);
-    let mut beat_analysis = analyse_beat(&generated);
-    beat_analysis.mix_with(&mut exp_analysis);
-    let rcmb = arp_translation(beat_analysis.clone(), exps);
+    let beat_analysis = analyse_beat(&generated);
+    exp_analysis.append(&mut beat_analysis.clone()); //.mix_with(&mut );
+    let rcmb = arp_translation(beat_analysis, exps);
     rcmb
 }
 //*******************************************************************
@@ -21,13 +21,17 @@ pub fn analyse_data(generated: &UgContent, exps: &Vec<String>) -> UgContent {
 //      1st     TYPE_BEAT:  TYPE_EXP
 //      2nd     EXP:        NOPED
 //*******************************************************************
-fn put_exp_data(exps: &Vec<String>) -> UgContent {
+fn put_exp_data(exps: &Vec<String>) -> Vec<AnaEvt> {
     let noped = exps.iter().any(|exp| exp == "dmp(off)");
-    let mut exp = UgContent::new();
+    let mut exp = Vec::new();
     if noped {
-        exp.add_dt(vec![TYPE_EXP, NOPED]);
+        //exp.add_dt(vec![TYPE_EXP, NOPED]);
+        let mut anev = AnaEvt::new();
+        anev.mtype = TYPE_EXP;
+        anev.atype = NOPED;
+        exp.push(anev);
     }
-    exp.copy_to()
+    exp //.copy_to()
 }
 //*******************************************************************
 // beat analysis data format: 
@@ -46,7 +50,7 @@ fn put_exp_data(exps: &Vec<String>) -> UgContent {
 //       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
 //       $DIFF: arp の場合の、前の音との音程の差分
 //*******************************************************************
-fn analyse_beat(gen: &UgContent) -> UgContent {
+fn analyse_beat(gen: &Vec<PhrEvt>) -> Vec<AnaEvt> {
     let get_hi = |na:Vec<i16>| -> i16 {
         match na.iter().max() {
             Some(x) => *x,
@@ -63,73 +67,88 @@ fn analyse_beat(gen: &UgContent) -> UgContent {
     let mut crnt_dur = 0;
     let mut repeat_head_tick: i16 = NOTHING;
     let mut note_all: Vec<i16> = Vec::new();
-    let mut beat_analysis = UgContent::new();
-    for nt in gen.naked().iter() {
-        if nt[TYPE] != TYPE_NOTE {
-            if nt[TYPE] == TYPE_INFO && nt[INFOTP] == RPT_HEAD as i16 {
-                repeat_head_tick = nt[TICK];
+    let mut beat_analysis = Vec::new();
+    for nt in gen.iter() {
+        if nt.mtype != TYPE_NOTE {
+            if nt.mtype == TYPE_INFO && nt.note == RPT_HEAD as i16 {
+                repeat_head_tick = nt.tick;
             }
         }
-        else if nt[TICK] == crnt_tick {
+        else if nt.tick == crnt_tick {
             note_cnt += 1;
-            note_all.push(nt[NOTE]);
+            note_all.push(nt.note);
         }
         else {
             if note_cnt > 0 {
                 let (arp, rht) = get_arp(crnt_tick, repeat_head_tick);
                 repeat_head_tick = rht;
-                beat_analysis.add_dt(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all.clone()), note_cnt, arp])
+                beat_analysis.push(AnaEvt{
+                    mtype: TYPE_BEAT,
+                    tick: crnt_tick,
+                    dur: crnt_dur,
+                    note: get_hi(note_all.clone()),
+                    cnt: note_cnt,
+                    atype: arp
+                }) //vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all.clone()), note_cnt, arp]
             }
-            crnt_tick = nt[TICK];
-            crnt_dur = nt[DURATION];
+            crnt_tick = nt.tick;
+            crnt_dur = nt.dur;
             note_cnt = 1;
-            note_all = vec![nt[NOTE]];
+            note_all = vec![nt.note];
         }
     }
     if note_cnt > 0 {
         let (arp, _rht) = get_arp(crnt_tick, repeat_head_tick);
-        beat_analysis.add_dt(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all), note_cnt, arp])
+        beat_analysis.push(AnaEvt {
+            mtype: TYPE_BEAT,
+            tick: crnt_tick,
+            dur: crnt_dur, 
+            note: get_hi(note_all), 
+            cnt: note_cnt,
+            atype: arp,
+        });
+        //add_dt(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all), note_cnt, arp])
     }
     beat_analysis
 }
-fn arp_translation(beat_analysis: UgContent, exps: &Vec<String>) -> UgContent {
+fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt> {
     let para = exps.iter().any(|exp| exp == "para()" || exp == "trns(para)");
     let mut last_note = REST;
     let mut last_cnt = 0;
     let mut crnt_note;
     let mut crnt_cnt;
     let mut total_tick = 0;
-    let mut all_dt = beat_analysis.get_all();
+    let mut all_dt = beat_analysis.clone();
     for ana in all_dt.iter_mut() {
-        if ana[TYPE] != TYPE_BEAT {continue;}
+        if ana.mtype != TYPE_BEAT {continue;}
         // total_tick の更新
-        if total_tick != ana[TICK] {
-            total_tick = ana[TICK];
+        if total_tick != ana.tick {
+            total_tick = ana.tick;
             last_note = REST;
             last_cnt = 0;
         }
-        else if ana[DURATION] as i32 >= DEFAULT_TICK_FOR_QUARTER {
-            total_tick = ana[TICK];
+        else if ana.dur as i32 >= DEFAULT_TICK_FOR_QUARTER {
+            total_tick = ana.tick;
             last_note = REST;
             last_cnt = 0;
         }
         else {
-            total_tick += ana[DURATION];
+            total_tick += ana.dur;
         }
 
         // crnt_note の更新
         crnt_note = NO_NOTE;
-        crnt_cnt = ana[ARP_NTCNT];
+        crnt_cnt = ana.cnt;
         if crnt_cnt == 1 {
-            crnt_note = ana[NOTE] as u8;
+            crnt_note = ana.note as u8;
         }
 
         // 条件の確認と、ana への情報追加
         //println!("ana_dbg: {},{},{},{}",crnt_cnt,crnt_note,last_cnt,last_note);
         if para {
-            ana[ARP_DIFF] = ARP_PARA;    // para
+            ana.cnt = ARP_PARA;    // para
         }
-        else if ana[ARP_DIFF] != ARP_COM && // RPT_HEAD のとき、ARP_COM になるので対象外
+        else if ana.cnt != ARP_COM && // RPT_HEAD のとき、ARP_COM になるので対象外
           last_note <= MAX_NOTE_NUMBER &&
           last_cnt == 1 &&
           crnt_note <= MAX_NOTE_NUMBER &&
@@ -137,20 +156,21 @@ fn arp_translation(beat_analysis: UgContent, exps: &Vec<String>) -> UgContent {
           (last_note as i32)-(crnt_note as i32) < 10 &&
           (crnt_note as i32)-(last_note as i32) < 10 {
             // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
-            ana[ARP_DIFF] = crnt_note as i16 -last_note as i16; // arp
+            ana.cnt = crnt_note as i16 -last_note as i16; // arp
         }
         else {
-            ana[ARP_DIFF] = ARP_COM;    // com
+            ana.cnt = ARP_COM;    // com
         }
         last_cnt = crnt_cnt;
         last_note = crnt_note;
     }
-    UgContent::new_with_dt(all_dt)
+    all_dt
+    //UgContent::new_with_dt()
 }
 //*******************************************************************
 //          beat_filter
 //*******************************************************************
-pub fn beat_filter(rcmb: &UgContent, bpm: i16, tick_for_onemsr: i32) -> UgContent {
+pub fn beat_filter(rcmb: &Vec<PhrEvt>, bpm: i16, tick_for_onemsr: i32) -> Vec<PhrEvt> {
     const EFFECT: i16 = 20;     // bigger(1..100), stronger
     const MIN_BPM: i16 = 60;
     const MIN_AVILABLE_VELO: i16 = 30;
@@ -161,12 +181,12 @@ pub fn beat_filter(rcmb: &UgContent, bpm: i16, tick_for_onemsr: i32) -> UgConten
 
     // 純粋な四拍子、三拍子のみ対応
     let base_bpm: i16 = (bpm - MIN_BPM)*EFFECT/100;
-    let mut all_dt = rcmb.get_all();
+    let mut all_dt = rcmb.clone();
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in all_dt.iter_mut() {
-            if dt[TYPE] != TYPE_NOTE {continue;}
-            let tm: f32 = (dt[TICK] as f32 % TICK_4_4)/TICK_1BT;
-            let mut vel = dt[VELOCITY];
+            if dt.mtype != TYPE_NOTE {continue;}
+            let tm: f32 = (dt.tick as f32 % TICK_4_4)/TICK_1BT;
+            let mut vel = dt.vel;
             if tm == 0.0 {
                 vel += base_bpm;
             }
@@ -178,14 +198,14 @@ pub fn beat_filter(rcmb: &UgContent, bpm: i16, tick_for_onemsr: i32) -> UgConten
             }
             if vel>127 {vel=127;}
             else if vel < MIN_AVILABLE_VELO {vel=MIN_AVILABLE_VELO;}
-            dt[VELOCITY] = vel;
+            dt.vel = vel;
         }
     }
     else if tick_for_onemsr == TICK_3_4 as i32 {
         for dt in all_dt.iter_mut() {
-            if dt[TYPE] != TYPE_NOTE {continue;}
-            let tm: f32 = (dt[TICK] as f32 % TICK_3_4)/TICK_1BT;
-            let mut vel = dt[VELOCITY];
+            if dt.mtype != TYPE_NOTE {continue;}
+            let tm: f32 = (dt.tick as f32 % TICK_3_4)/TICK_1BT;
+            let mut vel = dt.vel;
             if tm == 0.0 {
                 vel += base_bpm;
             }
@@ -197,27 +217,29 @@ pub fn beat_filter(rcmb: &UgContent, bpm: i16, tick_for_onemsr: i32) -> UgConten
             }
             if vel>127 {vel=127;}
             else if vel < MIN_AVILABLE_VELO {vel=MIN_AVILABLE_VELO;}
-            dt[VELOCITY] = vel;
+            dt.vel = vel;
         }
     }
-    UgContent::new_with_dt(all_dt)
+    all_dt
+    //UgContent::new_with_dt(all_dt)
 }
-pub fn crispy_tick(rcmb: &UgContent, exp_others: &Vec<String>) -> UgContent {
+pub fn crispy_tick(rcmb: &Vec<PhrEvt>, exp_others: &Vec<String>) -> Vec<PhrEvt> {
     let mut stacc = false;
     if exp_others.iter().any(|x| x=="stacc()" || x=="artic(stacc)") {
         stacc = true;
     }
-    let mut all_dt = rcmb.get_all();
+    let mut all_dt = rcmb.clone();
     for dt in all_dt.iter_mut() {
-        if dt[TYPE] != TYPE_NOTE {continue;}
-        let mut return_dur = dt[DURATION];
+        if dt.mtype != TYPE_NOTE {continue;}
+        let mut return_dur = dt.dur;
         if stacc {
             return_dur = return_dur/2;
         }
         else if return_dur > 40 {  // 一律 duration 40 を引く
             return_dur -= 40;
         }
-        dt[DURATION] = return_dur;
+        dt.dur = return_dur;
     }
-    UgContent::new_with_dt(all_dt)
+    all_dt
+    //UgContent::new_with_dt(all_dt)
 }

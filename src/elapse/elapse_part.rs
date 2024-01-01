@@ -12,7 +12,7 @@ use super::elapse::*;
 use super::elapse_loop::{Loop, PhraseLoop, CompositionLoop, DamperLoop};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
-use super::ug_content::UgContent;
+//use super::ug_content::UgContent;
 
 #[derive(Debug,Copy,Clone)]
 struct PartBasicPrm {
@@ -29,9 +29,9 @@ struct PhrLoopManager {
     max_loop_msr: i32,
     whole_tick: i32,
     loop_cntr: u32,         // loop sid
-    new_data_stock: Vec<UgContent>,
-    whole_tick_stock: [i16;MAX_PHRASE],
-    new_ana_stock: Vec<UgContent>,
+    new_data_stock: Vec<Vec<PhrEvt>>,
+    whole_tick_stock: [i16; MAX_PHRASE],
+    new_ana_stock: Vec<Vec<AnaEvt>>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     vari_reserve: usize,      // 0:no rsv, 1-9: rsv
     state_reserve: bool,
@@ -39,16 +39,18 @@ struct PhrLoopManager {
 }
 impl PhrLoopManager {
     pub fn new() -> Self {
-        let mut no_data: Vec<UgContent> = Vec::new();
-        for _ in 0..MAX_PHRASE {no_data.push(UgContent::new());}
+        let mut pstock: Vec<Vec<PhrEvt>> = Vec::new();
+        for _ in 0..MAX_PHRASE {pstock.push(Vec::new());}
+        let mut astock: Vec<Vec<AnaEvt>> = Vec::new();
+        for _ in 0..MAX_PHRASE {astock.push(Vec::new());}
         Self {
             first_msr_num: 0,
             max_loop_msr: 0,
             whole_tick: 0,
             loop_cntr: 0,
-            new_data_stock: no_data.clone(),
-            whole_tick_stock: [0;MAX_PHRASE],
-            new_ana_stock: no_data,
+            new_data_stock: pstock,
+            whole_tick_stock: [0; MAX_PHRASE],
+            new_ana_stock: astock,
             loop_phrase: None,
             vari_reserve: 0,
             state_reserve: false,
@@ -105,18 +107,26 @@ impl PhrLoopManager {
                // 通常の Loop 中
         }
     }
-    pub fn rcv_msg(&mut self, msg: UgContent, whole_tick: i16, vari_num: usize) {
+    pub fn rcv_msg(&mut self, msg: Vec<PhrEvt>, whole_tick: i16, vari_num: usize) {
         if vari_num < MAX_PHRASE {
-            if msg.len() == 0 && whole_tick == 0 {self.new_data_stock[vari_num] = UgContent::new();}
-            else {self.new_data_stock[vari_num] = msg;}
+            if msg.len() == 0 && whole_tick == 0 {
+                self.new_data_stock[vari_num] = vec![PhrEvt::new()];
+            }
+            else {
+                self.new_data_stock[vari_num] = msg;
+            }
             self.whole_tick_stock[vari_num] = whole_tick;
             if vari_num == 0 {self.state_reserve = true;}
         }
     }
-    pub fn rcv_ana(&mut self, msg: UgContent, vari_num: usize) {
+    pub fn rcv_ana(&mut self, msg: Vec<AnaEvt>, vari_num: usize) {
         if vari_num < MAX_PHRASE {
-            if msg.len() == 0 {self.new_ana_stock[vari_num] = UgContent::new();}
-            else {self.new_ana_stock[vari_num] = msg;}
+            if msg.len() == 0 {
+                self.new_ana_stock[vari_num] = vec![AnaEvt::new()];
+            }
+            else {
+                self.new_ana_stock[vari_num] = msg;
+            }
             if vari_num == 0 {self.state_reserve = true;}
         }
     }
@@ -179,8 +189,8 @@ impl PhrLoopManager {
             pbp.part_num, 
             pbp.keynote,
             msr,
-            phr.copy_to(),
-            ana.copy_to(),
+            phr.to_vec(),
+            ana.to_vec(),
             self.whole_tick,
             self.turnnote);
         self.loop_phrase = Some(Rc::clone(&lp));
@@ -197,7 +207,7 @@ struct CmpsLoopManager {
     max_loop_msr: i32,
     whole_tick: i32,
     loop_cntr: u32,         // loop sid
-    new_data_stock: UgContent,
+    new_data_stock: Vec<ChordEvt>,
     whole_tick_stock: i16,
     loop_cmps: Option<Rc<RefCell<CompositionLoop>>>,
     state_reserve: bool,
@@ -209,7 +219,7 @@ impl CmpsLoopManager {
             max_loop_msr: 0,
             whole_tick: 0,
             loop_cntr: 0,
-            new_data_stock: UgContent::new(),
+            new_data_stock: Vec::new(),
             whole_tick_stock: 0,
             loop_cmps: None,
             state_reserve: false,
@@ -256,10 +266,14 @@ impl CmpsLoopManager {
             self.new_loop(crnt_, estk, pbp);
         }
     }
-    pub fn rcv_msg(&mut self, msg: UgContent, whole_tick: i16) {
+    pub fn rcv_msg(&mut self, msg: Vec<ChordEvt>, whole_tick: i16) {
         //println!("Composition Msg: {:?}", msg);
-        if msg.len() == 0 && whole_tick == 0 {self.new_data_stock = UgContent::new();}
-        else {self.new_data_stock = msg;}
+        if msg.len() == 0 && whole_tick == 0 {
+            self.new_data_stock = vec![ChordEvt::new()];
+        }
+        else {
+            self.new_data_stock = msg;
+        }
         self.state_reserve = true;
         self.whole_tick_stock = whole_tick;
     }
@@ -295,7 +309,7 @@ impl CmpsLoopManager {
                 pbp.part_num, 
                 pbp.keynote,
                 crnt_.msr,
-                self.new_data_stock.copy_to(),
+                self.new_data_stock.to_vec(),
                 self.whole_tick);
             cmplp.borrow_mut().process(crnt_,estk); // 起動後、初回のみ process を呼び、同タイミングの再生を行う
             self.loop_cmps = Some(Rc::clone(&cmplp));
@@ -378,14 +392,14 @@ impl Part {
         }
         self.pm.state_reserve = true;
     }
-    pub fn rcv_phr_msg(&mut self, msg: UgContent, whole_tick: i16, vari_num: usize) {
+    pub fn rcv_phr_msg(&mut self, msg: Vec<PhrEvt>, whole_tick: i16, vari_num: usize) {
         self.pm.rcv_msg(msg, whole_tick, vari_num);
     }
-    pub fn rcv_cmps_msg(&mut self, msg: UgContent, whole_tick: i16) {
+    pub fn rcv_cmps_msg(&mut self, msg: Vec<ChordEvt>, whole_tick: i16) {
         self.cm.rcv_msg(msg, whole_tick);
     }
-    pub fn rcv_ana_msg(&mut self, msg_ana: UgContent, vari_num: usize) {
-        self.pm.rcv_ana(msg_ana, vari_num);
+    pub fn rcv_ana_msg(&mut self, msg: Vec<AnaEvt>, vari_num: usize) {
+        self.pm.rcv_ana(msg, vari_num);
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.pm.get_phr()

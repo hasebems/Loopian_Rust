@@ -9,7 +9,7 @@ use rand::prelude::{Distribution, thread_rng};
 use rand_distr::Normal;
 
 use crate::lpnlib::*;
-use super::ug_content::*;
+//use super::ug_content::*;
 use super::{elapse::*, stack_elapse};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
@@ -33,15 +33,15 @@ pub struct Note {
     deb_txt: String,
 }
 impl Note {
-    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &Vec<i16>, keynote: u8, deb_txt: String, 
+    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &PhrEvt, keynote: u8, deb_txt: String, 
         msr: i32, tick: i32)
       -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpNote,},
             priority: PRI_NOTE,
-            note_num: ev[NOTE] as u8,
-            velocity: ev[VELOCITY] as u8,
-            duration: ev[DURATION] as i32,
+            note_num: ev.note as u8,
+            velocity: ev.vel as u8,
+            duration: ev.dur as i32,
             keynote,
             real_note: 0,
             noteon_started: false,
@@ -155,13 +155,13 @@ pub struct Damper {
     next_tick: i32,
 }
 impl Damper {
-    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &Vec<i16>, msr: i32, tick: i32)
+    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &DmprEvt, msr: i32, tick: i32)
       -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpNote,},
             priority: PRI_NOTE,
-            position: ev[POS] as i32,
-            duration: ev[DURATION] as i32,
+            position: ev.position as i32,
+            duration: ev.dur as i32,
             damper_started: false,
             destroy: false,
             next_msr: msr,

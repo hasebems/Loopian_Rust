@@ -11,7 +11,7 @@ use super::elapse::*;
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
 use super::elapse_note::{Note, Damper};
-use super::ug_content::*;
+//use super::ug_content::*;
 use crate::cmd::txt2seq_cmps;
 use super::note_translation::*;
 
@@ -39,8 +39,8 @@ pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
 
-    phrase: UgContent,
-    analys: UgContent,
+    phrase: Vec<PhrEvt>,
+    analys: Vec<AnaEvt>,
     keynote: u8,
     play_counter: usize,
     next_tick_in_phrase: i32,
@@ -56,9 +56,9 @@ pub struct PhraseLoop {
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl PhraseLoop {
-    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, phr: UgContent, ana: UgContent,
+    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, phr: Vec<PhrEvt>, ana: Vec<AnaEvt>,
         whole_tick: i32, turnnote: i16) -> Rc<RefCell<Self>> {
-        let noped = ana.get_all().iter().any(|x| x[TYPE]==TYPE_EXP && x[EXPR]==NOPED);
+        let noped = ana.clone().iter().any(|x| x.mtype==TYPE_EXP && x.atype==NOPED);
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
             priority: PRI_PHR_LOOP,
@@ -82,18 +82,18 @@ impl PhraseLoop {
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut next_tick: i32;
         let mut trace: usize = self.play_counter;
-        let phr = self.phrase.copy_to();
+        let phr = self.phrase.to_vec();
         let max_ev = self.phrase.len();
         loop {
             if max_ev <= trace {
                 next_tick = END_OF_DATA;   // means sequence finished
                 break;
             }
-            next_tick = phr.get_dt(trace,TICK) as i32;
+            next_tick = phr[trace].tick as i32;
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                if self.phrase.get_dt(trace, TYPE) == TYPE_NOTE {
-                    self.note_event(estk, trace, phr.get_msg(trace), next_tick, msr, tick);
+                if self.phrase[trace].mtype == TYPE_NOTE {
+                    self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
                 }
             }
             else {break;}
@@ -103,7 +103,7 @@ impl PhraseLoop {
         self.play_counter = trace;
         next_tick
     }
-    fn note_event(&mut self, estk: &mut ElapseStack, trace: usize, ev: Vec<i16>, next_tick: i32, msr: i32, tick: i32) {
+    fn note_event(&mut self, estk: &mut ElapseStack, trace: usize, ev: PhrEvt, next_tick: i32, msr: i32, tick: i32) {
         // ev: ['note', tick, duration, note, velocity]
         let mut crnt_ev = ev.clone();
         let mut deb_txt: String = "no chord".to_string();
@@ -114,7 +114,7 @@ impl PhraseLoop {
 
         //  Note Translation
         if rt != NO_ROOT || ctbl != NO_TABLE  {
-            (crnt_ev[NOTE], deb_txt) = self.translate_note(rt, ctbl, ev, next_tick);
+            (crnt_ev.note, deb_txt) = self.translate_note(rt, ctbl, ev, next_tick);
         }
 
         //  Generate Note Struct
@@ -129,31 +129,31 @@ impl PhraseLoop {
             tick);
         estk.add_elapse(Rc::clone(&nt));
     }
-    fn translate_note(&mut self, rt: i16, ctbl: i16, ev: Vec<i16>, next_tick: i32) -> (i16, String) {
+    fn translate_note(&mut self, rt: i16, ctbl: i16, ev: PhrEvt, next_tick: i32) -> (i16, String) {
         let deb_txt: String;
         let trans_note: i16;
         let root: i16 = ROOT2NTNUM[rt as usize];
         let (movable_scale, mut para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
         if  movable_scale {
             if para_note > self.turnnote {para_note -= 12;}
-            trans_note = translate_note_parascl(para_note, ctbl, ev[NOTE]);
+            trans_note = translate_note_parascl(para_note, ctbl, ev.note);
             deb_txt = "para_sc:".to_string();
         }
         else {
-            let option = self.specify_trans_option(next_tick, ev[NOTE]);
+            let option = self.specify_trans_option(next_tick, ev.note);
             if option == ARP_PARA {
-                let mut tgt_nt = ev[NOTE] + root;
+                let mut tgt_nt = ev.note + root;
                 if root > self.turnnote {tgt_nt -= 12;}
                 trans_note = translate_note_com(root, ctbl, tgt_nt);
                 deb_txt = "para:".to_string();
             }
             else if option == ARP_COM {
-                trans_note = translate_note_com(root, ctbl, ev[NOTE]);
+                trans_note = translate_note_com(root, ctbl, ev.note);
                 deb_txt = "com:".to_string();
             }
             else { // Arpeggio
                 //trans_note = NoteTranslation::translate_note_arp(root, ctbl, option);
-                trans_note = translate_note_arp2(root, ctbl, ev[NOTE], option, self.last_note);
+                trans_note = translate_note_arp2(root, ctbl, ev.note, option, self.last_note);
                 deb_txt = "arp:".to_string();
             }
         }
@@ -162,11 +162,11 @@ impl PhraseLoop {
         (trans_note, deb_txt + &(root.to_string() + "-" + &ctbl.to_string()))
     }
     fn specify_trans_option(&self, next_tick: i32, note: i16) -> i16 {
-        for anaone in self.analys.get_all().iter() {
-            if anaone[TYPE] == TYPE_BEAT &&
-               anaone[TICK] == next_tick as i16 && 
-               anaone[NOTE] == note {
-                return anaone[ARP_DIFF];
+        for anaone in self.analys.iter() {
+            if anaone.mtype == TYPE_BEAT &&
+               anaone.tick == next_tick as i16 && 
+               anaone.note == note {
+                return anaone.atype;
             }
         }
         ARP_COM
@@ -224,7 +224,7 @@ pub struct CompositionLoop {
     id: ElapseId,
     priority: u32,
 
-    cmps_dt: UgContent,
+    cmps_dt: Vec<ChordEvt>,
     _keynote: u8,
     play_counter: usize,
     next_tick_in_cmps: i32,
@@ -242,7 +242,7 @@ pub struct CompositionLoop {
     next_tick: i32,  //   次に呼ばれるTick数が保持される
 }
 impl CompositionLoop {
-    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: UgContent, whole_tick: i32) -> Rc<RefCell<Self>> {
+    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<ChordEvt>, whole_tick: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
             priority: PRI_CMPS_LOOP,
@@ -271,13 +271,13 @@ impl CompositionLoop {
         let end_tick = (msr - self.first_msr_num + 1)*tick_for_onemsr;
         let beat_num = tick_for_onemsr/tick_for_onebeat;
         let mut trace: usize = 0;
-        let cmps = self.cmps_dt.copy_to();
+        let cmps = self.cmps_dt.to_vec();
         let mut chord_map: Vec<bool> = vec![false; beat_num as usize];
         let max_ev: usize = cmps.len();
         loop {
             if max_ev <= trace {break}
-            let tick = cmps.get_dt(trace,TICK) as i32;
-            if first_tick <= tick && tick < end_tick && cmps.get_dt(trace,CD_TABLE) != 0 {
+            let tick = cmps[trace].tick as i32;
+            if first_tick <= tick && tick < end_tick && cmps[trace].tbl != 0 {
                 // Chord Table が "thru" で無ければ
                 chord_map[((tick%tick_for_onemsr)/tick_for_onebeat) as usize] = true;
             }
@@ -289,20 +289,20 @@ impl CompositionLoop {
     fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
         let mut trace: usize = self.play_counter;
         let mut next_tick: i32;
-        let cmps = self.cmps_dt.copy_to();
+        let cmps = self.cmps_dt.to_vec();
         loop {
             if cmps.len() <= trace {
                 next_tick = END_OF_DATA;   // means sequence finished
                 break
             }
-            next_tick = cmps.get_dt(trace,TICK) as i32;
+            next_tick = cmps[trace].tick as i32;
             if next_tick <= elapsed_tick {
-                let cd = cmps.get_msg(trace);
-                if cd[TYPE] == TYPE_CHORD {
+                let cd = cmps[trace].clone();
+                if cd.mtype == TYPE_CHORD {
                     self.prepare_note_translation(cd);
                 }
-                else if cd[TYPE] == TYPE_VARI {
-                    _estk.set_phrase_vari(self.id.pid as usize ,cd[VARI] as usize);
+                else if cd.mtype == TYPE_VARI {
+                    _estk.set_phrase_vari(self.id.pid as usize ,cd.root as usize);
                 }
             }
             else {break;}
@@ -311,9 +311,9 @@ impl CompositionLoop {
         self.play_counter = trace;
         next_tick
     }
-    fn prepare_note_translation(&mut self, cd: Vec<i16>) {
-        self.root = cd[CD_ROOT];
-        self.translation_tbl = cd[CD_TABLE];
+    fn prepare_note_translation(&mut self, cd: ChordEvt) {
+        self.root = cd.root;
+        self.translation_tbl = cd.tbl;
 
         let tbl_num: usize = self.translation_tbl as usize;
         let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
@@ -329,7 +329,7 @@ impl CompositionLoop {
         else {
             self.chord_name = cname;
         }
-        println!("Chord Data: {}, {}, {}",self.chord_name, cd[CD_ROOT], cd[CD_TABLE]);
+        println!("Chord Data: {}, {}, {}",self.chord_name, cd.root, cd.tbl);
     }
     fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
 }
@@ -403,7 +403,7 @@ pub struct DamperLoop {
     id: ElapseId,
     priority: u32,
 
-    evt: Vec<Vec<i16>>,
+    evt: Vec<DmprEvt>,
     play_counter: usize,
     next_tick_in_phrase: i32,
     // for super's member
@@ -439,10 +439,10 @@ impl DamperLoop {
                 next_tick = END_OF_DATA;   // means sequence finished
                 break;
             }
-            next_tick = evt[trace][TICK] as i32;
+            next_tick = evt[trace].tick as i32;
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                if evt[trace][TYPE] == TYPE_DAMPER {
+                if evt[trace].mtype == TYPE_DAMPER {
                     let dmpr: Rc<RefCell<dyn Elapse>> = Damper::new(
                         trace as u32,   //  read pointer
                         self.id.sid,    //  loop.sid -> note.pid
@@ -496,29 +496,31 @@ impl DamperLoop {
         }
         chord_map
     }
-    fn gen_real_damper_track(&self, chord_map: Vec<bool>, tick_for_onebeat: i32, beat_num: usize) -> Vec<Vec<i16>> {
+    fn gen_real_damper_track(&self, chord_map: Vec<bool>, tick_for_onebeat: i32, beat_num: usize) -> Vec<DmprEvt> {
         //println!("@@@@ Damper Map:{:?}",chord_map);
         let mut keep: usize = beat_num;
-        let mut dmpr_evt: Vec<Vec<i16>> = Vec::new();
+        let mut dmpr_evt: Vec<DmprEvt> = Vec::new();
         const PDL_MARGIN_TICK: i32 = 60;
         for (j, k) in chord_map.iter().enumerate() {
             if *k {
                 if keep != beat_num {
-                    dmpr_evt.push(vec![
-                        TYPE_DAMPER, 
-                        ((keep as i32)*tick_for_onebeat+PDL_MARGIN_TICK) as i16,
-                        (((j-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
-                        127]);
+                    dmpr_evt.push(DmprEvt {
+                        mtype: TYPE_DAMPER,
+                        tick: ((keep as i32)*tick_for_onebeat+PDL_MARGIN_TICK) as i16,
+                        dur: (((j-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
+                        position: 127
+                    });
                 }
                 keep = j;
             }
         }
         if keep != beat_num {
-            dmpr_evt.push(vec![
-                TYPE_DAMPER, 
-                ((keep as i32)*tick_for_onebeat+PDL_MARGIN_TICK) as i16,
-                (((beat_num-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
-                127]);
+            dmpr_evt.push(DmprEvt {
+                mtype: TYPE_DAMPER, 
+                tick: ((keep as i32)*tick_for_onebeat+PDL_MARGIN_TICK) as i16,
+                dur: (((beat_num-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
+                position: 127}
+            );
         }
         //println!("@@@@ Damper Event:{:?}",dmpr_evt);
         dmpr_evt

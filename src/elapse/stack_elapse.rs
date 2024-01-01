@@ -11,14 +11,14 @@ use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
 use std::vec::Vec;
 
-use crate::lpnlib::*;
+use crate::lpnlib::{*, ElpsMsg::*};
 use super::tickgen::{TickGen, CrntMsrTick};
 use super::midi::{MidiTx, MidiRx, MidiRxBuf};
 use super::elapse::*;
 use super::elapse_part::Part;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{PhraseLoop, CompositionLoop};
-use super::ug_content::*;
+//use super::ug_content::*;
 
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum SameKeyState {
@@ -103,15 +103,22 @@ impl ElapseStack {
         }
         else {None}
     }
-    pub fn periodic(&mut self, msg: Result<Vec<i16>, TryRecvError>) -> bool {
+    pub fn periodic(&mut self, msg: Result<ElpsMsg, TryRecvError>) -> bool {
         let mut limit_for_deb = 0;
         self.crnt_time = Instant::now();
 
         // message 受信処理
         match msg {
             Ok(n)  => {
-                if n[0] == MSG_QUIT {return true;}
-                else {self.parse_msg(n);}
+                match n {
+                    Ctrl(m) => {
+                        if m==MSG_CTRL_QUIT {return true;}
+                        else {self.parse_emsg(n)}
+                    }
+                    _ => self.parse_emsg(n),
+                }
+                //if n[0] == MSG_QUIT {return true;}
+                //else {self.parse_msg(n);}
             },
             Err(TryRecvError::Disconnected) => return true, // Wrong!
             Err(TryRecvError::Empty) => {},                 // No event
@@ -175,6 +182,30 @@ impl ElapseStack {
 
         return false
     }
+    fn parse_emsg(&mut self, msg: ElpsMsg) {
+        match msg {
+            Ctrl(m) => self.ctrl_msg(m),
+            Sync(m) => self.sync(m),
+            Rit(m) => self.rit(m),
+            Set(m) => self.setting_cmnd(m),
+            SetBeat(m) => self.set_beat(m),
+            Phr(m0, m1, mv) => self.phrase(m0, m1, mv),
+            Cmp(m0, m1, mv) => self.composition(m0, m1, mv),
+            Ana(m0, mv) => self.ana(m0, mv),
+            PhrX(m) => self.del_phrase(m),
+            CmpX(m) => self.del_composition(m),
+            AnaX(m) => self.del_ana(m),
+            //_ => {}
+        }
+    }
+    fn ctrl_msg(&mut self, msg: i16) {
+        if msg == MSG_CTRL_START {self.start(false);}
+        else if msg == MSG_CTRL_STOP {self.stop();}
+        else if msg == MSG_CTRL_PANIC {self.panic();}
+        else if msg == MSG_CTRL_RESUME {self.start(true);}
+        else if msg >= MSG_CTRL_FLOW && msg < MSG_CTRL_FLOW+5 {self.flow(vec![msg-MSG_CTRL_FLOW]);}
+        else if msg >= MSG_CTRL_ENDFLOW && msg < MSG_CTRL_ENDFLOW+5 {self.endflow(vec![msg-MSG_CTRL_ENDFLOW]);}
+    }
     pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
         self.mdx.midi_out(status, data1, data2);
     }
@@ -208,7 +239,6 @@ impl ElapseStack {
     pub fn set_phrase_vari(&self, part_num: usize, vari_num: usize) {
         self.part_vec[part_num].borrow_mut().set_phrase_vari(vari_num);
     }
-
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {
             Err(e) => println!("Something happened on MPSC for UI! {}",e),
@@ -237,19 +267,19 @@ impl ElapseStack {
             elps.borrow_mut().stop(self);
         }
     }
-    fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}
-    fn sync(&mut self, msg: Vec<i16>) {
+    //fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}
+    fn sync(&mut self, part: i16) {
         let mut sync_part = [false; MAX_USER_PART];
-        if msg[1] < MAX_USER_PART as i16 {sync_part[msg[1] as usize] = true;}
-        else if msg[1] == MSG2_LFT {
+        if part < MAX_USER_PART as i16 {sync_part[part as usize] = true;}
+        else if part == MSG2_LFT {
             sync_part[LEFT1] = true;
             sync_part[LEFT2] = true;
         }
-        else if msg[1] == MSG2_RGT {
+        else if part == MSG2_RGT {
             sync_part[RIGHT1] = true;
             sync_part[RIGHT2] = true;
         }
-        else if msg[1] == MSG2_ALL {
+        else if part == MSG2_ALL {
             for pt in sync_part.iter_mut() {*pt=true;}
         }
         for (i, pt) in sync_part.iter().enumerate() {
@@ -269,124 +299,62 @@ impl ElapseStack {
             self.part_vec[ptnum].borrow_mut().deactivate_flow();
         }
     }
-    fn rit(&mut self, msg: Vec<i16>) {
+    fn rit(&mut self, msg: [i16; 2]) {
         let strength_set: [(i16, i32);3] = [(MSG2_POCO, 95),(MSG2_NRM, 80),(MSG2_MLT, 75)];
         let strength = strength_set.into_iter()
-            .find(|x| x.0==msg[1])
-            .unwrap_or(strength_set[1]);
-        if msg[2] == MSG3_ATP {self.bpm_stock = self.tg.get_bpm();}
-        else if msg[2] == MSG3_FERMATA {self.fermata_stock = true;}
+            .find(|x| x.0==msg[0])
+            .unwrap_or(strength_set[0]);
+        if msg[1] == MSG3_ATP {self.bpm_stock = self.tg.get_bpm();}
+        else if msg[1] == MSG3_FERMATA {self.fermata_stock = true;}
         else {
-            self.bpm_stock = msg[2];
+            self.bpm_stock = msg[1];
         }
         self.tg.start_rit(self.crnt_time, strength.1);
     }
-    fn setting_cmnd(&mut self, msg: Vec<i16>) {
-        if msg[1] == MSG2_BPM {
-            self.bpm_stock = msg[2];
+    fn setting_cmnd(&mut self, msg: [i16; 2]) {
+        if msg[0] == MSG_SET_BPM {
+            self.bpm_stock = msg[1];
         }
-        else if msg[1] == MSG2_BEAT {
-            self.beat_stock = Beat(msg[2] as i32, msg[3] as i32);
-            self.sync(vec![MSG_SYNC, MSG2_ALL]);
+        else if msg[0] == MSG_SET_KEY {
+            self.part_vec.iter().for_each(|x| x.borrow_mut().change_key(msg[1] as u8));
         }
-        else if msg[1] == MSG2_KEY {
-            self.part_vec.iter().for_each(|x| x.borrow_mut().change_key(msg[2] as u8));
-        }
-        else if msg[1] == MSG2_TURN {
-            self.part_vec.iter_mut().for_each(|x| x.borrow_mut().set_turnnote(msg[2]));
+        else if msg[0] == MSG_SET_TURN {
+            self.part_vec.iter_mut().for_each(|x| x.borrow_mut().set_turnnote(msg[1]));
         }
     }
-    fn phrase(&mut self, msg: Vec<i16>) {
-        // message の２次元化
-        let part_num = pt(msg[0]);
-        let vari_num = vari(msg[0]);
-        let whole_tick: i16 = msg[1];
-        let mut phr_vec = UgContent::new();
-        let mut msg_cnt: usize = 0;
-        let msg_size = msg.len();
-        loop {
-            let index = |x, cnt| {x+MSG_HEADER+cnt*TYPE_NOTE_SIZE};
-            let mut vtmp: Vec<i16> = Vec::new();
-            for i in 0..TYPE_NOTE_SIZE {
-                vtmp.push(msg[index(i,msg_cnt)]);
-            }
-            phr_vec.add_dt(vtmp);
-            msg_cnt += 1;
-            if msg_size <= index(0,msg_cnt) {break;}
-        }
-        self.part_vec[part_num].borrow_mut().rcv_phr_msg(phr_vec, whole_tick, vari_num);
+    fn set_beat(&mut self, msg: [i16; 2]) {
+        self.beat_stock = Beat(msg[0] as i32, msg[1] as i32);
+        self.sync(MSG2_ALL);
     }
-    fn composition(&mut self, msg: Vec<i16>) {
-        // message の２次元化
-        let part_num = pt(msg[0]);
-        let whole_tick: i16 = msg[1];
-        let mut cmps_vec: UgContent = UgContent::new();
-        let mut msg_cnt: usize = 0;
-        let msg_size = msg.len();
-        loop {
-            let index = |x, cnt| {x+MSG_HEADER+cnt*TYPE_CHORD_SIZE};
-            let mut vtmp: Vec<i16> = Vec::new();
-            for i in 0..TYPE_CHORD_SIZE {
-                vtmp.push(msg[index(i,msg_cnt)]);
-            }
-            cmps_vec.add_dt(vtmp);
-            msg_cnt += 1;
-            if msg_size <= index(0,msg_cnt) {break;}
-        }
-        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(cmps_vec, whole_tick);
+    fn phrase(&mut self, part: i16, tick: i16, evts: Vec<PhrEvt>) {
+        let part_num = pt(part);
+        let vari_num = vari(part);
+        println!("Received Part: {}",part_num);
+        self.part_vec[part_num].borrow_mut().rcv_phr_msg(evts, tick, vari_num);
     }
-    fn ana(&mut self, msg: Vec<i16>) {
-        // message の２次元化
-        let part_num = pt(msg[0]);
-        let vari_num = vari(msg[0]);
-        let mut ana_vec: UgContent = UgContent::new();
-        let mut msg_cnt: usize = 0;
-        let msg_size = msg.len();
-        loop {
-            let index = |x, cnt| {x+MSG_HEADER+cnt*TYPE_BEAT_SIZE};
-            let mut vtmp: Vec<i16> = Vec::new();
-            for i in 0..TYPE_BEAT_SIZE {
-                vtmp.push(msg[index(i,msg_cnt)]);
-            }
-            ana_vec.add_dt(vtmp);
-            msg_cnt += 1;
-            if msg_size <= index(0,msg_cnt) {break;}
-        }
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(ana_vec, vari_num);
+    fn composition(&mut self, part: i16, tick: i16, evts: Vec<ChordEvt>) {
+        let part_num = pt(part);
+        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(evts, tick);
     }
-    fn del_phrase(&mut self, msg: Vec<i16>) {
-        let part_num = pt(msg[0]);
-        let vari_num = vari(msg[0]); 
-        self.part_vec[part_num].borrow_mut().rcv_phr_msg(UgContent::new(), 0, vari_num);
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(UgContent::new(), vari_num);
+    fn ana(&mut self, part: i16, evts: Vec<AnaEvt>) {
+        let part_num = pt(part);
+        let vari_num = vari(part);
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(evts, vari_num);
     }
-    fn del_composition(&mut self, msg: Vec<i16>) {
-        let part_num: usize = pt(msg[0]) as usize;
-        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(UgContent::new(), 0);
+    fn del_phrase(&mut self, part: i16) {
+        let part_num = pt(part);
+        let vari_num = vari(part); 
+        self.part_vec[part_num].borrow_mut().rcv_phr_msg(Vec::new(), 0, vari_num);
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new(), vari_num);
     }
-    fn del_ana(&mut self, msg: Vec<i16>) {
-        let part_num: usize = pt(msg[0]) as usize;
-        let vari_num = vari(msg[0]); 
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(UgContent::new(), vari_num);
+    fn del_composition(&mut self, part: i16) {
+        let part_num: usize = pt(part) as usize;
+        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(Vec::new(), 0);
     }
-    fn parse_msg(&mut self, msg: Vec<i16>) {
-        println!("msg {:?} has reached to Elps.", msg[0]);
-        if msg[0] == MSG_START {self.start(false);}
-        else if msg[0] == MSG_PANIC {self.panic();}
-        else if msg[0] == MSG_STOP {self.stop();}
-        else if msg[0] == MSG_FERMATA {self.fermata(msg);}
-        else if msg[0] == MSG_RESUME {self.start(true);}
-        else if msg[0] == MSG_SYNC {self.sync(msg);}
-        else if msg[0] == MSG_FLOW {self.flow(msg);}
-        else if msg[0] == MSG_ENDFLOW {self.endflow(msg);}
-        else if msg[0] == MSG_RIT {self.rit(msg);}
-        else if msg[0] == MSG_SET {self.setting_cmnd(msg);}
-        else if msg1st(msg[0]) == MSG_PHR_X {self.del_phrase(msg);}
-        else if msg1st(msg[0]) == MSG_CMP_X {self.del_composition(msg);}
-        else if msg1st(msg[0]) == MSG_ANA_X {self.del_ana(msg);}
-        else if msg1st(msg[0]) == MSG_PHR {self.phrase(msg);}
-        else if msg1st(msg[0]) == MSG_CMP {self.composition(msg);}
-        else if msg1st(msg[0]) == MSG_ANA {self.ana(msg);}
+    fn del_ana(&mut self, part: i16) {
+        let part_num: usize = pt(part) as usize;
+        let vari_num = vari(part); 
+        self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new(), vari_num);
     }
     fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();

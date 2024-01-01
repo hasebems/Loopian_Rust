@@ -8,16 +8,16 @@ use crate::lpnlib::*;
 use super::seq_stock::SeqDataStock;
 
 pub struct MessageSender {
-    msg_hndr: mpsc::Sender<Vec<i16>>,
+    msg_hndr: mpsc::Sender<ElpsMsg>,
 }
 
 impl MessageSender {
-    pub fn new(msg_hndr: mpsc::Sender<Vec<i16>>) -> Self {
+    pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>) -> Self {
         Self {
             msg_hndr,
         }
     }
-    pub fn send_msg_to_elapse(&self, msg: Vec<i16>) {
+    pub fn send_msg_to_elapse(&self, msg: ElpsMsg) {
         match self.msg_hndr.send(msg) {
             Err(e) => println!("Something happened on MPSC for Elps! {}",e),
             _ => {},
@@ -29,39 +29,53 @@ impl MessageSender {
         }
     }
     pub fn send_phrase_to_elapse(&self, part: usize, vari: usize, gdt: &SeqDataStock) {
-        let (mut pdt, mut ana): (Vec<i16>, Vec<i16>) = gdt.get_pdstk(part, vari).get_final();
         let msg_pv = (part as i16) + 10*(vari as i16);
-        if pdt.len() > 1 {
-            let mut msg: Vec<i16> = vec![MSG_PHR + msg_pv];
-            msg.append(&mut pdt);
-            //println!("msg check: {:?}",msg);
-            self.send_msg_to_elapse(msg);
-            if ana.len() > 1 {
-                let mut msgana: Vec<i16> = vec![MSG_ANA + msg_pv];
-                msgana.append(&mut ana);
-                //println!("msg check ana: {:?}",msgana);
-                self.send_msg_to_elapse(msgana);                
+        let (pdt, ana) = gdt.get_pdstk(part, vari).get_final(msg_pv);
+        let msg = pdt.clone();
+        match pdt {
+            ElpsMsg::Phr(_m0, _m1, mv) => {
+                if mv.len() > 0 {
+                    self.send_msg_to_elapse(msg);
+                    let amsg = ana.clone();
+                    match ana {
+                        ElpsMsg::Ana(_a0, av) => {
+                            if av.len() > 1 {
+                                self.send_msg_to_elapse(amsg);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                else {
+                    self.send_msg_to_elapse(ElpsMsg::PhrX(msg_pv));
+                    match ana {
+                        ElpsMsg::Ana(_a0, av) => {
+                            if av.len() == 0 {
+                                self.send_msg_to_elapse(ElpsMsg::AnaX(msg_pv));
+                            }
+                            println!("Part {} Phrase: No Data!",part);
+                        }
+                        _ => {}
+                    }
+                }
             }
-        }
-        else {
-            self.send_msg_to_elapse(vec![MSG_PHR_X + msg_pv]);
-            if ana.len() == 0 {
-                self.send_msg_to_elapse(vec![MSG_ANA_X + msg_pv]);
-            }
-            println!("Part {} Phrase: No Data!",part);
+            _ => {}
         }
     }
     pub fn send_composition_to_elapse(&self, part: usize, gdt: &SeqDataStock) {
-        let mut cdt: Vec<i16> = gdt.get_cdstk(part).get_final();
-        if cdt.len() > 1 {
-            let mut msg: Vec<i16> = vec![MSG_CMP+part as i16];
-            msg.append(&mut cdt);
-            //println!("msg check: {:?}",msg);
-            self.send_msg_to_elapse(msg);
-        }
-        else {
-            self.send_msg_to_elapse(vec![MSG_CMP_X+part as i16]);
-            println!("Part {} Composition: No Data!",part)
+        let cdt = gdt.get_cdstk(part).get_final(part as i16);
+        let cmsg = cdt.clone();
+        match cdt {
+            ElpsMsg::Cmp(_c0, _c1, cv) => {
+                if cv.len() > 0 {
+                    self.send_msg_to_elapse(cmsg);
+                }
+                else {
+                    self.send_msg_to_elapse(ElpsMsg::CmpX(part as i16));
+                    println!("Part {} Composition: No Data!",part)
+                }
+            }
+            _ => {}
         }
     }
 }

@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
-use crate::elapse::ug_content::*;
+//use crate::elapse::ug_content::*;
 use super::txt2seq_phr::*;
 use super::txt2seq_cmps::*;
 use super::txt2seq_ana::*;
@@ -131,8 +131,8 @@ pub struct PhraseDataStock {
     raw: String,
     cmpl_nt: Vec<String>,
     cmpl_ex: Vec<String>,
-    rcmb: UgContent,
-    ana: UgContent,
+    rcmb: Vec<PhrEvt>,
+    ana: Vec<AnaEvt>,
     whole_tick: i32,
 }
 impl PhraseDataStock {
@@ -142,26 +142,13 @@ impl PhraseDataStock {
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
-            rcmb: UgContent::new(),
-            ana: UgContent::new(),
+            rcmb: Vec::new(),  //UgContent::new(),
+            ana: Vec::new(),   //UgContent::new(),
             whole_tick: 0,
         }
     }
-    pub fn get_final(&self) -> (Vec<i16>, Vec<i16>) {
-        let mut ret_rcmb: Vec<i16> = vec![self.whole_tick as i16];
-        for ev in self.rcmb.naked().iter() {
-            ret_rcmb.append(&mut ev.clone());
-        }
-        let mut ret_ana: Vec<i16> = vec![self.whole_tick as i16];
-        for ev in self.ana.naked().iter() {
-            if ev.len() != TYPE_BEAT_SIZE {
-                ret_ana.append(&mut vec![ev[TYPE], ev[EXPR], 0,0,0,0]);
-            }
-            else {
-                ret_ana.append(&mut ev.clone());
-            }
-        }
-        (ret_rcmb, ret_ana)
+    pub fn get_final(&self, pv: i16) -> (ElpsMsg, ElpsMsg) {
+        (ElpsMsg::Phr(pv, self.whole_tick as i16, self.rcmb.clone()), ElpsMsg::Ana(pv, self.ana.clone()))
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
         // 1.raw
@@ -183,8 +170,8 @@ impl PhraseDataStock {
     pub fn set_recombined(&mut self, input_mode: InputMode, bpm: i16, tick_for_onemsr: i32) {
         if self.cmpl_nt == [""] {
             //  clear
-            self.rcmb = UgContent::new();
-            self.ana = UgContent::new();
+            self.rcmb = Vec::new(); //UgContent::new();
+            self.ana = Vec::new();  //UgContent::new();
             println!("no_phrase...");
             return
         }
@@ -202,8 +189,8 @@ impl PhraseDataStock {
         // 5.humanized data
         let human1 = beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
         self.rcmb = crispy_tick(&human1, &self.cmpl_ex);
-        println!("final_phrase: {:?} whole_tick: {:?}", self.rcmb.naked(), self.whole_tick);
-        println!("analyse: {:?}", self.ana.naked());
+        println!("final_phrase: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
+        println!("analyse: {:?}", self.ana);
     }
 }
 
@@ -214,7 +201,7 @@ pub struct CompositionDataStock {
     raw: String,
     cmpl_cd: Vec<String>,
     cmpl_ex: Vec<String>,
-    rcmb: UgContent,
+    rcmb: Vec<ChordEvt>,
     whole_tick: i32,
 }
 impl Default for CompositionDataStock {
@@ -223,18 +210,14 @@ impl Default for CompositionDataStock {
             raw: "".to_string(),
             cmpl_cd: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
-            rcmb: UgContent::new(),
+            rcmb: Vec::new(),
             whole_tick: 0,
         }
     }
 }
 impl CompositionDataStock {
-    pub fn get_final(&self) -> Vec<i16> {
-        let mut ret_rcmb: Vec<i16> = vec![self.whole_tick as i16];
-        for ev in self.rcmb.naked().iter() {
-            ret_rcmb.append(&mut ev.clone());
-        }
-        ret_rcmb
+    pub fn get_final(&self, part: i16) -> ElpsMsg {
+        ElpsMsg::Cmp(part, self.whole_tick as i16, self.rcmb.clone())
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
         // 1.raw
@@ -255,7 +238,7 @@ impl CompositionDataStock {
     pub fn set_recombined(&mut self, tick_for_onemsr: i32, tick_for_onebeat: i32) {
         if self.cmpl_cd == [""] {
             // clear
-            self.rcmb = UgContent::new();
+            self.rcmb = Vec::new();
             println!("no_composition...");
             return
         }
@@ -265,6 +248,6 @@ impl CompositionDataStock {
             recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_onebeat);
         self.rcmb = rcmb;
         self.whole_tick = whole_tick;
-        println!("final_composition: {:?} whole_tick: {:?}", self.rcmb.naked(), self.whole_tick);
+        println!("final_composition: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
     }
 }
