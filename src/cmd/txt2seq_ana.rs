@@ -146,9 +146,9 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
         // 条件の確認と、ana への情報追加
         //println!("ana_dbg: {},{},{},{}",crnt_cnt,crnt_note,last_cnt,last_note);
         if para {
-            ana.cnt = ARP_PARA;    // para
+            ana.atype = ARP_PARA;    // para
         }
-        else if ana.cnt != ARP_COM && // RPT_HEAD のとき、ARP_COM になるので対象外
+        else if ana.atype != ARP_COM && // RPT_HEAD のとき、ARP_COM になるので対象外
           last_note <= MAX_NOTE_NUMBER &&
           last_cnt == 1 &&
           crnt_note <= MAX_NOTE_NUMBER &&
@@ -156,10 +156,10 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
           (last_note as i32)-(crnt_note as i32) < 10 &&
           (crnt_note as i32)-(last_note as i32) < 10 {
             // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
-            ana.cnt = crnt_note as i16 -last_note as i16; // arp
+            ana.atype = crnt_note as i16 -last_note as i16; // arp
         }
         else {
-            ana.cnt = ARP_COM;    // com
+            ana.atype = ARP_COM;    // com
         }
         last_cnt = crnt_cnt;
         last_note = crnt_note;

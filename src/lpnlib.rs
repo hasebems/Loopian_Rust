@@ -62,13 +62,13 @@ pub const DEFAULT_TURNNOTE: i16 = 5;
 //          UI->ELPS Message
 //              []: meaning, < >: index, (a/b/c): selection
 //*******************************************************************
+// MSG_PHR
 pub const TYPE_NONE: i16    = 0;        // 共用
 #[derive(Default,Clone,Debug)]
 pub struct PhrEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub vel:i16}
 impl PhrEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, vel:0}}
 }
-// MSG_PHR
 pub const _TYPE_ID: i16     = 1000;     // for TYPE
 pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
 pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報
@@ -79,27 +79,31 @@ impl DmprEvt {
     pub fn _new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, position:0}}
 }
 
+// MSG_CMP
 #[derive(Default,Clone,Debug)]
 pub struct ChordEvt {pub mtype:i16, pub tick:i16, pub root:i16, pub tbl:i16}
 impl ChordEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, root:0, tbl:0}}
 }
-// MSG_CMP
 pub const TYPE_CHORD: i16   = 1002;     // for mtype
 pub const TYPE_DAMPER: i16  = 1003;     // for mtype
 pub const TYPE_VARI: i16    = 1004;     // for mtype, root: vari number
 pub const UPPER: i16        = 1000;     // for tbl
 
+// MSG_ANA
 #[derive(Default,Clone,Debug)]
 pub struct AnaEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub cnt:i16, pub atype:i16}
 impl AnaEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, cnt:0, atype:0}}
 }
-// MSG_ANA
+//pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
 pub const TYPE_BEAT: i16    = 1006;     // for index TYPE
-pub const ARP_COM: i16      = 0;
-pub const ARP_PARA: i16     = 10000;
 pub const TYPE_EXP: i16     = 1010;     // for index TYPE
+// atype ( mtype: TYPE_NOTE のとき )
+pub const ARP_COM: i16      = 0;        // 
+pub const ARP_PARA: i16     = 10000;    //
+                        //  -n .. +n  : ARP のときの Note 差分
+// atype ( mtype: TYPE_EXP のとき )
 pub const NOPED: i16        = 10;       // Note情報より先に置く
 
 //*******************************************************************
