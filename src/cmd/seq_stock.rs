@@ -4,7 +4,6 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
-//use crate::elapse::ug_content::*;
 use super::txt2seq_phr::*;
 use super::txt2seq_cmps::*;
 use super::txt2seq_ana::*;

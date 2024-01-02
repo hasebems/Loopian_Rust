@@ -18,7 +18,6 @@ use super::elapse::*;
 use super::elapse_part::Part;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{PhraseLoop, CompositionLoop};
-//use super::ug_content::*;
 
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum SameKeyState {

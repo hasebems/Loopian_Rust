@@ -4,7 +4,6 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
-//use crate::elapse::ug_content::*;
 
 //*******************************************************************
 //          Chord Tables and IF

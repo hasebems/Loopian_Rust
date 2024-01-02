@@ -12,7 +12,6 @@ use super::elapse::*;
 use super::elapse_loop::{Loop, PhraseLoop, CompositionLoop, DamperLoop};
 use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
-//use super::ug_content::UgContent;
 
 #[derive(Debug,Copy,Clone)]
 struct PartBasicPrm {
