@@ -243,13 +243,13 @@ impl LoopianCmd {
             Some("Changed current part to right2.".to_string())
         } else if len >= 4 && &input_text[0..4] == "rit." {
             let strength_txt: String;
-            let mut aft_rit: i16 = MSG3_ATP;
-            let mut strength_value: i16 = MSG2_NRM;
+            let mut aft_rit: i16 = MSG2_RIT_ATMP;
+            let mut strength_value: i16 = MSG_RIT_NRM;
             if input_text.chars().any(|x| x=='/') {
                 let rit_txt_raw = &input_text[4..];
                 let rit_txt = split_by('/', rit_txt_raw.to_string());
                 let nxt_msr_txt = &rit_txt[1];
-                if nxt_msr_txt == "fermata" {aft_rit = MSG3_FERMATA;}
+                if nxt_msr_txt == "fermata" {aft_rit = MSG2_RIT_FERMATA;}
                 else {
                     match nxt_msr_txt.parse::<i16>() {
                         Ok(tmp) => aft_rit = tmp,
@@ -264,8 +264,8 @@ impl LoopianCmd {
             else {
                 strength_txt = input_text[4..].to_string();
             }
-            if strength_txt == "poco" {strength_value = MSG2_POCO;}
-            else if strength_txt == "molto" {strength_value = MSG2_MLT;}
+            if strength_txt == "poco" {strength_value = MSG_RIT_POCO;}
+            else if strength_txt == "molto" {strength_value = MSG_RIT_MLT;}
             self.sndr.send_msg_to_elapse(ElpsMsg::Rit([strength_value, aft_rit]));
             Some("rit. has started!".to_string())
         } else {

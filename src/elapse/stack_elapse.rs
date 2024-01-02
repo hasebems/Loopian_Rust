@@ -271,15 +271,15 @@ impl ElapseStack {
     fn sync(&mut self, part: i16) {
         let mut sync_part = [false; MAX_USER_PART];
         if part < MAX_USER_PART as i16 {sync_part[part as usize] = true;}
-        else if part == MSG2_LFT {
+        else if part == MSG_SYNC_LFT {
             sync_part[LEFT1] = true;
             sync_part[LEFT2] = true;
         }
-        else if part == MSG2_RGT {
+        else if part == MSG_SYNC_RGT {
             sync_part[RIGHT1] = true;
             sync_part[RIGHT2] = true;
         }
-        else if part == MSG2_ALL {
+        else if part == MSG_SYNC_ALL {
             for pt in sync_part.iter_mut() {*pt=true;}
         }
         for (i, pt) in sync_part.iter().enumerate() {
@@ -300,12 +300,12 @@ impl ElapseStack {
         }
     }
     fn rit(&mut self, msg: [i16; 2]) {
-        let strength_set: [(i16, i32);3] = [(MSG2_POCO, 95),(MSG2_NRM, 80),(MSG2_MLT, 75)];
+        let strength_set: [(i16, i32);3] = [(MSG_RIT_POCO, 95),(MSG_RIT_NRM, 80),(MSG_RIT_MLT, 75)];
         let strength = strength_set.into_iter()
             .find(|x| x.0==msg[0])
             .unwrap_or(strength_set[0]);
-        if msg[1] == MSG3_ATP {self.bpm_stock = self.tg.get_bpm();}
-        else if msg[1] == MSG3_FERMATA {self.fermata_stock = true;}
+        if msg[1] == MSG2_RIT_ATMP {self.bpm_stock = self.tg.get_bpm();}
+        else if msg[1] == MSG2_RIT_FERMATA {self.fermata_stock = true;}
         else {
             self.bpm_stock = msg[1];
         }
@@ -324,7 +324,7 @@ impl ElapseStack {
     }
     fn set_beat(&mut self, msg: [i16; 2]) {
         self.beat_stock = Beat(msg[0] as i32, msg[1] as i32);
-        self.sync(MSG2_ALL);
+        self.sync(MSG_SYNC_ALL);
     }
     fn phrase(&mut self, part: i16, tick: i16, evts: Vec<PhrEvt>) {
         let part_num = pt(part);
