@@ -101,8 +101,9 @@ pub const TYPE_EXP: i16     = 1010;     // for index TYPE
 // atype ( mtype: TYPE_EXP のとき )
 pub const NOPED: i16        = 10;       // Note情報より先に置く
 // atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
-pub const TRNS_COM: i16      = 0;        // 
-pub const TRNS_PARA: i16     = 10000;    //
+pub const TRNS_COM: i16     = 0;        // Common 変換
+pub const TRNS_PARA: i16    = 10000;    // Parallel 変換
+pub const TRNS_NONE: i16    = 10001;    // 変換しない
                         //  -n .. +n  : ARP のときの Note 差分
 //-------------------------------------------------------------------
 #[derive(Clone,Debug)]

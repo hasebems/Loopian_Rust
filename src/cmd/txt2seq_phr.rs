@@ -4,7 +4,6 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
-//use crate::elapse::ug_content::*;
 
 //*******************************************************************
 //          complement_phrase
@@ -21,18 +20,21 @@ pub fn complement_phrase(input_text: String) -> [Vec<String>;2] {
     nev.retain(|nt| nt!="");
     let (nmvec, nevec) = divide_notemod_and_musicex(nev);
 
-    // 4. ,| 重複による休符指示の補填、音符のVector化
-    let nt2 = fill_omitted_note_data(nt);
-    let mut ntvec = split_by(',', nt2);
+    // 4. <> の検出と、囲まれた範囲の要素へのコマンド追加
+    let nt2 = divide_arrow_bracket(nt);
 
-    // 5. 同音繰り返しの展開
+    // 5. ,| 重複による休符指示の補填、音符のVector化
+    let nt3 = fill_omitted_note_data(nt2);
+    let mut ntvec = split_by(',', nt3);
+
+    // 6. 同音繰り返しの展開
     loop {
         let (nvr_tmp, no_exist) = note_repeat(ntvec.clone());
         ntvec = nvr_tmp.clone();
         if no_exist {break;}
     }
 
-    // 6. 音符変調関数の適用
+    // 7. 音符変調関数の適用
     for ne in nmvec.iter() {
         if &ne[0..3] == "rpt" {
             ntvec = repeat_ntimes(ntvec, ne);
@@ -62,6 +64,47 @@ fn divide_brackets(input_text: String) -> (String, String) {
         return ("".to_string(), "".to_string());
     }
     return (note_info[0].clone(), note_info[1].clone());
+}
+fn divide_arrow_bracket(nt: String) -> String {
+    let mut one_arrow_flg = false;
+    let mut two_arrow_flg = false;
+    let mut ret_str: String = "".to_string();
+    for ltr in nt.chars() {
+        if ltr == '<' {
+            if one_arrow_flg {
+                two_arrow_flg = true;
+                one_arrow_flg = false;
+            }
+            else {
+                one_arrow_flg = true;
+            }
+            ret_str.push('>');
+        }
+        else {
+            if ltr == '>' {
+                if two_arrow_flg {
+                    two_arrow_flg = false;
+                    one_arrow_flg = true;
+                    continue;
+                }
+                else if one_arrow_flg {
+                    one_arrow_flg = false;
+                    continue;
+                }
+            }
+            ret_str.push(ltr);
+            if ltr == ',' {
+                if one_arrow_flg {
+                    ret_str.push('>');
+                }
+                else if two_arrow_flg {
+                    ret_str.push('>');
+                    ret_str.push('>');
+                }
+            }
+        }
+    }
+    ret_str
 }
 fn fill_omitted_note_data(nf: String) -> String {
     if nf.len() == 0 {return "".to_string();}
@@ -166,7 +209,8 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
     let mut mes_top: bool = false;
 
     while read_ptr < max_read_ptr {
-        let note_text = ntvec[read_ptr].clone();
+        let nt_origin = ntvec[read_ptr].clone();
+        let (note_text, trns) = extract_trans_info(nt_origin);
 
         let (notes, mes_end, dur_cnt, diff_vel, bdur, lnt)
             = break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, imd);
@@ -181,7 +225,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
                 dur: 0,
                 note: RPT_HEAD as i16,
                 vel: 0,
-                trns: TRNS_COM,
+                trns,
             };
             //vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
             rcmb.push(nt_data);
@@ -202,7 +246,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
                 else if last_vel < 1 {last_vel = 1;}
     
                 // add to recombined data
-                rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16, mes_top);
+                rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16, mes_top, trns);
                 tick += note_dur;
             }
             if mes_end {// 小節線があった場合
@@ -231,6 +275,17 @@ fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     }
     if vel == END_OF_DATA {vel=convert_exp2vel("p");}
     (vel, retvec)
+}
+fn extract_trans_info(origin: String) -> (String, i16) {
+    if &origin[0..1] == ">" {
+        (origin[1..].to_string(), TRNS_PARA)        
+    }
+    else if origin.len() > 2 && &origin[0..2] == ">>" {
+        (origin[2..].to_string(), TRNS_NONE)
+    }
+    else {
+        (origin, TRNS_COM)
+    }
 }
 fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i32, imd: InputMode)
     -> (Vec<u8>, bool, i32, i32, i32, i32)
@@ -408,7 +463,7 @@ fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
     else if base_dur == KEEP {base_dur*dur_cnt}
     else {base_dur*dur_cnt}
 }
-fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16, mes_top: bool)
+fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16, mes_top: bool, trns: i16)
     -> Vec<PhrEvt> {
     let mut return_rcmb = rcmb.clone();
     for note in notes.iter() {
@@ -440,7 +495,7 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, note_dur: i32, last_ve
                 dur: note_dur as i16,
                 note: *note as i16,
                 vel: last_vel,
-                trns: TRNS_COM,
+                trns,
             };
             //: Vec<i16> = 
             //    vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];

@@ -4,7 +4,6 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
-//use crate::elapse::ug_content::*;
 
 //*******************************************************************
 //          analyse_data
@@ -59,7 +58,7 @@ fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
     let get_arp = |crnt_t:i16, repeat_head_t:i16, trns:i16| -> (i16,i16) {
         if trns != TRNS_COM {(trns, NOTHING)}
         else if crnt_t == repeat_head_t {(TRNS_COM, NOTHING)}// RPT_HEAD の直後には、TRNS_COM を記録しておく
-        else {(NOTHING,repeat_head_t)}
+        else {(NOTHING,repeat_head_t)}  // Arpeggio 候補
     };
     let mut crnt_tick = NOTHING;
     let mut note_cnt = 0;
@@ -92,7 +91,7 @@ fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
                     note: get_hi(note_all.clone()),
                     cnt: note_cnt,
                     atype: arp
-                }) //vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all.clone()), note_cnt, arp]
+                })
             }
             crnt_tick = phr.tick;
             crnt_dur = phr.dur;
@@ -111,7 +110,6 @@ fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
             cnt: note_cnt,
             atype: arp,
         });
-        //add_dt(vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all), note_cnt, arp])
     }
     beat_analysis
 }
@@ -156,22 +154,24 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
         }
 
         // 条件の確認と、ana への情報追加
+        // RPT_HEAD のとき、TRNS_COM になるので対象外
         //println!("ana_dbg: {},{},{},{}",crnt_cnt,crnt_note,last_cnt,last_note);
         if para {   // 強制的に para
             ana.atype = TRNS_PARA;    // para
         }
-        else if ana.atype != TRNS_COM && // RPT_HEAD のとき、TRNS_COM になるので対象外
-          last_note <= MAX_NOTE_NUMBER &&
-          last_cnt == 1 &&
-          crnt_note <= MAX_NOTE_NUMBER &&
-          crnt_cnt == 1 &&
-          (last_note as i32)-(crnt_note as i32) < 10 &&
-          (crnt_note as i32)-(last_note as i32) < 10 {
-            // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
-            ana.atype = crnt_note as i16 -last_note as i16; // arp
-        }
-        else if ana.atype == NOTHING {  // NOTHING で ARP にならなかったものは TRNS_COM
-            ana.atype = TRNS_COM;
+        else if ana.atype == NOTHING {
+            if  last_note <= MAX_NOTE_NUMBER &&
+                last_cnt == 1 &&
+                crnt_note <= MAX_NOTE_NUMBER &&
+                crnt_cnt == 1 &&
+                (last_note as i32)-(crnt_note as i32) < 10 &&
+                (crnt_note as i32)-(last_note as i32) < 10 {
+                // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
+                ana.atype = crnt_note as i16 -last_note as i16; // arp
+            }
+            else {  // NOTHING で ARP にならなかったものは TRNS_COM
+                ana.atype = TRNS_COM;
+            }
         }
         last_cnt = crnt_cnt;
         last_note = crnt_note;
