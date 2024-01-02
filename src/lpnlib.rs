@@ -65,9 +65,9 @@ pub const DEFAULT_TURNNOTE: i16 = 5;
 // MSG_PHR
 pub const TYPE_NONE: i16    = 0;        // 共用
 #[derive(Default,Clone,Debug)]
-pub struct PhrEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub vel:i16}
+pub struct PhrEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub vel:i16, pub trns:i16}
 impl PhrEvt {
-    pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, vel:0}}
+    pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, vel:0, trns:TRNS_COM}}
 }
 pub const _TYPE_ID: i16     = 1000;     // for TYPE
 pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
@@ -96,15 +96,14 @@ pub struct AnaEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub c
 impl AnaEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, cnt:0, atype:0}}
 }
-//pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
 pub const TYPE_BEAT: i16    = 1006;     // for index TYPE
 pub const TYPE_EXP: i16     = 1010;     // for index TYPE
-// atype ( mtype: TYPE_NOTE のとき )
-pub const ARP_COM: i16      = 0;        // 
-pub const ARP_PARA: i16     = 10000;    //
-                        //  -n .. +n  : ARP のときの Note 差分
 // atype ( mtype: TYPE_EXP のとき )
 pub const NOPED: i16        = 10;       // Note情報より先に置く
+// atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
+pub const TRNS_COM: i16      = 0;        // 
+pub const TRNS_PARA: i16     = 10000;    //
+                        //  -n .. +n  : ARP のときの Note 差分
 //-------------------------------------------------------------------
 #[derive(Clone,Debug)]
 pub enum ElpsMsg {

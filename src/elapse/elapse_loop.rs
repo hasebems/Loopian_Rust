@@ -141,13 +141,13 @@ impl PhraseLoop {
         }
         else {
             let option = self.specify_trans_option(next_tick, ev.note);
-            if option == ARP_PARA {
+            if option == TRNS_PARA {
                 let mut tgt_nt = ev.note + root;
                 if root > self.turnnote {tgt_nt -= 12;}
                 trans_note = translate_note_com(root, ctbl, tgt_nt);
                 deb_txt = "para:".to_string();
             }
-            else if option == ARP_COM {
+            else if option == TRNS_COM {
                 trans_note = translate_note_com(root, ctbl, ev.note);
                 deb_txt = "com:".to_string();
             }
@@ -169,7 +169,7 @@ impl PhraseLoop {
                 return anaone.atype;
             }
         }
-        ARP_COM
+        TRNS_COM
     }
 }
 impl Elapse for PhraseLoop {

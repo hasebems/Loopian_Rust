@@ -34,7 +34,12 @@ fn put_exp_data(exps: &Vec<String>) -> Vec<AnaEvt> {
     exp //.copy_to()
 }
 //*******************************************************************
-// beat analysis data format: 
+/// Beat 分析
+///     - TYPE_BEAT 情報を追加
+///     - 和音の場合は高音のみをそのタイミングに記載
+///     - phr.trns が、TRNS_COM 以外の場合、意図的なのでそのまま atype に入れる
+///     - RPT_HEAD のタイミングは、atype = TRNS_COM (arp_translation()で評価しない)
+///     - 上記以外は、ARP の可能性があるので、atypen = NOTHING に書き換える
 // fn analyse_beat()
 //      mtype   TYPE_BEAT
 //      tick
@@ -51,14 +56,15 @@ fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
             None => 0,
         }
     };
-    let get_arp = |crnt_t:i16, repeat_head_t:i16| -> (i16,i16) {
-        // RPT_HEAD の直後には、ARP_COM を記録しておく
-        if crnt_t == repeat_head_t {(ARP_COM, NOTHING)}
+    let get_arp = |crnt_t:i16, repeat_head_t:i16, trns:i16| -> (i16,i16) {
+        if trns != TRNS_COM {(trns, NOTHING)}
+        else if crnt_t == repeat_head_t {(TRNS_COM, NOTHING)}// RPT_HEAD の直後には、TRNS_COM を記録しておく
         else {(NOTHING,repeat_head_t)}
     };
     let mut crnt_tick = NOTHING;
     let mut note_cnt = 0;
     let mut crnt_dur = 0;
+    let mut crnt_trns = TRNS_COM;
     let mut repeat_head_tick: i16 = NOTHING;
     let mut note_all: Vec<i16> = Vec::new();
     let mut beat_analysis = Vec::new();
@@ -71,10 +77,13 @@ fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
         else if phr.tick == crnt_tick {
             note_cnt += 1;
             note_all.push(phr.note);
+            if crnt_trns != TRNS_COM {
+                crnt_trns = phr.trns;   // 和音で一つに限定
+            }
         }
         else {
-            if note_cnt > 0 {
-                let (arp, rht) = get_arp(crnt_tick, repeat_head_tick);
+            if note_cnt > 0 {   // 一つ前の Note （あるいは和音の最高音）を記録
+                let (arp, rht) = get_arp(crnt_tick, repeat_head_tick, crnt_trns);
                 repeat_head_tick = rht;
                 beat_analysis.push(AnaEvt{
                     mtype: TYPE_BEAT,
@@ -87,12 +96,13 @@ fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
             }
             crnt_tick = phr.tick;
             crnt_dur = phr.dur;
+            crnt_trns = phr.trns;
             note_cnt = 1;
             note_all = vec![phr.note];
         }
     }
     if note_cnt > 0 {
-        let (arp, _rht) = get_arp(crnt_tick, repeat_head_tick);
+        let (arp, _rht) = get_arp(crnt_tick, repeat_head_tick, crnt_trns);
         beat_analysis.push(AnaEvt {
             mtype: TYPE_BEAT,
             tick: crnt_tick,
@@ -106,9 +116,9 @@ fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
     beat_analysis
 }
 //*******************************************************************
-// fn arp_translation()
-//  analyse_beat() で準備した beat_analysis の後ろに、arpeggio 用の解析データを追記
-//      atupe   0:com, $DIFF:arp,  PARA:para 
+/// analyse_beat() で準備した beat_analysis の後ろに、arpeggio 用の解析データを追記
+//  fn arp_translation()
+//      atype   TRNS_COM / $DIFF:arp / TRNS_PARA 
 //       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
 //       $DIFF: arp の場合の、前の音との音程の差分
 //*******************************************************************
@@ -147,10 +157,10 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
 
         // 条件の確認と、ana への情報追加
         //println!("ana_dbg: {},{},{},{}",crnt_cnt,crnt_note,last_cnt,last_note);
-        if para {
-            ana.atype = ARP_PARA;    // para
+        if para {   // 強制的に para
+            ana.atype = TRNS_PARA;    // para
         }
-        else if ana.atype != ARP_COM && // RPT_HEAD のとき、ARP_COM になるので対象外
+        else if ana.atype != TRNS_COM && // RPT_HEAD のとき、TRNS_COM になるので対象外
           last_note <= MAX_NOTE_NUMBER &&
           last_cnt == 1 &&
           crnt_note <= MAX_NOTE_NUMBER &&
@@ -160,8 +170,8 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
             // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
             ana.atype = crnt_note as i16 -last_note as i16; // arp
         }
-        else {
-            ana.atype = ARP_COM;    // com
+        else if ana.atype == NOTHING {  // NOTHING で ARP にならなかったものは TRNS_COM
+            ana.atype = TRNS_COM;
         }
         last_cnt = crnt_cnt;
         last_note = crnt_note;

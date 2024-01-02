@@ -181,6 +181,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
                 dur: 0,
                 note: RPT_HEAD as i16,
                 vel: 0,
+                trns: TRNS_COM,
             };
             //vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
             rcmb.push(nt_data);
@@ -438,7 +439,8 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, note_dur: i32, last_ve
                 tick: tick as i16,
                 dur: note_dur as i16,
                 note: *note as i16,
-                vel: last_vel
+                vel: last_vel,
+                trns: TRNS_COM,
             };
             //: Vec<i16> = 
             //    vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
