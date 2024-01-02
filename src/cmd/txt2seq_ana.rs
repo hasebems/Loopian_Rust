@@ -36,21 +36,15 @@ fn put_exp_data(exps: &Vec<String>) -> Vec<AnaEvt> {
 //*******************************************************************
 // beat analysis data format: 
 // fn analyse_beat()
-//      1st     TYPE_BEAT
-//      2nd     tick,
-//      3rd     dur,
-//      4th     note num,      : highest
-//      5th     note count,    : at same tick
-//          note count が１より大きい時、note num には最も高い音程の音が記録される
-//      6th     -1
-//
-// fn arp_translation()
-//  上記で準備した beat_analysis の後ろに、arpeggio 用の解析データを追記
-//      6th     0:com, $DIFF:arp,  PARA:para 
-//       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
-//       $DIFF: arp の場合の、前の音との音程の差分
+//      mtype   TYPE_BEAT
+//      tick
+//      dur
+//      note    note num,      : highest
+//      cnt     note count,    : at same tick
+//              note count が１より大きい時、note num には最も高い音程の音が記録される
+//      atype   NOTHING
 //*******************************************************************
-fn analyse_beat(gen: &Vec<PhrEvt>) -> Vec<AnaEvt> {
+fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
     let get_hi = |na:Vec<i16>| -> i16 {
         match na.iter().max() {
             Some(x) => *x,
@@ -68,15 +62,15 @@ fn analyse_beat(gen: &Vec<PhrEvt>) -> Vec<AnaEvt> {
     let mut repeat_head_tick: i16 = NOTHING;
     let mut note_all: Vec<i16> = Vec::new();
     let mut beat_analysis = Vec::new();
-    for nt in gen.iter() {
-        if nt.mtype != TYPE_NOTE {
-            if nt.mtype == TYPE_INFO && nt.note == RPT_HEAD as i16 {
-                repeat_head_tick = nt.tick;
+    for phr in phr_evts.iter() {
+        if phr.mtype != TYPE_NOTE {
+            if phr.mtype == TYPE_INFO && phr.note == RPT_HEAD as i16 {
+                repeat_head_tick = phr.tick;
             }
         }
-        else if nt.tick == crnt_tick {
+        else if phr.tick == crnt_tick {
             note_cnt += 1;
-            note_all.push(nt.note);
+            note_all.push(phr.note);
         }
         else {
             if note_cnt > 0 {
@@ -91,10 +85,10 @@ fn analyse_beat(gen: &Vec<PhrEvt>) -> Vec<AnaEvt> {
                     atype: arp
                 }) //vec![TYPE_BEAT, crnt_tick, crnt_dur, get_hi(note_all.clone()), note_cnt, arp]
             }
-            crnt_tick = nt.tick;
-            crnt_dur = nt.dur;
+            crnt_tick = phr.tick;
+            crnt_dur = phr.dur;
             note_cnt = 1;
-            note_all = vec![nt.note];
+            note_all = vec![phr.note];
         }
     }
     if note_cnt > 0 {
@@ -111,6 +105,13 @@ fn analyse_beat(gen: &Vec<PhrEvt>) -> Vec<AnaEvt> {
     }
     beat_analysis
 }
+//*******************************************************************
+// fn arp_translation()
+//  analyse_beat() で準備した beat_analysis の後ろに、arpeggio 用の解析データを追記
+//      atupe   0:com, $DIFF:arp,  PARA:para 
+//       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
+//       $DIFF: arp の場合の、前の音との音程の差分
+//*******************************************************************
 fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt> {
     let para = exps.iter().any(|exp| exp == "para()" || exp == "trns(para)");
     let mut last_note = REST;
@@ -121,8 +122,9 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
     let mut all_dt = beat_analysis.clone();
     for ana in all_dt.iter_mut() {
         if ana.mtype != TYPE_BEAT {continue;}
+
         // total_tick の更新
-        if total_tick != ana.tick {
+        if total_tick != ana.tick { // 前の音符の間に休符がある
             total_tick = ana.tick;
             last_note = REST;
             last_cnt = 0;
@@ -139,7 +141,7 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
         // crnt_note の更新
         crnt_note = NO_NOTE;
         crnt_cnt = ana.cnt;
-        if crnt_cnt == 1 {
+        if crnt_cnt == 1 {  // 和音でなければ
             crnt_note = ana.note as u8;
         }
 
@@ -165,7 +167,6 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
         last_note = crnt_note;
     }
     all_dt
-    //UgContent::new_with_dt()
 }
 //*******************************************************************
 //          beat_filter
@@ -221,7 +222,6 @@ pub fn beat_filter(rcmb: &Vec<PhrEvt>, bpm: i16, tick_for_onemsr: i32) -> Vec<Ph
         }
     }
     all_dt
-    //UgContent::new_with_dt(all_dt)
 }
 pub fn crispy_tick(rcmb: &Vec<PhrEvt>, exp_others: &Vec<String>) -> Vec<PhrEvt> {
     let mut stacc = false;
@@ -241,5 +241,4 @@ pub fn crispy_tick(rcmb: &Vec<PhrEvt>, exp_others: &Vec<String>) -> Vec<PhrEvt> 
         dt.dur = return_dur;
     }
     all_dt
-    //UgContent::new_with_dt(all_dt)
 }
