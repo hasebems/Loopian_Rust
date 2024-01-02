@@ -72,13 +72,13 @@ impl PhrEvt {
 pub const _TYPE_ID: i16     = 1000;     // for TYPE
 pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
 pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報
-
+//-------------------------------------------------------------------
 #[derive(Default,Clone,Debug)]
 pub struct DmprEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub position:i16}
 impl DmprEvt {
     pub fn _new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, position:0}}
 }
-
+//-------------------------------------------------------------------
 // MSG_CMP
 #[derive(Default,Clone,Debug)]
 pub struct ChordEvt {pub mtype:i16, pub tick:i16, pub root:i16, pub tbl:i16}
@@ -89,7 +89,7 @@ pub const TYPE_CHORD: i16   = 1002;     // for mtype
 pub const TYPE_DAMPER: i16  = 1003;     // for mtype
 pub const TYPE_VARI: i16    = 1004;     // for mtype, root: vari number
 pub const UPPER: i16        = 1000;     // for tbl
-
+//-------------------------------------------------------------------
 // MSG_ANA
 #[derive(Default,Clone,Debug)]
 pub struct AnaEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub cnt:i16, pub atype:i16}
@@ -105,8 +105,7 @@ pub const ARP_PARA: i16     = 10000;    //
                         //  -n .. +n  : ARP のときの Note 差分
 // atype ( mtype: TYPE_EXP のとき )
 pub const NOPED: i16        = 10;       // Note情報より先に置く
-
-//*******************************************************************
+//-------------------------------------------------------------------
 #[derive(Clone,Debug)]
 pub enum ElpsMsg {
     Ctrl(i16),
@@ -139,9 +138,9 @@ pub const MSG_SYNC_RGT: i16      = 6;
 pub const MSG_SYNC_ALL: i16      = 7;
 //  Rit
 pub const MSG_RIT_NRM: i16      = 8;
-//pub const MSG_RIT_POCO: i16     = 9;
-//pub const MSG_RIT_MLT: i16      = 10;
-//pub const MSG2_RIT_ATP: i16     = 9999;
+pub const MSG_RIT_POCO: i16     = 9;
+pub const MSG_RIT_MLT: i16      = 10;
+pub const MSG2_RIT_ATMP: i16    = 9999;
 pub const MSG2_RIT_FERMATA: i16 = 10000;
 //  Set
 pub const MSG_SET_BPM: i16      = 1;
@@ -150,7 +149,7 @@ pub const MSG_SET_TURN: i16     = 3;
 //  Set BEAT  : numerator, denomirator
 
 
-
+// 以前のフォーマット
 //-------------------------------------
 //  MSG1st      |  2nd        |  3rd  |
 //-------------------------------------
@@ -173,15 +172,9 @@ pub const MSG_SET_TURN: i16     = 3;
 // MSG_CMP_X+part|--          |
 // MSG_ANA_X+part|--          |
 
-pub const MSG2_LFT: i16     = 5;
-pub const MSG2_RGT: i16     = 6;
-pub const MSG2_ALL: i16     = 7;
-pub const MSG2_NRM: i16     = 8;
-pub const MSG2_POCO: i16    = 9;
-pub const MSG2_MLT: i16     = 10;
-pub const MSG3_ATP: i16     = 9999;
-pub const MSG3_FERMATA: i16 = 10000;
-
+//pub const MSG2_LFT: i16     = 5;
+//pub const MSG2_RGT: i16     = 6;
+//pub const MSG2_ALL: i16     = 7;
 pub const MSG_PART_MASK:i16 = 100;    // X-(X % MSG_PART_MASK)
 
 // Graphic Message
