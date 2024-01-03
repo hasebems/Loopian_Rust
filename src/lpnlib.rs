@@ -65,7 +65,7 @@ pub const DEFAULT_TURNNOTE: i16 = 5;
 //*******************************************************************
 // MSG_PHR
 pub const TYPE_NONE: i16    = 0;        // 共用
-#[derive(Default,Clone,Debug)]
+#[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct PhrEvt {
     pub mtype:i16,      // message type
     pub tick:i16,
@@ -81,7 +81,7 @@ pub const _TYPE_ID: i16     = 1000;     // for TYPE
 pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
 pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報
 //-------------------------------------------------------------------
-#[derive(Default,Clone,Debug)]
+#[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct DmprEvt {
     pub mtype:i16,      // message type
     pub tick:i16,
@@ -94,7 +94,7 @@ impl DmprEvt {
 pub const TYPE_DAMPER: i16  = 1003;
 //-------------------------------------------------------------------
 // MSG_CMP
-#[derive(Default,Clone,Debug)]
+#[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct ChordEvt {
     pub mtype:i16,      // message type
     pub tick:i16,
@@ -111,7 +111,7 @@ pub const TYPE_VARI: i16    = 1004;
 pub const UPPER: i16        = 1000;     
 //-------------------------------------------------------------------
 // MSG_ANA
-#[derive(Default,Clone,Debug)]
+#[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct AnaEvt {
     pub mtype:i16,      // message type
     pub tick:i16,
