@@ -8,7 +8,7 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          complement_phrase
 //*******************************************************************
-pub fn complement_phrase(input_text: String) -> [Vec<String>;2] {
+pub fn complement_phrase(input_text: String, cluster_word: &str) -> [Vec<String>;2] {
     // 1. space 削除
     let phr = input_text.trim().to_string();
 
@@ -20,8 +20,9 @@ pub fn complement_phrase(input_text: String) -> [Vec<String>;2] {
     nev.retain(|nt| nt!="");
     let (nmvec, nevec) = divide_notemod_and_musicex(nev);
 
-    // 4. <> の検出と、囲まれた範囲の要素へのコマンド追加
-    let nt2 = divide_arrow_bracket(nt);
+    // 4. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
+    let nttmp = divide_arrow_bracket(nt);
+    let nt2 = nttmp.replace('c',cluster_word);
 
     // 5. ,| 重複による休符指示の補填、音符のVector化
     let nt3 = fill_omitted_note_data(nt2);

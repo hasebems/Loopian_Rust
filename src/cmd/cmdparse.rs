@@ -16,10 +16,9 @@ use super::send_msg::*;
 pub struct LoopianCmd {
     indicator: Vec<String>,
     indicator_key_stock: String,
-    //msg_hndr: mpsc::Sender<Vec<i16>>,
     ui_hndr: mpsc::Receiver<String>,
     input_part: usize,
-    gendt: SeqDataStock,
+    dtstk: SeqDataStock,
     graphic_ev: Vec<String>,
     graphic_msg: i16,
     sndr: MessageSender,
@@ -34,10 +33,9 @@ impl LoopianCmd {
         Self {
             indicator,
             indicator_key_stock: "C".to_string(),
-            //msg_hndr,
             ui_hndr,
             input_part: RIGHT1,
-            gendt: SeqDataStock::new(),
+            dtstk: SeqDataStock::new(),
             graphic_ev: Vec::new(),
             graphic_msg: NO_MSG,
             sndr: MessageSender::new(msg_hndr),
@@ -149,6 +147,10 @@ impl LoopianCmd {
                     _ => Some("what?".to_string()),
                 }
             }
+        }
+        else if len >= 2 && &input_text[0..2] == "c=" {
+            self.dtstk.set_cluster_memory(input_text[2..].to_string());
+            Some("Set a cluster memory!".to_string())
         } else {
             Some("what?".to_string())
         }
@@ -332,8 +334,8 @@ impl LoopianCmd {
         }
     }
     fn letter_brace(&mut self, input_text: &str) -> Option<String> {
-        if self.gendt.set_raw_composition(self.input_part, input_text.to_string()) {
-            self.sndr.send_composition_to_elapse(self.input_part, &self.gendt);
+        if self.dtstk.set_raw_composition(self.input_part, input_text.to_string()) {
+            self.sndr.send_composition_to_elapse(self.input_part, &self.dtstk);
             Some("Set Composition!".to_string())
         } else {
             Some("what?".to_string())
@@ -423,7 +425,7 @@ impl LoopianCmd {
             }
         }
         else if first_letter == "{" {
-            if self.gendt.set_raw_composition(part_num, rest_text.to_string()) {
+            if self.dtstk.set_raw_composition(part_num, rest_text.to_string()) {
                 self.send_composition_to_elapse(part_num);
                 rtn_str = "Set Composition!".to_string();
             }
@@ -431,8 +433,8 @@ impl LoopianCmd {
         rtn_str
     }
     fn set_phrase(&mut self, part_num: usize, vari: usize, input_text: &str) -> bool {
-        if self.gendt.set_raw_phrase(part_num, vari, input_text.to_string()) {
-            self.sndr.send_phrase_to_elapse(part_num, vari, &self.gendt);
+        if self.dtstk.set_raw_phrase(part_num, vari, input_text.to_string()) {
+            self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
             true
         }
         else {false}
@@ -443,10 +445,10 @@ impl LoopianCmd {
             self.set_phrase(part_num, j, empty_phr);
         }
         let empty_cmp = "{}".to_string();
-        if self.gendt.set_raw_composition(part_num, empty_cmp) {
-            self.sndr.send_composition_to_elapse(part_num, &self.gendt);
+        if self.dtstk.set_raw_composition(part_num, empty_cmp) {
+            self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
         }
-        self.gendt.change_oct(0, true, part_num);
+        self.dtstk.change_oct(0, true, part_num);
     }
     //*************************************************************************
     fn parse_set_command(&mut self, input_text: &str) -> String {
@@ -476,9 +478,9 @@ impl LoopianCmd {
         else if cv[0] == "bpm" {
             match cv[1].parse::<i16>() {
                 Ok(msg) => {
-                    self.gendt.change_bpm(msg);
+                    self.dtstk.change_bpm(msg);
                     self.sndr.send_msg_to_elapse(ElpsMsg::Set([MSG_SET_BPM, msg]));
-                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
+                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.dtstk);
                     "BPM has changed!".to_string()
                 },
                 Err(e) => {
@@ -492,9 +494,9 @@ impl LoopianCmd {
             let numvec = split_by('/', beat.to_string());
             match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
                 (Ok(numerator),Ok(denomirator)) => {
-                    self.gendt.change_beat(numerator, denomirator);
+                    self.dtstk.change_beat(numerator, denomirator);
                     self.sndr.send_msg_to_elapse(ElpsMsg::SetBeat([numerator, denomirator]));
-                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
+                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.dtstk);
                     "Beat has changed!".to_string()
                 },
                 _ => "Number is wrong.".to_string()
@@ -551,8 +553,8 @@ impl LoopianCmd {
             println!("CHANGE KEY: {}, {}",key, oct);
             // phrase 再生成(新oct込み)
             if oct != 0 {
-                if self.gendt.change_oct(oct, false, self.input_part) {
-                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
+                if self.dtstk.change_oct(oct, false, self.input_part) {
+                    self.sndr.send_all_vari_and_phrase(self.input_part, &self.dtstk);
                 }
             }
             // elapse に key を送る
@@ -568,8 +570,8 @@ impl LoopianCmd {
         let mut oct = FULL;
         if let Ok(oct_num) = oct_txt.parse::<i32>() {oct = oct_num;}
         if oct != FULL {
-            if self.gendt.change_oct(oct, true, self.input_part) {
-                self.sndr.send_all_vari_and_phrase(self.input_part, &self.gendt);
+            if self.dtstk.change_oct(oct, true, self.input_part) {
+                self.sndr.send_all_vari_and_phrase(self.input_part, &self.dtstk);
                 true
             }
             else {false}
@@ -578,11 +580,11 @@ impl LoopianCmd {
     }                                  
     fn change_input_mode(&mut self, imd: &str) -> bool {
         if imd == "fixed" {
-            self.gendt.change_input_mode(InputMode::Fixed);
+            self.dtstk.change_input_mode(InputMode::Fixed);
             true
         }
         else if imd == "closer" {
-            self.gendt.change_input_mode(InputMode::Closer);
+            self.dtstk.change_input_mode(InputMode::Closer);
             true
         }
         else {false}

@@ -183,13 +183,13 @@ CompositionDataStock *-- UgContent
 
 - 入力文字一覧
     - 全体区切り: [],{},@
-    - 複数音符を跨ぐ、あるいは区切る指定子: /,|,*,:
-    - 一音符内の指定子: (1:',",q,h,3,5,`)(2:-,+)(3:d,r,m,f,s,l,t,x)(3':i,a)(4:^,%)(5:.,~,o)
+    - 複数音符を跨ぐ、あるいは区切る指定子: /,|,*,<>:
+    - 一音符内の指定子: (0:>)(1:',",q,h,3,5,`)(2:-,+)(3:d,r,m,f,s,l,t,x,c)(3':i,a)(4:^,%)(5:.,~,o)
         - 3と3'を合わせたものは =,_、あるいは直接繋いで同時発音を表現できる
-    - ーノート変換子内の指定子: (1:@[n]:)(2:I,V)(3:#/b)(4:[table name])(5:!)(6:.)
+    - ーノート変換子内の指定子: (1:@[n]:)(2:I,V)(3:#,b)(4:[table name])(5:!)(6:.)
         - !は、para/common時に、上下の音と等距離なら上側を採用することを表す
     - 関数表記: .xxx()
-- まだ使われていない文字: w,e,r,y,u,p,a,j,k,z,c,v,b,n,?,;,\,&,$,
+- まだ使われていない文字: w,e,r,y,u,p,a,j,k,z,v,b,n,?,;,\,&,$,
 - 同じ意味に使う文字 : 小節(/,|)、同時(=,_)、タイ(.,~)
 
 
@@ -238,6 +238,8 @@ CompositionDataStock *-- UgContent
     - mspc::channel は複数のスレッドから、一つのスレッドにメッセージを送れるが、今回は１対１の関係とする
     - LoopianApp::new() で二つの mspc::channel() がつくられ、各スレッドが受信するよう設定される
 - Main から Elps へのメッセージ
+    - enum ElpsMsg で定義されたメッセージを送信する
+<!--
     - [] は中から選択
     - () は対応する数値
     - 大文字は定数、小文字は変数
@@ -263,7 +265,7 @@ CompositionDataStock *-- UgContent
     |DelPhrase|MSG_PHR_X+part|─|─|
     |DelComposition|MSG_CMP_X+part|─|─|
     |DelAnalyze|MSG_ANA_X+part|─|─|
-
+-->
 - Elps から Main へのメッセージ
     - 8 indicator に表示する値
     - 画面に表示する Note On 情報（Note Offは使わない）
@@ -456,7 +458,9 @@ CompositionDataStock *-- UgContent
 - "'の音価指定ができない不具合修正、""、h'、q'の新しい音価指定追加 11/15 済
 - 小節の残りtickより、音価が長い場合は、音価をリミットする  11/15 済
 - clear 機能追加 11/18 済
-
+- 入力文字数の制限をなくす 12/29 済
+- c=xx による cluster memory 機能 1/3 済
+- >d で parallel、<xxx> で、その区間 parallel 1/3 済
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -490,6 +494,7 @@ CompositionDataStock *-- UgContent
     - <&2.rpt(5)+&3> : 音符変調関数を使用可能
     - &n の音符列は、複数パートを跨いで使用可能
 - @2=@2.dyn(pp) : 再代入可能
+- >d で parallel, >>d で変換しない、<xxx> で、その区間 parallel、<<xxx>> で、その区間変換しない
 
 先の話
 - さらなる humanized アルゴリズムの追加

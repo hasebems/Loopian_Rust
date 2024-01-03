@@ -140,16 +140,6 @@ Phrase 追加
     - d% : 階名の後ろに '%' をつけると音量が小さくなる。複数個つけることも可能
 
 
-- 音符変調関数(note modulation function)
-    - rpt(*n*) :n=繰り返し回数、2ならそれ自身を含め合計3回繰り返し
-
-
-- 音楽表現関数(musical expression function)
-    - dyn(*x*) :x=f,mf,mp,p,pp: フレーズの音量
-    - artic(stacc) / stacc() : 音価を半分にする
-    - trns(para) : para() : 和音変換時、root に合わせて並行移動する 
-    - dmp(on/off): off: 和音指定時でも Pedal Off指定
-
 
 Composition 指定
 ----------------------------
@@ -210,6 +200,37 @@ Composition 指定
 - 'set turnnote=5' : para 指定時、変換後の音程を折り返す位置(0-11, default=5)
 
 
+Phrase 指定時の拡張仕様
+--------------------------
+
+- parallel 指定とは
+    - 和音変換時、root に合わせて Phrase が並行移動する
+    - {IV} の場合だと、Phase 全体が完全四度移動した上で、和音構成音への変換が行われる
+
+
+- note単位の和音変換指定
+    - [>d,s,d,m,d,>>s] : >d はparallel動作、 >>s は変換しない
+    - [<d,m,s,d,s,m>] : 全フレーズが parallel
+    - [<d,s>,m,d,s,m] : 最初の d,s の2音が parallel
+
+
+- Phrase の関数表記
+    - Phrase を記述した [] の後に、".xxx()" と指定することで、Phrase 全体への指示を行うことができる
+    - 音符の表記そのものに何らかの変更を行う音符変調関数と、Phrase 全体に効果をかける音楽表現関数の二種類がある
+
+
+- 音符変調関数(note modulation function)
+    - rpt(*n*) :n=繰り返し回数、2ならそれ自身を含め合計3回繰り返し
+
+
+- 音楽表現関数(musical expression function)
+    - dyn(*x*) :x=f,mf,mp,p,pp: フレーズの音量
+    - artic(stacc) / stacc() : 音価を半分にする
+    - trns(para) : para() : 和音変換時、parallel 指定する。（全フレーズの parallel と同じ）
+    - dmp(on/off): off: 和音指定時でも Pedal Off指定
+
+
+
 ファイルのロード、セーブ
 --------------------------
 
@@ -234,9 +255,12 @@ Composition 指定
     - L12> : left1,left2パート二つ同時に同じ Phrase をセット
     - ALL> : 全パートに同じ Phrase をセット
 
-- Phrase の Macro 機能（未実装）
-    - Macro 機能とは、[]による特定の音符指定を Macro として保持し、パートを跨いでその指定を使い回すことができる機能である
-    - &n=[..] : Phrase 指定の冒頭に &n(nは1から9までの数値)を付け足すことで、Macro を追加できる
+
+- Phrase の cluster memory 機能
+    - 一拍分の音符を、Phraseに使うために事前に登録することができる
+    - c=dms : ドミソの和音を同時に発音する
+    - ['c,x,x,c,c,x,x,c] : 前に設定した和音を c のタイミングで発音する
+
 
 - Phrase の Variation 機能
     - Variation 機能とは、一つのパートに複数の Phrase を入力し、それらの再生順を Composition で指定できる機能である

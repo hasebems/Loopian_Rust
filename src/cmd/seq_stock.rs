@@ -17,6 +17,7 @@ pub struct SeqDataStock {
     pdt: Vec<Vec<PhraseDataStock>>,
     cdt: [CompositionDataStock; MAX_USER_PART],
     input_mode: InputMode,
+    cluster_memory: String,
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
     bpm: i16,
@@ -36,6 +37,7 @@ impl SeqDataStock {
             pdt: pd,
             cdt: Default::default(),
             input_mode: InputMode::Closer,
+            cluster_memory: "".to_string(),
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
             tick_for_onebeat: DEFAULT_TICK_FOR_QUARTER,
             bpm: DEFAULT_BPM,
@@ -43,9 +45,10 @@ impl SeqDataStock {
     }
     pub fn get_pdstk(&self, part: usize, vari: usize) -> &PhraseDataStock {&self.pdt[part][vari]}
     pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {&self.cdt[part]}
+    pub fn set_cluster_memory(&mut self, word: String) {self.cluster_memory = word;}
     pub fn set_raw_phrase(&mut self, part: usize, vari: usize, input_text: String) -> bool {
         if part < MAX_USER_PART {
-            if self.pdt[part][vari].set_raw(input_text) {
+            if self.pdt[part][vari].set_raw(input_text, &self.cluster_memory) {
                 self.pdt[part][vari].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
                 return true
             }
@@ -149,12 +152,12 @@ impl PhraseDataStock {
     pub fn get_final(&self, pv: i16) -> (ElpsMsg, ElpsMsg) {
         (ElpsMsg::Phr(pv, self.whole_tick as i16, self.rcmb.clone()), ElpsMsg::Ana(pv, self.ana.clone()))
     }
-    pub fn set_raw(&mut self, input_text: String) -> bool {
+    pub fn set_raw(&mut self, input_text: String, cluster_word: &str) -> bool {
         // 1.raw
         self.raw = input_text.clone();
 
         // 2.complement data
-        let cmpl = complement_phrase(input_text);
+        let cmpl = complement_phrase(input_text, cluster_word);
         if cmpl.len() <= 1 {
             println!("Phrase input failed!");
             return false
