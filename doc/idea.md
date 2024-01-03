@@ -461,6 +461,7 @@ CompositionDataStock *-- UgContent
 - 入力文字数の制限をなくす 12/29 済
 - c=xx による cluster memory 機能 1/3 済
 - >d で parallel、<xxx> で、その区間 parallel 1/3 済
+- 同時複数音入力の時、コード指定で重複して音がなるのを回避 1/3 済
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -471,7 +472,6 @@ CompositionDataStock *-- UgContent
     - next_msr が更新されないと、再生済みにならないので、永久ループに入ってしまう
 
 バグ情報
-- 多分前からだが、同時複数音入力の時、コード指定で同じ音を指してしまうのを回避したい。
 - ときどき、上書きされる前の Phrase が重なって鳴ることがある
     - 一回だけ起き、しばらくすると消える
 - Variation Phrase 絡みでいまひとつな挙動

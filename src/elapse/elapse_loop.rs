@@ -46,6 +46,9 @@ pub struct PhraseLoop {
     last_note: i16,
     noped: bool,
     turnnote: i16,
+    same_note_stuck: Vec<i16>,
+    same_note_msr: i32,
+    same_note_tick: i32,
 
     // for super's member
     whole_tick: i32,
@@ -69,6 +72,9 @@ impl PhraseLoop {
             last_note: NO_NOTE as i16,
             noped,
             turnnote,
+            same_note_stuck: Vec::new(),
+            same_note_msr: 0,
+            same_note_tick: 0,
             // for super's member
             whole_tick,
             destroy: false,
@@ -92,6 +98,12 @@ impl PhraseLoop {
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                 if self.phrase[trace].mtype == TYPE_NOTE {
+                    if self.same_note_msr != msr || self.same_note_tick != tick {
+                        // 設定されているタイミングが少しでも違えば、同タイミング重複音検出をクリア
+                        self.same_note_stuck = Vec::new();
+                        self.same_note_msr = msr;
+                        self.same_note_tick = tick;
+                    }
                     self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
                 }
             }
@@ -114,6 +126,14 @@ impl PhraseLoop {
         //  Note Translation
         if rt != NO_ROOT || ctbl != NO_TABLE  {
             (crnt_ev.note, deb_txt) = self.translate_note(rt, ctbl, ev, next_tick);
+        }
+
+        //  同タイミング重複音を鳴らさない
+        if self.same_note_stuck.iter().any(|x| *x==crnt_ev.note ){
+            return
+        }
+        else {
+            self.same_note_stuck.push(crnt_ev.note);
         }
 
         //  Generate Note Struct
