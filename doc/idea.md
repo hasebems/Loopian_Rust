@@ -123,6 +123,7 @@ Elapse <|-- Flow
 ElapseStack *-- Part
 ElapseStack o-- Elapse
 LoopianCmd *-- SeqDataStock
+LoopianCmd *-- MessageSender
 SeqDataStock *-- PhraseDataStock
 SeqDataStock *-- CompositionDataStock
 Part *-- PhrLoopManager
@@ -131,12 +132,8 @@ Part o-- DamperLoopManager
 Part o-- Flow
 PhrLoopManager o-- PhraseLoop
 CmpsLoopManager o-- CompositionLoop
-PhrLoopManager *-- UgContent
-CmpsLoopManager *-- UgContent
-PhraseLoop *-- UgContent
-CompositionLoop *-- UgContent
-PhraseDataStock *-- UgContent
-CompositionDataStock *-- UgContent
+Graphic o-- NoteObj
+NoteObj <|-- WaterRipple
 ```
 
 ### 3.Elapse Object
@@ -417,8 +414,6 @@ CompositionDataStock *-- UgContent
 - rit. の種類実装, rit. -> Fine 1/13済
 - 入力時に、Note以外のイベントをデータ内に仕込める仕組みを作る： TYPE_INFO 4/12済
 - <>*n の繰り返しのとき、繰り返しの頭のChord Translation Logic を Common にする　4/12済
--->
-
 - アルペジオ時の同音回避型変換のアルゴリズムを変更 5/1済
 - MIDI in受信 5/17 済
 - MIDI IN機能 6/15 ほぼ済
@@ -445,6 +440,8 @@ CompositionDataStock *-- UgContent
 - [] でフレーズを消したのに、get_phr() では、データが残っているような値が返る
     - Damper Pedal の処理で get_phr() を使っていて、起動後は何もデータが無いと、Some(x) で None が返るのに、何かのフレーズを消した後だと、None は返らない。-> 返るように修正 9/24 済
 - flow で MIDI を鳴らす時、Phrase が None でも、Chord が送られていれば Pedal は送られる仕様に変更 9/24 済
+-->
+
 - 文法の変更
     - [][mf] => [].dyn(mf) 10/21 済
     - [][noped] => [].dmp(off)  10/21 済
@@ -462,6 +459,7 @@ CompositionDataStock *-- UgContent
 - c=xx による cluster memory 機能 1/3 済
 - >d で parallel、<xxx> で、その区間 parallel 1/3 済
 - 同時複数音入力の時、コード指定で重複して音がなるのを回避 1/3 済
+- 4拍目と次の1拍目に休符を入れると、音価が伸びてしまう不具合修正 1/3 済
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"

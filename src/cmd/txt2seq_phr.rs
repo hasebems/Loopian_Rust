@@ -239,7 +239,7 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
                 let mut note_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
                 if next_msr_tick - tick < note_dur {
                     note_dur = next_msr_tick - tick;    // 小節線を超えたら、音価をそこでリミット
-                }    
+                }
 
                 // velocity
                 let mut last_vel: i32 = exp_vel + diff_vel;
@@ -612,6 +612,9 @@ pub fn split_note(txt: String) -> Vec<String> {
         else if ltr == 'i' || ltr == 'a' {
             pm_flg = false;
             semi_flg = true;
+        }
+        else if ltr == 'x' {
+            return vec!["x".to_string()];
         }
         else {
             return vec!["".to_string()];
