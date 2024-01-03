@@ -1,6 +1,3 @@
-use std::sync::mpsc::TryRecvError;
-use crate::lpnlib::{*, ElpsMsg::*};
-
 #[test]
 fn general1() {
     let (txmsg, _rxmsg) = std::sync::mpsc::channel();
@@ -11,6 +8,9 @@ fn general1() {
 }
 #[test]
 fn pedal() {
+    use std::sync::mpsc::TryRecvError;
+    use crate::lpnlib::{*, ElpsMsg::*};
+
     let (txmsg, rxmsg) = std::sync::mpsc::channel();
     let (_txui, rxui) = std::sync::mpsc::channel();
     let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg, rxui);
