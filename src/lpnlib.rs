@@ -16,6 +16,7 @@ pub const FULL: i32 = 10000;
 pub const _ALL_PART: i16 = -1;
 pub const KEEP: i32 = 0;
 pub const LAST: i32 = 10000;
+
 pub const NO_ROOT: i16 = 0; // root = 1:Ib,2:I,3:I# ...
 pub const NO_TABLE: i16 = 10000;
 pub const _CANCEL: i16 = -1;
@@ -65,7 +66,14 @@ pub const DEFAULT_TURNNOTE: i16 = 5;
 // MSG_PHR
 pub const TYPE_NONE: i16    = 0;        // 共用
 #[derive(Default,Clone,Debug)]
-pub struct PhrEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub vel:i16, pub trns:i16}
+pub struct PhrEvt {
+    pub mtype:i16,      // message type
+    pub tick:i16,
+    pub dur:i16,        // duration
+    pub note:i16,       // note number / TYPE_INFO > RPT_HEAD
+    pub vel:i16,        // velocity
+    pub trns:i16,       // translation
+}
 impl PhrEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, vel:0, trns:TRNS_COM}}
 }
@@ -74,33 +82,53 @@ pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
 pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報
 //-------------------------------------------------------------------
 #[derive(Default,Clone,Debug)]
-pub struct DmprEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub position:i16}
+pub struct DmprEvt {
+    pub mtype:i16,      // message type
+    pub tick:i16,
+    pub dur:i16,        // duration
+    pub position:i16,   // damper position
+}
 impl DmprEvt {
     pub fn _new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, position:0}}
 }
+pub const TYPE_DAMPER: i16  = 1003;
 //-------------------------------------------------------------------
 // MSG_CMP
 #[derive(Default,Clone,Debug)]
-pub struct ChordEvt {pub mtype:i16, pub tick:i16, pub root:i16, pub tbl:i16}
+pub struct ChordEvt {
+    pub mtype:i16,      // message type
+    pub tick:i16,
+    pub root:i16,       // root note / TYPE_VARI: vari number
+    pub tbl:i16,
+}
 impl ChordEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, root:0, tbl:0}}
 }
-pub const TYPE_CHORD: i16   = 1002;     // for mtype
-pub const TYPE_DAMPER: i16  = 1003;     // for mtype
-pub const TYPE_VARI: i16    = 1004;     // for mtype, root: vari number
-pub const UPPER: i16        = 1000;     // for tbl
+// for mtype
+pub const TYPE_CHORD: i16   = 1002;
+pub const TYPE_VARI: i16    = 1004;
+// for tbl
+pub const UPPER: i16        = 1000;     
 //-------------------------------------------------------------------
 // MSG_ANA
 #[derive(Default,Clone,Debug)]
-pub struct AnaEvt {pub mtype:i16, pub tick:i16, pub dur:i16, pub note:i16, pub cnt:i16, pub atype:i16}
+pub struct AnaEvt {
+    pub mtype:i16,      // message type
+    pub tick:i16,
+    pub dur:i16,        // duration
+    pub note:i16,       // highest note
+    pub cnt:i16,        // same timing noteon number
+    pub atype:i16,      // arpeggio(translation) type
+}
 impl AnaEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, cnt:0, atype:0}}
 }
+// for mtype
 pub const TYPE_BEAT: i16    = 1006;     // for index TYPE
 pub const TYPE_EXP: i16     = 1010;     // for index TYPE
-// atype ( mtype: TYPE_EXP のとき )
+// for atype ( mtype: TYPE_EXP のとき )
 pub const NOPED: i16        = 10;       // Note情報より先に置く
-// atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
+// for atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
 pub const TRNS_COM: i16     = 0;        // Common 変換
 pub const TRNS_PARA: i16    = 10000;    // Parallel 変換
 pub const TRNS_NONE: i16    = 10001;    // 変換しない
@@ -172,19 +200,17 @@ pub const MSG_SET_TURN: i16     = 3;
 // MSG_CMP_X+part|--          |
 // MSG_ANA_X+part|--          |
 
-//pub const MSG2_LFT: i16     = 5;
-//pub const MSG2_RGT: i16     = 6;
-//pub const MSG2_ALL: i16     = 7;
 pub const MSG_PART_MASK:i16 = 100;    // X-(X % MSG_PART_MASK)
 
+//*******************************************************************
+//          Graphic
+//*******************************************************************
 // Graphic Message
 pub const NO_MSG: i16       = -1;
 pub const LIGHT_MODE: i16   = 1;
 pub const DARK_MODE: i16    = 2;
 
-//*******************************************************************
-//          Enum
-//*******************************************************************
+//-------------------------------------------------------------------
 #[derive(Debug,PartialEq,Eq,Copy,Clone)]
 pub enum InputMode {
     Fixed,  // 階名のオクターブ位置は固定。絶対位置を指定
