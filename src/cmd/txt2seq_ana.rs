@@ -10,8 +10,8 @@ use crate::lpnlib::*;
 //*******************************************************************
 pub fn analyse_data(generated: &Vec<PhrEvt>, exps: &Vec<String>) -> Vec<AnaEvt> {
     let mut exp_analysis = put_exp_data(exps);
-    let beat_analysis = analyse_beat(&generated);
-    exp_analysis.append(&mut beat_analysis.clone()); //.mix_with(&mut );
+    let mut beat_analysis = analyse_beat(&generated);
+    beat_analysis.append(&mut exp_analysis);
     let rcmb = arp_translation(beat_analysis, exps);
     rcmb
 }
