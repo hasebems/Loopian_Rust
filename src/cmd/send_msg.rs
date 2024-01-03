@@ -39,7 +39,7 @@ impl MessageSender {
                     let amsg = ana.clone();
                     match ana {
                         ElpsMsg::Ana(_a0, av) => {
-                            if av.len() > 1 {
+                            if av.len() > 0 {
                                 self.send_msg_to_elapse(amsg);
                             }
                         }

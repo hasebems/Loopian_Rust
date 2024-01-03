@@ -328,16 +328,18 @@ impl ElapseStack {
     fn phrase(&mut self, part: i16, tick: i16, evts: Vec<PhrEvt>) {
         let part_num = pt(part);
         let vari_num = vari(part);
-        println!("Received Part: {}",part_num);
+        println!("Received Phrase Message! Part: {}, variation: {}", part_num, vari_num);
         self.part_vec[part_num].borrow_mut().rcv_phr_msg(evts, tick, vari_num);
     }
     fn composition(&mut self, part: i16, tick: i16, evts: Vec<ChordEvt>) {
         let part_num = pt(part);
+        println!("Received Composition Message! Part: {}", part_num);
         self.part_vec[part_num].borrow_mut().rcv_cmps_msg(evts, tick);
     }
     fn ana(&mut self, part: i16, evts: Vec<AnaEvt>) {
         let part_num = pt(part);
         let vari_num = vari(part);
+        println!("Received Analysis Message! Part: {}, variation: {}", part_num, vari_num);
         self.part_vec[part_num].borrow_mut().rcv_ana_msg(evts, vari_num);
     }
     fn del_phrase(&mut self, part: i16) {
