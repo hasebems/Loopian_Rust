@@ -460,16 +460,15 @@ NoteObj <|-- WaterRipple
 - >d で parallel、<xxx> で、その区間 parallel 1/3 済
 - 同時複数音入力の時、コード指定で重複して音がなるのを回避 1/3 済
 - 4拍目と次の1拍目に休符を入れると、音価が伸びてしまう不具合修正 1/3 済
+- load フォルダ内のpathの指定機能追加 1/4
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
 - cd /users/hasebems/coding/livecoding/Loopian_Rust
 
-不具合の可能性（アサート情報）
-- stack_elapse.rs の process() 159行目付近のアサートにひっかかるとき
+バグ情報、不具合の可能性（アサート情報）
+- stack_elapse.rs の process() 175行目付近のアサートにひっかかるとき
     - next_msr が更新されないと、再生済みにならないので、永久ループに入ってしまう
-
-バグ情報
 - ときどき、上書きされる前の Phrase が重なって鳴ることがある
     - 一回だけ起き、しばらくすると消える
 - Variation Phrase 絡みでいまひとつな挙動
@@ -477,7 +476,6 @@ NoteObj <|-- WaterRipple
     - @n;Cd というように、前と同じコードでも必ず ; 付きで記述する必要がある
 
 次の対応、考えられる新機能
-- load フォルダ名の指定
 - 画面の色合いを変更
 - 次のループからではなく、リアルタイムでフレーズを変える機能（優先度低）
     - リアルタイムか、次のループ先頭かを選べる
@@ -493,6 +491,7 @@ NoteObj <|-- WaterRipple
     - &n の音符列は、複数パートを跨いで使用可能
 - @2=@2.dyn(pp) : 再代入可能
 - >d で parallel, >>d で変換しない、<xxx> で、その区間 parallel、<<xxx>> で、その区間変換しない
+- @9=[] は fermata の時に再生する特別な variation とする
 
 先の話
 - さらなる humanized アルゴリズムの追加

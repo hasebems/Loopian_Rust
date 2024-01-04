@@ -188,8 +188,7 @@ impl LoopianApp {
         if itxt.chars().count() >= 5 && &itxt[0..5] == "load " {
             self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
             // load のときだけ特別処理
-            let command_stk: Vec<String>;
-            command_stk = self.history.load_lpn(&itxt[5..]);
+            let command_stk = self.history.load_lpn(&itxt[5..], self.cmd.get_path());
             if command_stk.len() == 0 {
                 self.scroll_lines.push(("".to_string(), "No history".to_string()));
             }

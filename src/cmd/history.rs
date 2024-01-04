@@ -70,17 +70,26 @@ impl History {
         self.input_lines.push((time.clone(), cmd));
         self.update_history_ptr()
     }
-    pub fn load_lpn(&mut self, fname: &str) -> Vec<String> {
+    pub fn load_lpn(&mut self, fname: &str, path: Option<String>) -> Vec<String> {
         let mut command: Vec<String> = Vec::new();
         self.make_folder(Self::LOAD_FOLDER);    // フォルダ作成
-        match fs::read_to_string(Self::LOAD_FOLDER.to_string() + "/" + &fname + ".lpn") {
+        let mut real_path = Self::LOAD_FOLDER.to_string();
+        if let Some(lp) = path {
+            real_path = real_path + "/" + &lp;
+        }
+        println!("Path: {}",real_path);
+        match fs::read_to_string(real_path + "/" + &fname + ".lpn") {
             Ok(content) => {
                 for line in content.lines() {
-                    if line.len() > 0 {
+                    let mut comment = false;
+                    if line.len() > 1 { // コメントでないか、過去の 2023.. が書かれてないか
                         let notxt = line[0..2].to_string();
-                        if notxt != "//" && notxt != "20" {
-                           command.push(line.to_string());
+                        if notxt == "//" || notxt == "20" {
+                            comment = true;
                         }
+                    }
+                    if line.len() > 0 && !comment {
+                        command.push(line.to_string());
                     }
                 }
             }

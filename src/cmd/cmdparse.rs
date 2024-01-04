@@ -22,8 +22,8 @@ pub struct LoopianCmd {
     graphic_ev: Vec<String>,
     graphic_msg: i16,
     sndr: MessageSender,
+    path: Option<String>,
 }
-
 impl LoopianCmd {
     pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>, ui_hndr: mpsc::Receiver<String>) -> Self {
         let mut indicator = vec![String::from("---"); graphic::MAX_INDICATOR];
@@ -39,6 +39,7 @@ impl LoopianCmd {
             graphic_ev: Vec::new(),
             graphic_msg: NO_MSG,
             sndr: MessageSender::new(msg_hndr),
+            path: None,
         }
     }
     pub fn move_ev_from_gev(&mut self) -> Option<String> {
@@ -63,6 +64,7 @@ impl LoopianCmd {
         &self.indicator[num]
     }
     pub fn get_graphic_msg(&self) -> i16 {self.graphic_msg}
+    pub fn get_path(&self) -> Option<String> {self.path.clone()}
     pub fn read_from_ui_hndr(&mut self) {
         // Play Thread からの、8indicator表示用メッセージを受信する処理
         loop {
@@ -459,7 +461,7 @@ impl LoopianCmd {
                 s.push(i.to_string());
                 s
             });
-        if cv[0] == "key".to_string() {
+        if cv[0] == "key" {
             if self.change_key(&cv[1]) {
                 "Key has changed!".to_string()
             }
@@ -515,7 +517,13 @@ impl LoopianCmd {
             if self.change_turnnote(&cv[1]) {
                 "Turn note has changed!".to_string()
             }
-            else {"what?".to_string()}            
+            else {"what?".to_string()}
+        }
+        else if cv[0] == "path" {
+            if self.change_path(&cv[1]) {
+                "Path has changed!".to_string()
+            }
+            else {"what?".to_string()}
         }
         else {
             "what?".to_string()
@@ -595,5 +603,9 @@ impl LoopianCmd {
             true
         }
         else {false}
+    }
+    fn change_path(&mut self, path: &str) -> bool {
+        self.path = Some(path.to_string());
+        true
     }
 }
