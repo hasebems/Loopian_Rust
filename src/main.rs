@@ -109,6 +109,10 @@ impl LoopianApp {
             self.input_locate += 1;
             self.update_visible_locate();
         });
+        if self.input_text.chars().any(|x| x==' ') {
+            let itx = self.input_text.clone();
+            self.input_text = itx.replacen(' ', ".", 100);
+        }
     }
     fn pressed_key(&mut self, key: &Key, modifiers: &Modifiers) {
         let itxt: String = self.input_text.clone();
@@ -185,7 +189,7 @@ impl LoopianApp {
         self.input_locate = 0;
         self.visible_locate = 0;
 
-        if itxt.chars().count() >= 5 && &itxt[0..5] == "load " {
+        if itxt.chars().count() >= 6 && &itxt[0..4] == "load" {
             self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
             // load のときだけ特別処理
             let command_stk = self.history.load_lpn(&itxt[5..], self.cmd.get_path());
