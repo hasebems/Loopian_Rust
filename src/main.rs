@@ -24,8 +24,8 @@ pub const WINDOW_X: f32 = 1000.0;        //  Main Window
 pub const WINDOW_Y: f32 = 860.0;
 
 pub struct LoopianApp {
-    input_locate: usize,
-    visible_locate: usize,
+    input_locate: usize,        //  カーソルの位置
+    visible_locate: usize,      //  入力部に表示する最初の文字の位置
     input_text: String,
     scroll_lines: Vec<(String, String)>,
     history_cnt: usize,
@@ -149,16 +149,16 @@ impl LoopianApp {
             if let Some(txt) = self.history.arrow_up() {
                 self.input_text = txt.0;
             }
-            let maxlen = self.input_text.chars().count();
-            if maxlen < self.input_locate {self.input_locate = maxlen;}
+            self.input_locate = 0;
+            self.visible_locate = 0;
         }
         else if key == &Key::ArrowDown {
             if let Some(txt) = self.history.arrow_down() {
                 self.input_text = txt.0;
                 self.history_cnt = txt.1;
             }
-            let maxlen = self.input_text.chars().count();
-            if maxlen < self.input_locate {self.input_locate = maxlen;}
+            self.input_locate = 0;
+            self.visible_locate = 0;
         }
     }
     fn update_visible_locate(&mut self) {
@@ -183,6 +183,7 @@ impl LoopianApp {
         let time = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
         self.input_text = "".to_string();
         self.input_locate = 0;
+        self.visible_locate = 0;
 
         if itxt.chars().count() >= 5 && &itxt[0..5] == "load " {
             self.scroll_lines.push((time.clone(), itxt.clone()));     // for display text
