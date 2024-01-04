@@ -40,12 +40,15 @@ pub struct ElapseStack {
     bpm_stock: i16,
     fermata_stock: bool,
     beat_stock: Beat,
+
     during_play: bool,
     display_time: Instant,
     tg: TickGen,
     part_vec: Vec<Rc<RefCell<Part>>>,           // Part Instance が繋がれた Vec
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>,   // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER-MIN_NOTE_NUMBER+1) as usize],
+
+    limit_for_deb: i32,
 }
 
 impl ElapseStack {
@@ -82,6 +85,7 @@ impl ElapseStack {
                     part_vec: vp,
                     elapse_vec: velps,
                     key_map: [0; (MAX_NOTE_NUMBER-MIN_NOTE_NUMBER+1) as usize],
+                    limit_for_deb: 0,
                 })
             }
             Err(_e) => None,
@@ -103,7 +107,6 @@ impl ElapseStack {
         else {None}
     }
     pub fn periodic(&mut self, msg: Result<ElpsMsg, TryRecvError>) -> bool {
-        let mut limit_for_deb = 0;
         self.crnt_time = Instant::now();
 
         // message 受信処理
@@ -131,7 +134,8 @@ impl ElapseStack {
 
         // 小節先頭ならば、beat/bpm のイベント調査
         if self.tg.gen_tick(self.crnt_time) { 
-            println!("<New measure! in stack_elapse>");
+            println!("<New measure! in stack_elapse> Max Debcnt: {}",self.limit_for_deb);
+            self.limit_for_deb = 0;
             // change beat event
             if self.beat_stock != self.tg.get_beat() {
                 let tick_for_onemsr = (DEFAULT_TICK_FOR_ONE_MEASURE/self.beat_stock.1)*self.beat_stock.0;
@@ -159,6 +163,7 @@ impl ElapseStack {
             });
         }
 
+        let mut debcnt = 0;
         loop {
             // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
             let playable = self.pick_out_playable(&crnt_);
@@ -167,14 +172,17 @@ impl ElapseStack {
             }
             else {
                 //println!("$$$deb:{},{},{},{:?}",limit_for_deb,crnt_.msr,crnt_.tick,self.crnt_time);
-                assert!(limit_for_deb < 100);
-                limit_for_deb += 1;
+                assert!(debcnt < 100);
+                debcnt += 1;
             }
             // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
             for elps in playable {
                 elps.borrow_mut().process(&crnt_, self);
             }
         }
+        if self.limit_for_deb < debcnt {
+            self.limit_for_deb = debcnt;
+        } 
 
         // remove ended obj
         self.destroy_finished_elps();
