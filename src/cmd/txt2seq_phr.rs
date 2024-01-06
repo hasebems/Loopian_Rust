@@ -406,7 +406,7 @@ fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
         triplet = fst_ltr.to_digit(10).unwrap_or(1) as i16;
         fst_ltr = ntext.chars().nth(1).unwrap_or(' ');
     }
-    if fst_ltr == '\'' {
+    if fst_ltr == '\'' || fst_ltr == 'e' {
         if ntext.chars().nth(1).unwrap_or(' ') == '\"' {
             base_dur = DEFAULT_TICK_FOR_QUARTER/8;
             idx = 2;

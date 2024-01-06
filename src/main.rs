@@ -111,7 +111,7 @@ impl LoopianApp {
         });
         if self.input_text.chars().any(|x| x==' ') {
             let itx = self.input_text.clone();
-            self.input_text = itx.replacen(' ', ".", 100);
+            self.input_text = itx.replacen(' ', ".", 100);// egui とぶつかり replace が使えない
         }
     }
     fn pressed_key(&mut self, key: &Key, modifiers: &Modifiers) {

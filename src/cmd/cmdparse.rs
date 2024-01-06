@@ -192,12 +192,12 @@ impl LoopianCmd {
     }
     fn letter_g(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
-        if len >= 6 && &input_text[0..6] == "graph " {
-            if len >= 11 && &input_text[6..11] == "light" {
+        if len >= 6 && &input_text[0..5] == "graph" {
+            if len == 11 && &input_text[6..11] == "light" {
                 self.graphic_msg = LIGHT_MODE;
                 Some("Changed Graphic!".to_string())
             }
-            else if len >= 10 && &input_text[6..10] == "dark" {
+            else if len == 10 && &input_text[6..10] == "dark" {
                 self.graphic_msg = DARK_MODE;
                 Some("Changed Graphic!".to_string())
             }
@@ -287,26 +287,25 @@ impl LoopianCmd {
             let responce = self.parse_set_command(input_text);
             Some(responce)
         } else if len >= 4 && &input_text[0..4] == "sync" {
-            // sync
-            let vectxt = input_text.split(' ')
-                .fold(Vec::new(), |mut s, i| {
-                    s.push(i.to_string());
-                    s
-                });
-            if vectxt.len() < 2 {
+            if len == 4 {
                 self.sndr.send_msg_to_elapse(ElpsMsg::Sync(self.input_part as i16));
                 Some("Synchronized!".to_string())
-            } else if vectxt[1] == "right" {
-                self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_RGT));
-                Some("Right Part Synchronized!".to_string())
-            } else if vectxt[1] == "left" {
-                self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_LFT));
-                Some("Left Part Synchronized!".to_string())
-            } else if vectxt[1] == "all" {
-                self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_ALL));
-                Some("All Part Synchronized!".to_string())
+            } else if len >= 6 {
+                let prttxt = &input_text[5..];
+                if prttxt == "right" {
+                    self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_RGT));
+                    Some("Right Part Synchronized!".to_string())
+                } else if prttxt == "left" {
+                    self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_LFT));
+                    Some("Left Part Synchronized!".to_string())
+                } else if prttxt == "all" {
+                    self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_ALL));
+                    Some("All Part Synchronized!".to_string())
+                } else {
+                    Some("what?".to_string())
+                }
             } else {
-                Some("what?".to_string())
+                Some("what?".to_string())                
             }
         } else {
             Some("what?".to_string())
