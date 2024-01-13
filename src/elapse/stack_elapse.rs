@@ -308,15 +308,17 @@ impl ElapseStack {
     }
     fn rit(&mut self, msg: [i16; 2]) {
         let strength_set: [(i16, i32);3] = [(MSG_RIT_POCO, 95),(MSG_RIT_NRM, 80),(MSG_RIT_MLT, 75)];
+        let strength_msg =  msg[0]%10;
+        let bar = (msg[0]/10) as i32;
         let strength = strength_set.into_iter()
-            .find(|x| x.0==msg[0])
+            .find(|x| x.0==strength_msg)
             .unwrap_or(strength_set[0]);
         if msg[1] == MSG2_RIT_ATMP {self.bpm_stock = self.tg.get_bpm();}
         else if msg[1] == MSG2_RIT_FERMATA {self.fermata_stock = true;}
         else {
             self.bpm_stock = msg[1];
         }
-        self.tg.start_rit(self.crnt_time, strength.1);
+        self.tg.start_rit(self.crnt_time, strength.1, bar);
     }
     fn setting_cmnd(&mut self, msg: [i16; 2]) {
         if msg[0] == MSG_SET_BPM {

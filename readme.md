@@ -78,6 +78,10 @@ loopian は、Live Coding などで使うために開発している、テキス
     - rit./fermata  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
     - rit.molto/fermata
     - rit./120   : rit.の次の小節をテンポ120で開始
+    - 2小節以上 rit. をかける場合
+        - rit.bN (N:2..)
+        - rit.poco.bN
+        - rit.poco.bN/100
 - 'sync' : 次の小節の頭で、ループ先頭に戻る
     - sync       : そのパート(Phrase,Composition)のみ
     - sync.right : 右手パート(right1/2)

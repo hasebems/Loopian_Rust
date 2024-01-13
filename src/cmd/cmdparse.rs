@@ -246,32 +246,7 @@ impl LoopianCmd {
             self.input_part = RIGHT2;
             Some("Changed current part to right2.".to_string())
         } else if len >= 4 && &input_text[0..4] == "rit." {
-            let strength_txt: String;
-            let mut aft_rit: i16 = MSG2_RIT_ATMP;
-            let mut strength_value: i16 = MSG_RIT_NRM;
-            if input_text.chars().any(|x| x=='/') {
-                let rit_txt_raw = &input_text[4..];
-                let rit_txt = split_by('/', rit_txt_raw.to_string());
-                let nxt_msr_txt = &rit_txt[1];
-                if nxt_msr_txt == "fermata" {aft_rit = MSG2_RIT_FERMATA;}
-                else {
-                    match nxt_msr_txt.parse::<i16>() {
-                        Ok(tmp) => aft_rit = tmp,
-                        Err(e) => {
-                            println!("{:?}",e);
-                            "Number is wrong.".to_string();
-                        },
-                    }
-                }
-                strength_txt = rit_txt[0].clone();
-            }
-            else {
-                strength_txt = input_text[4..].to_string();
-            }
-            if strength_txt == "poco" {strength_value = MSG_RIT_POCO;}
-            else if strength_txt == "molto" {strength_value = MSG_RIT_MLT;}
-            self.sndr.send_msg_to_elapse(ElpsMsg::Rit([strength_value, aft_rit]));
-            Some("rit. has started!".to_string())
+            Some(self.set_rit(input_text))
         } else {
             Some("what?".to_string())
         }
@@ -450,6 +425,49 @@ impl LoopianCmd {
             self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
         }
         self.dtstk.change_oct(0, true, part_num);
+    }
+    fn set_rit(&self, input_text: &str) -> String {
+        let mut strength_txt: String;
+        let mut aft_rit: i16 = MSG2_RIT_ATMP;
+        if input_text.chars().any(|x| x=='/') {
+            let rit_txt_raw = &input_text[4..];
+            let rit_txt = split_by('/', rit_txt_raw.to_string());
+            let nxt_msr_txt = &rit_txt[1];
+            if nxt_msr_txt == "fermata" {aft_rit = MSG2_RIT_FERMATA;}
+            else {
+                match nxt_msr_txt.parse::<i16>() {
+                    Ok(tmp) => aft_rit = tmp,
+                    Err(e) => {
+                        println!("{:?}",e);
+                        "Number is wrong.".to_string();
+                    },
+                }
+            }
+            strength_txt = rit_txt[0].clone();
+        }
+        else {
+            strength_txt = input_text[4..].to_string();
+        }
+
+        let mut bar = 0;
+        if strength_txt.chars().any(|x| x=='b') {
+            let str_bar = split_by('b', strength_txt.to_string());
+            strength_txt = str_bar[0].clone();
+            if str_bar[0].len() != 0 {
+                strength_txt.pop(); // '.' を削除する
+            }
+            bar = str_bar[1].parse().unwrap_or(0);
+            if bar >= 1 { // 入力値は、内部値より1大きい
+                bar -= 1;
+            }
+        }
+
+        let mut strength_value: i16 = MSG_RIT_NRM;
+        if strength_txt == "poco" {strength_value = MSG_RIT_POCO;}
+        else if strength_txt == "molto" {strength_value = MSG_RIT_MLT;}
+        self.sndr.send_msg_to_elapse(ElpsMsg::Rit([strength_value+bar*10, aft_rit]));
+
+        "rit. has started!".to_string()
     }
     //*************************************************************************
     fn parse_set_command(&mut self, input_text: &str) -> String {

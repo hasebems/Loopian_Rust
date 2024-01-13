@@ -164,10 +164,10 @@ pub const MSG_CTRL_ENDFLOW: i16  = 110;
 pub const MSG_SYNC_LFT: i16      = 5;
 pub const MSG_SYNC_RGT: i16      = 6;
 pub const MSG_SYNC_ALL: i16      = 7;
-//  Rit
-pub const MSG_RIT_NRM: i16      = 8;
-pub const MSG_RIT_POCO: i16     = 9;
-pub const MSG_RIT_MLT: i16      = 10;
+//  Rit : rit.を１小節以上かける場合、1byte目に [小節数*10] を足す
+pub const MSG_RIT_NRM: i16      = 1;
+pub const MSG_RIT_POCO: i16     = 2;
+pub const MSG_RIT_MLT: i16      = 3;
 pub const MSG2_RIT_ATMP: i16    = 9999;
 pub const MSG2_RIT_FERMATA: i16 = 10000;
 //  Set
