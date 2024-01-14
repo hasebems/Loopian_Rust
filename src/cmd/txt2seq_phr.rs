@@ -305,10 +305,21 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
         ntext1.pop();
     }
 
+    //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、duration/velocity の解析を終えたら文字列を再結合
+    let mut oct = "".to_string();
+    loop {
+        let c = ntext1.chars().nth(0).unwrap_or(' ');
+        if c=='+' {oct.push('+'); ntext1.remove(0);}
+        else if c=='-' {oct.push('-'); ntext1.remove(0);}
+        else {break;}
+    }
+
     //  duration 情報、 Velocity 情報の抽出
     let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur);
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
-    let mut notes_vec: Vec<String> = split_by_by('=', '_', ntext4);
+    let ntext5 = format!("{}{}",oct,&ntext4);  // +-の再結合
+
+    let mut notes_vec: Vec<String> = split_by_by('=', '_', ntext5);
     if notes_vec.len() == 1 {
         notes_vec = split_note(notes_vec[0].clone());
     }
@@ -413,7 +424,7 @@ fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
         }
         else {base_dur = DEFAULT_TICK_FOR_QUARTER/2;}
     }
-    else if fst_ltr == '\"' {
+    else if fst_ltr == '\"' || fst_ltr == 'v' {
         if ntext.chars().nth(1).unwrap_or(' ') == '\"' {
             base_dur = DEFAULT_TICK_FOR_QUARTER/16;
             idx = 2;
