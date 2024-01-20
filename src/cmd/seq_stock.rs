@@ -150,7 +150,16 @@ impl PhraseDataStock {
         }
     }
     pub fn get_final(&self, part: i16, vari: i16) -> (ElpsMsg, ElpsMsg) {
-        (ElpsMsg::Phr(part, vari, self.whole_tick as i16, self.rcmb.clone()), ElpsMsg::Ana(part, vari, self.ana.clone()))
+        (ElpsMsg::Phr(part, vari,
+            PhrData {
+                whole_tick: self.whole_tick as i16,
+                evts:       self.rcmb.clone(),
+            }),
+        ElpsMsg::Ana(part, vari,
+            AnaData {
+                evts: self.ana.clone(),
+            })
+        )
     }
     pub fn set_raw(&mut self, input_text: String, cluster_word: &str) -> bool {
         // 1.raw
@@ -219,7 +228,12 @@ impl Default for CompositionDataStock {
 }
 impl CompositionDataStock {
     pub fn get_final(&self, part: i16) -> ElpsMsg {
-        ElpsMsg::Cmp(part, self.whole_tick as i16, self.rcmb.clone())
+        ElpsMsg::Cmp(part,
+            ChordData {
+                whole_tick: self.whole_tick as i16, 
+                evts: self.rcmb.clone(),
+            }
+        )
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
         // 1.raw

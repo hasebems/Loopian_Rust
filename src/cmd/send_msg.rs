@@ -33,13 +33,13 @@ impl MessageSender {
         let (pdt, ana) = gdt.get_pdstk(part, vari).get_final(part as i16, vari as i16);
         let msg = pdt.clone();
         match pdt {
-            ElpsMsg::Phr(_m0, _m1, _m2, mv) => {
-                if mv.len() > 0 {
+            ElpsMsg::Phr(_m0, _m1, mv) => {
+                if mv.evts.len() > 0 {
                     self.send_msg_to_elapse(msg);
                     let amsg = ana.clone();
                     match ana {
                         ElpsMsg::Ana(_a0, _a1, av) => {
-                            if av.len() > 0 {
+                            if av.evts.len() > 0 {
                                 self.send_msg_to_elapse(amsg);
                             }
                         }
@@ -50,7 +50,7 @@ impl MessageSender {
                     self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16, vari as i16));
                     match ana {
                         ElpsMsg::Ana(_a0, _a1, av) => {
-                            if av.len() == 0 {
+                            if av.evts.len() == 0 {
                                 self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16, vari as i16));
                             }
                             println!("Part {} Phrase: No Data!",part);
@@ -66,8 +66,8 @@ impl MessageSender {
         let cdt = gdt.get_cdstk(part).get_final(part as i16);
         let cmsg = cdt.clone();
         match cdt {
-            ElpsMsg::Cmp(_c0, _c1, cv) => {
-                if cv.len() > 0 {
+            ElpsMsg::Cmp(_c0, cv) => {
+                if cv.evts.len() > 0 {
                     self.send_msg_to_elapse(cmsg);
                 }
                 else {

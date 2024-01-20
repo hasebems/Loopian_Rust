@@ -21,12 +21,12 @@ fn pedal() {
         match rxmsg.try_recv() {
             Ok(n)  => {
                 match n {
-                    Phr(_m0, _m1, _m2, evt) => {
-                        assert_eq!(evt[0],PhrEvt{mtype:TYPE_NOTE, tick: 0, dur: 440, note: 60, vel: 72, trns: 0 });
+                    Phr(_m0, _m1, dt) => {
+                        assert_eq!(dt.evts[0],PhrEvt{mtype:TYPE_NOTE, tick: 0, dur: 440, note: 60, vel: 72, trns: 0 });
                     }
-                    Ana(_m0, _m1, evt) => {
-                        assert_eq!(evt[0],AnaEvt{mtype:TYPE_BEAT, tick: 0, dur: 480, note: 60, cnt: 1, atype: 0});
-                        assert_eq!(evt[1],AnaEvt{mtype:TYPE_EXP, tick:0, dur:0, note:0, cnt:0, atype:NOPED});
+                    Ana(_m0, _m1, dt) => {
+                        assert_eq!(dt.evts[0],AnaEvt{mtype:TYPE_BEAT, tick: 0, dur: 480, note: 60, cnt: 1, atype: 0});
+                        assert_eq!(dt.evts[1],AnaEvt{mtype:TYPE_EXP, tick:0, dur:0, note:0, cnt:0, atype:NOPED});
                     }
                     _ => {},
                 }

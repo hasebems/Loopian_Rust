@@ -64,7 +64,11 @@ pub const DEFAULT_TURNNOTE: i16 = 5;
 //              []: meaning, < >: index, (a/b/c): selection
 //*******************************************************************
 // MSG_PHR
+/// for mtype
 pub const TYPE_NONE: i16    = 0;        // 共用
+pub const _TYPE_ID: i16     = 1000;     // for TYPE
+pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
+pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報
 #[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct PhrEvt {
     pub mtype:i16,      // message type
@@ -77,9 +81,11 @@ pub struct PhrEvt {
 impl PhrEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, vel:0, trns:TRNS_COM}}
 }
-pub const _TYPE_ID: i16     = 1000;     // for TYPE
-pub const TYPE_NOTE: i16    = 1001;     // for index TYPE
-pub const TYPE_INFO: i16    = 1020;     // タイミングを持つ演奏以外の情報
+#[derive(Default,Clone,Debug,PartialEq,Eq)]
+pub struct PhrData {
+    pub whole_tick: i16,
+    pub evts: Vec<PhrEvt>,
+}
 //-------------------------------------------------------------------
 #[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct DmprEvt {
@@ -94,6 +100,11 @@ impl DmprEvt {
 pub const TYPE_DAMPER: i16  = 1003;
 //-------------------------------------------------------------------
 // MSG_CMP
+/// for mtype
+pub const TYPE_CHORD: i16   = 1002;
+pub const TYPE_VARI: i16    = 1004;
+/// for tbl
+pub const UPPER: i16        = 1000;
 #[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct ChordEvt {
     pub mtype:i16,      // message type
@@ -104,13 +115,23 @@ pub struct ChordEvt {
 impl ChordEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, root:0, tbl:0}}
 }
-// for mtype
-pub const TYPE_CHORD: i16   = 1002;
-pub const TYPE_VARI: i16    = 1004;
-// for tbl
-pub const UPPER: i16        = 1000;     
+#[derive(Default,Clone,Debug,PartialEq,Eq)]
+pub struct ChordData {
+    pub whole_tick: i16,
+    pub evts: Vec<ChordEvt>,
+}
 //-------------------------------------------------------------------
 // MSG_ANA
+/// for mtype
+pub const TYPE_BEAT: i16    = 1006;     // for index TYPE
+pub const TYPE_EXP: i16     = 1010;     // for index TYPE
+/// for atype ( mtype: TYPE_EXP のとき )
+pub const NOPED: i16        = 10;       // Note情報より先に置く
+/// for atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
+pub const TRNS_COM: i16     = 0;        // Common 変換
+pub const TRNS_PARA: i16    = 10000;    // Parallel 変換
+pub const TRNS_NONE: i16    = 10001;    // 変換しない
+                        //  -n .. +n  : ARP のときの Note 差分
 #[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct AnaEvt {
     pub mtype:i16,      // message type
@@ -123,16 +144,10 @@ pub struct AnaEvt {
 impl AnaEvt {
     pub fn new() -> Self {Self{mtype:TYPE_NONE, tick:0, dur:0, note:0, cnt:0, atype:0}}
 }
-// for mtype
-pub const TYPE_BEAT: i16    = 1006;     // for index TYPE
-pub const TYPE_EXP: i16     = 1010;     // for index TYPE
-// for atype ( mtype: TYPE_EXP のとき )
-pub const NOPED: i16        = 10;       // Note情報より先に置く
-// for atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
-pub const TRNS_COM: i16     = 0;        // Common 変換
-pub const TRNS_PARA: i16    = 10000;    // Parallel 変換
-pub const TRNS_NONE: i16    = 10001;    // 変換しない
-                        //  -n .. +n  : ARP のときの Note 差分
+#[derive(Default,Clone,Debug,PartialEq,Eq)]
+pub struct AnaData {
+    pub evts: Vec<AnaEvt>,
+}
 //-------------------------------------------------------------------
 #[derive(Clone,Debug)]
 pub enum ElpsMsg {
@@ -143,12 +158,12 @@ pub enum ElpsMsg {
 //    SetBpm([i16; 3]),
     SetBeat([i16; 2]),
 //    SetKey([i16; 3]),
-    Phr(i16, i16, i16, Vec<PhrEvt>),    //  Phr : part, vari, whole_tick, ()
-    Cmp(i16, i16, Vec<ChordEvt>),       //  Cmp : part, whole_tick, ()
-    Ana(i16, i16, Vec<AnaEvt>),         //  Ana : part, var, ()
-    PhrX(i16, i16), //  PhrX : part, vari
-    CmpX(i16),      //  CmpX : part
-    AnaX(i16, i16), //  AnaX : part, vari
+    Phr(i16, i16, PhrData),     //  Phr : part, vari, (whole_tick,evts)
+    Cmp(i16, ChordData),        //  Cmp : part, (whole_tick,evts)
+    Ana(i16, i16, AnaData),     //  Ana : part, var, (evts)
+    PhrX(i16, i16),             //  PhrX : part, vari
+    CmpX(i16),                  //  CmpX : part
+    AnaX(i16, i16),             //  AnaX : part, vari
 }
 //  Ctrl
 pub const MSG_CTRL_QUIT: i16     = -1;
