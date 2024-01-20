@@ -149,8 +149,8 @@ impl PhraseDataStock {
             whole_tick: 0,
         }
     }
-    pub fn get_final(&self, pv: i16) -> (ElpsMsg, ElpsMsg) {
-        (ElpsMsg::Phr(pv, self.whole_tick as i16, self.rcmb.clone()), ElpsMsg::Ana(pv, self.ana.clone()))
+    pub fn get_final(&self, part: i16, vari: i16) -> (ElpsMsg, ElpsMsg) {
+        (ElpsMsg::Phr(part, vari, self.whole_tick as i16, self.rcmb.clone()), ElpsMsg::Ana(part, vari, self.ana.clone()))
     }
     pub fn set_raw(&mut self, input_text: String, cluster_word: &str) -> bool {
         // 1.raw

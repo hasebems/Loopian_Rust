@@ -29,16 +29,16 @@ impl MessageSender {
         }
     }
     pub fn send_phrase_to_elapse(&self, part: usize, vari: usize, gdt: &SeqDataStock) {
-        let msg_pv = (part as i16) + 10*(vari as i16);
-        let (pdt, ana) = gdt.get_pdstk(part, vari).get_final(msg_pv);
+        //let msg_pv = (part as i16) + 10*(vari as i16);
+        let (pdt, ana) = gdt.get_pdstk(part, vari).get_final(part as i16, vari as i16);
         let msg = pdt.clone();
         match pdt {
-            ElpsMsg::Phr(_m0, _m1, mv) => {
+            ElpsMsg::Phr(_m0, _m1, _m2, mv) => {
                 if mv.len() > 0 {
                     self.send_msg_to_elapse(msg);
                     let amsg = ana.clone();
                     match ana {
-                        ElpsMsg::Ana(_a0, av) => {
+                        ElpsMsg::Ana(_a0, _a1, av) => {
                             if av.len() > 0 {
                                 self.send_msg_to_elapse(amsg);
                             }
@@ -47,11 +47,11 @@ impl MessageSender {
                     }
                 }
                 else {
-                    self.send_msg_to_elapse(ElpsMsg::PhrX(msg_pv));
+                    self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16, vari as i16));
                     match ana {
-                        ElpsMsg::Ana(_a0, av) => {
+                        ElpsMsg::Ana(_a0, _a1, av) => {
                             if av.len() == 0 {
-                                self.send_msg_to_elapse(ElpsMsg::AnaX(msg_pv));
+                                self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16, vari as i16));
                             }
                             println!("Part {} Phrase: No Data!",part);
                         }

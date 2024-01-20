@@ -106,7 +106,7 @@ impl PhrLoopManager {
                // 通常の Loop 中
         }
     }
-    pub fn rcv_msg(&mut self, msg: Vec<PhrEvt>, whole_tick: i16, vari_num: usize) {
+    pub fn rcv_phr(&mut self, msg: Vec<PhrEvt>, whole_tick: i16, vari_num: usize) {
         if vari_num < MAX_PHRASE {
             if msg.len() == 0 && whole_tick == 0 {
                 self.new_data_stock[vari_num] = vec![PhrEvt::new()];
@@ -265,7 +265,7 @@ impl CmpsLoopManager {
             self.new_loop(crnt_, estk, pbp);
         }
     }
-    pub fn rcv_msg(&mut self, msg: Vec<ChordEvt>, whole_tick: i16) {
+    pub fn rcv_cmp(&mut self, msg: Vec<ChordEvt>, whole_tick: i16) {
         //println!("Composition Msg: {:?}", msg);
         if msg.len() == 0 && whole_tick == 0 {
             self.new_data_stock = vec![ChordEvt::new()];
@@ -392,10 +392,10 @@ impl Part {
         self.pm.state_reserve = true;
     }
     pub fn rcv_phr_msg(&mut self, msg: Vec<PhrEvt>, whole_tick: i16, vari_num: usize) {
-        self.pm.rcv_msg(msg, whole_tick, vari_num);
+        self.pm.rcv_phr(msg, whole_tick, vari_num);
     }
     pub fn rcv_cmps_msg(&mut self, msg: Vec<ChordEvt>, whole_tick: i16) {
-        self.cm.rcv_msg(msg, whole_tick);
+        self.cm.rcv_cmp(msg, whole_tick);
     }
     pub fn rcv_ana_msg(&mut self, msg: Vec<AnaEvt>, vari_num: usize) {
         self.pm.rcv_ana(msg, vari_num);

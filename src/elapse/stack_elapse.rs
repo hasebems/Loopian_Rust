@@ -196,12 +196,12 @@ impl ElapseStack {
             Rit(m) => self.rit(m),
             Set(m) => self.setting_cmnd(m),
             SetBeat(m) => self.set_beat(m),
-            Phr(m0, m1, mv) => self.phrase(m0, m1, mv),
+            Phr(m0, m1, m2, mv) => self.phrase(m0, m1, m2, mv),
             Cmp(m0, m1, mv) => self.composition(m0, m1, mv),
-            Ana(m0, mv) => self.ana(m0, mv),
-            PhrX(m) => self.del_phrase(m),
+            Ana(m0, m1, mv) => self.ana(m0, m1, mv),
+            PhrX(m0, m1) => self.del_phrase(m0, m1),
             CmpX(m) => self.del_composition(m),
-            AnaX(m) => self.del_ana(m),
+            AnaX(m0, m1) => self.del_ana(m0, m1),
             //_ => {}
         }
     }
@@ -335,37 +335,27 @@ impl ElapseStack {
         self.beat_stock = Beat(msg[0] as i32, msg[1] as i32);
         self.sync(MSG_SYNC_ALL);
     }
-    fn phrase(&mut self, part: i16, tick: i16, evts: Vec<PhrEvt>) {
-        let part_num = pt(part);
-        let vari_num = vari(part);
+    fn phrase(&mut self, part_num: i16, vari_num: i16, tick: i16, evts: Vec<PhrEvt>) {
         println!("Received Phrase Message! Part: {}, variation: {}", part_num, vari_num);
-        self.part_vec[part_num].borrow_mut().rcv_phr_msg(evts, tick, vari_num);
+        self.part_vec[part_num as usize].borrow_mut().rcv_phr_msg(evts, tick, vari_num as usize);
     }
-    fn composition(&mut self, part: i16, tick: i16, evts: Vec<ChordEvt>) {
-        let part_num = pt(part);
+    fn composition(&mut self, part_num: i16, tick: i16, evts: Vec<ChordEvt>) {
         println!("Received Composition Message! Part: {}", part_num);
-        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(evts, tick);
+        self.part_vec[part_num as usize].borrow_mut().rcv_cmps_msg(evts, tick);
     }
-    fn ana(&mut self, part: i16, evts: Vec<AnaEvt>) {
-        let part_num = pt(part);
-        let vari_num = vari(part);
+    fn ana(&mut self, part_num: i16, vari_num: i16, evts: Vec<AnaEvt>) {
         println!("Received Analysis Message! Part: {}, variation: {}", part_num, vari_num);
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(evts, vari_num);
+        self.part_vec[part_num as usize].borrow_mut().rcv_ana_msg(evts, vari_num as usize);
     }
-    fn del_phrase(&mut self, part: i16) {
-        let part_num = pt(part);
-        let vari_num = vari(part); 
-        self.part_vec[part_num].borrow_mut().rcv_phr_msg(Vec::new(), 0, vari_num);
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new(), vari_num);
+    fn del_phrase(&mut self, part_num: i16, vari_num: i16) {
+        self.part_vec[part_num as usize].borrow_mut().rcv_phr_msg(Vec::new(), 0, vari_num as usize);
+        self.part_vec[part_num as usize].borrow_mut().rcv_ana_msg(Vec::new(), vari_num as usize);
     }
-    fn del_composition(&mut self, part: i16) {
-        let part_num: usize = pt(part) as usize;
-        self.part_vec[part_num].borrow_mut().rcv_cmps_msg(Vec::new(), 0);
+    fn del_composition(&mut self, part_num: i16) {
+        self.part_vec[part_num as usize].borrow_mut().rcv_cmps_msg(Vec::new(), 0);
     }
-    fn del_ana(&mut self, part: i16) {
-        let part_num: usize = pt(part) as usize;
-        let vari_num = vari(part); 
-        self.part_vec[part_num].borrow_mut().rcv_ana_msg(Vec::new(), vari_num);
+    fn del_ana(&mut self, part_num: i16, vari_num: i16) {
+        self.part_vec[part_num as usize].borrow_mut().rcv_ana_msg(Vec::new(), vari_num as usize);
     }
     fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
