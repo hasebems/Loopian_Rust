@@ -3,15 +3,15 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use std::rc::Rc;
-use std::cell::RefCell;
-use rand::prelude::{Distribution, thread_rng};
+use rand::prelude::{thread_rng, Distribution};
 use rand_distr::Normal;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::lpnlib::*;
-use super::{elapse::*, stack_elapse};
-use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
+use super::tickgen::CrntMsrTick;
+use super::{elapse::*, stack_elapse};
+use crate::lpnlib::*;
 
 //*******************************************************************
 //          Note Event Struct
@@ -32,11 +32,22 @@ pub struct Note {
     deb_txt: String,
 }
 impl Note {
-    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &PhrEvt, keynote: u8, deb_txt: String, 
-        msr: i32, tick: i32)
-      -> Rc<RefCell<Self>> {
+    pub fn new(
+        sid: u32,
+        pid: u32,
+        _estk: &mut ElapseStack,
+        ev: &PhrEvt,
+        keynote: u8,
+        deb_txt: String,
+        msr: i32,
+        tick: i32,
+    ) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: ElapseId {pid, sid, elps_type: ElapseType::TpNote,},
+            id: ElapseId {
+                pid,
+                sid,
+                elps_type: ElapseType::TpNote,
+            },
             priority: PRI_NOTE,
             note_num: ev.note as u8,
             velocity: ev.vel as u8,
@@ -59,9 +70,8 @@ impl Note {
             estk.midi_out(0x90, self.real_note, vel);
             println!("On: {},{} Trns: {}, ", num, vel, self.deb_txt);
             true
-        }
-        else {
-            println!("NoteOn: => Note Limit Failed!! Num:{}",num);
+        } else {
+            println!("NoteOn: => Note Limit Failed!! Num:{}", num);
             false
         }
     }
@@ -76,26 +86,35 @@ impl Note {
         }
     }
     fn note_limit_available(num: u8, min_value: u8, max_value: u8) -> bool {
-        if num > max_value {false}
-        else if num < min_value {false}
-        else {true}
+        if num > max_value {
+            false
+        } else if num < min_value {
+            false
+        } else {
+            true
+        }
     }
     fn random_velocity(&self, input_vel: u8) -> u8 {
         let mut rng = thread_rng();
         // std_dev: 標準偏差
         let dist = Normal::<f64>::new(0.0, 3.0).unwrap();
         let diff = dist.sample(&mut rng) as i32;
-        if input_vel as i32+ diff > 0 && input_vel as i32+ diff < 128 {
+        if input_vel as i32 + diff > 0 && input_vel as i32 + diff < 128 {
             (input_vel as i32 + diff) as u8
+        } else {
+            input_vel
         }
-        else {input_vel}
     }
 }
 impl Elapse for Note {
     /// id を得る
-    fn id(&self) -> ElapseId {self.id}
+    fn id(&self) -> ElapseId {
+        self.id
+    }
     /// priority を得る
-    fn prio(&self) -> u32 {self.priority}
+    fn prio(&self) -> u32 {
+        self.priority
+    }
     /// 次に呼ばれる小節番号、Tick数を返す
     fn next(&self) -> (i32, i32) {
         (self.next_msr, self.next_tick)
@@ -110,7 +129,9 @@ impl Elapse for Note {
     }
     /// 再生処理 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick) || (crnt_.msr > self.next_msr) {
+        if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick)
+            || (crnt_.msr > self.next_msr)
+        {
             if !self.noteon_started {
                 // midi note on
                 self.noteon_started = self.note_on(estk);
@@ -130,14 +151,15 @@ impl Elapse for Note {
                 }
                 self.next_msr += msrcnt;
                 self.next_tick = off_tick;
-            }
-            else {
+            } else {
                 self.note_off(estk);
             }
         }
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
-    fn destroy_me(&self) -> bool {self.destroy}   // 自クラスが役割を終えた時に True を返す
+    fn destroy_me(&self) -> bool {
+        self.destroy
+    } // 自クラスが役割を終えた時に True を返す
 }
 
 //*******************************************************************
@@ -154,10 +176,20 @@ pub struct Damper {
     next_tick: i32,
 }
 impl Damper {
-    pub fn new(sid: u32, pid: u32, _estk: &mut ElapseStack, ev: &DmprEvt, msr: i32, tick: i32)
-      -> Rc<RefCell<Self>> {
+    pub fn new(
+        sid: u32,
+        pid: u32,
+        _estk: &mut ElapseStack,
+        ev: &DmprEvt,
+        msr: i32,
+        tick: i32,
+    ) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: ElapseId {pid, sid, elps_type: ElapseType::TpNote,},
+            id: ElapseId {
+                pid,
+                sid,
+                elps_type: ElapseType::TpNote,
+            },
             priority: PRI_NOTE,
             position: ev.position as i32,
             duration: ev.dur as i32,
@@ -181,9 +213,13 @@ impl Damper {
 }
 impl Elapse for Damper {
     /// id を得る
-    fn id(&self) -> ElapseId {self.id}
+    fn id(&self) -> ElapseId {
+        self.id
+    }
     /// priority を得る
-    fn prio(&self) -> u32 {self.priority}
+    fn prio(&self) -> u32 {
+        self.priority
+    }
     /// 次に呼ばれる小節番号、Tick数を返す
     fn next(&self) -> (i32, i32) {
         (self.next_msr, self.next_tick)
@@ -198,7 +234,9 @@ impl Elapse for Damper {
     }
     /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick) || (crnt_.msr > self.next_msr) {
+        if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick)
+            || (crnt_.msr > self.next_msr)
+        {
             if !self.damper_started {
                 self.damper_started = true;
                 // midi note on
@@ -213,8 +251,7 @@ impl Elapse for Damper {
                 }
                 self.next_msr += msrcnt;
                 self.next_tick = off_tick;
-            }
-            else {
+            } else {
                 self.damper_started = false;
                 self.damper_off(estk);
             }
@@ -225,5 +262,7 @@ impl Elapse for Damper {
             _ => (),
         }
     }
-    fn destroy_me(&self) -> bool {self.destroy}   // 自クラスが役割を終えた時に True を返す
+    fn destroy_me(&self) -> bool {
+        self.destroy
+    } // 自クラスが役割を終えた時に True を返す
 }

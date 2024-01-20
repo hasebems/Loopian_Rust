@@ -3,27 +3,27 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use eframe::{egui,egui::*};
-use std::time::Instant;
-use rand::{thread_rng, Rng, rngs};
-use crate::{WINDOW_X, WINDOW_Y};
-use crate::lpnlib::*;
-use crate::cmd::cmdparse::LoopianCmd;
 use super::noteobj::NoteObj;
 use super::waterripple::WaterRipple;
+use crate::cmd::cmdparse::LoopianCmd;
+use crate::lpnlib::*;
+use crate::{WINDOW_X, WINDOW_Y};
+use eframe::{egui, egui::*};
+use rand::{rngs, thread_rng, Rng};
+use std::time::Instant;
 
 pub const MAX_INDICATOR: usize = 8;
 
 const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
-const TEXT_GRAY: Color32 = Color32::from_rgb(0,0,0);
-const _TEXT_BG: Color32 = Color32::from_rgb(0,200,200);
+const TEXT_GRAY: Color32 = Color32::from_rgb(0, 0, 0);
+const _TEXT_BG: Color32 = Color32::from_rgb(0, 200, 200);
 
-const BACK_WHITE0: Color32 = Color32::from_rgb(220, 220, 220);  // LIGHTの明るいグレー
-const BACK_WHITE1: Color32 = Color32::from_rgb(180, 180, 180);  // DARKの明るいグレー
-const BACK_WHITE2: Color32 = Color32::from_rgb(128,128,128);    // DARKの薄暗いグレー
+const BACK_WHITE0: Color32 = Color32::from_rgb(220, 220, 220); // LIGHTの明るいグレー
+const BACK_WHITE1: Color32 = Color32::from_rgb(180, 180, 180); // DARKの明るいグレー
+const BACK_WHITE2: Color32 = Color32::from_rgb(128, 128, 128); // DARKの薄暗いグレー
 const _BACK_MAZENTA: Color32 = Color32::from_rgb(180, 160, 180);
-const _BACK_GRAY: Color32 = Color32::from_rgb(48,48,48);
-const BACK_DARK_GRAY: Color32 = Color32::from_rgb(32,32,32);
+const _BACK_GRAY: Color32 = Color32::from_rgb(48, 48, 48);
+const BACK_DARK_GRAY: Color32 = Color32::from_rgb(32, 32, 32);
 const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
 
 const FONT16: f32 = 16.0;
@@ -50,7 +50,10 @@ struct Resize {
 impl Graphic {
     pub fn new() -> Graphic {
         Self {
-            full_size: Pos2 {x:WINDOW_X, y: WINDOW_Y},
+            full_size: Pos2 {
+                x: WINDOW_X,
+                y: WINDOW_Y,
+            },
             nobj: Vec::new(),
             start_time: Instant::now(),
             frame_counter: 0,
@@ -58,13 +61,20 @@ impl Graphic {
             mode: DARK_MODE,
         }
     }
-    pub fn update(&mut self, ui: &mut Ui, 
-        infs : (usize, &String, &Vec<(String, String)>, usize, &LoopianCmd),
-        msg: i16, frame: &mut eframe::Frame, ntev: Vec<String>) {
-
+    pub fn update(
+        &mut self,
+        ui: &mut Ui,
+        infs: (usize, &String, &Vec<(String, String)>, usize, &LoopianCmd),
+        msg: i16,
+        frame: &mut eframe::Frame,
+        ntev: Vec<String>,
+    ) {
         if msg != NO_MSG {
-            if msg == DARK_MODE {self.mode = DARK_MODE;}
-            else if msg == LIGHT_MODE {self.mode = LIGHT_MODE;}
+            if msg == DARK_MODE {
+                self.mode = DARK_MODE;
+            } else if msg == LIGHT_MODE {
+                self.mode = LIGHT_MODE;
+            }
         }
 
         // window size を得る
@@ -73,9 +83,9 @@ impl Graphic {
         let rs = self.resize();
 
         // frame_counter の更新
-        const FPS: i32 = 1000/50;
+        const FPS: i32 = 1000 / 50;
         let time = self.start_time.elapsed();
-        self.frame_counter = (time.as_millis() as i32)/FPS;
+        self.frame_counter = (time.as_millis() as i32) / FPS;
 
         //  Note Object の描画
         for ev in ntev.iter() {
@@ -83,9 +93,13 @@ impl Graphic {
             let nt: i32 = nt_vel[0].parse().unwrap();
             let vel: i32 = nt_vel[1].parse().unwrap();
             let rnd: f32 = self.rndm.gen();
-            self.nobj.push(Box::new(
-                WaterRipple::new(nt as f32, vel as f32, rnd, self.frame_counter, self.mode))
-            );
+            self.nobj.push(Box::new(WaterRipple::new(
+                nt as f32,
+                vel as f32,
+                rnd,
+                self.frame_counter,
+                self.mode,
+            )));
         }
         let nlen = self.nobj.len();
         let mut rls = vec![true; nlen];
@@ -94,8 +108,12 @@ impl Graphic {
                 rls[i] = false;
             }
         }
-        for i in 0..nlen {  // 一度に一つ消去
-            if !rls[i] {self.nobj.remove(i); break;}
+        for i in 0..nlen {
+            // 一度に一つ消去
+            if !rls[i] {
+                self.nobj.remove(i);
+                break;
+            }
         }
 
         // Title 描画
@@ -113,36 +131,36 @@ impl Graphic {
     pub fn back_color(&self) -> Color32 {
         if self.mode == DARK_MODE {
             Color32::BLACK
-        }
-        else {
+        } else {
             Color32::WHITE
         }
     }
     fn letter_color(&self) -> Color32 {
         if self.mode == DARK_MODE {
             Color32::WHITE
-        }
-        else {
+        } else {
             Color32::BLACK
-        }        
+        }
     }
     fn light_box_color(&self) -> Color32 {
         if self.mode == DARK_MODE {
             BACK_WHITE1
-        }
-        else {
+        } else {
             BACK_WHITE0
-        }        
+        }
     }
     fn resize(&self) -> Resize {
-        const EIGHT_INDIC_TOP: f32 = 40.0;     // eight indicator
-        const SCROLL_TXT_TOP: f32 = 200.0;    // scroll text
-        const INPUT_TXT_TOP_SZ: f32 = 100.0;    // input text
+        const EIGHT_INDIC_TOP: f32 = 40.0; // eight indicator
+        const SCROLL_TXT_TOP: f32 = 200.0; // scroll text
+        const INPUT_TXT_TOP_SZ: f32 = 100.0; // input text
         const MIN_LEFT_MERGIN: f32 = 140.0;
-        let it_left_mergin = (self.full_size.x - 940.0)/2.0;
+        let it_left_mergin = (self.full_size.x - 940.0) / 2.0;
         let mut st_left_mertin = 0.0;
-        if self.full_size.x > 1200.0 {st_left_mertin = 200.0;}
-        else if self.full_size.x > 1000.0 {st_left_mertin = self.full_size.x - 1000.0;}
+        if self.full_size.x > 1200.0 {
+            st_left_mertin = 200.0;
+        } else if self.full_size.x > 1000.0 {
+            st_left_mertin = self.full_size.x - 1000.0;
+        }
         Resize {
             eight_indic_top: EIGHT_INDIC_TOP,
             eight_indic_left: MIN_LEFT_MERGIN,
@@ -158,16 +176,21 @@ impl Graphic {
     fn update_title(&self, ui: &mut egui::Ui) {
         ui.put(
             Rect {
-                min: Pos2 { x:self.full_size.x/2.0 - 50.0,
-                            y:self.full_size.y - 50.0},
-                max: Pos2 { x:self.full_size.x/2.0 + 50.0, 
-                            y:self.full_size.y - 10.0},
+                min: Pos2 {
+                    x: self.full_size.x / 2.0 - 50.0,
+                    y: self.full_size.y - 50.0,
+                },
+                max: Pos2 {
+                    x: self.full_size.x / 2.0 + 50.0,
+                    y: self.full_size.y - 10.0,
+                },
             }, //  location
-            Label::new(RichText::new("Loopian")
-                .size(28.0)
-                .color(self.letter_color())
-                .family(FontFamily::Proportional)
-            )
+            Label::new(
+                RichText::new("Loopian")
+                    .size(28.0)
+                    .color(self.letter_color())
+                    .family(FontFamily::Proportional),
+            ),
         );
     }
     //*******************************************************************
@@ -175,47 +198,67 @@ impl Graphic {
         const SPACE1_NEXT: f32 = 50.0;
         const BLOCK_LENGTH: f32 = 200.0;
         const BLOCK_HEIGHT: f32 = 30.0;
-        const MIN_MERGIN: f32 = 20.0;  // (NEXT_BLOCK - BLOCK_LENGTH)/2
+        const MIN_MERGIN: f32 = 20.0; // (NEXT_BLOCK - BLOCK_LENGTH)/2
 
         let mut interval: f32 = 240.0;
         let mut min_left: f32 = rs.eight_indic_left;
         if self.full_size.x > 1000.0 {
-            let times = (self.full_size.x - 1000.0)/1500.0 + 1.0;
-            let center = self.full_size.x/2.0;
-            interval = (BLOCK_LENGTH + MIN_MERGIN)*times;
-            min_left = center - interval*1.5;
+            let times = (self.full_size.x - 1000.0) / 1500.0 + 1.0;
+            let center = self.full_size.x / 2.0;
+            interval = (BLOCK_LENGTH + MIN_MERGIN) * times;
+            min_left = center - interval * 1.5;
         }
 
         let input_part = cmd.get_input_part();
         let mut back_color;
-        for i in 0..MAX_INDICATOR/2 {
+        for i in 0..MAX_INDICATOR / 2 {
             for j in 0..2 {
                 back_color = self.light_box_color();
-                if i as usize != input_part && j == 1 {back_color = BACK_WHITE2;}
+                if i as usize != input_part && j == 1 {
+                    back_color = BACK_WHITE2;
+                }
 
-                let raw: f32 = interval*(i as f32);
-                let line: f32 = SPACE1_NEXT*(j as f32);
+                let raw: f32 = interval * (i as f32);
+                let line: f32 = SPACE1_NEXT * (j as f32);
                 ui.painter().rect_filled(
-                    Rect { min: Pos2 {x:min_left + raw - BLOCK_LENGTH/2.0,
-                                      y:rs.eight_indic_top + line}, 
-                           max: Pos2 {x:min_left + raw- BLOCK_LENGTH/2.0 + BLOCK_LENGTH,
-                                      y:rs.eight_indic_top + BLOCK_HEIGHT + line},}, //  location
-                    8.0,              //  curve
-                    back_color,     //  color
+                    Rect {
+                        min: Pos2 {
+                            x: min_left + raw - BLOCK_LENGTH / 2.0,
+                            y: rs.eight_indic_top + line,
+                        },
+                        max: Pos2 {
+                            x: min_left + raw - BLOCK_LENGTH / 2.0 + BLOCK_LENGTH,
+                            y: rs.eight_indic_top + BLOCK_HEIGHT + line,
+                        },
+                    }, //  location
+                    8.0,        //  curve
+                    back_color, //  color
                 );
-                let tx = self.text_for_eight_indicator(i + j*4, cmd);
+                let tx = self.text_for_eight_indicator(i + j * 4, cmd);
                 let ltrcnt = tx.chars().count();
                 for k in 0..ltrcnt {
-                    ui.put(Rect {
-                        min: Pos2 {
-                            x:min_left + raw - BLOCK_LENGTH/2.0 + 10.0 + FONT16_WIDTH*(k as f32),
-                            y:rs.eight_indic_top + 2.0 + line},
-                        max: Pos2 {
-                            x:min_left + raw - BLOCK_LENGTH/2.0 + 10.0 + FONT16_WIDTH*((k+1) as f32),
-                            y:rs.eight_indic_top + 27.0 + line},},
-                        Label::new(RichText::new(&tx[k..k+1])
-                            .size(FONT16).color(TEXT_GRAY)
-                            .family(FontFamily::Monospace).text_style(TextStyle::Monospace))
+                    ui.put(
+                        Rect {
+                            min: Pos2 {
+                                x: min_left + raw - BLOCK_LENGTH / 2.0
+                                    + 10.0
+                                    + FONT16_WIDTH * (k as f32),
+                                y: rs.eight_indic_top + 2.0 + line,
+                            },
+                            max: Pos2 {
+                                x: min_left + raw - BLOCK_LENGTH / 2.0
+                                    + 10.0
+                                    + FONT16_WIDTH * ((k + 1) as f32),
+                                y: rs.eight_indic_top + 27.0 + line,
+                            },
+                        },
+                        Label::new(
+                            RichText::new(&tx[k..k + 1])
+                                .size(FONT16)
+                                .color(TEXT_GRAY)
+                                .family(FontFamily::Monospace)
+                                .text_style(TextStyle::Monospace),
+                        ),
                     );
                 }
             }
@@ -237,44 +280,67 @@ impl Graphic {
         indi_txt
     }
     //*******************************************************************
-    fn update_scroll_text(&self, ui: &mut egui::Ui, scroll_lines: &Vec<(String,String)>, rs: &Resize) {
+    fn update_scroll_text(
+        &self,
+        ui: &mut egui::Ui,
+        scroll_lines: &Vec<(String, String)>,
+        rs: &Resize,
+    ) {
         const MAX_SCROLL_LINES: usize = 20;
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
         const FONT16_HEIGHT: f32 = 25.0;
 
         let letter_color = self.letter_color();
         let lines = scroll_lines.len();
-        let max_count = if lines < MAX_SCROLL_LINES {lines} else {MAX_SCROLL_LINES};
-        let ofs_count = if lines < MAX_SCROLL_LINES {0} else {lines - MAX_SCROLL_LINES};
+        let max_count = if lines < MAX_SCROLL_LINES {
+            lines
+        } else {
+            MAX_SCROLL_LINES
+        };
+        let ofs_count = if lines < MAX_SCROLL_LINES {
+            0
+        } else {
+            lines - MAX_SCROLL_LINES
+        };
         // Draw Letters
         for i in 0..max_count {
-            let past_text_set = scroll_lines[ofs_count+i].clone();
+            let past_text_set = scroll_lines[ofs_count + i].clone();
             let past_text = past_text_set.0.clone() + &past_text_set.1;
             let cnt = past_text.chars().count();
-            let txt_color = if i%2==0 {letter_color} else {MAZENTA};
+            let txt_color = if i % 2 == 0 { letter_color } else { MAZENTA };
             ui.put(
-                Rect { 
-                    min: Pos2 {x:rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN,
-                               y:rs.scroll_txt_top + FONT16_HEIGHT*(i as f32)},
-                    max: Pos2 {x:rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN + FONT16_WIDTH*(cnt as f32),
-                               y:rs.scroll_txt_top + FONT16_HEIGHT*((i+1) as f32)},},
-                Label::new(RichText::new(&past_text)
-                    .size(FONT16)
-                    .color(txt_color)
-                    .family(FontFamily::Monospace)
-                )
+                Rect {
+                    min: Pos2 {
+                        x: rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN,
+                        y: rs.scroll_txt_top + FONT16_HEIGHT * (i as f32),
+                    },
+                    max: Pos2 {
+                        x: rs.scroll_txt_left
+                            + SPACE2_TXT_LEFT_MARGIN
+                            + FONT16_WIDTH * (cnt as f32),
+                        y: rs.scroll_txt_top + FONT16_HEIGHT * ((i + 1) as f32),
+                    },
+                },
+                Label::new(
+                    RichText::new(&past_text)
+                        .size(FONT16)
+                        .color(txt_color)
+                        .family(FontFamily::Monospace),
+                ),
             );
         }
     }
     //*******************************************************************
-    fn update_input_text(&mut self, ui: &mut egui::Ui, infs:
-        (usize, &String, &Vec<(String,String)>, usize, &LoopianCmd),
-        rs: &Resize) {
-
+    fn update_input_text(
+        &mut self,
+        ui: &mut egui::Ui,
+        infs: (usize, &String, &Vec<(String, String)>, usize, &LoopianCmd),
+        rs: &Resize,
+    ) {
         const CURSOR_LEFT_MARGIN: f32 = 10.0;
         const CURSOR_LOWER_MERGIN: f32 = 6.0;
-//        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
-        const CURSOR_TXT_LENGTH: f32 = 11.95;   // FONT 20p
+        //        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
+        const CURSOR_TXT_LENGTH: f32 = 11.95; // FONT 20p
         const CURSOR_THICKNESS: f32 = 4.0;
         const PROMPT_LETTERS: usize = 8;
 
@@ -283,7 +349,7 @@ impl Graphic {
 
         const INPUTTXT_FONT_SIZE: f32 = 20.0;
         const INPUTTXT_LETTER_WIDTH: f32 = 11.95;
-        const PROMPT_MERGIN: f32 = INPUTTXT_LETTER_WIDTH*(PROMPT_LETTERS as f32);
+        const PROMPT_MERGIN: f32 = INPUTTXT_LETTER_WIDTH * (PROMPT_LETTERS as f32);
         const INPUT_MERGIN_OFFSET: f32 = 3.25;
         const INPUT_MERGIN: f32 = PROMPT_MERGIN + INPUT_MERGIN_OFFSET;
 
@@ -296,58 +362,95 @@ impl Graphic {
         ui.painter().rect_filled(
             Rect::from_min_max(
                 pos2(rs.input_txt_left, rs.input_txt_top),
-                pos2(rs.input_txt_left + INPUT_TXT_X_SZ, rs.input_txt_top + INPUT_TXT_Y_SZ)),
-            2.0,              //  curve
-            BACK_DARK_GRAY  //  color
+                pos2(
+                    rs.input_txt_left + INPUT_TXT_X_SZ,
+                    rs.input_txt_top + INPUT_TXT_Y_SZ,
+                ),
+            ),
+            2.0,            //  curve
+            BACK_DARK_GRAY, //  color
         );
 
         // Paint cursor
         let cursor = infs.0 + PROMPT_LETTERS;
         let elapsed_time = self.start_time.elapsed().as_millis();
-        if elapsed_time%500 > 200 {
+        if elapsed_time % 500 > 200 {
             ui.painter().rect_filled(
-                Rect { min: Pos2 {x:rs.input_txt_left + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*(cursor as f32),
-                                  y:rs.input_txt_top + INPUT_TXT_Y_SZ - CURSOR_LOWER_MERGIN},
-                       max: Pos2 {x:rs.input_txt_left + CURSOR_LEFT_MARGIN + CURSOR_TXT_LENGTH*((cursor+1) as f32) - 2.0,
-                                  y:rs.input_txt_top + INPUT_TXT_Y_SZ - CURSOR_LOWER_MERGIN + CURSOR_THICKNESS},},
-                0.0,                              //  curve
-                BACK_GRAY2,  //  color
+                Rect {
+                    min: Pos2 {
+                        x: rs.input_txt_left
+                            + CURSOR_LEFT_MARGIN
+                            + CURSOR_TXT_LENGTH * (cursor as f32),
+                        y: rs.input_txt_top + INPUT_TXT_Y_SZ - CURSOR_LOWER_MERGIN,
+                    },
+                    max: Pos2 {
+                        x: rs.input_txt_left
+                            + CURSOR_LEFT_MARGIN
+                            + CURSOR_TXT_LENGTH * ((cursor + 1) as f32)
+                            - 2.0,
+                        y: rs.input_txt_top + INPUT_TXT_Y_SZ - CURSOR_LOWER_MERGIN
+                            + CURSOR_THICKNESS,
+                    },
+                },
+                0.0,        //  curve
+                BACK_GRAY2, //  color
             );
         }
 
         // Draw Letters
         let mut hcnt = infs.3;
-        if hcnt >= 1000 {hcnt %= 1000;}
+        if hcnt >= 1000 {
+            hcnt %= 1000;
+        }
         let prompt_txt: &str = &(format!("{:03}: ", hcnt) + infs.4.get_part_txt() + ">");
 
         // Prompt Text
         ui.put(
-            Rect { 
-                   min: Pos2 {x:rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN - 2.0,
-                              y:rs.input_txt_top + INPUTTXT_UPPER_MARGIN},
-                   max: Pos2 {x:rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN + PROMPT_MERGIN,
-                              y:rs.input_txt_top + INPUT_TXT_Y_SZ + INPUTTXT_LOWER_MARGIN},},
-            Label::new(RichText::new(prompt_txt)
-                .size(INPUTTXT_FONT_SIZE)
-                .color(MAZENTA)
-                .family(FontFamily::Monospace))
+            Rect {
+                min: Pos2 {
+                    x: rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN - 2.0,
+                    y: rs.input_txt_top + INPUTTXT_UPPER_MARGIN,
+                },
+                max: Pos2 {
+                    x: rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN + PROMPT_MERGIN,
+                    y: rs.input_txt_top + INPUT_TXT_Y_SZ + INPUTTXT_LOWER_MARGIN,
+                },
+            },
+            Label::new(
+                RichText::new(prompt_txt)
+                    .size(INPUTTXT_FONT_SIZE)
+                    .color(MAZENTA)
+                    .family(FontFamily::Monospace),
+            ),
         );
         // User Input
         let ltrcnt = infs.1.chars().count();
-        for i in 0..ltrcnt {    // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
+        for i in 0..ltrcnt {
+            // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
             ui.put(
-                Rect { 
-                    min: Pos2 {x:rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
-                                 INPUTTXT_LETTER_WIDTH*(i as f32),
-                               y:rs.input_txt_top + INPUTTXT_UPPER_MARGIN},
-                    max: Pos2 {x:rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN + INPUT_MERGIN + 
-                                 INPUTTXT_LETTER_WIDTH*((i+1) as f32),
-                               y:rs.input_txt_top + INPUT_TXT_Y_SZ + INPUTTXT_LOWER_MARGIN},},
-                Label::new(RichText::new(infs.1[i..i+1].to_string())
-                    .size(INPUTTXT_FONT_SIZE)
-                    .color(Color32::WHITE)
-                    .family(FontFamily::Monospace)
-                    .text_style(TextStyle::Monospace))
+                Rect {
+                    min: Pos2 {
+                        x: rs.input_txt_left
+                            + SPACE3_TXT_LEFT_MARGIN
+                            + INPUT_MERGIN
+                            + INPUTTXT_LETTER_WIDTH * (i as f32),
+                        y: rs.input_txt_top + INPUTTXT_UPPER_MARGIN,
+                    },
+                    max: Pos2 {
+                        x: rs.input_txt_left
+                            + SPACE3_TXT_LEFT_MARGIN
+                            + INPUT_MERGIN
+                            + INPUTTXT_LETTER_WIDTH * ((i + 1) as f32),
+                        y: rs.input_txt_top + INPUT_TXT_Y_SZ + INPUTTXT_LOWER_MARGIN,
+                    },
+                },
+                Label::new(
+                    RichText::new(infs.1[i..i + 1].to_string())
+                        .size(INPUTTXT_FONT_SIZE)
+                        .color(Color32::WHITE)
+                        .family(FontFamily::Monospace)
+                        .text_style(TextStyle::Monospace),
+                ),
             );
         }
     }

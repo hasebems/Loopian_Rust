@@ -3,10 +3,10 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib::*;
-use super::txt2seq_phr::*;
-use super::txt2seq_cmps::*;
 use super::txt2seq_ana::*;
+use super::txt2seq_cmps::*;
+use super::txt2seq_phr::*;
+use crate::lpnlib::*;
 
 //*******************************************************************
 //          Seq Data Stock Struct
@@ -43,14 +43,24 @@ impl SeqDataStock {
             bpm: DEFAULT_BPM,
         }
     }
-    pub fn get_pdstk(&self, part: usize, vari: usize) -> &PhraseDataStock {&self.pdt[part][vari]}
-    pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {&self.cdt[part]}
-    pub fn set_cluster_memory(&mut self, word: String) {self.cluster_memory = word;}
+    pub fn get_pdstk(&self, part: usize, vari: usize) -> &PhraseDataStock {
+        &self.pdt[part][vari]
+    }
+    pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {
+        &self.cdt[part]
+    }
+    pub fn set_cluster_memory(&mut self, word: String) {
+        self.cluster_memory = word;
+    }
     pub fn set_raw_phrase(&mut self, part: usize, vari: usize, input_text: String) -> bool {
         if part < MAX_USER_PART {
             if self.pdt[part][vari].set_raw(input_text, &self.cluster_memory) {
-                self.pdt[part][vari].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
-                return true
+                self.pdt[part][vari].set_recombined(
+                    self.input_mode,
+                    self.bpm,
+                    self.tick_for_onemsr,
+                );
+                return true;
             }
         }
         false
@@ -59,15 +69,16 @@ impl SeqDataStock {
         if part < MAX_USER_PART {
             if self.cdt[part].set_raw(input_text) {
                 self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
-                return true
+                return true;
             }
         }
         false
     }
     pub fn change_beat(&mut self, numerator: i16, denomirator: i16) {
         //println!("beat: {}/{}",numerator, denomirator);
-        self.tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE*(numerator as i32)/(denomirator as i32);
-        self.tick_for_onebeat = DEFAULT_TICK_FOR_QUARTER*4/(denomirator as i32);
+        self.tick_for_onemsr =
+            DEFAULT_TICK_FOR_ONE_MEASURE * (numerator as i32) / (denomirator as i32);
+        self.tick_for_onebeat = DEFAULT_TICK_FOR_QUARTER * 4 / (denomirator as i32);
         self.recombine_all();
     }
     pub fn change_bpm(&mut self, bpm: i16) {
@@ -77,22 +88,28 @@ impl SeqDataStock {
     pub fn change_oct(&mut self, oct: i32, relative: bool, part: usize) -> bool {
         let mut update = false;
         let new_bd: i32;
-        if oct == 0 {   // Reset Octave
+        if oct == 0 {
+            // Reset Octave
             new_bd = Self::default_base_note(part);
             let dbn_now = self.pdt[part][0].base_note;
             if new_bd != dbn_now {
                 update = true;
             }
-        }
-        else {
-            let old = self.pdt[part][0].base_note/12 - 1;
+        } else {
+            let old = self.pdt[part][0].base_note / 12 - 1;
             let mut new = old;
-            if relative {new += oct;}
-            else        {new = oct;}
-            if new >= 8 {new = 7;}
-            else if new < 1 {new = 1;}
+            if relative {
+                new += oct;
+            } else {
+                new = oct;
+            }
+            if new >= 8 {
+                new = 7;
+            } else if new < 1 {
+                new = 1;
+            }
             update = old != new;
-            new_bd = (new+1)*12;
+            new_bd = (new + 1) * 12;
         }
         if update {
             for epd in self.pdt[part].iter_mut() {
@@ -121,7 +138,7 @@ impl SeqDataStock {
         }
     }
     fn default_base_note(part_num: usize) -> i32 {
-        (DEFAULT_NOTE_NUMBER as i32) + 12*((part_num as i32) - 2)
+        (DEFAULT_NOTE_NUMBER as i32) + 12 * ((part_num as i32) - 2)
     }
 }
 
@@ -144,22 +161,29 @@ impl PhraseDataStock {
             raw: "".to_string(),
             cmpl_nt: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
-            rcmb: Vec::new(),  //UgContent::new(),
-            ana: Vec::new(),   //UgContent::new(),
+            rcmb: Vec::new(), //UgContent::new(),
+            ana: Vec::new(),  //UgContent::new(),
             whole_tick: 0,
         }
     }
     pub fn get_final(&self, part: i16, vari: i16) -> (ElpsMsg, ElpsMsg) {
-        (ElpsMsg::Phr(part, vari,
-            PhrData {
-                whole_tick: self.whole_tick as i16,
-                auftakt:    0,
-                evts:       self.rcmb.clone(),
-            }),
-        ElpsMsg::Ana(part, vari,
-            AnaData {
-                evts: self.ana.clone(),
-            })
+        (
+            ElpsMsg::Phr(
+                part,
+                vari,
+                PhrData {
+                    whole_tick: self.whole_tick as i16,
+                    auftakt: 0,
+                    evts: self.rcmb.clone(),
+                },
+            ),
+            ElpsMsg::Ana(
+                part,
+                vari,
+                AnaData {
+                    evts: self.ana.clone(),
+                },
+            ),
         )
     }
     pub fn set_raw(&mut self, input_text: String, cluster_word: &str) -> bool {
@@ -170,28 +194,31 @@ impl PhraseDataStock {
         let cmpl = complement_phrase(input_text, cluster_word);
         if cmpl.len() <= 1 {
             println!("Phrase input failed!");
-            return false
-        }
-        else {
+            return false;
+        } else {
             self.cmpl_nt = cmpl[0].clone();
             self.cmpl_ex = cmpl[1].clone();
         }
-        println!("complement_phrase: {:?} exp: {:?}",cmpl[0],cmpl[1]);
+        println!("complement_phrase: {:?} exp: {:?}", cmpl[0], cmpl[1]);
         true
     }
     pub fn set_recombined(&mut self, input_mode: InputMode, bpm: i16, tick_for_onemsr: i32) {
         if self.cmpl_nt == [""] {
             //  clear
             self.rcmb = Vec::new(); //UgContent::new();
-            self.ana = Vec::new();  //UgContent::new();
+            self.ana = Vec::new(); //UgContent::new();
             println!("no_phrase...");
-            return
+            return;
         }
 
         // 3.recombined data
         let (whole_tick, rcmb) = recombine_to_internal_format(
-            &self.cmpl_nt, &self.cmpl_ex, input_mode,
-            self.base_note, tick_for_onemsr);
+            &self.cmpl_nt,
+            &self.cmpl_ex,
+            input_mode,
+            self.base_note,
+            tick_for_onemsr,
+        );
         self.rcmb = rcmb;
         self.whole_tick = whole_tick;
 
@@ -201,7 +228,10 @@ impl PhraseDataStock {
         // 5.humanized data
         let human1 = beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
         self.rcmb = crispy_tick(&human1, &self.cmpl_ex);
-        println!("final_phrase: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
+        println!(
+            "final_phrase: {:?} whole_tick: {:?}",
+            self.rcmb, self.whole_tick
+        );
         println!("analyse: {:?}", self.ana);
     }
 }
@@ -229,11 +259,12 @@ impl Default for CompositionDataStock {
 }
 impl CompositionDataStock {
     pub fn get_final(&self, part: i16) -> ElpsMsg {
-        ElpsMsg::Cmp(part,
+        ElpsMsg::Cmp(
+            part,
             ChordData {
-                whole_tick: self.whole_tick as i16, 
+                whole_tick: self.whole_tick as i16,
                 evts: self.rcmb.clone(),
-            }
+            },
         )
     }
     pub fn set_raw(&mut self, input_text: String) -> bool {
@@ -241,13 +272,12 @@ impl CompositionDataStock {
         self.raw = input_text.clone();
 
         // 2.complement data
-        if let Some(cmpl) = complement_composition(input_text){
+        if let Some(cmpl) = complement_composition(input_text) {
             self.cmpl_cd = cmpl[0].clone();
             self.cmpl_ex = cmpl[1].clone();
-            println!("complement_composition: {:?} exp: {:?}",cmpl[0],cmpl[1]);
+            println!("complement_composition: {:?} exp: {:?}", cmpl[0], cmpl[1]);
             true
-        }
-        else {
+        } else {
             println!("Composition input failed!");
             false
         }
@@ -257,14 +287,17 @@ impl CompositionDataStock {
             // clear
             self.rcmb = Vec::new();
             println!("no_composition...");
-            return
+            return;
         }
 
         // 3.recombined data
-        let (whole_tick, rcmb) = 
+        let (whole_tick, rcmb) =
             recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_onebeat);
         self.rcmb = rcmb;
         self.whole_tick = whole_tick;
-        println!("final_composition: {:?} whole_tick: {:?}", self.rcmb, self.whole_tick);
+        println!(
+            "final_composition: {:?} whole_tick: {:?}",
+            self.rcmb, self.whole_tick
+        );
     }
 }

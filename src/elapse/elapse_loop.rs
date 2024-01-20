@@ -3,16 +3,16 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::lpnlib::*;
 use super::elapse::*;
-use super::tickgen::CrntMsrTick;
-use super::stack_elapse::ElapseStack;
-use super::elapse_note::{Note, Damper};
-use crate::cmd::txt2seq_cmps;
+use super::elapse_note::{Damper, Note};
 use super::note_translation::*;
+use super::stack_elapse::ElapseStack;
+use super::tickgen::CrntMsrTick;
+use crate::cmd::txt2seq_cmps;
+use crate::lpnlib::*;
 
 //*******************************************************************
 //          Loop Struct
@@ -22,11 +22,11 @@ pub trait Loop: Elapse {
     fn set_destroy(&mut self);
     fn first_msr_num(&self) -> i32;
     fn calc_serial_tick(&self, crnt_: &CrntMsrTick) -> i32 {
-        (crnt_.msr - self.first_msr_num())*crnt_.tick_for_onemsr + crnt_.tick
+        (crnt_.msr - self.first_msr_num()) * crnt_.tick_for_onemsr + crnt_.tick
     }
     fn gen_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {
-        let tick = srtick%crnt_.tick_for_onemsr;
-        let msr = self.first_msr_num() + srtick/crnt_.tick_for_onemsr;
+        let tick = srtick % crnt_.tick_for_onemsr;
+        let msr = self.first_msr_num() + srtick / crnt_.tick_for_onemsr;
         (msr, tick)
     }
 }
@@ -54,15 +54,30 @@ pub struct PhraseLoop {
     whole_tick: i32,
     destroy: bool,
     first_msr_num: i32,
-    next_msr: i32,   //   次に呼ばれる小節番号が保持される
-    next_tick: i32,  //   次に呼ばれるTick数が保持される
+    next_msr: i32,  //   次に呼ばれる小節番号が保持される
+    next_tick: i32, //   次に呼ばれるTick数が保持される
 }
 impl PhraseLoop {
-    pub fn new(sid: u32, pid: u32, keynote: u8, msr: i32, phr: Vec<PhrEvt>, ana: Vec<AnaEvt>,
-        whole_tick: i32, turnnote: i16) -> Rc<RefCell<Self>> {
-        let noped = ana.clone().iter().any(|x| x.mtype==TYPE_EXP && x.atype==NOPED);
+    pub fn new(
+        sid: u32,
+        pid: u32,
+        keynote: u8,
+        msr: i32,
+        phr: Vec<PhrEvt>,
+        ana: Vec<AnaEvt>,
+        whole_tick: i32,
+        turnnote: i16,
+    ) -> Rc<RefCell<Self>> {
+        let noped = ana
+            .clone()
+            .iter()
+            .any(|x| x.mtype == TYPE_EXP && x.atype == NOPED);
         Rc::new(RefCell::new(Self {
-            id: ElapseId {pid, sid, elps_type: ElapseType::TpPhraseLoop,},
+            id: ElapseId {
+                pid,
+                sid,
+                elps_type: ElapseType::TpPhraseLoop,
+            },
             priority: PRI_PHR_LOOP,
             phrase: phr,
             analys: ana,
@@ -83,15 +98,22 @@ impl PhraseLoop {
             next_tick: 0,
         }))
     }
-    pub fn get_noped(&self) -> bool {self.noped}
-    fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
+    pub fn get_noped(&self) -> bool {
+        self.noped
+    }
+    fn generate_event(
+        &mut self,
+        crnt_: &CrntMsrTick,
+        estk: &mut ElapseStack,
+        elapsed_tick: i32,
+    ) -> i32 {
         let mut next_tick: i32;
         let mut trace: usize = self.play_counter;
         let phr = self.phrase.to_vec();
         let max_ev = self.phrase.len();
         loop {
             if max_ev <= trace {
-                next_tick = END_OF_DATA;   // means sequence finished
+                next_tick = END_OF_DATA; // means sequence finished
                 break;
             }
             next_tick = phr[trace].tick as i32;
@@ -106,15 +128,24 @@ impl PhraseLoop {
                     }
                     self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
                 }
+            } else {
+                break;
             }
-            else {break;}
             trace += 1;
         }
 
         self.play_counter = trace;
         next_tick
     }
-    fn note_event(&mut self, estk: &mut ElapseStack, trace: usize, ev: PhrEvt, next_tick: i32, msr: i32, tick: i32) {
+    fn note_event(
+        &mut self,
+        estk: &mut ElapseStack,
+        trace: usize,
+        ev: PhrEvt,
+        next_tick: i32,
+        msr: i32,
+        tick: i32,
+    ) {
         // ev: ['note', tick, duration, note, velocity]
         let mut crnt_ev = ev.clone();
         let mut deb_txt: String = "no chord".to_string();
@@ -124,28 +155,28 @@ impl PhraseLoop {
         }
 
         //  Note Translation
-        if rt != NO_ROOT || ctbl != NO_TABLE  {
+        if rt != NO_ROOT || ctbl != NO_TABLE {
             (crnt_ev.note, deb_txt) = self.translate_note(rt, ctbl, ev, next_tick);
         }
 
         //  同タイミング重複音を鳴らさない
-        if self.same_note_stuck.iter().any(|x| *x==crnt_ev.note ){
-            return
-        }
-        else {
+        if self.same_note_stuck.iter().any(|x| *x == crnt_ev.note) {
+            return;
+        } else {
             self.same_note_stuck.push(crnt_ev.note);
         }
 
         //  Generate Note Struct
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
-            trace as u32,   //  read pointer
-            self.id.sid,    //  loop.sid -> note.pid
+            trace as u32, //  read pointer
+            self.id.sid,  //  loop.sid -> note.pid
             estk,
             &crnt_ev,
             self.keynote,
             deb_txt,
             msr,
-            tick);
+            tick,
+        );
         estk.add_elapse(Rc::clone(&nt));
     }
     fn translate_note(&mut self, rt: i16, ctbl: i16, ev: PhrEvt, next_tick: i32) -> (i16, String) {
@@ -153,24 +184,26 @@ impl PhraseLoop {
         let trans_note: i16;
         let root: i16 = ROOT2NTNUM[rt as usize];
         let (movable_scale, mut para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
-        if  movable_scale {
-            if para_note > self.turnnote {para_note -= 12;}
+        if movable_scale {
+            if para_note > self.turnnote {
+                para_note -= 12;
+            }
             trans_note = translate_note_parascl(para_note, ctbl, ev.note);
             deb_txt = "para_sc:".to_string();
-        }
-        else {
+        } else {
             let option = self.specify_trans_option(next_tick, ev.note);
             if option == TRNS_PARA {
                 let mut tgt_nt = ev.note + root;
-                if root > self.turnnote {tgt_nt -= 12;}
+                if root > self.turnnote {
+                    tgt_nt -= 12;
+                }
                 trans_note = translate_note_com(root, ctbl, tgt_nt);
                 deb_txt = "para:".to_string();
-            }
-            else if option == TRNS_COM {
+            } else if option == TRNS_COM {
                 trans_note = translate_note_com(root, ctbl, ev.note);
                 deb_txt = "com:".to_string();
-            }
-            else { // Arpeggio
+            } else {
+                // Arpeggio
                 //trans_note = NoteTranslation::translate_note_arp(root, ctbl, option);
                 trans_note = translate_note_arp2(root, ctbl, ev.note, option, self.last_note);
                 deb_txt = "arp:".to_string();
@@ -178,13 +211,14 @@ impl PhraseLoop {
         }
         self.last_note = trans_note;
         //crnt_ev[NOTE] = trans_note;
-        (trans_note, deb_txt + &(root.to_string() + "-" + &ctbl.to_string()))
+        (
+            trans_note,
+            deb_txt + &(root.to_string() + "-" + &ctbl.to_string()),
+        )
     }
     fn specify_trans_option(&self, next_tick: i32, note: i16) -> i16 {
         for anaone in self.analys.iter() {
-            if anaone.mtype == TYPE_BEAT &&
-               anaone.tick == next_tick as i16 && 
-               anaone.note == note {
+            if anaone.mtype == TYPE_BEAT && anaone.tick == next_tick as i16 && anaone.note == note {
                 return anaone.atype;
             }
         }
@@ -192,23 +226,33 @@ impl PhraseLoop {
     }
 }
 impl Elapse for PhraseLoop {
-    fn id(&self) -> ElapseId {self.id}     // id を得る
-    fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
+    fn id(&self) -> ElapseId {
+        self.id
+    } // id を得る
+    fn prio(&self) -> u32 {
+        self.priority
+    } // priority を得る
+    fn next(&self) -> (i32, i32) {
+        // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {}      // User による start/play 時にコールされる
+    fn start(&mut self) {} // User による start/play 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
-    fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
-        if self.destroy {return;}
+    fn destroy_me(&self) -> bool {
+        self.destroy()
+    } // 自クラスが役割を終えた時に True を返す
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+        // 再生 msr/tick に達したらコールされる
+        if self.destroy {
+            return;
+        }
 
         let elapsed_tick = self.calc_serial_tick(crnt_);
         if elapsed_tick > self.whole_tick {
             self.next_msr = FULL;
             self.destroy = true;
-            return
+            return;
         }
 
         if elapsed_tick >= self.next_tick_in_phrase {
@@ -217,8 +261,7 @@ impl Elapse for PhraseLoop {
             if next_tick == END_OF_DATA {
                 self.next_msr = FULL;
                 self.destroy = true;
-            }
-            else {
+            } else {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                 self.next_msr = msr;
                 self.next_tick = tick;
@@ -227,13 +270,17 @@ impl Elapse for PhraseLoop {
     }
 }
 impl Loop for PhraseLoop {
-    fn destroy(&self) -> bool {self.destroy}
+    fn destroy(&self) -> bool {
+        self.destroy
+    }
     fn set_destroy(&mut self) {
         self.next_tick = 0;
         self.next_msr = FULL;
         self.destroy = true;
     }
-    fn first_msr_num(&self) -> i32 {self.first_msr_num}
+    fn first_msr_num(&self) -> i32 {
+        self.first_msr_num
+    }
 }
 
 //*******************************************************************
@@ -257,13 +304,24 @@ pub struct CompositionLoop {
     whole_tick: i32,
     destroy: bool,
     first_msr_num: i32,
-    next_msr: i32,   //   次に呼ばれる小節番号が保持される
-    next_tick: i32,  //   次に呼ばれるTick数が保持される
+    next_msr: i32,  //   次に呼ばれる小節番号が保持される
+    next_tick: i32, //   次に呼ばれるTick数が保持される
 }
 impl CompositionLoop {
-    pub fn new(sid: u32, pid: u32, knt:u8, msr: i32, msg: Vec<ChordEvt>, whole_tick: i32) -> Rc<RefCell<Self>> {
+    pub fn new(
+        sid: u32,
+        pid: u32,
+        knt: u8,
+        msr: i32,
+        msg: Vec<ChordEvt>,
+        whole_tick: i32,
+    ) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: ElapseId {pid, sid, elps_type: ElapseType::TpCompositionLoop,},
+            id: ElapseId {
+                pid,
+                sid,
+                elps_type: ElapseType::TpCompositionLoop,
+            },
             priority: PRI_CMPS_LOOP,
             cmps_dt: msg,
             _keynote: knt,
@@ -279,52 +337,70 @@ impl CompositionLoop {
             whole_tick,
             destroy: false,
             first_msr_num: msr,
-            next_msr: 0,   //   次に呼ばれる小節番号が保持される
+            next_msr: 0, //   次に呼ばれる小節番号が保持される
             next_tick: 0,
         }))
     }
-    pub fn get_chord(&self) -> (i16, i16) {(self.root, self.translation_tbl)}
-    pub fn get_chord_name(&self) -> String {self.chord_name.clone()}
-    pub fn get_chord_map(&self, msr: i32, tick_for_onemsr: i32, tick_for_onebeat: i32) -> Vec<bool> { // for Damper
-        let first_tick = (msr - self.first_msr_num)*tick_for_onemsr;
-        let end_tick = (msr - self.first_msr_num + 1)*tick_for_onemsr;
-        let beat_num = tick_for_onemsr/tick_for_onebeat;
+    pub fn get_chord(&self) -> (i16, i16) {
+        (self.root, self.translation_tbl)
+    }
+    pub fn get_chord_name(&self) -> String {
+        self.chord_name.clone()
+    }
+    pub fn get_chord_map(
+        &self,
+        msr: i32,
+        tick_for_onemsr: i32,
+        tick_for_onebeat: i32,
+    ) -> Vec<bool> {
+        // for Damper
+        let first_tick = (msr - self.first_msr_num) * tick_for_onemsr;
+        let end_tick = (msr - self.first_msr_num + 1) * tick_for_onemsr;
+        let beat_num = tick_for_onemsr / tick_for_onebeat;
         let mut trace: usize = 0;
         let cmps = self.cmps_dt.to_vec();
         let mut chord_map: Vec<bool> = vec![false; beat_num as usize];
         let max_ev: usize = cmps.len();
         loop {
-            if max_ev <= trace {break}
+            if max_ev <= trace {
+                break;
+            }
             let tick = cmps[trace].tick as i32;
             if first_tick <= tick && tick < end_tick && cmps[trace].tbl != 0 {
                 // Chord Table が "thru" で無ければ
-                chord_map[((tick%tick_for_onemsr)/tick_for_onebeat) as usize] = true;
+                chord_map[((tick % tick_for_onemsr) / tick_for_onebeat) as usize] = true;
+            } else if tick > end_tick {
+                break;
             }
-            else if tick > end_tick {break;}
             trace += 1;
         }
         chord_map
     }
-    fn generate_event(&mut self, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
+    fn generate_event(
+        &mut self,
+        _crnt_: &CrntMsrTick,
+        _estk: &mut ElapseStack,
+        elapsed_tick: i32,
+    ) -> i32 {
         let mut trace: usize = self.play_counter;
         let mut next_tick: i32;
         let cmps = self.cmps_dt.to_vec();
         loop {
             if cmps.len() <= trace {
-                next_tick = END_OF_DATA;   // means sequence finished
-                break
+                next_tick = END_OF_DATA; // means sequence finished
+                break;
             }
             next_tick = cmps[trace].tick as i32;
             if next_tick <= elapsed_tick {
                 let cd = cmps[trace].clone();
                 if cd.mtype == TYPE_CHORD {
                     self.prepare_note_translation(cd);
+                } else if cd.mtype == TYPE_VARI {
+                    _estk.set_phrase_vari(self.id.pid as usize, cd.root as usize);
                 }
-                else if cd.mtype == TYPE_VARI {
-                    _estk.set_phrase_vari(self.id.pid as usize ,cd.root as usize);
-                }
+            } else {
+                break;
             }
-            else {break;}
             trace += 1;
         }
         self.play_counter = trace;
@@ -338,56 +414,67 @@ impl CompositionLoop {
         let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
         let cname = tbl_name.to_string();
         if cname.chars().nth(0).unwrap_or(' ') == '_' {
-            let root_index = ((self.root-1)/3) as usize;
-            let alteration = (self.root+1)%3;
+            let root_index = ((self.root - 1) / 3) as usize;
+            let alteration = (self.root + 1) % 3;
             let mut root = crate::cmd::txt2seq_cmps::get_root_name(root_index).to_string();
-            if alteration == 1 {root += "#";}
-            else if alteration == 2 {root += "b";}
+            if alteration == 1 {
+                root += "#";
+            } else if alteration == 2 {
+                root += "b";
+            }
             self.chord_name = root.to_string() + &cname[1..];
-        }
-        else {
+        } else {
             self.chord_name = cname;
         }
-        println!("Chord Data: {}, {}, {}",self.chord_name, cd.root, cd.tbl);
+        println!("Chord Data: {}, {}, {}", self.chord_name, cd.root, cd.tbl);
     }
-    fn _reset_note_translation(&mut self) {/*<<DoItLater>>*/}
+    fn _reset_note_translation(&mut self) { /*<<DoItLater>>*/
+    }
 }
 impl Elapse for CompositionLoop {
-    fn id(&self) -> ElapseId {self.id}     // id を得る
-    fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
+    fn id(&self) -> ElapseId {
+        self.id
+    } // id を得る
+    fn prio(&self) -> u32 {
+        self.priority
+    } // priority を得る
+    fn next(&self) -> (i32, i32) {
+        // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {}    // User による start/play 時にコールされる
+    fn start(&mut self) {} // User による start/play 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
-    fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
-        if self.destroy {return;}
+    fn destroy_me(&self) -> bool {
+        self.destroy()
+    } // 自クラスが役割を終えた時に True を返す
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+        // 再生 msr/tick に達したらコールされる
+        if self.destroy {
+            return;
+        }
 
         //  現在の tick を 1tick 後ろにずらす
         let mut cm_crnt = crnt_.clone();
         if cm_crnt.tick == crnt_.tick_for_onemsr - 1 {
             cm_crnt.msr += 1;
             cm_crnt.tick = 0;
-        }
-        else if crnt_.msr != 0 {
+        } else if crnt_.msr != 0 {
             cm_crnt.tick += 1;
         }
 
         //  経過 tick の算出
         let elapsed_tick = self.calc_serial_tick(&cm_crnt);
-        if elapsed_tick >= self.whole_tick { // =をつけないと、loop終了直後の小節頭で無限ループになる
+        if elapsed_tick >= self.whole_tick {
+            // =をつけないと、loop終了直後の小節頭で無限ループになる
             self.next_msr = FULL;
             self.destroy = true;
-        }
-        else if !self.already_end && (elapsed_tick >= self.next_tick_in_cmps) {
+        } else if !self.already_end && (elapsed_tick >= self.next_tick_in_cmps) {
             let next_tick = self.generate_event(&cm_crnt, estk, elapsed_tick);
             if next_tick == END_OF_DATA {
                 self.already_end = true;
                 self.next_tick_in_cmps = self.whole_tick;
-            }
-            else {
+            } else {
                 self.next_tick_in_cmps = next_tick;
             }
 
@@ -397,8 +484,7 @@ impl Elapse for CompositionLoop {
             if nxttick == 0 {
                 self.next_msr = nxtmsr - 1;
                 self.next_tick = crnt_.tick_for_onemsr - 1;
-            }
-            else {
+            } else {
                 self.next_msr = nxtmsr;
                 self.next_tick = nxttick - 1;
             }
@@ -406,13 +492,17 @@ impl Elapse for CompositionLoop {
     }
 }
 impl Loop for CompositionLoop {
-    fn destroy(&self) -> bool {self.destroy}
+    fn destroy(&self) -> bool {
+        self.destroy
+    }
     fn set_destroy(&mut self) {
         self.next_tick = 0;
         self.next_msr = FULL;
         self.destroy = true;
     }
-    fn first_msr_num(&self) -> i32 {self.first_msr_num}
+    fn first_msr_num(&self) -> i32 {
+        self.first_msr_num
+    }
 }
 
 //*******************************************************************
@@ -429,13 +519,17 @@ pub struct DamperLoop {
     whole_tick: i32,
     destroy: bool,
     first_msr_num: i32,
-    next_msr: i32,   //   次に呼ばれる小節番号が保持される
-    next_tick: i32,  //   次に呼ばれるTick数が保持される
+    next_msr: i32,  //   次に呼ばれる小節番号が保持される
+    next_tick: i32, //   次に呼ばれるTick数が保持される
 }
 impl DamperLoop {
     pub fn new(sid: u32, pid: u32, msr: i32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: ElapseId {pid, sid, elps_type: ElapseType::TpDamperLoop,},
+            id: ElapseId {
+                pid,
+                sid,
+                elps_type: ElapseType::TpDamperLoop,
+            },
             priority: PRI_CMPS_LOOP,
             evt: Vec::new(),
             play_counter: 0,
@@ -444,18 +538,23 @@ impl DamperLoop {
             whole_tick: 0,
             destroy: false,
             first_msr_num: msr,
-            next_msr: 0,   //   次に呼ばれる小節番号が保持される
+            next_msr: 0, //   次に呼ばれる小節番号が保持される
             next_tick: 0,
         }))
     }
-    fn let_out_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, elapsed_tick: i32) -> i32 {
+    fn let_out_event(
+        &mut self,
+        crnt_: &CrntMsrTick,
+        estk: &mut ElapseStack,
+        elapsed_tick: i32,
+    ) -> i32 {
         let mut next_tick: i32;
         let mut trace: usize = self.play_counter;
         let evt = self.evt.to_vec();
         let max_ev = self.evt.len();
         loop {
             if max_ev <= trace {
-                next_tick = END_OF_DATA;   // means sequence finished
+                next_tick = END_OF_DATA; // means sequence finished
                 break;
             }
             next_tick = evt[trace].tick as i32;
@@ -463,16 +562,18 @@ impl DamperLoop {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                 if evt[trace].mtype == TYPE_DAMPER {
                     let dmpr: Rc<RefCell<dyn Elapse>> = Damper::new(
-                        trace as u32,   //  read pointer
-                        self.id.sid,    //  loop.sid -> note.pid
+                        trace as u32, //  read pointer
+                        self.id.sid,  //  loop.sid -> note.pid
                         estk,
                         &evt[trace],
                         msr,
-                        tick);
+                        tick,
+                    );
                     estk.add_elapse(Rc::clone(&dmpr));
                 }
+            } else {
+                break;
             }
-            else {break;}
             trace += 1;
         }
 
@@ -482,7 +583,7 @@ impl DamperLoop {
     fn gen_events_in_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         // 小節頭でコールされる
         let (tick_for_onemsr, tick_for_onebeat) = estk.tg().get_beat_tick();
-        let beat_num: usize = (tick_for_onemsr/tick_for_onebeat) as usize;
+        let beat_num: usize = (tick_for_onemsr / tick_for_onebeat) as usize;
         self.whole_tick = tick_for_onemsr;
         self.next_tick_in_phrase = 0;
 
@@ -490,32 +591,59 @@ impl DamperLoop {
         for i in 0..MAX_USER_PART {
             if let Some(_fl) = estk.get_flow(i) {
                 //chord_map[0] = true;
-                chord_map = DamperLoop::merge_chord_map(crnt_, estk, i,
-                    tick_for_onemsr, tick_for_onebeat, chord_map);
-            }
-            else if let Some(phr) = estk.get_phr(i) {
-                if phr.borrow().get_noped() { // 一パートでも noped 指定があれば
+                chord_map = DamperLoop::merge_chord_map(
+                    crnt_,
+                    estk,
+                    i,
+                    tick_for_onemsr,
+                    tick_for_onebeat,
+                    chord_map,
+                );
+            } else if let Some(phr) = estk.get_phr(i) {
+                if phr.borrow().get_noped() {
+                    // 一パートでも noped 指定があれば
                     return;
+                } else {
+                    chord_map = DamperLoop::merge_chord_map(
+                        crnt_,
+                        estk,
+                        i,
+                        tick_for_onemsr,
+                        tick_for_onebeat,
+                        chord_map,
+                    );
                 }
-                else {
-                    chord_map = DamperLoop::merge_chord_map(crnt_, estk, i,
-                        tick_for_onemsr, tick_for_onebeat, chord_map);
-                }
+            } else {
+                continue;
             }
-            else {continue;}
         }
         self.evt = self.gen_real_damper_track(chord_map, tick_for_onebeat, beat_num);
     }
     /// 各パートのChord情報より、Damper 情報を beat にどんどん足していく
-    fn merge_chord_map(crnt_: &CrntMsrTick, estk: &mut ElapseStack, part_num: usize, 
-        tick_for_onemsr: i32, tick_for_onebeat: i32, mut chord_map: Vec<bool>) -> Vec<bool> {
+    fn merge_chord_map(
+        crnt_: &CrntMsrTick,
+        estk: &mut ElapseStack,
+        part_num: usize,
+        tick_for_onemsr: i32,
+        tick_for_onebeat: i32,
+        mut chord_map: Vec<bool>,
+    ) -> Vec<bool> {
         if let Some(cmps) = estk.get_cmps(part_num) {
-            let ba = cmps.borrow().get_chord_map(crnt_.msr, tick_for_onemsr, tick_for_onebeat);
-            for (i, x) in chord_map.iter_mut().enumerate() {*x |= ba[i];}
+            let ba = cmps
+                .borrow()
+                .get_chord_map(crnt_.msr, tick_for_onemsr, tick_for_onebeat);
+            for (i, x) in chord_map.iter_mut().enumerate() {
+                *x |= ba[i];
+            }
         }
         chord_map
     }
-    fn gen_real_damper_track(&self, chord_map: Vec<bool>, tick_for_onebeat: i32, beat_num: usize) -> Vec<DmprEvt> {
+    fn gen_real_damper_track(
+        &self,
+        chord_map: Vec<bool>,
+        tick_for_onebeat: i32,
+        beat_num: usize,
+    ) -> Vec<DmprEvt> {
         //println!("@@@@ Damper Map:{:?}",chord_map);
         let mut keep: usize = beat_num;
         let mut dmpr_evt: Vec<DmprEvt> = Vec::new();
@@ -525,9 +653,9 @@ impl DamperLoop {
                 if keep != beat_num {
                     dmpr_evt.push(DmprEvt {
                         mtype: TYPE_DAMPER,
-                        tick: ((keep as i32)*tick_for_onebeat+PDL_MARGIN_TICK) as i16,
-                        dur: (((j-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
-                        position: 127
+                        tick: ((keep as i32) * tick_for_onebeat + PDL_MARGIN_TICK) as i16,
+                        dur: (((j - keep) as i32) * tick_for_onebeat - PDL_MARGIN_TICK) as i16,
+                        position: 127,
                     });
                 }
                 keep = j;
@@ -535,28 +663,40 @@ impl DamperLoop {
         }
         if keep != beat_num {
             dmpr_evt.push(DmprEvt {
-                mtype: TYPE_DAMPER, 
-                tick: ((keep as i32)*tick_for_onebeat+PDL_MARGIN_TICK) as i16,
-                dur: (((beat_num-keep) as i32)*tick_for_onebeat-PDL_MARGIN_TICK) as i16,
-                position: 127}
-            );
+                mtype: TYPE_DAMPER,
+                tick: ((keep as i32) * tick_for_onebeat + PDL_MARGIN_TICK) as i16,
+                dur: (((beat_num - keep) as i32) * tick_for_onebeat - PDL_MARGIN_TICK) as i16,
+                position: 127,
+            });
         }
         //println!("@@@@ Damper Event:{:?}",dmpr_evt);
         dmpr_evt
     }
 }
 impl Elapse for DamperLoop {
-    fn id(&self) -> ElapseId {self.id}     // id を得る
-    fn prio(&self) -> u32 {self.priority}  // priority を得る
-    fn next(&self) -> (i32, i32) {    // 次に呼ばれる小節番号、Tick数を返す
+    fn id(&self) -> ElapseId {
+        self.id
+    } // id を得る
+    fn prio(&self) -> u32 {
+        self.priority
+    } // priority を得る
+    fn next(&self) -> (i32, i32) {
+        // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {self.first_msr_num = 0;}    // User による start/play 時にコールされる
+    fn start(&mut self) {
+        self.first_msr_num = 0;
+    } // User による start/play 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
-    fn destroy_me(&self) -> bool {self.destroy()}   // 自クラスが役割を終えた時に True を返す
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {    // 再生 msr/tick に達したらコールされる
-        if self.destroy {return;}
+    fn destroy_me(&self) -> bool {
+        self.destroy()
+    } // 自クラスが役割を終えた時に True を返す
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+        // 再生 msr/tick に達したらコールされる
+        if self.destroy {
+            return;
+        }
 
         if self.next_tick_in_phrase == 0 {
             self.gen_events_in_msr(crnt_, estk);
@@ -566,7 +706,7 @@ impl Elapse for DamperLoop {
         if elapsed_tick > self.whole_tick {
             self.next_msr = FULL;
             self.destroy = true;
-            return
+            return;
         }
 
         if elapsed_tick >= self.next_tick_in_phrase {
@@ -575,8 +715,7 @@ impl Elapse for DamperLoop {
             if next_tick == END_OF_DATA {
                 self.next_msr = FULL;
                 self.destroy = true;
-            }
-            else {
+            } else {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                 self.next_msr = msr;
                 self.next_tick = tick;
@@ -585,11 +724,15 @@ impl Elapse for DamperLoop {
     }
 }
 impl Loop for DamperLoop {
-    fn destroy(&self) -> bool {self.destroy}
+    fn destroy(&self) -> bool {
+        self.destroy
+    }
     fn set_destroy(&mut self) {
         self.next_tick = 0;
         self.next_msr = FULL;
         self.destroy = true;
     }
-    fn first_msr_num(&self) -> i32 {self.first_msr_num}
+    fn first_msr_num(&self) -> i32 {
+        self.first_msr_num
+    }
 }

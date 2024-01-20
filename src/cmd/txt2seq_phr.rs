@@ -8,7 +8,7 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          complement_phrase
 //*******************************************************************
-pub fn complement_phrase(input_text: String, cluster_word: &str) -> [Vec<String>;2] {
+pub fn complement_phrase(input_text: String, cluster_word: &str) -> [Vec<String>; 2] {
     // 1. space 削除
     let phr = input_text.trim().to_string();
 
@@ -17,12 +17,12 @@ pub fn complement_phrase(input_text: String, cluster_word: &str) -> [Vec<String>
 
     // 3. 関数を . で分割し、音符変調と音楽表現に分ける
     let mut nev = split_by('.', ne);
-    nev.retain(|nt| nt!="");
+    nev.retain(|nt| nt != "");
     let (nmvec, nevec) = divide_notemod_and_musicex(nev);
 
     // 4. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
     let nttmp = divide_arrow_bracket(nt);
-    let nt2 = nttmp.replace('c',cluster_word);
+    let nt2 = nttmp.replace('c', cluster_word);
 
     // 5. ,| 重複による休符指示の補填、音符のVector化
     let nt3 = fill_omitted_note_data(nt2);
@@ -32,7 +32,9 @@ pub fn complement_phrase(input_text: String, cluster_word: &str) -> [Vec<String>
     loop {
         let (nvr_tmp, no_exist) = note_repeat(ntvec.clone());
         ntvec = nvr_tmp.clone();
-        if no_exist {break;}
+        if no_exist {
+            break;
+        }
     }
 
     // 7. 音符変調関数の適用
@@ -51,7 +53,7 @@ fn divide_brackets(input_text: String) -> (String, String) {
     let mut isx: &str = &input_text;
     if let Some(n2) = isx.find(']') {
         note_info.push(isx[1..n2].to_string());
-        isx = &isx[n2+1..];
+        isx = &isx[n2 + 1..];
         if isx.len() != 0 {
             note_info.push(isx.to_string());
         }
@@ -60,8 +62,7 @@ fn divide_brackets(input_text: String) -> (String, String) {
     let bracket_num = note_info.len();
     if bracket_num == 1 {
         note_info.push("".to_string());
-    }
-    else if bracket_num == 0 {
+    } else if bracket_num == 0 {
         return ("".to_string(), "".to_string());
     }
     return (note_info[0].clone(), note_info[1].clone());
@@ -75,20 +76,17 @@ fn divide_arrow_bracket(nt: String) -> String {
             if one_arrow_flg {
                 two_arrow_flg = true;
                 one_arrow_flg = false;
-            }
-            else {
+            } else {
                 one_arrow_flg = true;
             }
             ret_str.push('>');
-        }
-        else {
+        } else {
             if ltr == '>' {
                 if two_arrow_flg {
                     two_arrow_flg = false;
                     one_arrow_flg = true;
                     continue;
-                }
-                else if one_arrow_flg {
+                } else if one_arrow_flg {
                     one_arrow_flg = false;
                     continue;
                 }
@@ -97,8 +95,7 @@ fn divide_arrow_bracket(nt: String) -> String {
             if ltr == ',' {
                 if one_arrow_flg {
                     ret_str.push('>');
-                }
-                else if two_arrow_flg {
+                } else if two_arrow_flg {
                     ret_str.push('>');
                     ret_str.push('>');
                 }
@@ -108,7 +105,9 @@ fn divide_arrow_bracket(nt: String) -> String {
     ret_str
 }
 fn fill_omitted_note_data(nf: String) -> String {
-    if nf.len() == 0 {return "".to_string();}
+    if nf.len() == 0 {
+        return "".to_string();
+    }
 
     let mut fill: String = "".to_string();
     let mut doremi = "x".to_string();
@@ -117,21 +116,18 @@ fn fill_omitted_note_data(nf: String) -> String {
         if ltr == ',' {
             fill += &doremi;
             fill += ",";
-            doremi = "x".to_string();// ,| 連続入力による、休符指示の補填
+            doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
             doremi_end_flag = true;
-        }
-        else if ltr == '|' || ltr == '/' {
+        } else if ltr == '|' || ltr == '/' {
             fill += &doremi;
             fill += "|,";
-            doremi = "x".to_string();// ,| 連続入力による、休符指示の補填
+            doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
             doremi_end_flag = true;
-        }
-        else {
+        } else {
             if doremi_end_flag {
                 doremi = (ltr).to_string();
                 doremi_end_flag = false;
-            }
-            else {
+            } else {
                 doremi.push(ltr);
             }
         }
@@ -142,15 +138,14 @@ fn fill_omitted_note_data(nf: String) -> String {
     fill
 }
 /// Note Modulation Function と Music Expression Function を分離する
-fn divide_notemod_and_musicex(nev :Vec<String>) -> (Vec<String>, Vec<String>) {
+fn divide_notemod_and_musicex(nev: Vec<String>) -> (Vec<String>, Vec<String>) {
     let mut nm: Vec<String> = Vec::new();
     let mut ne: Vec<String> = Vec::new();
 
     for nx in nev.iter() {
         if &nx[0..3] == "rpt" {
             nm.push(nx.to_string());
-        }
-        else {
+        } else {
             ne.push(nx.to_string());
         }
     }
@@ -168,10 +163,10 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
             for (j, ltr) in one.chars().enumerate() {
                 if ltr == '*' {
                     new_vec[i] = one[..j].to_string();
-                    let number: i32 = one[j+1..].parse().unwrap_or(0);
+                    let number: i32 = one[j + 1..].parse().unwrap_or(0);
                     if number > 1 {
-                        for _ in 0..number-1 {
-                            new_vec.insert(i+1, one[..j].to_string());
+                        for _ in 0..number - 1 {
+                            new_vec.insert(i + 1, one[..j].to_string());
                         }
                     }
                     break;
@@ -197,8 +192,13 @@ fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
 //*******************************************************************
 ///          recombine_to_internal_format
 //*******************************************************************
-pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, imd: InputMode,
-    base_note: i32, tick_for_onemsr: i32) -> (i32, Vec<PhrEvt>) {
+pub fn recombine_to_internal_format(
+    ntvec: &Vec<String>,
+    expvec: &Vec<String>,
+    imd: InputMode,
+    base_note: i32,
+    tick_for_onemsr: i32,
+) -> (i32, Vec<PhrEvt>) {
     let max_read_ptr = ntvec.len();
     let (exp_vel, _exp_others) = get_dyn_info(expvec.clone());
     let mut read_ptr = 0;
@@ -213,14 +213,15 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
         let nt_origin = ntvec[read_ptr].clone();
         let (note_text, trns) = extract_trans_info(nt_origin);
 
-        let (notes, mes_end, dur_cnt, diff_vel, bdur, lnt)
-            = break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, imd);
+        let (notes, mes_end, dur_cnt, diff_vel, bdur, lnt) =
+            break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, imd);
         base_dur = bdur;
-        last_nt = lnt;    // 次回の音程の上下判断のため
+        last_nt = lnt; // 次回の音程の上下判断のため
 
         assert!(notes.len() != 0);
-        if notes[0] == RPT_HEAD {   // 繰り返し指定があったことを示すイベント
-            let nt_data = PhrEvt{
+        if notes[0] == RPT_HEAD {
+            // 繰り返し指定があったことを示すイベント
+            let nt_data = PhrEvt {
                 mtype: TYPE_INFO,
                 tick: tick as i16,
                 dur: 0,
@@ -231,33 +232,38 @@ pub fn recombine_to_internal_format(ntvec: &Vec<String>, expvec: &Vec<String>, i
             //vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
             rcmb.push(nt_data);
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
-        }
-        else {  // NO_NOTE 含む（タイの時に使用）
-            let next_msr_tick = tick_for_onemsr*msr;
+        } else {
+            // NO_NOTE 含む（タイの時に使用）
+            let next_msr_tick = tick_for_onemsr * msr;
             if tick < next_msr_tick {
                 // duration
                 let mut note_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
                 if next_msr_tick - tick < note_dur {
-                    note_dur = next_msr_tick - tick;    // 小節線を超えたら、音価をそこでリミット
+                    note_dur = next_msr_tick - tick; // 小節線を超えたら、音価をそこでリミット
                 }
 
                 // velocity
                 let mut last_vel: i32 = exp_vel + diff_vel;
-                if last_vel > 127 {last_vel = 127;}
-                else if last_vel < 1 {last_vel = 1;}
-    
+                if last_vel > 127 {
+                    last_vel = 127;
+                } else if last_vel < 1 {
+                    last_vel = 1;
+                }
+
                 // add to recombined data
                 rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16, mes_top, trns);
                 tick += note_dur;
             }
-            if mes_end {// 小節線があった場合
+            if mes_end {
+                // 小節線があった場合
                 tick = next_msr_tick;
                 msr += 1;
                 mes_top = true;
+            } else {
+                mes_top = false;
             }
-            else {mes_top = false;}
         }
-        read_ptr += 1;  // out from repeat
+        read_ptr += 1; // out from repeat
     }
     (tick, rcmb)
 }
@@ -274,33 +280,40 @@ fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
             }
         }
     }
-    if vel == END_OF_DATA {vel=convert_exp2vel("p");}
+    if vel == END_OF_DATA {
+        vel = convert_exp2vel("p");
+    }
     (vel, retvec)
 }
 fn extract_trans_info(origin: String) -> (String, i16) {
     if &origin[0..1] == ">" {
-        (origin[1..].to_string(), TRNS_PARA)        
-    }
-    else if origin.len() > 2 && &origin[0..2] == ">>" {
+        (origin[1..].to_string(), TRNS_PARA)
+    } else if origin.len() > 2 && &origin[0..2] == ">>" {
         (origin[2..].to_string(), TRNS_NONE)
-    }
-    else {
+    } else {
         (origin, TRNS_COM)
     }
 }
-fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i32, imd: InputMode)
-    -> (Vec<u8>, bool, i32, i32, i32, i32)
-    //(notes, mes_end, dur_cnt, diff_vel, base_dur, last_nt)
+fn break_up_nt_dur_vel(
+    note_text: String,
+    base_note: i32,
+    bdur: i32,
+    last_nt: i32,
+    imd: InputMode,
+) -> (Vec<u8>, bool, i32, i32, i32, i32)
+//(notes, mes_end, dur_cnt, diff_vel, base_dur, last_nt)
 {
     let first_ltr = note_text.chars().nth(0).unwrap_or(' ');
-    if first_ltr == '$' { // complement時に入れた特殊マーク$
-        return (vec![RPT_HEAD], false, 0, 0, bdur, last_nt)
+    if first_ltr == '$' {
+        // complement時に入れた特殊マーク$
+        return (vec![RPT_HEAD], false, 0, 0, bdur, last_nt);
     }
 
     //  小節線のチェック
     let mut mes_end = false;
     let mut ntext1 = note_text.clone();
-    if note_text.chars().last().unwrap_or(' ') == '|' { // 小節最後のイベント
+    if note_text.chars().last().unwrap_or(' ') == '|' {
+        // 小節最後のイベント
         mes_end = true;
         ntext1.pop();
     }
@@ -309,15 +322,21 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
     let mut oct = "".to_string();
     loop {
         let c = ntext1.chars().nth(0).unwrap_or(' ');
-        if c=='+' {oct.push('+'); ntext1.remove(0);}
-        else if c=='-' {oct.push('-'); ntext1.remove(0);}
-        else {break;}
+        if c == '+' {
+            oct.push('+');
+            ntext1.remove(0);
+        } else if c == '-' {
+            oct.push('-');
+            ntext1.remove(0);
+        } else {
+            break;
+        }
     }
 
     //  duration 情報、 Velocity 情報の抽出
     let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur);
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
-    let ntext5 = format!("{}{}",oct,&ntext4);  // +-の再結合
+    let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
 
     let mut notes_vec: Vec<String> = split_by_by('=', '_', ntext5);
     if notes_vec.len() == 1 {
@@ -329,23 +348,22 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
     let notes_num = notes_vec.len();
     if notes_num == 0 {
         notes.push(NO_NOTE);
-    }
-    else if notes_num == 1 {
+    } else if notes_num == 1 {
         let mut doremi: i32 = 0;
         if imd == InputMode::Fixed {
             doremi = convert_doremi_fixed(notes_vec[0].to_string());
-        }
-        else if imd == InputMode::Closer {
+        } else if imd == InputMode::Closer {
             doremi = convert_doremi_closer(notes_vec[0].to_string(), last_nt);
         }
-        if doremi < NO_MIDI_VALUE as i32 { // special meaning
+        if doremi < NO_MIDI_VALUE as i32 {
+            // special meaning
             next_last_nt = doremi;
         }
         let base_pitch = add_base_and_doremi(base_note, doremi);
         notes.push(base_pitch);
-    }
-    else {
-        for nt in notes_vec.iter() {    // 同時発音
+    } else {
+        for nt in notes_vec.iter() {
+            // 同時発音
             let doremi = convert_doremi_fixed(nt.to_string());
             let base_pitch = add_base_and_doremi(base_note, doremi);
             notes.push(base_pitch);
@@ -355,13 +373,16 @@ fn break_up_nt_dur_vel(note_text: String, base_note: i32, bdur: i32, last_nt: i3
 }
 fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
     let mut base_pitch: i32;
-    if doremi >= NO_MIDI_VALUE as i32 { // special meaning ex. NO_NOTE
+    if doremi >= NO_MIDI_VALUE as i32 {
+        // special meaning ex. NO_NOTE
         base_pitch = doremi;
-    }
-    else {
+    } else {
         base_pitch = base_note + doremi;
-        if base_pitch >= MAX_NOTE_NUMBER as i32 {base_pitch = MAX_NOTE_NUMBER as i32;}
-        else if base_pitch < MIN_NOTE_NUMBER as i32 {base_pitch = MIN_NOTE_NUMBER as i32;}
+        if base_pitch >= MAX_NOTE_NUMBER as i32 {
+            base_pitch = MAX_NOTE_NUMBER as i32;
+        } else if base_pitch < MIN_NOTE_NUMBER as i32 {
+            base_pitch = MIN_NOTE_NUMBER as i32;
+        }
     }
     return base_pitch as u8;
 }
@@ -370,32 +391,37 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
     let first_ltr = nt.chars().nth(0).unwrap_or(' ');
     if first_ltr == 'o' {
         return ("".to_string(), bdur, LAST);
-    }
-    else if first_ltr == '.' {
+    } else if first_ltr == '.' {
         let mut dot_cnt = 0;
-        for ltr in nt.chars() {if ltr == '.' {dot_cnt += 1;}}
+        for ltr in nt.chars() {
+            if ltr == '.' {
+                dot_cnt += 1;
+            }
+        }
         return ("".to_string(), bdur, dot_cnt);
     }
 
     //  タイなどの音価を解析し、dur_cnt を確定
     let mut ntext = nt;
     let mut dur_cnt: i32 = 1;
-    let txtlen = ntext.len(); 
+    let txtlen = ntext.len();
     if txtlen > 0 {
-        if ntext.chars().nth(txtlen-1).unwrap_or(' ') == 'o' {
+        if ntext.chars().nth(txtlen - 1).unwrap_or(' ') == 'o' {
             dur_cnt = LAST;
             ntext.pop();
-        }
-        else {
+        } else {
             loop {
                 let length = ntext.len();
-                if length == 0 {break;}
-                let ltr = ntext.chars().nth(length-1).unwrap_or(' ');
+                if length == 0 {
+                    break;
+                }
+                let ltr = ntext.chars().nth(length - 1).unwrap_or(' ');
                 if ltr == '.' || ltr == '~' {
                     dur_cnt += 1;
                     ntext.pop();
+                } else {
+                    break;
                 }
-                else {break;}
             }
         }
     }
@@ -419,35 +445,37 @@ fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
     }
     if fst_ltr == '\'' || fst_ltr == 'e' {
         if ntext.chars().nth(1).unwrap_or(' ') == '\"' {
-            base_dur = DEFAULT_TICK_FOR_QUARTER/8;
+            base_dur = DEFAULT_TICK_FOR_QUARTER / 8;
             idx = 2;
+        } else {
+            base_dur = DEFAULT_TICK_FOR_QUARTER / 2;
         }
-        else {base_dur = DEFAULT_TICK_FOR_QUARTER/2;}
-    }
-    else if fst_ltr == '\"' || fst_ltr == 'v' {
+    } else if fst_ltr == '\"' || fst_ltr == 'v' {
         if ntext.chars().nth(1).unwrap_or(' ') == '\"' {
-            base_dur = DEFAULT_TICK_FOR_QUARTER/16;
+            base_dur = DEFAULT_TICK_FOR_QUARTER / 16;
             idx = 2;
+        } else {
+            base_dur = DEFAULT_TICK_FOR_QUARTER / 4;
         }
-        else {base_dur = DEFAULT_TICK_FOR_QUARTER/4;}
-    }
-    else if fst_ltr == 'q' {
+    } else if fst_ltr == 'q' {
         if ntext.chars().nth(1).unwrap_or(' ') == '\'' {
-            base_dur = DEFAULT_TICK_FOR_QUARTER*3/2;
+            base_dur = DEFAULT_TICK_FOR_QUARTER * 3 / 2;
             idx = 2;
+        } else {
+            base_dur = DEFAULT_TICK_FOR_QUARTER;
         }
-        else {base_dur = DEFAULT_TICK_FOR_QUARTER;}
-    }
-    else if fst_ltr == 'h' {
+    } else if fst_ltr == 'h' {
         if ntext.chars().nth(1).unwrap_or(' ') == '\'' {
-            base_dur = DEFAULT_TICK_FOR_QUARTER*3;
+            base_dur = DEFAULT_TICK_FOR_QUARTER * 3;
             idx = 2;
+        } else {
+            base_dur = DEFAULT_TICK_FOR_QUARTER * 2;
         }
-        else {base_dur = DEFAULT_TICK_FOR_QUARTER*2;}
+    } else {
+        idx = 0;
     }
-    else {idx = 0;}
     if triplet != 0 {
-        base_dur = (base_dur*2)/triplet as i32;
+        base_dur = (base_dur * 2) / triplet as i32;
         idx = 2;
     }
     ntext = ntext[idx..].to_string();
@@ -456,52 +484,76 @@ fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
 fn gen_diff_vel(nt: String) -> (String, i32) {
     let mut ntext = nt;
     let mut diff_vel = 0;
-    let mut last_ltr = if ntext.len() > 0 
-        { ntext.chars().nth(ntext.len()-1).unwrap_or(' ')} else {' '};
+    let mut last_ltr = if ntext.len() > 0 {
+        ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
+    } else {
+        ' '
+    };
     while last_ltr == '^' {
         diff_vel += 10;
         ntext.pop();
-        last_ltr = if ntext.len() > 0 {ntext.chars().nth(ntext.len()-1).unwrap_or(' ')} else {' '};
+        last_ltr = if ntext.len() > 0 {
+            ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
+        } else {
+            ' '
+        };
     }
     while last_ltr == '%' {
         diff_vel -= 20;
         ntext.pop();
-        last_ltr = if ntext.len() > 0 {ntext.chars().nth(ntext.len()-1).unwrap_or(' ')} else {' '};
+        last_ltr = if ntext.len() > 0 {
+            ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
+        } else {
+            ' '
+        };
     }
     (ntext, diff_vel)
 }
 fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
-    if dur_cnt == LAST {rest_tick}
-    else if base_dur == KEEP {base_dur*dur_cnt}
-    else {base_dur*dur_cnt}
+    if dur_cnt == LAST {
+        rest_tick
+    } else if base_dur == KEEP {
+        base_dur * dur_cnt
+    } else {
+        base_dur * dur_cnt
+    }
 }
-fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, note_dur: i32, last_vel: i16, mes_top: bool, trns: i16)
-    -> Vec<PhrEvt> {
+fn add_note(
+    rcmb: Vec<PhrEvt>,
+    tick: i32,
+    notes: Vec<u8>,
+    note_dur: i32,
+    last_vel: i16,
+    mes_top: bool,
+    trns: i16,
+) -> Vec<PhrEvt> {
     let mut return_rcmb = rcmb.clone();
     for note in notes.iter() {
         if *note == REST {
             continue;
-        }
-        else if *note == NO_NOTE {
+        } else if *note == NO_NOTE {
             if mes_top {
                 // 小節先頭にタイがあった場合、前の音の音価を増やす
                 // 前回の入力が '=' による和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
-                let mut search_idx = return_rcmb.len()-1;
+                let mut search_idx = return_rcmb.len() - 1;
                 let last_tick = return_rcmb[search_idx].tick;
                 loop {
                     if return_rcmb[search_idx].tick == last_tick {
                         let dur = return_rcmb[search_idx].dur;
                         return_rcmb[search_idx].dur = dur + note_dur as i16;
+                    } else {
+                        break;
                     }
-                    else {break;}
-                    if search_idx == 0 {break;}
+                    if search_idx == 0 {
+                        break;
+                    }
                     search_idx -= 1;
                 }
+            } else {
+                continue;
             }
-            else {continue;}
-        }
-        else {
-            let nt_data= PhrEvt{
+        } else {
+            let nt_data = PhrEvt {
                 mtype: TYPE_NOTE,
                 tick: tick as i16,
                 dur: note_dur as i16,
@@ -509,7 +561,7 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, note_dur: i32, last_ve
                 vel: last_vel,
                 trns,
             };
-            //: Vec<i16> = 
+            //: Vec<i16> =
             //    vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
             return_rcmb.push(nt_data);
         }
@@ -521,18 +573,27 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, note_dur: i32, last_ve
 //          convert_doremi
 //*******************************************************************
 fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
-    if doremi.len() == 0 {return NO_NOTE as i32;}
+    if doremi.len() == 0 {
+        return NO_NOTE as i32;
+    }
     let mut last_doremi = last_nt;
-    while last_doremi >= 12 {last_doremi -= 12;}
-    while last_doremi < 0 {last_doremi += 12;}
+    while last_doremi >= 12 {
+        last_doremi -= 12;
+    }
+    while last_doremi < 0 {
+        last_doremi += 12;
+    }
 
     let mut oct_pitch = 0;
     let mut pure_doremi = String::from("");
     for (i, ltr) in doremi.chars().enumerate() {
-        if ltr == 'x' {return REST as i32;}
-        else if ltr == '+' {oct_pitch += 12;}
-        else if ltr == '-' {oct_pitch -= 12;}
-        else {
+        if ltr == 'x' {
+            return REST as i32;
+        } else if ltr == '+' {
+            oct_pitch += 12;
+        } else if ltr == '-' {
+            oct_pitch -= 12;
+        } else {
             pure_doremi = doremi[i..].to_string();
             break;
         }
@@ -542,49 +603,70 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
     if pure_doremi.len() != 0 {
         base_note = doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
         pure_doremi.remove(0);
+    } else {
+        return NO_NOTE as i32;
     }
-    else {return NO_NOTE as i32;}
 
     if pure_doremi.len() != 0 {
         base_note = doremi_semi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
     }
 
     let base_pitch: i32;
-    if oct_pitch == 0 { // +/- が書かれていない場合
+    if oct_pitch == 0 {
+        // +/- が書かれていない場合
         let mut diff = base_note - last_doremi;
-        if diff < 0 {diff += 12;}
-        if diff > 6 {base_pitch = last_nt+diff-12;}
-        else {base_pitch = last_nt+diff;}
-    }
-    else if oct_pitch > 0 { // + 書かれている場合
-        while base_note - last_nt >= 12 {base_note -= 12;}
-        while base_note - last_nt <= oct_pitch - 12 {base_note += 12;}
+        if diff < 0 {
+            diff += 12;
+        }
+        if diff > 6 {
+            base_pitch = last_nt + diff - 12;
+        } else {
+            base_pitch = last_nt + diff;
+        }
+    } else if oct_pitch > 0 {
+        // + 書かれている場合
+        while base_note - last_nt >= 12 {
+            base_note -= 12;
+        }
+        while base_note - last_nt <= oct_pitch - 12 {
+            base_note += 12;
+        }
         base_pitch = base_note;
-    }
-    else {  // - 書かれている場合
-        while base_note - last_nt <= -12 {base_note += 12;}
-        while base_note - last_nt >= oct_pitch + 12 {base_note -= 12;}
+    } else {
+        // - 書かれている場合
+        while base_note - last_nt <= -12 {
+            base_note += 12;
+        }
+        while base_note - last_nt >= oct_pitch + 12 {
+            base_note -= 12;
+        }
         base_pitch = base_note;
     }
     base_pitch
 }
 fn convert_doremi_fixed(doremi: String) -> i32 {
-    if doremi.len() == 0 {return NO_NOTE as i32;}
+    if doremi.len() == 0 {
+        return NO_NOTE as i32;
+    }
     let mut base_pitch: i32 = 0;
     let mut pure_doremi = String::from("");
     for (i, ltr) in doremi.chars().enumerate() {
-        if ltr == 'x' {return REST as i32;}
-        else if ltr == '+' {base_pitch += 12;}
-        else if ltr == '-' {base_pitch -= 12;}
-        else {
+        if ltr == 'x' {
+            return REST as i32;
+        } else if ltr == '+' {
+            base_pitch += 12;
+        } else if ltr == '-' {
+            base_pitch -= 12;
+        } else {
             pure_doremi = doremi[i..].to_string();
             break;
         }
     }
     if pure_doremi.len() != 0 {
         base_pitch = doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_pitch);
+    } else {
+        return NO_NOTE as i32;
     }
-    else {return NO_NOTE as i32;}
 
     if pure_doremi.len() > 1 {
         base_pitch = doremi_semi_number(pure_doremi.chars().nth(1).unwrap_or(' '), base_pitch);
@@ -609,25 +691,27 @@ pub fn split_note(txt: String) -> Vec<String> {
             }
             pm_flg = true;
             semi_flg = false;
-        }
-        else if ltr == 'd' || ltr == 'r' || ltr == 'm' || ltr == 'f' || ltr == 's' || ltr == 'l' || ltr == 't' {
+        } else if ltr == 'd'
+            || ltr == 'r'
+            || ltr == 'm'
+            || ltr == 'f'
+            || ltr == 's'
+            || ltr == 'l'
+            || ltr == 't'
+        {
             if semi_flg {
                 set_vec(i);
-            }
-            else if !pm_flg {
+            } else if !pm_flg {
                 set_vec(i);
             }
             pm_flg = false;
             semi_flg = false;
-        }
-        else if ltr == 'i' || ltr == 'a' {
+        } else if ltr == 'i' || ltr == 'a' {
             pm_flg = false;
             semi_flg = true;
-        }
-        else if ltr == 'x' {
+        } else if ltr == 'x' {
             return vec!["x".to_string()];
-        }
-        else {
+        } else {
             return vec!["".to_string()];
         }
     }
@@ -640,21 +724,26 @@ pub fn split_note(txt: String) -> Vec<String> {
 //*******************************************************************
 fn extract_number_from_parentheses(ne: &str) -> usize {
     if let Some(i) = ne.find('(') {
-        if let Some(e) = ne.find(')'){
-            if i<e {
-                let numtxt = if i+1<e { ne[(i+1)..e].to_string()} else {'1'.to_string()};
+        if let Some(e) = ne.find(')') {
+            if i < e {
+                let numtxt = if i + 1 < e {
+                    ne[(i + 1)..e].to_string()
+                } else {
+                    '1'.to_string()
+                };
                 return numtxt.parse().unwrap_or(0);
+            } else {
+                return 1;
             }
-            else {return 1;}
         }
     }
     0
 }
 fn extract_texts_from_parentheses(ne: &str) -> &str {
     if let Some(i) = ne.find('(') {
-        if let Some(e) = ne.find(')'){
-            if i<=e {
-                return &ne[(i+1)..e];
+        if let Some(e) = ne.find(')') {
+            if i <= e {
+                return &ne[(i + 1)..e];
             }
         }
     }

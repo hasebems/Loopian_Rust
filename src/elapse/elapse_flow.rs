@@ -3,15 +3,15 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::lpnlib::*;
 use super::elapse::*;
-use super::tickgen::CrntMsrTick;
+use super::note_translation::*;
 use super::stack_elapse;
 use super::stack_elapse::ElapseStack;
-use super::note_translation::*;
+use super::tickgen::CrntMsrTick;
+use crate::lpnlib::*;
 
 //*******************************************************************
 //          Flow Struct
@@ -52,16 +52,24 @@ pub struct Flow {
     // for super's member
     during_play: bool,
     destroy: bool,
-    next_msr: i32,   //   次に呼ばれる小節番号が保持される
-    next_tick: i32,  //   次に呼ばれるTick数が保持される
+    next_msr: i32,  //   次に呼ばれる小節番号が保持される
+    next_tick: i32, //   次に呼ばれるTick数が保持される
 }
 
 impl Flow {
     pub fn new(sid: u32, pid: u32, during_play: bool) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
-            id: ElapseId {pid, sid, elps_type: ElapseType::TpFlow,},
+            id: ElapseId {
+                pid,
+                sid,
+                elps_type: ElapseType::TpFlow,
+            },
             priority: PRI_FLOW,
-            old_msr_tick: CrntMsrTick {msr:0,tick:0,tick_for_onemsr:0,},
+            old_msr_tick: CrntMsrTick {
+                msr: 0,
+                tick: 0,
+                tick_for_onemsr: 0,
+            },
             raw_state: [NO_DATA; LOCATION_ALL],
             raw_ev: Vec::new(),
             gen_stock: Vec::new(),
@@ -80,20 +88,22 @@ impl Flow {
         self.destroy = true;
         self.during_play = false;
     }
-    pub fn set_keynote(&mut self, keynote:u8) {
+    pub fn set_keynote(&mut self, keynote: u8) {
         self.keynote = keynote;
     }
-    pub fn rcv_midi(&mut self, crnt_: &CrntMsrTick, status:u8, locate:u8, vel:u8) {
-        println!("MIDI IN >> {:x}-{:x}-{:x}", status,locate,vel);
-        if !self.during_play {return;}
+    pub fn rcv_midi(&mut self, crnt_: &CrntMsrTick, status: u8, locate: u8, vel: u8) {
+        println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
+        if !self.during_play {
+            return;
+        }
 
-        self.raw_ev.insert(0,RawEv(crnt_.msr,crnt_.tick,status,locate,vel));
-        let tk = (crnt_.tick/TICK_RESOLUTION + 1)*TICK_RESOLUTION;
+        self.raw_ev
+            .insert(0, RawEv(crnt_.msr, crnt_.tick, status, locate, vel));
+        let tk = (crnt_.tick / TICK_RESOLUTION + 1) * TICK_RESOLUTION;
         if tk >= crnt_.tick_for_onemsr {
             self.next_msr = crnt_.msr + 1;
             self.next_tick = tk - crnt_.tick_for_onemsr;
-        }
-        else {
+        } else {
             self.next_msr = crnt_.msr;
             self.next_tick = tk;
         }
@@ -107,21 +117,23 @@ impl Flow {
             if let Some(ev) = self.raw_ev.pop() {
                 let ch_status = ev.2 & 0xf0;
                 let locate_idx = ev.3 as usize;
-                if ch_status != 0x80 && (ch_status == 0x90 && ev.4 != 0x00) {   // on
-                    if self.raw_state[locate_idx] != NO_DATA {break;}
+                if ch_status != 0x80 && (ch_status == 0x90 && ev.4 != 0x00) {
+                    // on
+                    if self.raw_state[locate_idx] != NO_DATA {
+                        break;
+                    }
                     self.raw_state[locate_idx] = ev.1;
                     let rnote = self.detect_real_note(estk, ev.3 as i16);
                     if let Some(idx) = self.same_note_index(rnote) {
-                        self.gen_stock[idx].2 = ev.3;   // locate 差し替え
-                    }
-                    else {
+                        self.gen_stock[idx].2 = ev.3; // locate 差し替え
+                    } else {
                         estk.inc_key_map(rnote, ev.4);
                         estk.midi_out(0x90, rnote, ev.4);
-                        println!("MIDI OUT<< 0x90:{:x}:{:x}",rnote,ev.4);
+                        println!("MIDI OUT<< 0x90:{:x}:{:x}", rnote, ev.4);
                         self.gen_stock.push(GenStock(rnote, ev.4, ev.3));
                     }
-                }
-                else {      // off
+                } else {
+                    // off
                     self.raw_state[locate_idx] = NO_DATA;
                     if let Some(idx) = self.same_locate_index(ev.3) {
                         let rnote = self.gen_stock[idx].0;
@@ -129,19 +141,26 @@ impl Flow {
                         if snk == stack_elapse::SameKeyState::LAST {
                             estk.midi_out(0x90, rnote, 0); // test
                         }
-                        println!("MIDI OUT<< 0x90:{:x}:0",rnote);
+                        println!("MIDI OUT<< 0x90:{:x}:0", rnote);
                         self.gen_stock.remove(idx);
                     }
                 }
+            } else {
+                break;
             }
-            else {break;}
         }
         self.next_msr = FULL; // process() は呼ばれないようになる
     }
     fn detect_real_note(&mut self, estk: &mut ElapseStack, locate: i16) -> u8 {
-        let mut temp_note = (locate*12)/16;
-        if self.id.pid/2 == 0 {temp_note += 24} else {temp_note += 36}
-        if temp_note >= 128 {temp_note = 127;}
+        let mut temp_note = (locate * 12) / 16;
+        if self.id.pid / 2 == 0 {
+            temp_note += 24
+        } else {
+            temp_note += 36
+        }
+        if temp_note >= 128 {
+            temp_note = 127;
+        }
         let mut real_note: u8 = temp_note as u8;
         if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
             let (rt, ctbl) = cmps.borrow().get_chord();
@@ -149,19 +168,26 @@ impl Flow {
             real_note = translate_note_com(root, ctbl, temp_note) as u8;
         }
         real_note += self.keynote;
-        if real_note >= MAX_NOTE_NUMBER     {real_note = MAX_NOTE_NUMBER;}
-        else if real_note < MIN_NOTE_NUMBER {real_note = MIN_NOTE_NUMBER;}
+        if real_note >= MAX_NOTE_NUMBER {
+            real_note = MAX_NOTE_NUMBER;
+        } else if real_note < MIN_NOTE_NUMBER {
+            real_note = MIN_NOTE_NUMBER;
+        }
         real_note
     }
     fn same_note_index(&self, rnote: u8) -> Option<usize> {
         for (i, x) in self.gen_stock.iter().enumerate() {
-            if x.0 == rnote {return Some(i);}
+            if x.0 == rnote {
+                return Some(i);
+            }
         }
         None
     }
     fn same_locate_index(&self, locate: u8) -> Option<usize> {
         for (i, x) in self.gen_stock.iter().enumerate() {
-            if x.2 == locate {return Some(i);}
+            if x.2 == locate {
+                return Some(i);
+            }
         }
         None
     }
@@ -169,20 +195,31 @@ impl Flow {
 
 impl Elapse for Flow {
     /// id を得る
-    fn id(&self) -> ElapseId {self.id}
+    fn id(&self) -> ElapseId {
+        self.id
+    }
     /// priority を得る
-    fn prio(&self) -> u32 {self.priority}
+    fn prio(&self) -> u32 {
+        self.priority
+    }
     /// 次に呼ばれる小節番号、Tick数を返す
-    fn next(&self) -> (i32, i32) {(self.next_msr, self.next_tick)}
+    fn next(&self) -> (i32, i32) {
+        (self.next_msr, self.next_tick)
+    }
     /// User による start/play 時にコールされる
-    fn start(&mut self) {self.during_play = true;}
+    fn start(&mut self) {
+        self.during_play = true;
+    }
     /// User による stop 時にコールされる
-    fn stop(&mut self, _estk: &mut ElapseStack) {self.during_play = false;}
+    fn stop(&mut self, _estk: &mut ElapseStack) {
+        self.during_play = false;
+    }
     /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        if (crnt_.msr == self.next_msr &&
-            crnt_.tick/TICK_RESOLUTION == self.next_tick/TICK_RESOLUTION) ||
-           (crnt_.msr == self.next_msr+1){
+        if (crnt_.msr == self.next_msr
+            && crnt_.tick / TICK_RESOLUTION == self.next_tick / TICK_RESOLUTION)
+            || (crnt_.msr == self.next_msr + 1)
+        {
             self.convert_evt(estk);
         }
         self.old_msr_tick = crnt_.clone();
@@ -190,5 +227,7 @@ impl Elapse for Flow {
     /// 特定 elapse に message を送る
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     /// 自クラスが役割を終えた時に True を返す
-    fn destroy_me(&self) -> bool {self.destroy}
+    fn destroy_me(&self) -> bool {
+        self.destroy
+    }
 }

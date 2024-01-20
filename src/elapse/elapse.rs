@@ -3,8 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use super::tickgen::CrntMsrTick;
 use super::stack_elapse::ElapseStack;
+use super::tickgen::CrntMsrTick;
 
 // Timing Priority(pri) 数値が小さいほど優先度が高い（同じtickなら先に再生される）
 pub const _PRI_NONE: u32 = 1000;
@@ -15,7 +15,7 @@ pub const PRI_NOTE: u32 = 400;
 pub const _PRI_DMPR: u32 = 500;
 pub const PRI_FLOW: u32 = 600;
 
-#[derive(Debug,PartialEq,Eq,Copy,Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ElapseType {
     _TpNone,
     TpPart,
@@ -27,15 +27,15 @@ pub enum ElapseType {
     _TpDamper,
 }
 
-#[derive(Debug,PartialEq,Eq,Copy,Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ElapseMsg {
     _MsgNone,
 }
 
-#[derive(Debug,PartialEq,Eq,Copy,Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct ElapseId {
-    pub pid: u32,   // parent
-    pub sid: u32,   // self
+    pub pid: u32, // parent
+    pub sid: u32, // self
     pub elps_type: ElapseType,
 }
 
