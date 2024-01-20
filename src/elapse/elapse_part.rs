@@ -28,9 +28,9 @@ struct PhrLoopManager {
     max_loop_msr: i32,
     whole_tick: i32,
     loop_cntr: u32,         // loop sid
-    new_data_stock: Vec<Vec<PhrEvt>>,
+    new_data_stock: Vec<PhrData>,
     whole_tick_stock: [i16; MAX_PHRASE],
-    new_ana_stock: Vec<Vec<AnaEvt>>,
+    new_ana_stock: Vec<AnaData>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     vari_reserve: usize,      // 0:no rsv, 1-9: rsv
     state_reserve: bool,
@@ -38,10 +38,10 @@ struct PhrLoopManager {
 }
 impl PhrLoopManager {
     pub fn new() -> Self {
-        let mut pstock: Vec<Vec<PhrEvt>> = Vec::new();
-        for _ in 0..MAX_PHRASE {pstock.push(Vec::new());}
-        let mut astock: Vec<Vec<AnaEvt>> = Vec::new();
-        for _ in 0..MAX_PHRASE {astock.push(Vec::new());}
+        let mut pstock: Vec<PhrData> = Vec::new();
+        for _ in 0..MAX_PHRASE {pstock.push(PhrData::empty());}
+        let mut astock: Vec<AnaData> = Vec::new();
+        for _ in 0..MAX_PHRASE {astock.push(AnaData::empty());}
         Self {
             first_msr_num: 0,
             max_loop_msr: 0,
@@ -60,68 +60,60 @@ impl PhrLoopManager {
         self.first_msr_num = 0;
     }
     pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        // auftakt は別枠
+        if self.proc_auftakt(crnt_, estk, pbp){return;}
+
         if self.vari_reserve != 0 {
-            if let Some(phr) = self.loop_phrase.as_mut() {
-                phr.borrow_mut().set_destroy();
-            }
-            self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
+            // variation 指定があった場合
+            let sr = self.state_reserve;    // イベントがあれば保持
+            self.proc_replace_loop(crnt_, estk, pbp);
+            self.state_reserve = sr;
         }
+        // User による Phrase 入力があった場合
         else if self.state_reserve {
-            // 前小節にて phrase/pattern 指定された時
             if crnt_.msr == 0 {
                 // 今回 start したとき
-                self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
-            }
-            else if self.max_loop_msr == 0 {
-                // データのない状態で start し、今回初めて指定された時
-                self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
-            }
-            else if self.max_loop_msr != 0 &&
-              (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) == 0 {
+                self.proc_new_loop_by_evt(crnt_, estk, pbp);
+            } else if self.max_loop_msr == 0 {
+                // データのない状態から、今回初めて指定された時
+                self.proc_new_loop_by_evt(crnt_, estk, pbp);
+            } else if self.check_last_msr(crnt_) {
                 // 前小節にて Loop Obj が終了した時
-                self.state_reserve = false;
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
-            }
-            else if self.max_loop_msr != 0 && pbp.sync_flag {
+                self.proc_new_loop_by_evt(crnt_, estk, pbp);
+            } else if self.max_loop_msr != 0 && pbp.sync_flag {
                 // sync コマンドによる強制リセット
-                self.state_reserve = false;
-                if let Some(phr) = self.loop_phrase.as_mut() {
-                    phr.borrow_mut().set_destroy();
-                }
-                self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
-            }
-            else {
+                self.proc_replace_loop(crnt_, estk, pbp);
+            } else {
                 // 現在の Loop Obj が終了していない時
                 // state_reserve は持ち越す
             }
         }
-        else if self.max_loop_msr != 0 &&
-          (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) == 0 {
-            // 同じ Loop.Obj を生成する
-            self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
+        // 何も外部からのトリガーがなかった場合
+        else if self.check_last_msr(crnt_) {
+            // 今の Loop が終わったので、同じ Loop.Obj を生成する
+            self.proc_new_loop_repeatedly(crnt_, estk, pbp);
+            //self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
         }
         else {
-               // 通常の Loop 中
+            // 通常の Loop 中
         }
     }
-    pub fn rcv_phr(&mut self, msg: Vec<PhrEvt>, whole_tick: i16, vari_num: usize) {
+    pub fn rcv_phr(&mut self, msg: PhrData, vari_num: usize) {
         if vari_num < MAX_PHRASE {
-            if msg.len() == 0 && whole_tick == 0 {
-                self.new_data_stock[vari_num] = vec![PhrEvt::new()];
+            self.whole_tick_stock[vari_num] = msg.whole_tick;
+            if msg.evts.len() == 0 && msg.whole_tick == 0 {
+                self.new_data_stock[vari_num] = PhrData::empty();
             }
             else {
                 self.new_data_stock[vari_num] = msg;
             }
-            self.whole_tick_stock[vari_num] = whole_tick;
             if vari_num == 0 {self.state_reserve = true;}
         }
     }
-    pub fn rcv_ana(&mut self, msg: Vec<AnaEvt>, vari_num: usize) {
+    pub fn rcv_ana(&mut self, msg: AnaData, vari_num: usize) {
         if vari_num < MAX_PHRASE {
-            if msg.len() == 0 {
-                self.new_ana_stock[vari_num] = vec![AnaEvt::new()];
+            if msg.evts.len() == 0 {
+                self.new_ana_stock[vari_num] = AnaData::empty();
             }
             else {
                 self.new_ana_stock[vari_num] = msg;
@@ -148,15 +140,79 @@ impl PhrLoopManager {
     pub fn reserve_vari(&mut self, vari_num: usize) {
         self.vari_reserve = vari_num; // 1-9
     }
-    fn new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+    fn check_last_msr(&self, crnt_: &CrntMsrTick) -> bool {
+        self.max_loop_msr != 0 &&
+        (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) == 0
+    }
+    fn proc_auftakt(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) -> bool {
+        let phr = &self.new_data_stock[self.vari_reserve];
+        if phr.auftakt == 0 {return false}    // auftakt phrase でなければすぐに return
+
+        let auftakt_cond_vari = || -> bool {
+            // variation 再生時の弱起auftaktの条件
+            self.max_loop_msr != 0 &&
+            (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) <= self.max_loop_msr-1 && // 残り１小節以上
+            phr.whole_tick as i32 >= crnt_.tick_for_onemsr*2    // 新しい Phrase が２小節以上
+        };
+        let auftakt_cond = || -> bool {
+            // 通常の弱起auftaktの条件
+            self.max_loop_msr != 0 &&
+            (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) == self.max_loop_msr-1 &&
+            phr.whole_tick as i32 >= crnt_.tick_for_onemsr*2    // 新しい Phrase が２小節以上
+        };
+        if self.vari_reserve != 0 {
+            // variation : 今再生している Phrase が残り１小節以上
+            if auftakt_cond_vari() {
+                let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+                self.new_loop(prm, estk, pbp);
+                return true;
+            }
+        }
+        else if self.state_reserve {
+            // User input : 今再生している Phrase が残り１小節
+            if auftakt_cond() {
+                self.state_reserve = false;
+                let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+                self.new_loop(prm, estk, pbp);
+                return true;
+            }
+        }
+        else {
+            // repeat : 今再生している Phrase が残り１小節
+            if auftakt_cond() {
+                let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+                self.new_loop(prm, estk, pbp);
+                return true;
+            }
+        }
+        false
+    }
+    fn proc_new_loop_by_evt(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        self.state_reserve = false;
+        let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+        self.new_loop(prm, estk, pbp);
+    }
+    fn proc_new_loop_repeatedly(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+        self.new_loop(prm, estk, pbp);
+    }
+    fn proc_replace_loop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        self.state_reserve = false;
+        if let Some(phr) = self.loop_phrase.as_mut() {
+            phr.borrow_mut().set_destroy();
+        }
+        let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+        self.new_loop(prm, estk, pbp);
+    }
+    fn new_loop(&mut self, prm: (i32, i32), estk: &mut ElapseStack, pbp: PartBasicPrm) {
         let mut new_loop = false;
-        self.first_msr_num = msr;
+        self.first_msr_num = prm.0;
 
         // Phrase の更新
-        let phrlen = self.new_data_stock[self.vari_reserve].len();
-        let analen = self.new_ana_stock[self.vari_reserve].len();
+        let phrlen = self.new_data_stock[self.vari_reserve].evts.len();
+        let analen = self.new_ana_stock[self.vari_reserve].evts.len();
         if phrlen != 0 && analen != 0 {
-            self.gen_new_loop(msr, tick_for_onemsr, estk, pbp);
+            self.gen_new_loop(prm, estk, pbp);
             new_loop = true;
         }
         self.vari_reserve = 0;
@@ -166,9 +222,7 @@ impl PhrLoopManager {
             self.loop_phrase = None;
         }
     }
-    fn gen_new_loop(&mut self, msr: i32, tick_for_onemsr: i32, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        let phr = &self.new_data_stock[self.vari_reserve];
-        let ana = &self.new_ana_stock[self.vari_reserve];
+    fn gen_new_loop(&mut self, prm: (i32, i32), estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新しいデータが来ていれば、新たに Loop Obj.を生成
         self.whole_tick = self.whole_tick_stock[self.vari_reserve] as i32;
         if self.whole_tick == 0 {
@@ -179,19 +233,20 @@ impl PhrLoopManager {
         }
 
         // その時の beat 情報で、whole_tick を loop_measure に換算
-        let plus_one = if self.whole_tick%tick_for_onemsr == 0 {0} else {1};
-        self.max_loop_msr = self.whole_tick/tick_for_onemsr + plus_one;
+        let plus_one = if self.whole_tick%prm.1 == 0 {0} else {1};
+        self.max_loop_msr = self.whole_tick/prm.1 + plus_one;
 
         self.loop_cntr += 1;
         let lp = PhraseLoop::new(
             self.loop_cntr, 
             pbp.part_num, 
             pbp.keynote,
-            msr,
-            phr.to_vec(),
-            ana.to_vec(),
+            prm.0,
+            self.new_data_stock[self.vari_reserve].evts.to_vec(),
+            self.new_ana_stock[self.vari_reserve].evts.to_vec(),
             self.whole_tick,
             self.turnnote);
+
         self.loop_phrase = Some(Rc::clone(&lp));
         estk.add_elapse(lp);
         println!("New Phrase Loop! --whole tick: {}", self.whole_tick);
@@ -265,16 +320,16 @@ impl CmpsLoopManager {
             self.new_loop(crnt_, estk, pbp);
         }
     }
-    pub fn rcv_cmp(&mut self, msg: Vec<ChordEvt>, whole_tick: i16) {
+    pub fn rcv_cmp(&mut self, msg: ChordData) {
         //println!("Composition Msg: {:?}", msg);
-        if msg.len() == 0 && whole_tick == 0 {
+        if msg.evts.len() == 0 && msg.whole_tick == 0 {
             self.new_data_stock = vec![ChordEvt::new()];
         }
         else {
-            self.new_data_stock = msg;
+            self.new_data_stock = msg.evts;
         }
         self.state_reserve = true;
-        self.whole_tick_stock = whole_tick;
+        self.whole_tick_stock = msg.whole_tick;
     }
     pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.loop_cmps.clone()    // 重いclone()?
@@ -391,13 +446,13 @@ impl Part {
         }
         self.pm.state_reserve = true;
     }
-    pub fn rcv_phr_msg(&mut self, msg: Vec<PhrEvt>, whole_tick: i16, vari_num: usize) {
-        self.pm.rcv_phr(msg, whole_tick, vari_num);
+    pub fn rcv_phr_msg(&mut self, msg: PhrData, vari_num: usize) {
+        self.pm.rcv_phr(msg, vari_num);
     }
-    pub fn rcv_cmps_msg(&mut self, msg: Vec<ChordEvt>, whole_tick: i16) {
-        self.cm.rcv_cmp(msg, whole_tick);
+    pub fn rcv_cmps_msg(&mut self, msg: ChordData) {
+        self.cm.rcv_cmp(msg);
     }
-    pub fn rcv_ana_msg(&mut self, msg: Vec<AnaEvt>, vari_num: usize) {
+    pub fn rcv_ana_msg(&mut self, msg: AnaData, vari_num: usize) {
         self.pm.rcv_ana(msg, vari_num);
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {

@@ -84,7 +84,11 @@ impl PhrEvt {
 #[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct PhrData {
     pub whole_tick: i16,
+    pub auftakt: i16,   // 0:no auftakt, 1-:beat begin auftakt
     pub evts: Vec<PhrEvt>,
+}
+impl PhrData {
+    pub fn empty() -> Self {Self{whole_tick: 0, auftakt: 0, evts: vec![PhrEvt::new()],}}
 }
 //-------------------------------------------------------------------
 #[derive(Default,Clone,Debug,PartialEq,Eq)]
@@ -120,6 +124,9 @@ pub struct ChordData {
     pub whole_tick: i16,
     pub evts: Vec<ChordEvt>,
 }
+impl ChordData {
+    pub fn empty() -> Self {Self{whole_tick: 0, evts: vec![ChordEvt::new()]}}
+}
 //-------------------------------------------------------------------
 // MSG_ANA
 /// for mtype
@@ -147,6 +154,9 @@ impl AnaEvt {
 #[derive(Default,Clone,Debug,PartialEq,Eq)]
 pub struct AnaData {
     pub evts: Vec<AnaEvt>,
+}
+impl AnaData {
+    pub fn empty() -> Self {Self{evts: vec![AnaEvt::new()]}}
 }
 //-------------------------------------------------------------------
 #[derive(Clone,Debug)]

@@ -153,6 +153,7 @@ impl PhraseDataStock {
         (ElpsMsg::Phr(part, vari,
             PhrData {
                 whole_tick: self.whole_tick as i16,
+                auftakt:    0,
                 evts:       self.rcmb.clone(),
             }),
         ElpsMsg::Ana(part, vari,
