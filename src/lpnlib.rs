@@ -143,12 +143,12 @@ pub enum ElpsMsg {
 //    SetBpm([i16; 3]),
     SetBeat([i16; 2]),
 //    SetKey([i16; 3]),
-    Phr(i16, i16, Vec<PhrEvt>),     //  Phr : var/part, whole_tick, ()
-    Cmp(i16, i16, Vec<ChordEvt>),   //  Cmp : part, whole_tick, ()
-    Ana(i16, Vec<AnaEvt>),          //  Ana : part, ()
-    PhrX(i16),  //  PhrX : part
-    CmpX(i16),  //  CmpX : part
-    AnaX(i16),  //  AnaX : part
+    Phr(i16, i16, i16, Vec<PhrEvt>),    //  Phr : part, vari, whole_tick, ()
+    Cmp(i16, i16, Vec<ChordEvt>),       //  Cmp : part, whole_tick, ()
+    Ana(i16, i16, Vec<AnaEvt>),         //  Ana : part, var, ()
+    PhrX(i16, i16), //  PhrX : part, vari
+    CmpX(i16),      //  CmpX : part
+    AnaX(i16, i16), //  AnaX : part, vari
 }
 //  Ctrl
 pub const MSG_CTRL_QUIT: i16     = -1;
@@ -200,7 +200,6 @@ pub const MSG_SET_TURN: i16     = 3;
 // MSG_CMP_X+part|--          |
 // MSG_ANA_X+part|--          |
 
-pub const MSG_PART_MASK:i16 = 100;    // X-(X % MSG_PART_MASK)
 
 //*******************************************************************
 //          Graphic
@@ -220,9 +219,6 @@ pub enum InputMode {
 //*******************************************************************
 //          Func
 //*******************************************************************
-pub fn pt(msg: i16) -> usize {((msg%10)%MSG_PART_MASK) as usize}
-pub fn vari(msg: i16) -> usize {((msg/10)%10) as usize}
-pub fn _msg1st(msg: i16) -> i16 {msg-(pt(msg) as i16)-(vari(msg) as i16)*10}
 pub fn convert_exp2vel(vel_text: &str) -> i32 {
     match vel_text {
         "ff" => 127,
