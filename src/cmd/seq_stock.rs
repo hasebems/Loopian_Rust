@@ -152,6 +152,7 @@ pub struct PhraseDataStock {
     cmpl_ex: Vec<String>,
     rcmb: Vec<PhrEvt>,
     ana: Vec<AnaEvt>,
+    atrb: Vec<bool>,
     whole_tick: i32,
 }
 impl PhraseDataStock {
@@ -163,6 +164,7 @@ impl PhraseDataStock {
             cmpl_ex: vec!["".to_string()],
             rcmb: Vec::new(), //UgContent::new(),
             ana: Vec::new(),  //UgContent::new(),
+            atrb: vec![false, false],
             whole_tick: 0,
         }
     }
@@ -173,7 +175,7 @@ impl PhraseDataStock {
                 vari,
                 PhrData {
                     whole_tick: self.whole_tick as i16,
-                    auftakt: 0,
+                    auftakt: if self.atrb[0] {1} else {0},
                     evts: self.rcmb.clone(),
                 },
             ),
@@ -192,14 +194,10 @@ impl PhraseDataStock {
 
         // 2.complement data
         let cmpl = complement_phrase(input_text, cluster_word);
-        if cmpl.len() <= 1 {
-            println!("Phrase input failed!");
-            return false;
-        } else {
-            self.cmpl_nt = cmpl[0].clone();
-            self.cmpl_ex = cmpl[1].clone();
-        }
-        println!("complement_phrase: {:?} exp: {:?}", cmpl[0], cmpl[1]);
+        self.cmpl_nt = cmpl.0.clone();
+        self.cmpl_ex = cmpl.1.clone();
+        self.atrb = cmpl.2.clone();
+        println!("complement_phrase: {:?} exp: {:?} atrb: {:?}", cmpl.0, cmpl.1, cmpl.2);
         true
     }
     pub fn set_recombined(&mut self, input_mode: InputMode, bpm: i16, tick_for_onemsr: i32) {

@@ -27,7 +27,6 @@ impl MessageSender {
         }
     }
     pub fn send_phrase_to_elapse(&self, part: usize, vari: usize, gdt: &SeqDataStock) {
-        //let msg_pv = (part as i16) + 10*(vari as i16);
         let (pdt, ana) = gdt
             .get_pdstk(part, vari)
             .get_final(part as i16, vari as i16);

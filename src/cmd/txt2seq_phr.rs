@@ -8,12 +8,14 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          complement_phrase
 //*******************************************************************
-pub fn complement_phrase(input_text: String, cluster_word: &str) -> [Vec<String>; 2] {
+pub fn complement_phrase(input_text: String, cluster_word: &str) -> (Vec<String>, Vec<String>, Vec<bool>) {
     // 1. space 削除
     let phr = input_text.trim().to_string();
 
-    // 2. [] を検出し、音符情報と、その他の情報を分けて Vec に入れて戻す
-    let (nt, ne) = divide_brackets(phr);
+    // 2. [] を検出し、音符情報と、その他の情報を分け、音符情報はさらに : で分割、auftaktの展開
+    let (nttmp, ne) = divide_brackets(phr);
+    let ntdiv = split_by(':', nttmp);
+    let (nt, ntatrb) = div_atrb(ntdiv);
 
     // 3. 関数を . で分割し、音符変調と音楽表現に分ける
     let mut nev = split_by('.', ne);
@@ -44,7 +46,7 @@ pub fn complement_phrase(input_text: String, cluster_word: &str) -> [Vec<String>
         }
     }
 
-    return [ntvec, nevec];
+    return (ntvec, nevec, ntatrb);
 }
 fn divide_brackets(input_text: String) -> (String, String) {
     let mut note_info: Vec<String> = Vec::new();
@@ -70,27 +72,28 @@ fn divide_brackets(input_text: String) -> (String, String) {
 fn divide_arrow_bracket(nt: String) -> String {
     let mut one_arrow_flg = false;
     let mut two_arrow_flg = false;
+    let mut arrow_cnt = 0;
     let mut ret_str: String = "".to_string();
     for ltr in nt.chars() {
         if ltr == '<' {
-            if one_arrow_flg {
+            if arrow_cnt == 1 {
                 two_arrow_flg = true;
                 one_arrow_flg = false;
-            } else {
+            } else if arrow_cnt == 0 {
                 one_arrow_flg = true;
             }
+            arrow_cnt += 1;
             ret_str.push('>');
-        } else {
-            if ltr == '>' {
-                if two_arrow_flg {
-                    two_arrow_flg = false;
-                    one_arrow_flg = true;
-                    continue;
-                } else if one_arrow_flg {
-                    one_arrow_flg = false;
-                    continue;
-                }
+        } else if ltr == '>' {
+            if two_arrow_flg && arrow_cnt == 0 {
+                arrow_cnt = -1;
+            } else if one_arrow_flg && arrow_cnt == 0 {
+                one_arrow_flg = false;
+            } else if arrow_cnt == -1 {
+                two_arrow_flg = false;
             }
+        } else {
+            arrow_cnt = 0;
             ret_str.push(ltr);
             if ltr == ',' {
                 if one_arrow_flg {
@@ -103,6 +106,41 @@ fn divide_arrow_bracket(nt: String) -> String {
         }
     }
     ret_str
+}
+fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<bool>) {
+    let dnum = ntdiv.len();
+    let mut nt = "".to_string();
+    let mut ntatrb = vec!["".to_string()];
+    let mut atrb = vec![false, false];
+    if dnum >= 2 {
+        nt = ntdiv.pop().unwrap_or("".to_string());
+        ntatrb = ntdiv;
+    } else if dnum == 1 {
+        nt = ntdiv[0].clone();
+    }
+
+    // Attribute の調査
+    for a in ntatrb.iter() {
+        if a.contains('A') {
+            let beat = a.chars().nth(1).unwrap_or('0').to_digit(10).unwrap_or(0);
+            println!("Auftakt Start Beat: {}",beat);
+            if beat > 0 {
+                atrb[0] = true;
+                if beat > 1 {
+                    let mut rest = String::from("qx");
+                    for _ in 0..beat-2 {
+                        rest.push_str(".")
+                    }
+                    nt = rest + "," + &nt;
+                }
+            }
+        }
+        else if a == "RT" {
+            atrb[1] = true;
+        }
+    }
+
+    (nt, atrb)
 }
 fn fill_omitted_note_data(nf: String) -> String {
     if nf.len() == 0 {
