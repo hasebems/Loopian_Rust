@@ -129,6 +129,7 @@ pub const TYPE_DAMPER: i16 = 1003;
 /// for mtype
 pub const TYPE_CHORD: i16 = 1002;
 pub const TYPE_VARI: i16 = 1004;
+pub const TYPE_CONTROL: i16 = 1007;
 /// for tbl
 pub const UPPER: i16 = 1000;
 #[derive(Default, Clone, Debug, PartialEq, Eq)]

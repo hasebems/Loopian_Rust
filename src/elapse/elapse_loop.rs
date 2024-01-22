@@ -11,7 +11,7 @@ use super::elapse_note::{Damper, Note};
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use crate::cmd::txt2seq_cmps;
+use crate::cmd::txt2seq_cmps::{self, END_OF_COMPOSITION};
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -366,8 +366,11 @@ impl CompositionLoop {
                 break;
             }
             let tick = cmps[trace].tick as i32;
-            if first_tick <= tick && tick < end_tick && cmps[trace].tbl != 0 {
-                // Chord Table が "thru" で無ければ
+            if first_tick <= tick
+                && tick < end_tick
+                && cmps[trace].tbl != txt2seq_cmps::NO_PED_TBL_NUM as i16
+            {
+                // Chord Table が "X" で無ければ
                 chord_map[((tick % tick_for_onemsr) / tick_for_onebeat) as usize] = true;
             } else if tick > end_tick {
                 break;
@@ -393,7 +396,11 @@ impl CompositionLoop {
             next_tick = cmps[trace].tick as i32;
             if next_tick <= elapsed_tick {
                 let cd = cmps[trace].clone();
-                if cd.mtype == TYPE_CHORD {
+                if cd.mtype == TYPE_CONTROL {
+                    if cd.tbl == END_OF_COMPOSITION {
+                        //
+                    }
+                } else if cd.mtype == TYPE_CHORD {
                     self.prepare_note_translation(cd);
                 } else if cd.mtype == TYPE_VARI {
                     _estk.set_phrase_vari(self.id.pid as usize, cd.root as usize);
@@ -411,12 +418,12 @@ impl CompositionLoop {
         self.translation_tbl = cd.tbl;
 
         let tbl_num: usize = self.translation_tbl as usize;
-        let tbl_name = crate::cmd::txt2seq_cmps::get_table_name(tbl_num);
+        let tbl_name = txt2seq_cmps::get_table_name(tbl_num);
         let cname = tbl_name.to_string();
         if cname.chars().nth(0).unwrap_or(' ') == '_' {
             let root_index = ((self.root - 1) / 3) as usize;
             let alteration = (self.root + 1) % 3;
-            let mut root = crate::cmd::txt2seq_cmps::get_root_name(root_index).to_string();
+            let mut root = txt2seq_cmps::get_root_name(root_index).to_string();
             if alteration == 1 {
                 root += "#";
             } else if alteration == 2 {

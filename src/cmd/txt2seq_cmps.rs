@@ -13,230 +13,69 @@ struct ChordTable {
     name: &'static str,
     table: &'static [i16],
 }
-const CHORD_TABLE: [ChordTable; 53] = [
-    //  No.0-9
-    ChordTable {
-        name: "thru",
-        table: &THRU,
-    }, // noped
-    ChordTable {
-        name: "O",
-        table: &THRU,
-    },
-    ChordTable {
-        name: "_",
-        table: &MAJOR,
-    },
-    ChordTable {
-        name: "_m",
-        table: &MINOR,
-    },
-    ChordTable {
-        name: "_7",
-        table: &M7TH,
-    },
-    ChordTable {
-        name: "_6",
-        table: &MAJ6TH,
-    },
-    ChordTable {
-        name: "_m7",
-        table: &MIN7TH,
-    },
-    ChordTable {
-        name: "_M7",
-        table: &MAJ7TH,
-    },
-    ChordTable {
-        name: "_maj7",
-        table: &MAJ7TH,
-    },
-    ChordTable {
-        name: "_add9",
-        table: &ADD9TH,
-    },
-    // No.10-19
-    ChordTable {
-        name: "_9",
-        table: &M9TH,
-    },
-    ChordTable {
-        name: "_m9",
-        table: &MIN9TH,
-    },
-    ChordTable {
-        name: "_M9",
-        table: &MAJ9TH,
-    },
-    ChordTable {
-        name: "_maj9",
-        table: &MAJ9TH,
-    },
-    ChordTable {
-        name: "_+5",
-        table: &AUG5TH,
-    },
-    ChordTable {
-        name: "_aug",
-        table: &AUG5TH,
-    },
-    ChordTable {
-        name: "_7+5",
-        table: &AUG7TH,
-    },
-    ChordTable {
-        name: "_aug7",
-        table: &AUG7TH,
-    },
-    ChordTable {
-        name: "_7-9",
-        table: &M7MNS9,
-    },
-    ChordTable {
-        name: "_7+9",
-        table: &M7PLS9,
-    },
-    // No.20-29
-    ChordTable {
-        name: "_M96",
-        table: &MAJ9ADD6,
-    },
-    ChordTable {
-        name: "_dim",
-        table: &DIM,
-    },
-    ChordTable {
-        name: "_m7-5",
-        table: &MIN7M5,
-    },
-    ChordTable {
-        name: "_sus4",
-        table: &SUS4,
-    },
-    ChordTable {
-        name: "_7sus4",
-        table: &M7SUS4,
-    },
-    // parasc(24-29): para() を付けなくても、para機能
-    ChordTable {
-        name: "_chr",
-        table: &THRU,
-    }, // Iのとき音程そのまま。音程関係を保持したまま並行移動
-    ChordTable {
-        name: "_ion",
-        table: &IONIAN,
-    }, // Iが音程そのまま。Iとの差分分並行移動し、音程をkeyに合わせる
-    ChordTable {
-        name: "_dor",
-        table: &IONIAN,
-    }, // IIが音程そのまま。IIとの差分分並行移動し、音程をkeyに合わせる
-    ChordTable {
-        name: "_lyd",
-        table: &IONIAN,
-    }, // IVが音程そのまま。IVとの差分分並行移動し、音程をkeyに合わせる
-    ChordTable {
-        name: "_mix",
-        table: &IONIAN,
-    }, // Vが音程そのまま。Vとの差分分並行移動し、音程をkeyに合わせる
-    // No.30-39
-    ChordTable {
-        name: "_aeo",
-        table: &IONIAN,
-    }, // VIが音程そのまま。VIとの差分分並行移動し、音程をkeyに合わせる
-    ChordTable {
-        name: "diatonic",
-        table: &IONIAN,
-    },
-    ChordTable {
-        name: "dorian",
-        table: &DORIAN,
-    },
-    ChordTable {
-        name: "lydian",
-        table: &LYDIAN,
-    },
-    ChordTable {
-        name: "mixolydian",
-        table: &MIXOLYDIAN,
-    },
-    ChordTable {
-        name: "aeolian",
-        table: &AEOLIAN,
-    },
-    ChordTable {
-        name: "comdim",
-        table: &COMDIM,
-    },
-    ChordTable {
-        name: "pentatonic",
-        table: &PENTATONIC,
-    },
-    ChordTable {
-        name: "blues",
-        table: &BLUES,
-    },
-    // scale n(38-49): n半音分上の diatonic scale
-    ChordTable {
-        name: "sc0",
-        table: &IONIAN,
-    },
-    // No.40-49
-    ChordTable {
-        name: "sc1",
-        table: &SC1,
-    },
-    ChordTable {
-        name: "sc2",
-        table: &SC2,
-    },
-    ChordTable {
-        name: "sc3",
-        table: &SC3,
-    },
-    ChordTable {
-        name: "sc4",
-        table: &SC4,
-    },
-    ChordTable {
-        name: "sc5",
-        table: &MIXOLYDIAN,
-    },
-    ChordTable {
-        name: "sc6",
-        table: &SC6,
-    },
-    ChordTable {
-        name: "sc7",
-        table: &LYDIAN,
-    },
-    ChordTable {
-        name: "sc8",
-        table: &SC8,
-    },
-    ChordTable {
-        name: "sc9",
-        table: &SC9,
-    },
-    ChordTable {
-        name: "sc10",
-        table: &SC10,
-    },
-    // No.50-
-    ChordTable {
-        name: "sc11",
-        table: &SC11,
-    },
-    ChordTable {
-        name: "Err",
-        table: &ERR,
-    },
-    ChordTable {
-        name: "None",
-        table: &NONE,
-    },
-];
-pub const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
 
+#[rustfmt::skip]
+const CHORD_TABLE: [ChordTable; 54] = [
+    ChordTable {name: "X",      table: &THRU,}, // noped
+    ChordTable {name: "O",      table: &THRU,},
+    ChordTable {name: "_",      table: &MAJOR,},
+    ChordTable {name: "_m",     table: &MINOR,},
+    ChordTable {name: "_7",     table: &M7TH,},
+    ChordTable {name: "_6",     table: &MAJ6TH,},
+    ChordTable {name: "_m7",    table: &MIN7TH,},
+    ChordTable {name: "_M7",    table: &MAJ7TH,},
+    ChordTable {name: "_maj7",  table: &MAJ7TH,},
+    ChordTable {name: "_add9",  table: &ADD9TH,},
+    ChordTable {name: "_9",     table: &M9TH,},
+    ChordTable {name: "_m9",    table: &MIN9TH,},
+    ChordTable {name: "_M9",    table: &MAJ9TH,},
+    ChordTable {name: "_maj9",  table: &MAJ9TH,},
+    ChordTable {name: "_+5",    table: &AUG5TH,},
+    ChordTable {name: "_aug",   table: &AUG5TH,},
+    ChordTable {name: "_7+5",   table: &AUG7TH,},
+    ChordTable {name: "_aug7",  table: &AUG7TH,},
+    ChordTable {name: "_7-9",   table: &M7MNS9,},
+    ChordTable {name: "_7+9",   table: &M7PLS9,},
+    ChordTable {name: "_M96",   table: &MAJ9ADD6,},
+    ChordTable {name: "_dim",   table: &DIM,},
+    ChordTable {name: "_m7-5",  table: &MIN7M5,},
+    ChordTable {name: "_sus4",  table: &SUS4,},
+    ChordTable {name: "_7sus4", table: &M7SUS4,},// parasc(24-29): para() を付けなくても、para機能
+    ChordTable {name: "_chr",   table: &THRU,}, // Iのとき音程そのまま。音程関係を保持したまま並行移動
+    ChordTable {name: "_ion",   table: &IONIAN,}, // Iが音程そのまま。Iとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name: "_dor",   table: &IONIAN,}, // IIが音程そのまま。IIとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name: "_lyd",   table: &IONIAN,}, // IVが音程そのまま。IVとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name: "_mix",   table: &IONIAN,}, // Vが音程そのまま。Vとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name: "_aeo",   table: &IONIAN,}, // VIが音程そのまま。VIとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name: "diatonic",table: &IONIAN,},
+    ChordTable {name: "dorian", table: &DORIAN,},
+    ChordTable {name: "lydian", table: &LYDIAN,},
+    ChordTable {name: "mixolydian",table: &MIXOLYDIAN,},
+    ChordTable {name: "aeolian",table: &AEOLIAN,},
+    ChordTable {name: "comdim", table: &COMDIM,},
+    ChordTable {name: "pentatonic",table: &PENTATONIC,},
+    ChordTable {name: "blues",  table: &BLUES,},
+    // scale n(38-49): n半音分上の diatonic scale
+    ChordTable {name: "sc0",    table: &IONIAN,},
+    ChordTable {name: "sc1",    table: &SC1,},
+    ChordTable {name: "sc2",    table: &SC2,},
+    ChordTable {name: "sc3",    table: &SC3,},
+    ChordTable {name: "sc4",    table: &SC4,},
+    ChordTable {name: "sc5",    table: &MIXOLYDIAN,},
+    ChordTable {name: "sc6",    table: &SC6,},
+    ChordTable {name: "sc7",    table: &LYDIAN,},
+    ChordTable {name: "sc8",    table: &SC8,},
+    ChordTable {name: "sc9",    table: &SC9,},
+    ChordTable {name: "sc10",   table: &SC10,},
+    ChordTable {name: "sc11",   table: &SC11,},
+    ChordTable {name: "Err",    table: &ERR,},
+    ChordTable {name: "None",   table: &NONE,},
+    ChordTable {name: "END",    table: &NONE,}, // elapse では、再生が止まる
+];
+
+pub const END_OF_COMPOSITION: i16 = (CHORD_TABLE.len() - 1) as i16;
+pub const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
+pub const NO_PED_TBL_NUM: usize = 0; // 'X'
 const THRU: [i16; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const MAJOR: [i16; 3] = [0, 4, 7];
 const MINOR: [i16; 3] = [0, 3, 7];
@@ -298,7 +137,8 @@ pub fn get_table_name(mut idx_num: usize) -> &'static str {
     CHORD_TABLE[idx_num].name
 }
 pub fn get_table_num(kind: &str) -> i16 {
-    let mut table: i16 = (MAX_CHORD_TABLE - 1) as i16;
+    let mut table: i16 = (MAX_CHORD_TABLE - 2) as i16;
+
     for (i, tp) in CHORD_TABLE.iter().enumerate() {
         if tp.name == kind {
             table = i as i16;
@@ -379,12 +219,20 @@ pub fn divide_brace(input_text: String) -> Option<(String, String)> {
         None
     }
 }
-fn fill_omitted_chord_data(cmps: String) -> Vec<String> {
-    if cmps.len() == 0 {
+fn fill_omitted_chord_data(mut cmps: String) -> Vec<String> {
+    let cmp_len = cmps.len();
+    if cmp_len == 0 {
         return vec!["".to_string()];
     }
+    else if cmp_len >= 2 {
+        if cmps.ends_with("//") {
+            cmps.pop();
+            cmps += "END";
+        }
+    }
+    //println!("CHK-CHK-CHK::: {}",cmps);
 
-    const NO_CHORD: &str = "thru"; // 省略を thru で補填
+    const NO_CHORD: &str = "X"; // 省略を X で補填
     let mut fill: String = "".to_string(); // cmps に補填して fill に入れる
     let mut chord: String = NO_CHORD.to_string(); // 補填用の chord
     let mut end_flag: bool = true; // 補填して区切られ済み
@@ -479,13 +327,21 @@ pub fn recombine_to_chord_loop(
         }
 
         let (root, table) = convert_chord_to_num(chord);
-        //rcmb.add_dt(vec![TYPE_CHORD, tick as i16, root, table]);
-        rcmb.push(ChordEvt {
-            mtype: TYPE_CHORD,
-            tick: tick as i16,
-            root,
-            tbl: table,
-        });
+        if table == END_OF_COMPOSITION {
+            rcmb.push(ChordEvt {
+                mtype: TYPE_CONTROL,
+                tick: 0,
+                root: 0,
+                tbl: table,
+            });
+        } else {
+            rcmb.push(ChordEvt {
+                mtype: TYPE_CHORD,
+                tick: tick as i16,
+                root,
+                tbl: table,
+            });
+        }
 
         read_ptr += 1;
     }

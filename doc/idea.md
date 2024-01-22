@@ -464,6 +464,7 @@ NoteObj <|-- WaterRipple
 - 4拍目と次の1拍目に休符を入れると、音価が伸びてしまう不具合修正 1/3 済
 - load フォルダ内のpathの指定機能追加 1/4
 - rit.を複数小節にわたってかける機能追加 1/14
+- 弱起(Auftakt)機能 1/21
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -493,14 +494,6 @@ NoteObj <|-- WaterRipple
         - PhraseLoop new は、Part がメッセージ受信時に行う
         - new された loop は、今の msr, tick まで早送りし、そこから再生
         - それまでの Loop はすぐに解放
-- 弱起(Auftakt)機能
-    - [A2:xxx] 2拍目の頭から再生。前の phrase と１小節分オーバーラップする
-    - ２小節以上ないと指定は無効となる
-    - 弱起 Phrase を @n記法による variation 機能で Composition に書いた場合、その小節が弱起が始まる小節になる
-    - 入力された（認識した）時点で、残り１小節なければ、今の Phrase が Loop し次に残り1小節になるまで再生されない
-    <実装方法>
-        - 弱起 phrase は、前の phrase が残り１小節になった時点で PhraseLoop new する
-        - 今動作中の Loop は、そのまま再生され、終わったら解放
 - [d^,r,m,f^,s,l] => [d,r,m,f,s,l].dyn(X.idx%3==0?X^) (多分やらない)
     - 各音のiteratorは X で表現される
     - X.idx は順番の数値、X.beat は拍数
