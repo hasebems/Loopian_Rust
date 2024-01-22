@@ -8,7 +8,10 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          complement_phrase
 //*******************************************************************
-pub fn complement_phrase(input_text: String, cluster_word: &str) -> (Vec<String>, Vec<String>, Vec<bool>) {
+pub fn complement_phrase(
+    input_text: String,
+    cluster_word: &str,
+) -> (Vec<String>, Vec<String>, Vec<bool>) {
     // 1. space 削除
     let phr = input_text.trim().to_string();
 
@@ -123,19 +126,18 @@ fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<bool>) {
     for a in ntatrb.iter() {
         if a.contains('A') {
             let beat = a.chars().nth(1).unwrap_or('0').to_digit(10).unwrap_or(0);
-            println!("Auftakt Start Beat: {}",beat);
+            println!("Auftakt Start Beat: {}", beat);
             if beat > 0 {
                 atrb[0] = true;
                 if beat > 1 {
                     let mut rest = String::from("qx");
-                    for _ in 0..beat-2 {
+                    for _ in 0..beat - 2 {
                         rest.push_str(".")
                     }
                     nt = rest + "," + &nt;
                 }
             }
-        }
-        else if a == "RT" {
+        } else if a == "RT" {
             atrb[1] = true;
         }
     }

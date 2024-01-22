@@ -175,7 +175,7 @@ impl PhraseDataStock {
                 vari,
                 PhrData {
                     whole_tick: self.whole_tick as i16,
-                    auftakt: if self.atrb[0] {1} else {0},
+                    auftakt: if self.atrb[0] { 1 } else { 0 },
                     evts: self.rcmb.clone(),
                 },
             ),
@@ -197,7 +197,10 @@ impl PhraseDataStock {
         self.cmpl_nt = cmpl.0.clone();
         self.cmpl_ex = cmpl.1.clone();
         self.atrb = cmpl.2.clone();
-        println!("complement_phrase: {:?} exp: {:?} atrb: {:?}", cmpl.0, cmpl.1, cmpl.2);
+        println!(
+            "complement_phrase: {:?} exp: {:?} atrb: {:?}",
+            cmpl.0, cmpl.1, cmpl.2
+        );
         true
     }
     pub fn set_recombined(&mut self, input_mode: InputMode, bpm: i16, tick_for_onemsr: i32) {
