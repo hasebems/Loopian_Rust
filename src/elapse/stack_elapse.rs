@@ -273,6 +273,11 @@ impl ElapseStack {
             .borrow_mut()
             .set_phrase_vari(vari_num);
     }
+    pub fn set_loop_end(&self, part_num: usize) {
+        self.part_vec[part_num]
+            .borrow_mut()
+            .set_loop_end();
+    }
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {
             Err(e) => println!("Something happened on MPSC for UI! {}", e),

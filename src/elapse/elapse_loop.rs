@@ -398,7 +398,7 @@ impl CompositionLoop {
                 let cd = cmps[trace].clone();
                 if cd.mtype == TYPE_CONTROL {
                     if cd.tbl == END_OF_COMPOSITION {
-                        //
+                        _estk.set_loop_end(self.id.pid as usize);
                     }
                 } else if cd.mtype == TYPE_CHORD {
                     self.prepare_note_translation(cd);

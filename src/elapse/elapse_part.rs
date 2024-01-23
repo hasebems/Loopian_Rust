@@ -18,6 +18,7 @@ struct PartBasicPrm {
     part_num: u32,
     keynote: u8,
     sync_flag: bool,
+    loop_state_flag: bool,
 }
 
 //*******************************************************************
@@ -98,7 +99,6 @@ impl PhrLoopManager {
         else if self.check_last_msr(crnt_) {
             // 今の Loop が終わったので、同じ Loop.Obj を生成する
             self.proc_new_loop_repeatedly(crnt_, estk, pbp);
-            //self.new_loop(crnt_.msr, crnt_.tick_for_onemsr, estk, pbp);
         } else {
             // 通常の Loop 中
         }
@@ -213,8 +213,10 @@ impl PhrLoopManager {
         estk: &mut ElapseStack,
         pbp: PartBasicPrm,
     ) {
-        let prm = (crnt_.msr, crnt_.tick_for_onemsr);
-        self.new_loop(prm, estk, pbp);
+        if pbp.loop_state_flag {
+            let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+            self.new_loop(prm, estk, pbp);
+        }
     }
     fn proc_replace_loop(
         &mut self,
@@ -338,6 +340,7 @@ impl CmpsLoopManager {
             }
         } else if self.max_loop_msr != 0
             && (crnt_.msr - self.first_msr_num) % (self.max_loop_msr) == 0
+            && pbp.loop_state_flag
         {
             // 同じ Loop.Obj を生成する
             self.new_loop(crnt_, estk, pbp);
@@ -449,6 +452,7 @@ pub struct Part {
     flow: Option<Rc<RefCell<Flow>>>,
     sync_next_msr_flag: bool,
     start_flag: bool,
+    loop_state_flag: bool,
 }
 impl Part {
     pub fn new(num: u32) -> Rc<RefCell<Part>> {
@@ -474,6 +478,7 @@ impl Part {
             flow: None,
             sync_next_msr_flag: false,
             start_flag: false,
+            loop_state_flag: true,
         }))
     }
     pub fn change_key(&mut self, knt: u8) {
@@ -484,9 +489,13 @@ impl Part {
         self.pm.state_reserve = true;
     }
     pub fn rcv_phr_msg(&mut self, msg: PhrData, vari_num: usize) {
+        self.loop_state_flag = true;
+        self.set_sync();
         self.pm.rcv_phr(msg, vari_num);
     }
     pub fn rcv_cmps_msg(&mut self, msg: ChordData) {
+        self.loop_state_flag = true;
+        self.set_sync();
         self.cm.rcv_cmp(msg);
     }
     pub fn rcv_ana_msg(&mut self, msg: AnaData, vari_num: usize) {
@@ -543,6 +552,9 @@ impl Part {
     pub fn set_phrase_vari(&mut self, vari_num: usize) {
         self.pm.reserve_vari(vari_num);
     }
+    pub fn set_loop_end(&mut self) {
+        self.loop_state_flag = false;
+    }
 }
 impl Elapse for Part {
     fn id(&self) -> ElapseId {
@@ -559,6 +571,7 @@ impl Elapse for Part {
         // User による start/play 時にコールされる
         self.during_play = true;
         self.start_flag = true;
+        self.loop_state_flag = true;
         self.next_msr = 0;
         self.next_tick = 0;
         self.cm.start();
@@ -577,6 +590,7 @@ impl Elapse for Part {
             part_num: self.id.sid,
             keynote: self.keynote,
             sync_flag: self.sync_next_msr_flag,
+            loop_state_flag: self.loop_state_flag,
         };
         if self.start_flag {
             // Start 直後

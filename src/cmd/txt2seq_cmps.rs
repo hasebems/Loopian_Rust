@@ -330,7 +330,7 @@ pub fn recombine_to_chord_loop(
         if table == END_OF_COMPOSITION {
             rcmb.push(ChordEvt {
                 mtype: TYPE_CONTROL,
-                tick: 0,
+                tick: tick as i16,
                 root: 0,
                 tbl: table,
             });
