@@ -412,6 +412,7 @@ impl CmpsLoopManager {
 //*******************************************************************
 //          Damper Loop Manager Struct
 //*******************************************************************
+/// DAMPER_PEDAL_PART でのみ生成される
 struct DamperLoopManager {
     first_msr_num: i32,
     loop_dmpr: Option<Rc<RefCell<DamperLoop>>>,

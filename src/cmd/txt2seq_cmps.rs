@@ -223,8 +223,7 @@ fn fill_omitted_chord_data(mut cmps: String) -> Vec<String> {
     let cmp_len = cmps.len();
     if cmp_len == 0 {
         return vec!["".to_string()];
-    }
-    else if cmp_len >= 2 {
+    } else if cmp_len >= 2 {
         if cmps.ends_with("//") {
             cmps.pop();
             cmps += "END";

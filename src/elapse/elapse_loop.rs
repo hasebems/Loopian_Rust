@@ -357,9 +357,12 @@ impl CompositionLoop {
         let first_tick = (msr - self.first_msr_num) * tick_for_onemsr;
         let end_tick = (msr - self.first_msr_num + 1) * tick_for_onemsr;
         let beat_num = tick_for_onemsr / tick_for_onebeat;
+        let mut chord_map: Vec<bool> = vec![false; beat_num as usize];
+        if self.already_end {
+            return chord_map;
+        }
         let mut trace: usize = 0;
         let cmps = self.cmps_dt.to_vec();
-        let mut chord_map: Vec<bool> = vec![false; beat_num as usize];
         let max_ev: usize = cmps.len();
         loop {
             if max_ev <= trace {
