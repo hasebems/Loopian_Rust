@@ -11,7 +11,7 @@ use super::elapse_note::{Damper, Note};
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use crate::cmd::txt2seq_cmps::{self, END_OF_COMPOSITION};
+use crate::cmd::txt2seq_cmps::{self, END_OF_LOOP};
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -299,6 +299,7 @@ pub struct CompositionLoop {
     root: i16,
     translation_tbl: i16,
     already_end: bool,
+    end_loop: bool,
 
     // for super's member
     whole_tick: i32,
@@ -332,6 +333,7 @@ impl CompositionLoop {
             root: NO_ROOT,
             translation_tbl: NO_TABLE,
             already_end: false,
+            end_loop: false,
 
             // for super's member
             whole_tick,
@@ -358,7 +360,7 @@ impl CompositionLoop {
         let end_tick = (msr - self.first_msr_num + 1) * tick_for_onemsr;
         let beat_num = tick_for_onemsr / tick_for_onebeat;
         let mut chord_map: Vec<bool> = vec![false; beat_num as usize];
-        if self.already_end {
+        if self.end_loop {
             return chord_map;
         }
         let mut trace: usize = 0;
@@ -400,8 +402,9 @@ impl CompositionLoop {
             if next_tick <= elapsed_tick {
                 let cd = cmps[trace].clone();
                 if cd.mtype == TYPE_CONTROL {
-                    if cd.tbl == END_OF_COMPOSITION {
+                    if cd.tbl == END_OF_LOOP {
                         _estk.set_loop_end(self.id.pid as usize);
+                        self.end_loop = true;
                     }
                 } else if cd.mtype == TYPE_CHORD {
                     self.prepare_note_translation(cd);
@@ -598,7 +601,7 @@ impl DamperLoop {
         self.next_tick_in_phrase = 0;
 
         let mut chord_map = vec![false; beat_num];
-        for i in 0..MAX_USER_PART {
+        for i in 0..MAX_KBD_PART {
             if let Some(_fl) = estk.get_flow(i) {
                 //chord_map[0] = true;
                 chord_map = DamperLoop::merge_chord_map(

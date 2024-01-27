@@ -14,6 +14,7 @@ use std::vec::Vec;
 use super::elapse::*;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{CompositionLoop, PhraseLoop};
+use super::elapse_damper::DamperPart;
 use super::elapse_part::Part;
 use super::midi::{MidiRx, MidiRxBuf, MidiTx};
 use super::tickgen::{CrntMsrTick, TickGen};
@@ -45,6 +46,7 @@ pub struct ElapseStack {
     display_time: Instant,
     tg: TickGen,
     part_vec: Vec<Rc<RefCell<Part>>>, // Part Instance が繋がれた Vec
+    _damper_part: Rc<RefCell<DamperPart>>,
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
 
@@ -57,12 +59,14 @@ impl ElapseStack {
             Ok(c) => {
                 let mut vp = Vec::new();
                 let mut velps = Vec::new();
-                for i in 0..ALL_PART_COUNT {
+                for i in 0..MAX_KBD_PART {
                     // 同じ Part を part_vec, elapse_vec 両方に繋げる
                     let pt = Part::new(i as u32);
                     vp.push(Rc::clone(&pt));
                     velps.push(pt as Rc<RefCell<dyn Elapse>>);
                 }
+                let dmppt = DamperPart::new(DAMPER_PEDAL_PART as u32);
+                velps.push(Rc::clone(&dmppt) as Rc<RefCell<dyn Elapse>>);
                 let mut _mdrx = MidiRx::new();
                 let mdr_buf = Arc::new(Mutex::new(MidiRxBuf::new()));
                 match _mdrx.connect(Arc::clone(&mdr_buf)) {
@@ -83,6 +87,7 @@ impl ElapseStack {
                     display_time: Instant::now(),
                     tg: TickGen::new(),
                     part_vec: vp,
+                    _damper_part: dmppt,
                     elapse_vec: velps,
                     key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
                     limit_for_deb: 0,
@@ -310,8 +315,8 @@ impl ElapseStack {
     }
     //fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}
     fn sync(&mut self, part: i16) {
-        let mut sync_part = [false; MAX_USER_PART];
-        if part < MAX_USER_PART as i16 {
+        let mut sync_part = [false; MAX_KBD_PART];
+        if part < MAX_KBD_PART as i16 {
             sync_part[part as usize] = true;
         } else if part == MSG_SYNC_LFT {
             sync_part[LEFT1] = true;
@@ -332,14 +337,14 @@ impl ElapseStack {
     }
     fn flow(&mut self, msg: Vec<i16>) {
         let ptnum = msg[1] as usize;
-        if ptnum < MAX_USER_PART {
+        if ptnum < MAX_KBD_PART {
             let pt = self.part_vec[ptnum].clone();
             pt.borrow_mut().activate_flow(self);
         }
     }
     fn endflow(&mut self, msg: Vec<i16>) {
         let ptnum = msg[1] as usize;
-        if ptnum < MAX_USER_PART {
+        if ptnum < MAX_KBD_PART {
             self.part_vec[ptnum].borrow_mut().deactivate_flow();
         }
     }

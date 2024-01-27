@@ -15,7 +15,7 @@ use crate::lpnlib::*;
 //  入力された Phrase/Composition Data の変換と保持
 pub struct SeqDataStock {
     pdt: Vec<Vec<PhraseDataStock>>,
-    cdt: [CompositionDataStock; MAX_USER_PART],
+    cdt: [CompositionDataStock; MAX_KBD_PART],
     input_mode: InputMode,
     cluster_memory: String,
     tick_for_onemsr: i32,
@@ -25,7 +25,7 @@ pub struct SeqDataStock {
 impl SeqDataStock {
     pub fn new() -> Self {
         let mut pd = Vec::new();
-        for i in 0..MAX_USER_PART {
+        for i in 0..MAX_KBD_PART {
             let mut vari = Vec::new();
             let base_note = Self::default_base_note(i);
             for _ in 0..MAX_PHRASE {
@@ -53,7 +53,7 @@ impl SeqDataStock {
         self.cluster_memory = word;
     }
     pub fn set_raw_phrase(&mut self, part: usize, vari: usize, input_text: String) -> bool {
-        if part < MAX_USER_PART {
+        if part < MAX_KBD_PART {
             if self.pdt[part][vari].set_raw(input_text, &self.cluster_memory) {
                 self.pdt[part][vari].set_recombined(
                     self.input_mode,
@@ -66,7 +66,7 @@ impl SeqDataStock {
         false
     }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
-        if part < MAX_USER_PART {
+        if part < MAX_KBD_PART {
             if self.cdt[part].set_raw(input_text) {
                 self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
                 return true;

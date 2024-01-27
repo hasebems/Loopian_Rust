@@ -1,4 +1,5 @@
 pub mod elapse;
+pub mod elapse_damper;
 pub mod elapse_flow;
 pub mod elapse_loop;
 pub mod elapse_note;

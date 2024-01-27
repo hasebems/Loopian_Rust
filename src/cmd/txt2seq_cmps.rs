@@ -73,7 +73,7 @@ const CHORD_TABLE: [ChordTable; 54] = [
     ChordTable {name: "END",    table: &NONE,}, // elapse では、再生が止まる
 ];
 
-pub const END_OF_COMPOSITION: i16 = (CHORD_TABLE.len() - 1) as i16;
+pub const END_OF_LOOP: i16 = (CHORD_TABLE.len() - 1) as i16;
 pub const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
 pub const NO_PED_TBL_NUM: usize = 0; // 'X'
 const THRU: [i16; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -326,7 +326,7 @@ pub fn recombine_to_chord_loop(
         }
 
         let (root, table) = convert_chord_to_num(chord);
-        if table == END_OF_COMPOSITION {
+        if table == END_OF_LOOP {
             rcmb.push(ChordEvt {
                 mtype: TYPE_CONTROL,
                 tick: tick as i16,

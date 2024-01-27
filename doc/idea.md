@@ -465,6 +465,7 @@ NoteObj <|-- WaterRipple
 - load フォルダ内のpathの指定機能追加 1/4
 - rit.を複数小節にわたってかける機能追加 1/14
 - 弱起(Auftakt)機能 1/21
+- {...//} 最後に // をつけると、Loopしなくなる機能追加 1/26
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"

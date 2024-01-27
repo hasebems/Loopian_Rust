@@ -7,18 +7,18 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse::*;
-use super::elapse_loop::{CompositionLoop, DamperLoop, Loop, PhraseLoop};
+use super::elapse_loop::{Loop, CompositionLoop, PhraseLoop};
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::elapse::elapse_flow::Flow;
 use crate::lpnlib::*;
 
 #[derive(Debug, Copy, Clone)]
-struct PartBasicPrm {
-    part_num: u32,
-    keynote: u8,
-    sync_flag: bool,
-    loop_state_flag: bool,
+pub struct PartBasicPrm {
+    pub part_num: u32,
+    pub keynote: u8,
+    pub sync_flag: bool,
+    pub loop_state_flag: bool,
 }
 
 //*******************************************************************
@@ -410,33 +410,6 @@ impl CmpsLoopManager {
     }
 }
 //*******************************************************************
-//          Damper Loop Manager Struct
-//*******************************************************************
-/// DAMPER_PEDAL_PART でのみ生成される
-struct DamperLoopManager {
-    first_msr_num: i32,
-    loop_dmpr: Option<Rc<RefCell<DamperLoop>>>,
-    loop_cntr: u32,
-}
-impl DamperLoopManager {
-    pub fn new() -> Self {
-        Self {
-            first_msr_num: 0,
-            loop_dmpr: None,
-            loop_cntr: 0,
-        }
-    }
-    pub fn start(&mut self) {
-        self.first_msr_num = 0;
-    }
-    pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        let dp = DamperLoop::new(self.loop_cntr, pbp.part_num, crnt_.msr);
-        self.loop_dmpr = Some(Rc::clone(&dp));
-        estk.add_elapse(dp);
-        self.loop_cntr += 1;
-    }
-}
-//*******************************************************************
 //          Part Struct
 //*******************************************************************
 pub struct Part {
@@ -449,7 +422,6 @@ pub struct Part {
     next_tick: i32,
     pm: PhrLoopManager,
     cm: CmpsLoopManager,
-    dm: Option<DamperLoopManager>,
     flow: Option<Rc<RefCell<Flow>>>,
     sync_next_msr_flag: bool,
     start_flag: bool,
@@ -471,11 +443,6 @@ impl Part {
             next_tick: 0,
             pm: PhrLoopManager::new(),
             cm: CmpsLoopManager::new(),
-            dm: if num as usize == DAMPER_PEDAL_PART {
-                Some(DamperLoopManager::new())
-            } else {
-                None
-            },
             flow: None,
             sync_next_msr_flag: false,
             start_flag: false,
@@ -577,9 +544,6 @@ impl Elapse for Part {
         self.next_tick = 0;
         self.cm.start();
         self.pm.start();
-        if let Some(dmpr) = self.dm.as_mut() {
-            dmpr.start();
-        }
     }
     fn stop(&mut self, _estk: &mut ElapseStack) {
         // User による stop 時にコールされる
@@ -597,9 +561,6 @@ impl Elapse for Part {
             // Start 直後
             self.cm.process(crnt_, estk, pbp);
             self.pm.process(crnt_, estk, pbp);
-            if let Some(dmpr) = self.dm.as_mut() {
-                dmpr.process(crnt_, estk, pbp);
-            }
             self.start_flag = false;
         } else if self.next_tick != 0 {
             // 小節最後のみ
@@ -612,9 +573,6 @@ impl Elapse for Part {
         } else {
             // 小節先頭のみ
             self.pm.process(crnt_, estk, pbp);
-            if let Some(dmpr) = self.dm.as_mut() {
-                dmpr.process(crnt_, estk, pbp);
-            }
             self.sync_next_msr_flag = false;
         }
 

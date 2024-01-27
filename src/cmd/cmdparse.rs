@@ -153,7 +153,7 @@ impl LoopianCmd {
                 // stop
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
                 // clear
-                for i in 0..MAX_USER_PART {
+                for i in 0..MAX_KBD_PART {
                     self.clear_part(i);
                 }
                 Some("all data erased!".to_string())
@@ -161,7 +161,7 @@ impl LoopianCmd {
                 let part_letter = &input_text[6..];
                 println!("clear>>{}", part_letter);
                 let pnum = Self::detect_part(part_letter);
-                if pnum != MAX_USER_PART {
+                if pnum != MAX_KBD_PART {
                     self.clear_part(pnum);
                 }
                 match pnum {
@@ -348,7 +348,7 @@ impl LoopianCmd {
     }
     fn letter_part(&mut self, input_text: &str) -> Option<String> {
         let pnum = Self::detect_part(input_text);
-        if pnum != MAX_USER_PART {
+        if pnum != MAX_KBD_PART {
             self.input_part = pnum;
         }
         match pnum {
@@ -385,7 +385,7 @@ impl LoopianCmd {
                         }
                     }
                     "ALL" => {
-                        for i in 0..MAX_USER_PART {
+                        for i in 0..MAX_KBD_PART {
                             rtn_str = self.call_bracket_brace(i, first_letter, rest_text);
                         }
                     }
@@ -404,7 +404,7 @@ impl LoopianCmd {
             } else if &part_str[0..5] == "left2" {
                 LEFT2
             } else {
-                MAX_USER_PART
+                MAX_KBD_PART
             }
         } else if len == 6 {
             if &part_str[0..6] == "right1" {
@@ -412,7 +412,7 @@ impl LoopianCmd {
             } else if &part_str[0..6] == "right2" {
                 RIGHT2
             } else {
-                MAX_USER_PART
+                MAX_KBD_PART
             }
         } else if len == 2 {
             if &part_str[0..2] == "L1" {
@@ -424,10 +424,10 @@ impl LoopianCmd {
             } else if &part_str[0..2] == "R2" {
                 RIGHT2
             } else {
-                MAX_USER_PART
+                MAX_KBD_PART
             }
         } else {
-            MAX_USER_PART
+            MAX_KBD_PART
         }
     }
     fn call_bracket_brace(
