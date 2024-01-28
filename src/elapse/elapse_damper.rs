@@ -7,7 +7,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse::*;
-//use super::elapse_loop::DamperLoop;
 use super::elapse_note::Damper;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
@@ -19,15 +18,11 @@ use crate::lpnlib::*;
 pub struct DamperPart {
     id: ElapseId,
     priority: u32,
-
     during_play: bool,
     next_msr: i32,
     next_tick: i32,
     start_flag: bool,
 
-    //    first_msr_num: i32,
-    //    loop_dmpr: Option<Rc<RefCell<DamperLoop>>>,
-    //    loop_cntr: u32,
     evt: Vec<DmprEvt>,
     play_counter: usize,
     whole_tick: i32,
@@ -47,20 +42,18 @@ impl DamperPart {
             next_tick: 0,
             start_flag: false,
 
-            //            first_msr_num: 0,
-            //            loop_dmpr: None,
-            //            loop_cntr: 0,
             evt: Vec::new(),
             play_counter: 0,
             whole_tick: 0,
         }))
     }
-    fn gen_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {
+    /// 次回イベントの小節、tickを算出する
+    fn gen_next_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {
         if srtick == END_OF_DATA {
             (crnt_.msr + 1, 0)
         } else {
             let tick = srtick % crnt_.tick_for_onemsr;
-            let msr = srtick / crnt_.tick_for_onemsr;
+            let msr = crnt_.msr + srtick / crnt_.tick_for_onemsr;
             (msr, tick)
         }
     }
@@ -112,7 +105,6 @@ impl DamperPart {
         let mut chord_map = vec![false; beat_num];
         for i in 0..MAX_KBD_PART {
             if let Some(_fl) = estk.get_flow(i) {
-                //chord_map[0] = true;
                 chord_map = DamperPart::merge_chord_map(
                     crnt_,
                     estk,
@@ -141,7 +133,6 @@ impl DamperPart {
         }
         let tick;
         (self.evt, tick) = self.gen_real_damper_track(chord_map, tick_for_onebeat, beat_num);
-        //println!("Generate Damper Event!: {}",tick);
         tick
     }
     /// 各パートのChord情報より、Damper 情報を beat にどんどん足していく
@@ -206,13 +197,6 @@ impl DamperPart {
         //println!("@@@@ Damper Event:{:?}",dmpr_evt);
         (dmpr_evt, first_tick)
     }
-
-    //    fn new_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-    //        let dp = DamperLoop::new(self.loop_cntr, self.id.sid, crnt_.msr);
-    //        self.loop_dmpr = Some(Rc::clone(&dp));
-    //        estk.add_elapse(dp);
-    //        self.loop_cntr += 1;
-    //    }
 }
 impl Elapse for DamperPart {
     fn id(&self) -> ElapseId {
@@ -231,36 +215,11 @@ impl Elapse for DamperPart {
         self.start_flag = true;
         self.next_msr = 0;
         self.next_tick = 0;
-        //        if self.loop_dmpr.is_some() {
-        //            self.first_msr_num = 0;
-        //        }
     }
     fn stop(&mut self, _estk: &mut ElapseStack) {
         // User による stop 時にコールされる
         self.during_play = false;
     }
-    /*fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        // 再生 msr/tick に達したらコールされる
-        if self.start_flag {
-            // Start 直後
-            self.new_msr(crnt_, estk);
-            self.start_flag = false;
-        } else if self.next_tick == 0 {
-            // 小節先頭のみ
-            self.new_msr(crnt_, estk);
-        }
-
-        // 次回 process を呼ぶタイミング
-        if self.next_tick == 0 {
-            // 小節最後の tick
-            self.next_tick = crnt_.tick_for_onemsr - 1;
-        } else {
-            // 小節最初の tick
-            self.next_msr = crnt_.msr + 1;
-            self.next_tick = 0;
-        }
-    }*/
-
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         // 再生 msr/tick に達したらコールされる
         if self.next_tick == 0 {
@@ -277,7 +236,7 @@ impl Elapse for DamperPart {
         let elapsed_tick = crnt_.tick;
         if elapsed_tick >= self.next_tick {
             let next_tick = self.output_event(crnt_, estk, elapsed_tick);
-            let (msr, tick) = self.gen_msr_tick(crnt_, next_tick);
+            let (msr, tick) = self.gen_next_msr_tick(crnt_, next_tick);
             self.next_msr = msr;
             self.next_tick = tick;
         }
