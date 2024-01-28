@@ -103,17 +103,7 @@ impl LoopianCmd {
         println!("Set Text: {}", input_text);
         let first_letter = &input_text[0..1];
         if first_letter == "q" {
-            if &input_text[0..4] == "quit" {
-                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
-                let option = input_text[4..].to_string();
-                if option.trim() == "nosave" {
-                    Some("nosave".to_string())
-                } else {
-                    None
-                } //  The End of the App
-            } else {
-                Some("what?".to_string())
-            }
+            self.letter_q(input_text)
         } else if first_letter == "@" {
             self.letter_at(input_text)
         } else if first_letter == "[" {
@@ -175,6 +165,24 @@ impl LoopianCmd {
         } else if len >= 2 && &input_text[0..2] == "c=" {
             self.dtstk.set_cluster_memory(input_text[2..].to_string());
             Some("Set a cluster memory!".to_string())
+        } else {
+            Some("what?".to_string())
+        }
+    }
+    fn letter_q(&mut self, input_text: &str) -> Option<String> {
+        let len = input_text.chars().count();
+        if (len == 1 && input_text == "q") || (len >= 4 && &input_text[0..4] == "quit") {
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
+            let option = if len >= 4 {
+                input_text[4..].to_string()
+            } else {
+                "".to_string()
+            };
+            if option.trim() == "nosave" {
+                Some("nosave".to_string())
+            } else {
+                None
+            } //  The End of the App
         } else {
             Some("what?".to_string())
         }
