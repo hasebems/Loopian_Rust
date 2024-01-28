@@ -12,9 +12,9 @@ use std::time::{Duration, Instant};
 use std::vec::Vec;
 
 use super::elapse::*;
+use super::elapse_damper::DamperPart;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{CompositionLoop, PhraseLoop};
-use super::elapse_damper::DamperPart;
 use super::elapse_part::Part;
 use super::midi::{MidiRx, MidiRxBuf, MidiTx};
 use super::tickgen::{CrntMsrTick, TickGen};
@@ -192,8 +192,13 @@ impl ElapseStack {
             if playable.len() == 0 {
                 break;
             } else {
-                //println!("$$$deb:{},{},{},{:?}",limit_for_deb,crnt_.msr,crnt_.tick,self.crnt_time);
-                assert!(debcnt < 100);
+                //println!("$$$deb:{},{},{},{:?}",self.limit_for_deb,crnt_.msr,crnt_.tick,self.crnt_time);
+                assert!(
+                    debcnt < 100,
+                    "Last Elapse:{:?}, Tick:{:?}",
+                    playable.last().unwrap().borrow().id(),
+                    crnt_.tick
+                );
                 debcnt += 1;
             }
             // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
@@ -299,6 +304,7 @@ impl ElapseStack {
         if let Ok(mut mb) = self.mdr_buf.lock() {
             mb.flush(); // MIDI In Buffer をクリア
         }
+        println!("<Start Playing! in stack_elapse>",);
     }
     fn panic(&mut self) {
         self.midi_out(0xb0, 0x78, 0x00);

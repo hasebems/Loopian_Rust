@@ -30,7 +30,6 @@ pub trait Loop: Elapse {
         (msr, tick)
     }
 }
-
 //*******************************************************************
 //          Phrase Loop Struct
 //*******************************************************************
@@ -521,7 +520,7 @@ impl Loop for CompositionLoop {
 //*******************************************************************
 //          Damper Loop Struct
 //*******************************************************************
-pub struct DamperLoop {
+/*pub struct DamperLoop {
     id: ElapseId,
     priority: u32,
 
@@ -748,4 +747,4 @@ impl Loop for DamperLoop {
     fn first_msr_num(&self) -> i32 {
         self.first_msr_num
     }
-}
+}*/

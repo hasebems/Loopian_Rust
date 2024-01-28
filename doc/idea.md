@@ -114,6 +114,7 @@ LoopianApp *-- LoopianCmd
 LoopianApp *-- ElapseStack
 LoopianApp *-- Graphic
 Elapse <|-- Part
+Elapse <|-- DamperPart
 Elapse <|-- Loop
 Loop <|-- PhraseLoop
 Loop <|-- CompositionLoop
@@ -121,6 +122,7 @@ Elapse <|-- Note
 Elapse <|-- Damper
 Elapse <|-- Flow
 ElapseStack *-- Part
+ElapseStack *-- DamperPart
 ElapseStack o-- Elapse
 LoopianCmd *-- SeqDataStock
 LoopianCmd *-- MessageSender
@@ -128,7 +130,6 @@ SeqDataStock *-- PhraseDataStock
 SeqDataStock *-- CompositionDataStock
 Part *-- PhrLoopManager
 Part *-- CmpsLoopManager
-Part o-- DamperLoopManager
 Part o-- Flow
 PhrLoopManager o-- PhraseLoop
 CmpsLoopManager o-- CompositionLoop

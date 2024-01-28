@@ -19,9 +19,9 @@ pub const PRI_FLOW: u32 = 600;
 pub enum ElapseType {
     _TpNone,
     TpPart,
+    TpDamperPart,
     TpPhraseLoop,
     TpCompositionLoop,
-    TpDamperLoop,
     TpNote,
     TpFlow,
     _TpDamper,

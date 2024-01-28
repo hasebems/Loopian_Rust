@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse::*;
-use super::elapse_loop::{Loop, CompositionLoop, PhraseLoop};
+use super::elapse_loop::{CompositionLoop, Loop, PhraseLoop};
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::elapse::elapse_flow::Flow;

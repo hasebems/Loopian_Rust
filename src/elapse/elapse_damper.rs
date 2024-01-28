@@ -7,9 +7,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse::*;
-use super::elapse_loop::DamperLoop;
+//use super::elapse_loop::DamperLoop;
+use super::elapse_note::Damper;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
+use crate::lpnlib::*;
 
 //*******************************************************************
 //          Damper Part Struct
@@ -23,16 +25,19 @@ pub struct DamperPart {
     next_tick: i32,
     start_flag: bool,
 
-    first_msr_num: i32,
-    loop_dmpr: Option<Rc<RefCell<DamperLoop>>>,
-    loop_cntr: u32,
+    //    first_msr_num: i32,
+    //    loop_dmpr: Option<Rc<RefCell<DamperLoop>>>,
+    //    loop_cntr: u32,
+    evt: Vec<DmprEvt>,
+    play_counter: usize,
+    whole_tick: i32,
 }
 impl DamperPart {
     pub fn new(num: u32) -> Rc<RefCell<DamperPart>> {
         let new_id = ElapseId {
             pid: 0,
             sid: num,
-            elps_type: ElapseType::TpPart,
+            elps_type: ElapseType::TpDamperPart,
         };
         Rc::new(RefCell::new(Self {
             id: new_id,
@@ -42,17 +47,172 @@ impl DamperPart {
             next_tick: 0,
             start_flag: false,
 
-            first_msr_num: 0,
-            loop_dmpr: None,
-            loop_cntr: 0,
+            //            first_msr_num: 0,
+            //            loop_dmpr: None,
+            //            loop_cntr: 0,
+            evt: Vec::new(),
+            play_counter: 0,
+            whole_tick: 0,
         }))
     }
-    fn new_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        let dp = DamperLoop::new(self.loop_cntr, self.id.sid, crnt_.msr);
-        self.loop_dmpr = Some(Rc::clone(&dp));
-        estk.add_elapse(dp);
-        self.loop_cntr += 1;
+    fn gen_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {
+        if srtick == END_OF_DATA {
+            (crnt_.msr + 1, 0)
+        } else {
+            let tick = srtick % crnt_.tick_for_onemsr;
+            let msr = srtick / crnt_.tick_for_onemsr;
+            (msr, tick)
+        }
     }
+    /// 1小節内にあるイベントを適切なタイミングで出力する
+    fn output_event(
+        &mut self,
+        crnt_: &CrntMsrTick,
+        estk: &mut ElapseStack,
+        elapsed_tick: i32,
+    ) -> i32 {
+        let mut next_tick: i32;
+        let mut trace: usize = self.play_counter;
+        let evt = self.evt.to_vec();
+        let max_ev = self.evt.len();
+        loop {
+            if max_ev <= trace {
+                next_tick = END_OF_DATA; // means sequence finished
+                break;
+            }
+            next_tick = evt[trace].tick as i32;
+            if next_tick <= elapsed_tick {
+                if evt[trace].mtype == TYPE_DAMPER {
+                    let dmpr: Rc<RefCell<dyn Elapse>> = Damper::new(
+                        (crnt_.msr as u32) * 100 + (trace as u32), //  msr&read pointer
+                        self.id.sid,                               //  pedal part.sid -> damper.pid
+                        estk,
+                        &evt[trace],
+                        self.next_msr,
+                        self.next_tick,
+                    );
+                    estk.add_elapse(Rc::clone(&dmpr));
+                }
+            } else {
+                break;
+            }
+            trace += 1;
+        }
+
+        self.play_counter = trace;
+        next_tick
+    }
+    fn gen_events_in_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
+        // 小節頭でコールされる
+        let (tick_for_onemsr, tick_for_onebeat) = estk.tg().get_beat_tick();
+        let beat_num: usize = (tick_for_onemsr / tick_for_onebeat) as usize;
+        self.whole_tick = tick_for_onemsr;
+        self.play_counter = 0;
+
+        let mut chord_map = vec![false; beat_num];
+        for i in 0..MAX_KBD_PART {
+            if let Some(_fl) = estk.get_flow(i) {
+                //chord_map[0] = true;
+                chord_map = DamperPart::merge_chord_map(
+                    crnt_,
+                    estk,
+                    i,
+                    tick_for_onemsr,
+                    tick_for_onebeat,
+                    chord_map,
+                );
+            } else if let Some(phr) = estk.get_phr(i) {
+                if phr.borrow().get_noped() {
+                    // 一パートでも noped 指定があれば
+                    return NO_DATA;
+                } else {
+                    chord_map = DamperPart::merge_chord_map(
+                        crnt_,
+                        estk,
+                        i,
+                        tick_for_onemsr,
+                        tick_for_onebeat,
+                        chord_map,
+                    );
+                }
+            } else {
+                continue;
+            }
+        }
+        let tick;
+        (self.evt, tick) = self.gen_real_damper_track(chord_map, tick_for_onebeat, beat_num);
+        //println!("Generate Damper Event!: {}",tick);
+        tick
+    }
+    /// 各パートのChord情報より、Damper 情報を beat にどんどん足していく
+    fn merge_chord_map(
+        crnt_: &CrntMsrTick,
+        estk: &mut ElapseStack,
+        part_num: usize,
+        tick_for_onemsr: i32,
+        tick_for_onebeat: i32,
+        mut chord_map: Vec<bool>,
+    ) -> Vec<bool> {
+        if let Some(cmps) = estk.get_cmps(part_num) {
+            let ba = cmps
+                .borrow()
+                .get_chord_map(crnt_.msr, tick_for_onemsr, tick_for_onebeat);
+            for (i, x) in chord_map.iter_mut().enumerate() {
+                *x |= ba[i];
+            }
+        }
+        chord_map
+    }
+    fn gen_real_damper_track(
+        &self,
+        chord_map: Vec<bool>,
+        tick_for_onebeat: i32,
+        beat_num: usize,
+    ) -> (Vec<DmprEvt>, i32) {
+        //println!("@@@@ Damper Map:{:?}",chord_map);
+        let mut keep: usize = beat_num;
+        let mut dmpr_evt: Vec<DmprEvt> = Vec::new();
+        let mut first_tick = NO_DATA;
+        const PDL_MARGIN_TICK: i32 = 60;
+        for (j, k) in chord_map.iter().enumerate() {
+            if *k {
+                if keep != beat_num {
+                    let tick = ((keep as i32) * tick_for_onebeat + PDL_MARGIN_TICK) as i16;
+                    dmpr_evt.push(DmprEvt {
+                        mtype: TYPE_DAMPER,
+                        tick,
+                        dur: (((j - keep) as i32) * tick_for_onebeat - PDL_MARGIN_TICK) as i16,
+                        position: 127,
+                    });
+                    if first_tick == NO_DATA {
+                        first_tick = tick as i32
+                    }
+                }
+                keep = j;
+            }
+        }
+        if keep != beat_num {
+            let tick = ((keep as i32) * tick_for_onebeat + PDL_MARGIN_TICK) as i16;
+            dmpr_evt.push(DmprEvt {
+                mtype: TYPE_DAMPER,
+                tick,
+                dur: (((beat_num - keep) as i32) * tick_for_onebeat - PDL_MARGIN_TICK) as i16,
+                position: 127,
+            });
+            if first_tick == NO_DATA {
+                first_tick = tick as i32
+            }
+        }
+        //println!("@@@@ Damper Event:{:?}",dmpr_evt);
+        (dmpr_evt, first_tick)
+    }
+
+    //    fn new_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+    //        let dp = DamperLoop::new(self.loop_cntr, self.id.sid, crnt_.msr);
+    //        self.loop_dmpr = Some(Rc::clone(&dp));
+    //        estk.add_elapse(dp);
+    //        self.loop_cntr += 1;
+    //    }
 }
 impl Elapse for DamperPart {
     fn id(&self) -> ElapseId {
@@ -71,21 +231,21 @@ impl Elapse for DamperPart {
         self.start_flag = true;
         self.next_msr = 0;
         self.next_tick = 0;
-        if self.loop_dmpr.is_some() {
-            self.first_msr_num = 0;
-        }
+        //        if self.loop_dmpr.is_some() {
+        //            self.first_msr_num = 0;
+        //        }
     }
     fn stop(&mut self, _estk: &mut ElapseStack) {
         // User による stop 時にコールされる
         self.during_play = false;
     }
-    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+    /*fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         // 再生 msr/tick に達したらコールされる
         if self.start_flag {
             // Start 直後
             self.new_msr(crnt_, estk);
             self.start_flag = false;
-        } else if self.next_tick == 0{
+        } else if self.next_tick == 0 {
             // 小節先頭のみ
             self.new_msr(crnt_, estk);
         }
@@ -98,6 +258,28 @@ impl Elapse for DamperPart {
             // 小節最初の tick
             self.next_msr = crnt_.msr + 1;
             self.next_tick = 0;
+        }
+    }*/
+
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+        // 再生 msr/tick に達したらコールされる
+        if self.next_tick == 0 {
+            let ntick = self.gen_events_in_msr(crnt_, estk);
+            if ntick != NO_DATA {
+                self.next_msr = crnt_.msr;
+                self.next_tick = ntick;
+            } else {
+                self.next_msr = crnt_.msr + 1;
+                self.next_tick = 0;
+            }
+        }
+
+        let elapsed_tick = crnt_.tick;
+        if elapsed_tick >= self.next_tick {
+            let next_tick = self.output_event(crnt_, estk, elapsed_tick);
+            let (msr, tick) = self.gen_msr_tick(crnt_, next_tick);
+            self.next_msr = msr;
+            self.next_tick = tick;
         }
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
