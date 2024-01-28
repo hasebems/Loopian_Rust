@@ -398,6 +398,7 @@ impl CompositionLoop {
                 break;
             }
             next_tick = cmps[trace].tick as i32;
+            println!("#####comp-genev:{:?}-{:?}",next_tick,elapsed_tick);
             if next_tick <= elapsed_tick {
                 let cd = cmps[trace].clone();
                 if cd.mtype == TYPE_CONTROL {
@@ -471,7 +472,7 @@ impl Elapse for CompositionLoop {
         if cm_crnt.tick == crnt_.tick_for_onemsr - 1 {
             cm_crnt.msr += 1;
             cm_crnt.tick = 0;
-        } else if crnt_.msr != 0 {
+        } else {
             cm_crnt.tick += 1;
         }
 
