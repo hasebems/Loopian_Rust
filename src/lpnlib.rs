@@ -68,18 +68,6 @@ pub struct PhrEvt {
     pub vel: i16,  // velocity
     pub trns: i16, // translation
 }
-impl PhrEvt {
-    pub fn new() -> Self {
-        Self {
-            mtype: TYPE_NONE,
-            tick: 0,
-            dur: 0,
-            note: 0,
-            vel: 0,
-            trns: TRNS_COM,
-        }
-    }
-}
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PhrData {
     pub whole_tick: i16,
@@ -91,7 +79,7 @@ impl PhrData {
         Self {
             whole_tick: 0,
             auftakt: 0,
-            evts: vec![PhrEvt::new()],
+            evts: Vec::new(),
         }
     }
 }

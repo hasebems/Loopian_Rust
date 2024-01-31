@@ -18,6 +18,7 @@ pub struct SeqDataStock {
     cdt: [CompositionDataStock; MAX_KBD_PART],
     input_mode: InputMode,
     cluster_memory: String,
+    raw_additional: String,
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
     bpm: i16,
@@ -38,6 +39,7 @@ impl SeqDataStock {
             cdt: Default::default(),
             input_mode: InputMode::Closer,
             cluster_memory: "".to_string(),
+            raw_additional: "".to_string(),
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
             tick_for_onebeat: DEFAULT_TICK_FOR_QUARTER,
             bpm: DEFAULT_BPM,
@@ -52,7 +54,11 @@ impl SeqDataStock {
     pub fn set_cluster_memory(&mut self, word: String) {
         self.cluster_memory = word;
     }
-    pub fn set_raw_phrase(&mut self, part: usize, vari: usize, input_text: String) -> bool {
+    pub fn set_raw_phrase(&mut self, part: usize, vari: usize, mut input_text: String) -> Option<bool> {
+        if let Some(rs) = self.check_additional_phrase(input_text.clone()) {
+            input_text = rs;
+        }
+        else {return Some(true)}
         if part < MAX_KBD_PART {
             if self.pdt[part][vari].set_raw(input_text, &self.cluster_memory) {
                 self.pdt[part][vari].set_recombined(
@@ -60,10 +66,10 @@ impl SeqDataStock {
                     self.bpm,
                     self.tick_for_onemsr,
                 );
-                return true;
+                return Some(false)
             }
         }
-        false
+        None
     }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
         if part < MAX_KBD_PART {
@@ -121,6 +127,26 @@ impl SeqDataStock {
     }
     pub fn change_input_mode(&mut self, input_mode: InputMode) {
         self.input_mode = input_mode;
+    }
+    pub fn check_additional_phrase(&mut self, raw: String) -> Option<String> {
+        let strlen = raw.len();
+        if &raw[(strlen-2)..] == "]+" {
+            if self.raw_additional.len() == 0 { // 1st time
+                self.raw_additional = (&raw[0..(strlen-2)]).to_string();
+            }
+            else {                              // 2nd and more time
+                self.raw_additional += &raw[1..(strlen-2)];
+            }
+            None
+        } else {
+            let mut newraw = raw.clone();
+            if self.raw_additional.len() != 0 { // last time
+                newraw = self.raw_additional.clone() + &raw[1..];
+                println!("Additional Phrase: {:?}",newraw);
+                self.raw_additional = String::from("");
+            }
+            Some(newraw)
+        }
     }
     fn recombine_phr_all(&mut self) {
         for pd in self.pdt.iter_mut() {

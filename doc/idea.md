@@ -467,6 +467,7 @@ NoteObj <|-- WaterRipple
 - rit.を複数小節にわたってかける機能追加 1/14
 - 弱起(Auftakt)機能 1/21
 - {...//} 最後に // をつけると、Loopしなくなる機能追加 1/26
+- [...]+ 複数 Phrase 追加入力機能 1/31
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"

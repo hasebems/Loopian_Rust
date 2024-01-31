@@ -326,8 +326,14 @@ impl LoopianCmd {
                     if ltr2 == '=' {
                         // @n=
                         let brachet_text = &itxt[3..];
-                        if self.set_phrase(self.input_part, vari as usize, brachet_text) {
-                            return Some("Set Phrase!".to_string());
+                        if let Some(addtional) =
+                            self.set_phrase(self.input_part, vari as usize, brachet_text)
+                        {
+                            if addtional {
+                                return Some("Keep Phrase as being unified phrase!".to_string());
+                            } else {
+                                return Some("Set Phrase!".to_string());
+                            }
                         }
                     }
                 }
@@ -336,8 +342,12 @@ impl LoopianCmd {
         Some("what?".to_string())
     }
     fn letter_bracket(&mut self, input_text: &str) -> Option<String> {
-        if self.set_phrase(self.input_part, 0, input_text) {
-            Some("Set Phrase!".to_string())
+        if let Some(addtional) = self.set_phrase(self.input_part, 0, input_text) {
+            if addtional {
+                Some("Keep Phrase as being unified phrase!".to_string())
+            } else {
+                Some("Set Phrase!".to_string())
+            }
         } else {
             Some("what?".to_string())
         }
@@ -444,10 +454,18 @@ impl LoopianCmd {
         _first_letter: &str,
         rest_text: &str,
     ) -> String {
+        let mut input_text = rest_text;
+        let itx: String;
+        if let Some(rs) = self.dtstk.check_additional_phrase(input_text.to_string()) {
+            itx = rs;
+            input_text = &itx;
+        } else {
+            return "Invalid Syntax!".to_string()
+        }
         let mut rtn_str = "what?".to_string();
         let org_part = self.input_part;
         self.input_part = part_num;
-        if let Some(ans) = self.set_and_responce(rest_text) {
+        if let Some(ans) = self.set_and_responce(input_text.clone()) {
             rtn_str = ans;
         }
         self.input_part = org_part;
@@ -465,15 +483,20 @@ impl LoopianCmd {
         }*/
         rtn_str
     }
-    fn set_phrase(&mut self, part_num: usize, vari: usize, input_text: &str) -> bool {
-        if self
+    fn set_phrase(&mut self, part_num: usize, vari: usize, input_text: &str) -> Option<bool> {
+        if let Some(additional) = self
             .dtstk
             .set_raw_phrase(part_num, vari, input_text.to_string())
         {
-            self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
-            true
+            if additional {
+                // additional なので、elapse にはまだ送らない
+                Some(true)
+            } else {
+                self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
+                Some(false)
+            }
         } else {
-            false
+            None
         }
     }
     fn clear_part(&mut self, part_num: usize) {
