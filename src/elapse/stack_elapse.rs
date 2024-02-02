@@ -154,7 +154,7 @@ impl ElapseStack {
                 "<New measure! in stack_elapse> Max Debcnt: {}",
                 self.limit_for_deb
             );
-            println!("  All Elapse Obj. Num: {:?}", self.elapse_vec.len());
+            //println!("  All Elapse Obj. Num: {:?}", self.elapse_vec.len());
             self.limit_for_deb = 0;
             // change beat event
             if self.beat_stock != self.tg.get_beat() {

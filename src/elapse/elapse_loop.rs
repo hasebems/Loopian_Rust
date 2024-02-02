@@ -172,7 +172,7 @@ impl PhraseLoop {
             estk,
             &crnt_ev,
             self.keynote,
-            deb_txt,
+            deb_txt + &format!(" / Pt:{} Lp:{}",&self.id.pid,&self.id.sid),
             msr,
             tick,
         );

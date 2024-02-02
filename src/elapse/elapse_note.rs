@@ -68,7 +68,7 @@ impl Note {
             let vel = self.random_velocity(self.velocity);
             estk.inc_key_map(num, vel);
             estk.midi_out(0x90, self.real_note, vel);
-            println!("On: {},{} Trns: {}, ", num, vel, self.deb_txt);
+            println!("On: N{} V{} Trns: {}, ", num, vel, self.deb_txt);
             true
         } else {
             println!("NoteOn: => Note Limit Failed!! Num:{}", num);
@@ -82,7 +82,7 @@ impl Note {
         let snk = estk.dec_key_map(self.real_note);
         if snk == stack_elapse::SameKeyState::LAST {
             estk.midi_out(0x90, self.real_note, 0);
-            println!("Off: {}, ", self.real_note);
+            println!("Off: N{}, ", self.real_note);
         }
     }
     fn note_limit_available(num: u8, min_value: u8, max_value: u8) -> bool {
