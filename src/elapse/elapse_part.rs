@@ -425,7 +425,7 @@ pub struct Part {
     flow: Option<Rc<RefCell<Flow>>>,
     sync_next_msr_flag: bool,
     start_flag: bool,
-    loop_state_flag: bool,
+    loop_state_flag: bool,      // Loop 状態 or not(One Shot)
 }
 impl Part {
     pub fn new(num: u32) -> Rc<RefCell<Part>> {
@@ -458,12 +458,10 @@ impl Part {
     }
     pub fn rcv_phr_msg(&mut self, msg: PhrData, vari_num: usize) {
         self.loop_state_flag = true;
-        self.set_sync();
         self.pm.rcv_phr(msg, vari_num);
     }
     pub fn rcv_cmps_msg(&mut self, msg: ChordData) {
         self.loop_state_flag = true;
-        self.set_sync();
         self.cm.rcv_cmp(msg);
     }
     pub fn rcv_ana_msg(&mut self, msg: AnaData, vari_num: usize) {
@@ -481,6 +479,7 @@ impl Part {
     pub fn set_turnnote(&mut self, tn: i16) {
         self.pm.set_turnnote(tn);
     }
+    /// sync command 発行時にコールされる
     pub fn set_sync(&mut self) {
         self.pm.state_reserve = true;
         self.cm.state_reserve = true;
