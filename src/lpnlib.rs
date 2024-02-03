@@ -84,25 +84,6 @@ impl PhrData {
     }
 }
 //-------------------------------------------------------------------
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct DmprEvt {
-    pub mtype: i16, // message type
-    pub tick: i16,
-    pub dur: i16,      // duration
-    pub position: i16, // damper position
-}
-impl DmprEvt {
-    pub fn _new() -> Self {
-        Self {
-            mtype: TYPE_NONE,
-            tick: 0,
-            dur: 0,
-            position: 0,
-        }
-    }
-}
-pub const TYPE_DAMPER: i16 = 1003;
-//-------------------------------------------------------------------
 // MSG_CMP
 /// for mtype
 pub const TYPE_CHORD: i16 = 1002;
@@ -117,26 +98,18 @@ pub struct ChordEvt {
     pub root: i16, // root note / TYPE_VARI: vari number
     pub tbl: i16,
 }
-impl ChordEvt {
-    pub fn new() -> Self {
-        Self {
-            mtype: TYPE_NONE,
-            tick: 0,
-            root: 0,
-            tbl: 0,
-        }
-    }
-}
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ChordData {
     pub whole_tick: i16,
+    pub do_loop: bool,
     pub evts: Vec<ChordEvt>,
 }
 impl ChordData {
     pub fn empty() -> Self {
         Self {
             whole_tick: 0,
-            evts: vec![ChordEvt::new()],
+            do_loop: true,
+            evts: Vec::new(),
         }
     }
 }
@@ -184,6 +157,25 @@ impl AnaData {
         }
     }
 }
+//-------------------------------------------------------------------
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct DmprEvt {
+    pub mtype: i16, // message type
+    pub tick: i16,
+    pub dur: i16,      // duration
+    pub position: i16, // damper position
+}
+impl DmprEvt {
+    pub fn _new() -> Self {
+        Self {
+            mtype: TYPE_NONE,
+            tick: 0,
+            dur: 0,
+            position: 0,
+        }
+    }
+}
+pub const TYPE_DAMPER: i16 = 1003;
 //-------------------------------------------------------------------
 #[derive(Clone, Debug)]
 pub enum ElpsMsg {

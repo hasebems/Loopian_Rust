@@ -294,10 +294,13 @@ impl Default for CompositionDataStock {
 }
 impl CompositionDataStock {
     pub fn get_final(&self, part: i16) -> ElpsMsg {
+        let last_one = self.rcmb.last().unwrap_or(&ChordEvt::default());
+        let do_loop = if last_one.tbl != NO_LOOP {true} else {false};
         ElpsMsg::Cmp(
             part,
             ChordData {
                 whole_tick: self.whole_tick as i16,
+                do_loop,
                 evts: self.rcmb.clone(),
             },
         )

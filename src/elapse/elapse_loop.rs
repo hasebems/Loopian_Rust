@@ -11,7 +11,7 @@ use super::elapse_note::Note;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use crate::cmd::txt2seq_cmps::{self, END_OF_LOOP};
+use crate::cmd::txt2seq_cmps::{self, NO_LOOP};
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -298,7 +298,7 @@ pub struct CompositionLoop {
     root: i16,
     translation_tbl: i16,
     already_end: bool,
-    end_loop: bool,
+    no_loop: bool,
 
     // for super's member
     whole_tick: i32,
@@ -332,7 +332,7 @@ impl CompositionLoop {
             root: NO_ROOT,
             translation_tbl: NO_TABLE,
             already_end: false,
-            end_loop: false,
+            no_loop: false,
 
             // for super's member
             whole_tick,
@@ -359,7 +359,7 @@ impl CompositionLoop {
         let end_tick = (msr - self.first_msr_num + 1) * tick_for_onemsr;
         let beat_num = tick_for_onemsr / tick_for_onebeat;
         let mut chord_map: Vec<bool> = vec![false; beat_num as usize];
-        if self.end_loop {
+        if self.no_loop {
             return chord_map;
         }
         let mut trace: usize = 0;
@@ -401,9 +401,9 @@ impl CompositionLoop {
             if next_tick <= elapsed_tick {
                 let cd = cmps[trace].clone();
                 if cd.mtype == TYPE_CONTROL {
-                    if cd.tbl == END_OF_LOOP {
+                    if cd.tbl == NO_LOOP {
                         _estk.set_loop_end(self.id.pid as usize);
-                        self.end_loop = true;
+                        self.no_loop = true;
                     }
                 } else if cd.mtype == TYPE_CHORD {
                     self.prepare_note_translation(cd);
