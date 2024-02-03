@@ -54,11 +54,17 @@ impl SeqDataStock {
     pub fn set_cluster_memory(&mut self, word: String) {
         self.cluster_memory = word;
     }
-    pub fn set_raw_phrase(&mut self, part: usize, vari: usize, mut input_text: String) -> Option<bool> {
+    pub fn set_raw_phrase(
+        &mut self,
+        part: usize,
+        vari: usize,
+        mut input_text: String,
+    ) -> Option<bool> {
         if let Some(rs) = self.check_additional_phrase(input_text.clone()) {
             input_text = rs;
+        } else {
+            return Some(true);
         }
-        else {return Some(true)}
         if part < MAX_KBD_PART {
             if self.pdt[part][vari].set_raw(input_text, &self.cluster_memory) {
                 self.pdt[part][vari].set_recombined(
@@ -66,7 +72,7 @@ impl SeqDataStock {
                     self.bpm,
                     self.tick_for_onemsr,
                 );
-                return Some(false)
+                return Some(false);
             }
         }
         None
@@ -130,19 +136,21 @@ impl SeqDataStock {
     }
     pub fn check_additional_phrase(&mut self, raw: String) -> Option<String> {
         let strlen = raw.len();
-        if &raw[(strlen-2)..] == "]+" {
-            if self.raw_additional.len() == 0 { // 1st time
-                self.raw_additional = (&raw[0..(strlen-2)]).to_string();
-            }
-            else {                              // 2nd and more time
-                self.raw_additional += &raw[1..(strlen-2)];
+        if &raw[(strlen - 2)..] == "]+" {
+            if self.raw_additional.len() == 0 {
+                // 1st time
+                self.raw_additional = (&raw[0..(strlen - 2)]).to_string();
+            } else {
+                // 2nd and more time
+                self.raw_additional += &raw[1..(strlen - 2)];
             }
             None
         } else {
             let mut newraw = raw.clone();
-            if self.raw_additional.len() != 0 { // last time
+            if self.raw_additional.len() != 0 {
+                // last time
                 newraw = self.raw_additional.clone() + &raw[1..];
-                println!("Additional Phrase: {:?}",newraw);
+                println!("Additional Phrase: {:?}", newraw);
                 self.raw_additional = String::from("");
             }
             Some(newraw)

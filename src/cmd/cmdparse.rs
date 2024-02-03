@@ -460,7 +460,7 @@ impl LoopianCmd {
             itx = rs;
             input_text = &itx;
         } else {
-            return "Invalid Syntax!".to_string()
+            return "Invalid Syntax!".to_string();
         }
         let mut rtn_str = "what?".to_string();
         let org_part = self.input_part;
