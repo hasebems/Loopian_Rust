@@ -55,6 +55,11 @@ impl PhrLoopManager {
     }
     pub fn start(&mut self) {
         self.first_msr_num = 0;
+        self.max_loop_msr = 0;
+        self.whole_tick = 0;
+        self.loop_cntr = 0;
+        self.loop_phrase = None;
+        self.state_reserve = true;
     }
     pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // auftakt は別枠
@@ -177,6 +182,7 @@ impl PhrLoopManager {
                 && (crnt_.msr - self.first_msr_num) % (self.max_loop_msr) == self.max_loop_msr - 1
                 && phr.whole_tick as i32 >= crnt_.tick_for_onemsr * 2 // 新しい Phrase が２小節以上
         };
+
         if self.vari_reserve != 0 {
             // variation : 今再生している Phrase が残り１小節以上
             if auftakt_cond_vari() {
@@ -193,8 +199,8 @@ impl PhrLoopManager {
                 return true;
             }
         } else {
-            // repeat : 今再生している Phrase が残り１小節
-            if auftakt_cond() {
+            // repeat : 今再生している Phrase が残り１小節 かつ loop設定の場合
+            if auftakt_cond() && self.new_data_stock[0].do_loop {
                 let prm = (crnt_.msr, crnt_.tick_for_onemsr);
                 self.new_loop(prm, estk, pbp);
                 return true;
@@ -314,6 +320,12 @@ impl CmpsLoopManager {
     }
     pub fn start(&mut self) {
         self.first_msr_num = 0;
+        self.max_loop_msr = 0;
+        self.whole_tick = 0;
+        self.loop_cntr = 0;
+        self.loop_cmps = None;
+        self.state_reserve = true;
+        self.do_loop = true;
     }
     pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         if self.state_reserve {
