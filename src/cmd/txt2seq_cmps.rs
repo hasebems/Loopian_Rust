@@ -70,7 +70,7 @@ const CHORD_TABLE: [ChordTable; 54] = [
     ChordTable {name: "sc11",   table: &SC11,},
     ChordTable {name: "Err",    table: &ERR,},
     ChordTable {name: "None",   table: &NONE,},
-    ChordTable {name: "END",    table: &NONE,}, // elapse では、再生が止まる
+    ChordTable {name: "LPEND",  table: &NONE,}, // elapse では、再生が止まる
 ];
 
 pub const NO_LOOP: i16 = (CHORD_TABLE.len() - 1) as i16;
@@ -226,7 +226,7 @@ fn fill_omitted_chord_data(mut cmps: String) -> Vec<String> {
     } else if cmp_len >= 2 {
         if cmps.ends_with("//") {
             cmps.pop();
-            cmps += "END";
+            cmps += "LPEND";
         }
     }
     //println!("CHK-CHK-CHK::: {}",cmps);

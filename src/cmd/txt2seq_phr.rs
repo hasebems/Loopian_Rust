@@ -144,9 +144,15 @@ fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<bool>) {
 
     (nt, atrb)
 }
-fn fill_omitted_note_data(nf: String) -> String {
-    if nf.len() == 0 {
+fn fill_omitted_note_data(mut nf: String) -> String {
+    let phr_len = nf.len();
+    if phr_len == 0 {
         return "".to_string();
+    } else if phr_len >= 2 {
+        if nf.ends_with("//") {
+            nf.pop();
+            nf += "LPEND";
+        }
     }
 
     let mut fill: String = "".to_string();
@@ -238,8 +244,7 @@ pub fn recombine_to_internal_format(
     imd: InputMode,
     base_note: i32,
     tick_for_onemsr: i32,
-) -> (i32, Vec<PhrEvt>) {
-    let max_read_ptr = ntvec.len();
+) -> (i32, bool, Vec<PhrEvt>) {
     let (exp_vel, _exp_others) = get_dyn_info(expvec.clone());
     let mut read_ptr = 0;
     let mut last_nt: i32 = 0;
@@ -248,6 +253,7 @@ pub fn recombine_to_internal_format(
     let mut base_dur: i32 = DEFAULT_TICK_FOR_QUARTER;
     let mut rcmb = Vec::new();
     let mut mes_top: bool = false;
+    let (max_read_ptr, do_loop) = judge_no_loop(ntvec);
 
     while read_ptr < max_read_ptr {
         let nt_origin = ntvec[read_ptr].clone();
@@ -261,15 +267,7 @@ pub fn recombine_to_internal_format(
         assert!(notes.len() != 0);
         if notes[0] == RPT_HEAD {
             // 繰り返し指定があったことを示すイベント
-            let nt_data = PhrEvt {
-                mtype: TYPE_INFO,
-                tick: tick as i16,
-                dur: 0,
-                note: RPT_HEAD as i16,
-                vel: 0,
-                trns,
-            };
-            //vec![TYPE_INFO, tick as i16, RPT_HEAD as i16, 0,0];
+            let nt_data = PhrEvt::gen_repeat(tick as i16);
             rcmb.push(nt_data);
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else {
@@ -305,7 +303,14 @@ pub fn recombine_to_internal_format(
         }
         read_ptr += 1; // out from repeat
     }
-    (tick, rcmb)
+    (tick, do_loop, rcmb)
+}
+fn judge_no_loop(ntvec: &Vec<String>) -> (usize, bool) {
+    let mut max_read_ptr = ntvec.len();
+    // LPENDの検出
+    let do_loop = if ntvec.ends_with(&["LPEND".to_string()]) {false} else {true};
+    if !do_loop {max_read_ptr -= 1;}
+    (max_read_ptr, do_loop)
 }
 fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     let mut vel = END_OF_DATA;

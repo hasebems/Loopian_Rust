@@ -68,10 +68,23 @@ pub struct PhrEvt {
     pub vel: i16,  // velocity
     pub trns: i16, // translation
 }
+impl PhrEvt {
+    pub fn gen_repeat(tick: i16) -> Self {
+        Self {
+            mtype: TYPE_INFO,
+            tick: tick as i16,
+            dur: 0,
+            note: RPT_HEAD as i16,
+            vel: 0,
+            trns: TRNS_NONE,
+        }
+    }
+}
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PhrData {
     pub whole_tick: i16,
     pub auftakt: i16, // 0:no auftakt, 1-:beat begin auftakt
+    pub do_loop: bool,
     pub evts: Vec<PhrEvt>,
 }
 impl PhrData {
@@ -79,6 +92,7 @@ impl PhrData {
         Self {
             whole_tick: 0,
             auftakt: 0,
+            do_loop: true,
             evts: Vec::new(),
         }
     }

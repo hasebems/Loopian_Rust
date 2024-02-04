@@ -187,6 +187,7 @@ pub struct PhraseDataStock {
     rcmb: Vec<PhrEvt>,
     ana: Vec<AnaEvt>,
     atrb: Vec<bool>,
+    do_loop: bool,
     whole_tick: i32,
 }
 impl PhraseDataStock {
@@ -199,10 +200,12 @@ impl PhraseDataStock {
             rcmb: Vec::new(), //UgContent::new(),
             ana: Vec::new(),  //UgContent::new(),
             atrb: vec![false, false],
+            do_loop: true,
             whole_tick: 0,
         }
     }
     pub fn get_final(&self, part: i16, vari: i16) -> (ElpsMsg, ElpsMsg) {
+        let do_loop = if vari == 0 && self.do_loop {true} else {false};
         (
             ElpsMsg::Phr(
                 part,
@@ -210,6 +213,7 @@ impl PhraseDataStock {
                 PhrData {
                     whole_tick: self.whole_tick as i16,
                     auftakt: if self.atrb[0] { 1 } else { 0 },
+                    do_loop,
                     evts: self.rcmb.clone(),
                 },
             ),
@@ -247,7 +251,7 @@ impl PhraseDataStock {
         }
 
         // 3.recombined data
-        let (whole_tick, rcmb) = recombine_to_internal_format(
+        let (whole_tick, do_loop, rcmb) = recombine_to_internal_format(
             &self.cmpl_nt,
             &self.cmpl_ex,
             input_mode,
@@ -255,6 +259,7 @@ impl PhraseDataStock {
             tick_for_onemsr,
         );
         self.rcmb = rcmb;
+        self.do_loop = do_loop;
         self.whole_tick = whole_tick;
 
         // 4.analysed data
@@ -263,9 +268,10 @@ impl PhraseDataStock {
         // 5.humanized data
         let human1 = beat_filter(&mut self.rcmb, bpm, tick_for_onemsr);
         self.rcmb = crispy_tick(&human1, &self.cmpl_ex);
+        println!("final_phrase: {:?}", self.rcmb);
         println!(
-            "final_phrase: {:?} whole_tick: {:?}",
-            self.rcmb, self.whole_tick
+            "whole_tick: {:?} do_loop: {:?}",
+            self.whole_tick, self.do_loop
         );
         println!("analyse: {:?}", self.ana);
     }
@@ -294,7 +300,8 @@ impl Default for CompositionDataStock {
 }
 impl CompositionDataStock {
     pub fn get_final(&self, part: i16) -> ElpsMsg {
-        let last_one = self.rcmb.last().unwrap_or(&ChordEvt::default());
+        let def = ChordEvt::default();
+        let last_one = self.rcmb.last().unwrap_or(&def);
         let do_loop = if last_one.tbl != NO_LOOP {true} else {false};
         ElpsMsg::Cmp(
             part,

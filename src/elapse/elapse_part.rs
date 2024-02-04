@@ -18,7 +18,6 @@ pub struct PartBasicPrm {
     pub part_num: u32,
     pub keynote: u8,
     pub sync_flag: bool,
-    pub loop_state_flag: bool,
 }
 
 //*******************************************************************
@@ -39,14 +38,7 @@ struct PhrLoopManager {
 }
 impl PhrLoopManager {
     pub fn new() -> Self {
-        let mut pstock: Vec<PhrData> = Vec::new();
-        for _ in 0..MAX_PHRASE {
-            pstock.push(PhrData::empty());
-        }
-        let mut astock: Vec<AnaData> = Vec::new();
-        for _ in 0..MAX_PHRASE {
-            astock.push(AnaData::empty());
-        }
+        let (pstock, astock) = PhrLoopManager::gen_empty_stock();
         Self {
             first_msr_num: 0,
             max_loop_msr: 0,
@@ -95,12 +87,14 @@ impl PhrLoopManager {
                 // state_reserve は持ち越す
             }
         }
-        // 何も外部からのトリガーがなかった場合
-        else if self.check_last_msr(crnt_) {
-            // 今の Loop が終わったので、同じ Loop.Obj を生成する
-            self.proc_new_loop_repeatedly(crnt_, estk, pbp);
-        } else {
-            // 通常の Loop 中
+        // 何も外部からのトリガーがなく、loop 指定の場合
+        else if self.new_data_stock[0].do_loop {
+            if self.check_last_msr(crnt_) {
+                // 今の Loop が終わったので、同じ Loop.Obj を生成する
+                self.proc_new_loop_repeatedly(crnt_, estk, pbp);
+            } else {
+                // 通常の Loop 中
+            }
         }
     }
     pub fn rcv_phr(&mut self, msg: PhrData, vari_num: usize) {
@@ -145,6 +139,17 @@ impl PhrLoopManager {
     }
     pub fn reserve_vari(&mut self, vari_num: usize) {
         self.vari_reserve = vari_num; // 1-9
+    }
+    fn gen_empty_stock() -> (Vec<PhrData>, Vec<AnaData>) {
+        let mut pstock: Vec<PhrData> = Vec::new();
+        for _ in 0..MAX_PHRASE {
+            pstock.push(PhrData::empty());
+        }
+        let mut astock: Vec<AnaData> = Vec::new();
+        for _ in 0..MAX_PHRASE {
+            astock.push(AnaData::empty());
+        }
+        (pstock, astock)
     }
     fn check_last_msr(&self, crnt_: &CrntMsrTick) -> bool {
         self.max_loop_msr != 0 && (crnt_.msr - self.first_msr_num) % (self.max_loop_msr) == 0
@@ -213,10 +218,8 @@ impl PhrLoopManager {
         estk: &mut ElapseStack,
         pbp: PartBasicPrm,
     ) {
-        if pbp.loop_state_flag {
-            let prm = (crnt_.msr, crnt_.tick_for_onemsr);
-            self.new_loop(prm, estk, pbp);
-        }
+        let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+        self.new_loop(prm, estk, pbp);
     }
     fn proc_replace_loop(
         &mut self,
@@ -293,6 +296,7 @@ struct CmpsLoopManager {
     whole_tick_stock: i16,
     loop_cmps: Option<Rc<RefCell<CompositionLoop>>>,
     state_reserve: bool,
+    do_loop: bool,
 }
 impl CmpsLoopManager {
     pub fn new() -> Self {
@@ -305,6 +309,7 @@ impl CmpsLoopManager {
             whole_tick_stock: 0,
             loop_cmps: None,
             state_reserve: false,
+            do_loop: true,
         }
     }
     pub fn start(&mut self) {
@@ -339,22 +344,37 @@ impl CmpsLoopManager {
                 // state_reserve は持ち越す
             }
         } else if self.max_loop_msr != 0
-            && (crnt_.msr - self.first_msr_num) % (self.max_loop_msr) == 0
-            && pbp.loop_state_flag
+            && (crnt_.msr - self.first_msr_num) % self.max_loop_msr == 0
         {
-            // 同じ Loop.Obj を生成する
-            self.new_loop(crnt_, estk, pbp);
+            if self.do_loop {
+                // 同じ Loop.Obj を生成する
+                self.new_loop(crnt_, estk, pbp);
+            } else {
+                // Loop End Event があったとき、再生中の Loop を途中終了させる
+                if let Some(phr) = self.loop_cmps.as_mut() {
+                    phr.borrow_mut().set_destroy();
+                    self.new_data_stock = Vec::new();
+                    self.loop_cmps = None;
+                    self.whole_tick = 0;
+                    self.whole_tick_stock = 0;
+                }
+            }
+        } else if self.max_loop_msr != 0
+            && (crnt_.msr - self.first_msr_num) % self.max_loop_msr == self.max_loop_msr - 1
+        {   //  この Composition Data が終わる 1小節前
+            
         }
     }
     pub fn rcv_cmp(&mut self, msg: ChordData) {
         //println!("Composition Msg: {:?}", msg);
         if msg.evts.len() == 0 && msg.whole_tick == 0 {
-            self.new_data_stock = vec![ChordEvt::new()];
+            self.new_data_stock = Vec::new();
         } else {
             self.new_data_stock = msg.evts;
         }
         self.state_reserve = true;
         self.whole_tick_stock = msg.whole_tick;
+        self.do_loop = msg.do_loop;
     }
     pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.loop_cmps.clone() // 重いclone()?
@@ -425,7 +445,6 @@ pub struct Part {
     flow: Option<Rc<RefCell<Flow>>>,
     sync_next_msr_flag: bool,
     start_flag: bool,
-    loop_state_flag: bool,      // Loop 状態 or not(One Shot)
 }
 impl Part {
     pub fn new(num: u32) -> Rc<RefCell<Part>> {
@@ -446,7 +465,6 @@ impl Part {
             flow: None,
             sync_next_msr_flag: false,
             start_flag: false,
-            loop_state_flag: true,
         }))
     }
     pub fn change_key(&mut self, knt: u8) {
@@ -457,11 +475,9 @@ impl Part {
         self.pm.state_reserve = true;
     }
     pub fn rcv_phr_msg(&mut self, msg: PhrData, vari_num: usize) {
-        self.loop_state_flag = true;
         self.pm.rcv_phr(msg, vari_num);
     }
     pub fn rcv_cmps_msg(&mut self, msg: ChordData) {
-        self.loop_state_flag = true;
         self.cm.rcv_cmp(msg);
     }
     pub fn rcv_ana_msg(&mut self, msg: AnaData, vari_num: usize) {
@@ -520,7 +536,7 @@ impl Part {
         self.pm.reserve_vari(vari_num);
     }
     pub fn set_loop_end(&mut self) {
-        self.loop_state_flag = false;
+        // nothing to do
     }
 }
 impl Elapse for Part {
@@ -538,7 +554,6 @@ impl Elapse for Part {
         // User による start/play 時にコールされる
         self.during_play = true;
         self.start_flag = true;
-        self.loop_state_flag = true;
         self.next_msr = 0;
         self.next_tick = 0;
         self.cm.start();
@@ -554,7 +569,6 @@ impl Elapse for Part {
             part_num: self.id.sid,
             keynote: self.keynote,
             sync_flag: self.sync_next_msr_flag,
-            loop_state_flag: self.loop_state_flag,
         };
         if self.start_flag {
             // Start 直後
