@@ -25,7 +25,7 @@ pub struct PartBasicPrm {
 //*******************************************************************
 struct PhrLoopManager {
     first_msr_num: i32,
-    max_loop_msr: i32,
+    max_loop_msr: i32,      // from whole_tick
     whole_tick: i32,
     loop_cntr: u32, // loop sid
     new_data_stock: Vec<PhrData>,
@@ -54,11 +54,7 @@ impl PhrLoopManager {
         }
     }
     pub fn start(&mut self) {
-        self.first_msr_num = 0;
-        self.max_loop_msr = 0;
-        self.whole_tick = 0;
-        self.loop_cntr = 0;
-        self.loop_phrase = None;
+        self.clear_phr_prm();
         self.state_reserve = true;
     }
     pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
@@ -91,15 +87,17 @@ impl PhrLoopManager {
                 // 現在の Loop Obj が終了していない時
                 // state_reserve は持ち越す
             }
-        }
-        // 何も外部からのトリガーがなく、loop 指定の場合
-        else if self.new_data_stock[0].do_loop {
+        } else if self.new_data_stock[0].do_loop {
+            // 何も外部からのトリガーがなく、loop 指定の場合
             if self.check_last_msr(crnt_) {
                 // 今の Loop が終わったので、同じ Loop.Obj を生成する
                 self.proc_new_loop_repeatedly(crnt_, estk, pbp);
             } else {
                 // 通常の Loop 中
             }
+        } else if self.check_last_msr(crnt_) {
+            // loop 指定でない場合
+            self.clear_phr_prm();
         }
     }
     pub fn rcv_phr(&mut self, msg: PhrData, vari_num: usize) {
@@ -155,6 +153,13 @@ impl PhrLoopManager {
             astock.push(AnaData::empty());
         }
         (pstock, astock)
+    }
+    fn clear_phr_prm(&mut self) {
+        self.first_msr_num = 0;
+        self.max_loop_msr = 0;
+        self.whole_tick = 0;
+        self.loop_cntr = 0;
+        self.loop_phrase = None;
     }
     fn check_last_msr(&self, crnt_: &CrntMsrTick) -> bool {
         self.max_loop_msr != 0 && (crnt_.msr - self.first_msr_num) % (self.max_loop_msr) == 0
@@ -319,13 +324,8 @@ impl CmpsLoopManager {
         }
     }
     pub fn start(&mut self) {
-        self.first_msr_num = 0;
-        self.max_loop_msr = 0;
-        self.whole_tick = 0;
-        self.loop_cntr = 0;
-        self.loop_cmps = None;
+        self.clear_cmp_prm();
         self.state_reserve = true;
-        self.do_loop = true;
     }
     pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         if self.state_reserve {
@@ -362,19 +362,8 @@ impl CmpsLoopManager {
                 // 同じ Loop.Obj を生成する
                 self.new_loop(crnt_, estk, pbp);
             } else {
-                // Loop End Event があったとき、再生中の Loop を途中終了させる
-                if let Some(phr) = self.loop_cmps.as_mut() {
-                    phr.borrow_mut().set_destroy();
-                    self.new_data_stock = Vec::new();
-                    self.loop_cmps = None;
-                    self.whole_tick = 0;
-                    self.whole_tick_stock = 0;
-                }
+                self.clear_cmp_prm();
             }
-        } else if self.max_loop_msr != 0
-            && (crnt_.msr - self.first_msr_num) % self.max_loop_msr == self.max_loop_msr - 1
-        {   //  この Composition Data が終わる 1小節前
-            
         }
     }
     pub fn rcv_cmp(&mut self, msg: ChordData) {
@@ -397,6 +386,14 @@ impl CmpsLoopManager {
         } else {
             String::from("")
         }
+    }
+    fn clear_cmp_prm(&mut self) {
+        self.first_msr_num = 0;
+        self.max_loop_msr = 0;
+        self.whole_tick = 0;
+        self.loop_cntr = 0;
+        self.loop_cmps = None;
+        self.do_loop = true;
     }
     fn new_loop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成

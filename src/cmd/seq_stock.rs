@@ -60,10 +60,10 @@ impl SeqDataStock {
         vari: usize,
         mut input_text: String,
     ) -> Option<bool> {
-        if let Some(rs) = self.check_additional_phrase(input_text.clone()) {
+        if let Some(rs) = self.check_if_additional_phrase(input_text.clone()) {
             input_text = rs;
         } else {
-            return Some(true);
+            return Some(true);  // additional なら true
         }
         if part < MAX_KBD_PART {
             if self.pdt[part][vari].set_raw(input_text, &self.cluster_memory) {
@@ -134,9 +134,9 @@ impl SeqDataStock {
     pub fn change_input_mode(&mut self, input_mode: InputMode) {
         self.input_mode = input_mode;
     }
-    pub fn check_additional_phrase(&mut self, raw: String) -> Option<String> {
+    pub fn check_if_additional_phrase(&mut self, raw: String) -> Option<String> {
         let strlen = raw.len();
-        if &raw[(strlen - 2)..] == "]+" {
+        if strlen >= 2 && &raw[(strlen - 2)..] == "]+" {
             if self.raw_additional.len() == 0 {
                 // 1st time
                 self.raw_additional = (&raw[0..(strlen - 2)]).to_string();
@@ -144,6 +144,7 @@ impl SeqDataStock {
                 // 2nd and more time
                 self.raw_additional += &raw[1..(strlen - 2)];
             }
+            // additional (..]+) なら None を返す
             None
         } else {
             let mut newraw = raw.clone();
