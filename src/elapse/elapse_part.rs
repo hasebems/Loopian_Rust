@@ -25,7 +25,7 @@ pub struct PartBasicPrm {
 //*******************************************************************
 struct PhrLoopManager {
     first_msr_num: i32,
-    max_loop_msr: i32,      // from whole_tick
+    max_loop_msr: i32, // from whole_tick
     whole_tick: i32,
     loop_cntr: u32, // loop sid
     new_data_stock: Vec<PhrData>,

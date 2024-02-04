@@ -456,7 +456,10 @@ impl LoopianCmd {
     ) -> String {
         let mut input_text = rest_text;
         let itx: String;
-        if let Some(rs) = self.dtstk.check_if_additional_phrase(input_text.to_string()) {
+        if let Some(rs) = self
+            .dtstk
+            .check_if_additional_phrase(input_text.to_string())
+        {
             itx = rs;
             input_text = &itx;
         } else {

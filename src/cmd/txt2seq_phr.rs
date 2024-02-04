@@ -308,8 +308,14 @@ pub fn recombine_to_internal_format(
 fn judge_no_loop(ntvec: &Vec<String>) -> (usize, bool) {
     let mut max_read_ptr = ntvec.len();
     // LPENDの検出
-    let do_loop = if ntvec.ends_with(&["LPEND".to_string()]) {false} else {true};
-    if !do_loop {max_read_ptr -= 1;}
+    let do_loop = if ntvec.ends_with(&["LPEND".to_string()]) {
+        false
+    } else {
+        true
+    };
+    if !do_loop {
+        max_read_ptr -= 1;
+    }
     (max_read_ptr, do_loop)
 }
 fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {

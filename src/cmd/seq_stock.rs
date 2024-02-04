@@ -63,7 +63,7 @@ impl SeqDataStock {
         if let Some(rs) = self.check_if_additional_phrase(input_text.clone()) {
             input_text = rs;
         } else {
-            return Some(true);  // additional なら true
+            return Some(true); // additional なら true
         }
         if part < MAX_KBD_PART {
             if self.pdt[part][vari].set_raw(input_text, &self.cluster_memory) {
@@ -206,7 +206,11 @@ impl PhraseDataStock {
         }
     }
     pub fn get_final(&self, part: i16, vari: i16) -> (ElpsMsg, ElpsMsg) {
-        let do_loop = if vari == 0 && self.do_loop {true} else {false};
+        let do_loop = if vari == 0 && self.do_loop {
+            true
+        } else {
+            false
+        };
         (
             ElpsMsg::Phr(
                 part,
@@ -303,7 +307,7 @@ impl CompositionDataStock {
     pub fn get_final(&self, part: i16) -> ElpsMsg {
         let def = ChordEvt::default();
         let last_one = self.rcmb.last().unwrap_or(&def);
-        let do_loop = if last_one.tbl != NO_LOOP {true} else {false};
+        let do_loop = if last_one.tbl != NO_LOOP { true } else { false };
         ElpsMsg::Cmp(
             part,
             ChordData {
