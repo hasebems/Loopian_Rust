@@ -290,6 +290,7 @@ pub struct CompositionDataStock {
     cmpl_cd: Vec<String>,
     cmpl_ex: Vec<String>,
     rcmb: Vec<ChordEvt>,
+    do_loop: bool,
     whole_tick: i32,
 }
 impl Default for CompositionDataStock {
@@ -299,20 +300,18 @@ impl Default for CompositionDataStock {
             cmpl_cd: vec!["".to_string()],
             cmpl_ex: vec!["".to_string()],
             rcmb: Vec::new(),
+            do_loop: true,
             whole_tick: 0,
         }
     }
 }
 impl CompositionDataStock {
     pub fn get_final(&self, part: i16) -> ElpsMsg {
-        let def = ChordEvt::default();
-        let last_one = self.rcmb.last().unwrap_or(&def);
-        let do_loop = if last_one.tbl != NO_LOOP { true } else { false };
         ElpsMsg::Cmp(
             part,
             ChordData {
                 whole_tick: self.whole_tick as i16,
-                do_loop,
+                do_loop: self.do_loop,
                 evts: self.rcmb.clone(),
             },
         )
@@ -341,9 +340,10 @@ impl CompositionDataStock {
         }
 
         // 3.recombined data
-        let (whole_tick, rcmb) =
+        let (whole_tick, do_loop, rcmb) =
             recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_onebeat);
         self.rcmb = rcmb;
+        self.do_loop = do_loop;
         self.whole_tick = whole_tick;
         println!(
             "final_composition: {:?} whole_tick: {:?}",

@@ -273,11 +273,11 @@ pub fn recombine_to_chord_loop(
     comp: &Vec<String>,
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
-) -> (i32, Vec<ChordEvt>) {
+) -> (i32, bool, Vec<ChordEvt>) {
     if comp.len() == 0 {
         //let mut zero = ChordEvt::new();
         //zero.add_dt(vec![0]);
-        return (0, Vec::new());
+        return (0, true, Vec::new());
     }
     let max_read_ptr = comp.len();
     let mut read_ptr = 0;
@@ -345,8 +345,13 @@ pub fn recombine_to_chord_loop(
         read_ptr += 1;
     }
 
-    tick = msr * tick_for_onemsr;
-    (tick as i32, rcmb)
+    let tmp = ChordEvt::default();
+    let last_one = rcmb.last().unwrap_or(&tmp);
+    let do_loop = if last_one.tbl != NO_LOOP { true } else { false };
+    if !do_loop {
+        rcmb.pop();
+    }
+    ((msr * tick_for_onemsr) as i32, do_loop, rcmb)
 }
 fn divide_chord_and_dur(mut chord: String) -> (String, i32) {
     let mut dur: i32 = 1;
