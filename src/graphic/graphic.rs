@@ -78,8 +78,16 @@ impl Graphic {
         }
 
         // window size を得る
-        self.full_size.x = frame.info().window_info.size.x;
-        self.full_size.y = frame.info().window_info.size.y;
+        let new_x = frame.info().window_info.size.x;
+        let new_y = frame.info().window_info.size.y;
+        if new_x != self.full_size.x {
+            self.full_size.x = new_x;
+            println!("New Window Size X={}",new_x);
+        }
+        if new_y != self.full_size.y {
+            self.full_size.y = new_y;
+            println!("New Window Size Y={}",new_y);
+        }
         let rs = self.resize();
 
         // frame_counter の更新
@@ -286,21 +294,22 @@ impl Graphic {
         scroll_lines: &Vec<(String, String)>,
         rs: &Resize,
     ) {
-        const MAX_SCROLL_LINES: usize = 20;
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
         const FONT16_HEIGHT: f32 = 25.0;
 
         let letter_color = self.letter_color();
         let lines = scroll_lines.len();
-        let max_count = if lines < MAX_SCROLL_LINES {
+        let mut max_line = ((self.full_size.y - 340.0) as usize)/50;
+        max_line *= 2;
+        let max_count = if lines < max_line {
             lines
         } else {
-            MAX_SCROLL_LINES
+            max_line
         };
-        let ofs_count = if lines < MAX_SCROLL_LINES {
+        let ofs_count = if lines < max_line {
             0
         } else {
-            lines - MAX_SCROLL_LINES
+            lines - max_line
         };
         // Draw Letters
         for i in 0..max_count {
