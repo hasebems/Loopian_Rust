@@ -317,6 +317,8 @@ impl ElapseStack {
         for elps in stop_vec.iter() {
             elps.borrow_mut().stop(self);
         }
+        // destroy flag の立った elapse obj.を回収
+        self.destroy_finished_elps();
     }
     //fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}
     fn sync(&mut self, part: i16) {

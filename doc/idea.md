@@ -469,6 +469,7 @@ NoteObj <|-- WaterRipple
 - {...//} 最後に // をつけると、Loopしなくなる機能追加 1/26
 - [...]+ 複数 Phrase 追加入力機能 1/31
 - [...//] Phrase にも Loopしなくなる機能追加 2/4
+- 昔の phrase がときどき一度だけなってしまう不具合修正 2/6
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -477,11 +478,10 @@ NoteObj <|-- WaterRipple
 バグ情報、不具合の可能性（アサート情報）
 - stack_elapse.rs の process() 175行目付近のアサートにひっかかるとき
     - next_msr が更新されないと、再生済みにならないので、永久ループに入ってしまう
-- ときどき、上書きされる前の Phrase が重なって鳴ることがある
-    - 一回だけ起き、しばらくすると消える
 - Variation Phrase 絡みでいまひとつな挙動
     - [] で、Phrase を消すと、Variation も再生されなくなる。それでいい？
     - @n;Cd というように、前と同じコードでも必ず ; 付きで記述する必要がある
+- { //} による composition loop を設定すると、loop後も1小節だけ、最後のコードが再生されてしまう
 
 もうやらないこと（忘れないように）
 - <d,r,m>*3 で3回繰り返し、みたいな記法はとても便利だが、octaveの指定がおかしくなりやすく、結局変なことになる

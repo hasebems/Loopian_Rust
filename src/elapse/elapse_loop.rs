@@ -225,24 +225,30 @@ impl PhraseLoop {
     }
 }
 impl Elapse for PhraseLoop {
+    /// id を得る
     fn id(&self) -> ElapseId {
         self.id
-    } // id を得る
+    }
+    /// priority を得る
     fn prio(&self) -> u32 {
         self.priority
-    } // priority を得る
+    }
+    /// 次に呼ばれる小節番号、Tick数を返す
     fn next(&self) -> (i32, i32) {
-        // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
     }
     fn start(&mut self) {} // User による start/play 時にコールされる
-    fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
+    /// User による stop 時にコールされる
+    fn stop(&mut self, _estk: &mut ElapseStack) {
+        self.set_destroy();
+    }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
+    /// 自クラスが役割を終えた時に True を返す
     fn destroy_me(&self) -> bool {
         self.destroy()
-    } // 自クラスが役割を終えた時に True を返す
+    }
+    /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        // 再生 msr/tick に達したらコールされる
         if self.destroy {
             return;
         }
@@ -444,24 +450,31 @@ impl CompositionLoop {
     }
 }
 impl Elapse for CompositionLoop {
+    /// id を得る
     fn id(&self) -> ElapseId {
         self.id
-    } // id を得る
+    }
+    /// priority を得る
     fn prio(&self) -> u32 {
         self.priority
-    } // priority を得る
+    }
+    /// 次に呼ばれる小節番号、Tick数を返す
     fn next(&self) -> (i32, i32) {
-        // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {} // User による start/play 時にコールされる
-    fn stop(&mut self, _estk: &mut ElapseStack) {} // User による stop 時にコールされる
+    /// User による start/play 時にコールされる
+    fn start(&mut self) {}
+    /// User による stop 時にコールされる
+    fn stop(&mut self, _estk: &mut ElapseStack) {
+        self.set_destroy();
+    }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
+    /// 自クラスが役割を終えた時に True を返す
     fn destroy_me(&self) -> bool {
         self.destroy()
-    } // 自クラスが役割を終えた時に True を返す
+    }
+    /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        // 再生 msr/tick に達したらコールされる
         if self.destroy {
             return;
         }
