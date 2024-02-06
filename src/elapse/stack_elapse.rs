@@ -36,7 +36,6 @@ pub struct ElapseStack {
     mdx: MidiTx,
     _mdrx: MidiRx,
     mdr_buf: Arc<Mutex<MidiRxBuf>>,
-    _start_time: Instant,
     crnt_time: Instant,
     bpm_stock: i16,
     fermata_stock: bool,
@@ -57,16 +56,16 @@ impl ElapseStack {
     pub fn new(ui_hndr: mpsc::Sender<String>) -> Option<Self> {
         match MidiTx::connect() {
             Ok(c) => {
-                let mut vp = Vec::new();
-                let mut velps = Vec::new();
+                let mut part_vec = Vec::new();
+                let mut elapse_vec = Vec::new();
                 for i in 0..MAX_KBD_PART {
                     // 同じ Part を part_vec, elapse_vec 両方に繋げる
                     let pt = Part::new(i as u32);
-                    vp.push(Rc::clone(&pt));
-                    velps.push(pt as Rc<RefCell<dyn Elapse>>);
+                    part_vec.push(Rc::clone(&pt));
+                    elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
                 }
-                let dmppt = DamperPart::new(DAMPER_PEDAL_PART as u32);
-                velps.push(Rc::clone(&dmppt) as Rc<RefCell<dyn Elapse>>);
+                let damper_part = DamperPart::new(DAMPER_PEDAL_PART as u32);
+                elapse_vec.push(Rc::clone(&damper_part) as Rc<RefCell<dyn Elapse>>);
                 let mut _mdrx = MidiRx::new();
                 let mdr_buf = Arc::new(Mutex::new(MidiRxBuf::new()));
                 match _mdrx.connect(Arc::clone(&mdr_buf)) {
@@ -78,7 +77,6 @@ impl ElapseStack {
                     mdx: c,
                     _mdrx,
                     mdr_buf,
-                    _start_time: Instant::now(),
                     crnt_time: Instant::now(),
                     bpm_stock: DEFAULT_BPM,
                     fermata_stock: false,
@@ -86,9 +84,9 @@ impl ElapseStack {
                     during_play: false,
                     display_time: Instant::now(),
                     tg: TickGen::new(),
-                    part_vec: vp,
-                    _damper_part: dmppt,
-                    elapse_vec: velps,
+                    part_vec,
+                    _damper_part: damper_part,
+                    elapse_vec,
                     key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
                     limit_for_deb: 0,
                 })
@@ -151,8 +149,9 @@ impl ElapseStack {
         // 小節先頭ならば、beat/bpm のイベント調査
         if self.tg.gen_tick(self.crnt_time) {
             println!(
-                "<New measure! in stack_elapse> Max Debcnt: {}",
-                self.limit_for_deb
+                "<New measure! in stack_elapse> Max Debcnt: {}/{}",
+                self.limit_for_deb,
+                self.elapse_vec.len()
             );
             //println!("  All Elapse Obj. Num: {:?}", self.elapse_vec.len());
             self.limit_for_deb = 0;

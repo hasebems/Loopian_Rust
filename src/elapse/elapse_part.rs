@@ -27,7 +27,7 @@ struct PhrLoopManager {
     first_msr_num: i32,
     max_loop_msr: i32, // from whole_tick
     whole_tick: i32,
-    loop_cntr: u32, // loop sid
+    loop_id: u32, // loop sid
     new_data_stock: Vec<PhrData>,
     whole_tick_stock: [i16; MAX_PHRASE],
     new_ana_stock: Vec<AnaData>,
@@ -43,7 +43,7 @@ impl PhrLoopManager {
             first_msr_num: 0,
             max_loop_msr: 0,
             whole_tick: 0,
-            loop_cntr: 0,
+            loop_id: 0,
             new_data_stock: pstock,
             whole_tick_stock: [0; MAX_PHRASE],
             new_ana_stock: astock,
@@ -158,7 +158,6 @@ impl PhrLoopManager {
         self.first_msr_num = 0;
         self.max_loop_msr = 0;
         self.whole_tick = 0;
-        self.loop_cntr = 0;
         self.loop_phrase = None;
     }
     fn check_last_msr(&self, crnt_: &CrntMsrTick) -> bool {
@@ -277,9 +276,9 @@ impl PhrLoopManager {
         let plus_one = if self.whole_tick % prm.1 == 0 { 0 } else { 1 };
         self.max_loop_msr = self.whole_tick / prm.1 + plus_one;
 
-        self.loop_cntr += 1;
+        self.loop_id += 1;
         let lp = PhraseLoop::new(
-            self.loop_cntr,
+            self.loop_id,
             pbp.part_num,
             pbp.keynote,
             prm.0,
@@ -302,7 +301,7 @@ struct CmpsLoopManager {
     first_msr_num: i32,
     max_loop_msr: i32,
     whole_tick: i32,
-    loop_cntr: u32, // loop sid
+    loop_id: u32, // loop sid
     new_data_stock: Vec<ChordEvt>,
     whole_tick_stock: i16,
     loop_cmps: Option<Rc<RefCell<CompositionLoop>>>,
@@ -315,7 +314,7 @@ impl CmpsLoopManager {
             first_msr_num: 0,
             max_loop_msr: 0,
             whole_tick: 0,
-            loop_cntr: 0,
+            loop_id: 0,
             new_data_stock: Vec::new(),
             whole_tick_stock: 0,
             loop_cmps: None,
@@ -391,7 +390,6 @@ impl CmpsLoopManager {
         self.first_msr_num = 0;
         self.max_loop_msr = 0;
         self.whole_tick = 0;
-        self.loop_cntr = 0;
         self.loop_cmps = None;
         self.do_loop = true;
     }
@@ -416,9 +414,9 @@ impl CmpsLoopManager {
                 return;
             }
 
-            self.loop_cntr += 1;
+            self.loop_id += 1;
             let cmplp = CompositionLoop::new(
-                self.loop_cntr,
+                self.loop_id,
                 pbp.part_num,
                 pbp.keynote,
                 crnt_.msr,
@@ -432,7 +430,6 @@ impl CmpsLoopManager {
             // 新しい Composition が空のとき
             self.max_loop_msr = 0;
             self.whole_tick = 0;
-            self.loop_cntr = 0;
             self.state_reserve = true;
             self.loop_cmps = None;
         }
