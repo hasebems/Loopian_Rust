@@ -31,6 +31,11 @@ const FONT16_WIDTH: f32 = 9.56;
 
 const _LEFT_MERGIN: f32 = 5.0;
 
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum TextAttribute {
+    Common,
+    Answer,
+}
 pub struct Graphic {
     full_size: Pos2,
     nobj: Vec<Box<dyn NoteObj>>,
@@ -64,7 +69,13 @@ impl Graphic {
     pub fn update(
         &mut self,
         ui: &mut Ui,
-        infs: (usize, &String, &Vec<(String, String)>, usize, &LoopianCmd),
+        infs: (
+            usize,
+            &String,
+            &Vec<(TextAttribute, String, String)>,
+            usize,
+            &LoopianCmd,
+        ),
         msg: i16,
         frame: &mut eframe::Frame,
         ntev: Vec<String>,
@@ -82,11 +93,11 @@ impl Graphic {
         let new_y = frame.info().window_info.size.y;
         if new_x != self.full_size.x {
             self.full_size.x = new_x;
-            println!("New Window Size X={}",new_x);
+            println!("New Window Size X={}", new_x);
         }
         if new_y != self.full_size.y {
             self.full_size.y = new_y;
-            println!("New Window Size Y={}",new_y);
+            println!("New Window Size Y={}", new_y);
         }
         let rs = self.resize();
 
@@ -291,7 +302,7 @@ impl Graphic {
     fn update_scroll_text(
         &self,
         ui: &mut egui::Ui,
-        scroll_lines: &Vec<(String, String)>,
+        scroll_lines: &Vec<(TextAttribute, String, String)>,
         rs: &Resize,
     ) {
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
@@ -299,13 +310,9 @@ impl Graphic {
 
         let letter_color = self.letter_color();
         let lines = scroll_lines.len();
-        let mut max_line = ((self.full_size.y - 340.0) as usize)/50;
+        let mut max_line = ((self.full_size.y - 340.0) as usize) / 50;
         max_line *= 2;
-        let max_count = if lines < max_line {
-            lines
-        } else {
-            max_line
-        };
+        let max_count = if lines < max_line { lines } else { max_line };
         let ofs_count = if lines < max_line {
             0
         } else {
@@ -314,9 +321,13 @@ impl Graphic {
         // Draw Letters
         for i in 0..max_count {
             let past_text_set = scroll_lines[ofs_count + i].clone();
-            let past_text = past_text_set.0.clone() + &past_text_set.1;
+            let past_text = past_text_set.1.clone() + &past_text_set.2;
             let cnt = past_text.chars().count();
-            let txt_color = if i % 2 == 0 { letter_color } else { MAZENTA };
+            let txt_color = if past_text_set.0 == TextAttribute::Answer {
+                MAZENTA
+            } else {
+                letter_color
+            };
             ui.put(
                 Rect {
                     min: Pos2 {
@@ -343,7 +354,13 @@ impl Graphic {
     fn update_input_text(
         &mut self,
         ui: &mut egui::Ui,
-        infs: (usize, &String, &Vec<(String, String)>, usize, &LoopianCmd),
+        infs: (
+            usize,
+            &String,
+            &Vec<(TextAttribute, String, String)>,
+            usize,
+            &LoopianCmd,
+        ),
         rs: &Resize,
     ) {
         const CURSOR_LEFT_MARGIN: f32 = 10.0;

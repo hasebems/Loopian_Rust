@@ -18,7 +18,7 @@ use std::time::Duration;
 use cmd::cmdparse;
 use cmd::history::History;
 use elapse::stack_elapse::ElapseStack;
-use graphic::graphic::Graphic;
+use graphic::graphic::{Graphic, TextAttribute};
 
 pub const WINDOW_X: f32 = 1000.0; //  Main Window
 pub const WINDOW_Y: f32 = 860.0;
@@ -27,7 +27,7 @@ pub struct LoopianApp {
     input_locate: usize,   //  カーソルの位置
     visible_locate: usize, //  入力部に表示する最初の文字の位置
     input_text: String,
-    scroll_lines: Vec<(String, String)>,
+    scroll_lines: Vec<(TextAttribute, String, String)>,
     history_cnt: usize,
     cmd: cmdparse::LoopianCmd,
     history: History,
@@ -189,27 +189,35 @@ impl LoopianApp {
         self.input_locate = 0;
         self.visible_locate = 0;
 
+        self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone()); // for history
         if itxt.chars().count() >= 6 && &itxt[0..4] == "load" {
-            self.scroll_lines.push((time.clone(), itxt.clone())); // for display text
-                                                                  // load のときだけ特別処理
+            self.scroll_lines
+                .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
+                                                                            // load のときだけ特別処理
             let command_stk = self.history.load_lpn(&itxt[5..], self.cmd.get_path());
             if command_stk.len() == 0 {
-                self.scroll_lines
-                    .push(("".to_string(), "No history".to_string()));
+                self.scroll_lines.push((
+                    TextAttribute::Answer,
+                    "".to_string(),
+                    "No history".to_string(),
+                ));
             } else {
-                self.scroll_lines
-                    .push(("".to_string(), "Loaded in history".to_string()));
                 for cmd in command_stk.iter() {
-                    self.one_command(time.clone(), cmd.clone());
+                    self.history_cnt = self.history.set_scroll_text(time.clone(), cmd.clone()); // for history
+                    self.one_command(time.clone(), cmd.clone(), false);
                 }
+                self.scroll_lines.push((
+                    TextAttribute::Answer,
+                    "".to_string(),
+                    "Loaded from history".to_string(),
+                ));
             }
         } else {
-            self.one_command(time, itxt);
+            self.one_command(time, itxt, true);
         }
     }
-    fn one_command(&mut self, time: String, itxt: String) {
+    fn one_command(&mut self, time: String, itxt: String, verbose: bool) {
         // 通常のコマンド入力
-        self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone()); // for history
         if let Some(answer) = self.cmd.set_and_responce(&itxt) {
             // for work
             if answer == "nosave" {
@@ -218,8 +226,12 @@ impl LoopianApp {
                 std::process::exit(0);
             } else {
                 // normal command
-                self.scroll_lines.push((time.clone(), itxt.clone())); // for display text
-                self.scroll_lines.push(("".to_string(), answer));
+                self.scroll_lines
+                    .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
+                if verbose {
+                    self.scroll_lines
+                        .push((TextAttribute::Answer, "".to_string(), answer));
+                }
             }
         } else {
             // The end of the App
