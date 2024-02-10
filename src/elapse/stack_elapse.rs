@@ -38,7 +38,6 @@ pub struct ElapseStack {
     mdr_buf: Arc<Mutex<MidiRxBuf>>,
     crnt_time: Instant,
     bpm_stock: i16,
-    fermata_stock: bool,
     beat_stock: Beat,
 
     during_play: bool,
@@ -79,7 +78,6 @@ impl ElapseStack {
                     mdr_buf,
                     crnt_time: Instant::now(),
                     bpm_stock: DEFAULT_BPM,
-                    fermata_stock: false,
                     beat_stock: Beat(4, 4),
                     during_play: false,
                     display_time: Instant::now(),
@@ -160,14 +158,6 @@ impl ElapseStack {
                 let tick_for_onemsr =
                     (DEFAULT_TICK_FOR_ONE_MEASURE / self.beat_stock.1) * self.beat_stock.0;
                 self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
-            }
-            // change bpm event
-            if self.bpm_stock != self.tg.get_bpm() {
-                self.tg.change_bpm_event(self.bpm_stock);
-            }
-            if self.fermata_stock {
-                self.fermata_stock = false;
-                self.tg.change_fermata_event();
             }
             // for GUI(8indicator)
             self.update_gui_at_msrtop();
@@ -360,22 +350,25 @@ impl ElapseStack {
             [(MSG_RIT_POCO, 95), (MSG_RIT_NRM, 80), (MSG_RIT_MLT, 75)];
         let strength_msg = msg[0] % 10;
         let bar = (msg[0] / 10) as i32;
+        let target_bpm: i16;
         let strength = strength_set
             .into_iter()
             .find(|x| x.0 == strength_msg)
             .unwrap_or(strength_set[0]);
         if msg[1] == MSG2_RIT_ATMP {
-            self.bpm_stock = self.tg.get_bpm();
+            target_bpm = self.tg.get_bpm();
         } else if msg[1] == MSG2_RIT_FERMATA {
-            self.fermata_stock = true;
+            target_bpm = 0;
         } else {
-            self.bpm_stock = msg[1];
+            target_bpm = msg[1];
         }
-        self.tg.start_rit(self.crnt_time, strength.1, bar);
+        self.tg
+            .start_rit(self.crnt_time, strength.1, bar, target_bpm);
     }
     fn setting_cmnd(&mut self, msg: [i16; 2]) {
         if msg[0] == MSG_SET_BPM {
             self.bpm_stock = msg[1];
+            self.tg.change_bpm(msg[1])
         } else if msg[0] == MSG_SET_KEY {
             self.part_vec
                 .iter()

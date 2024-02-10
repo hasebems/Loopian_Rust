@@ -10,6 +10,7 @@ pub struct TickGen {
     bpm: i16,
     beat: Beat,
     tick_for_onemsr: i32,    // beat によって決まる１小節の tick 数
+    bpm_stock: i16,          // change bpm で BPM を変えた直後の値
     origin_time: Instant,    // start 時の絶対時間
     bpm_start_time: Instant, // tempo/beat が変わった時点の絶対時間、tick 計測の開始時間
     bpm_start_tick: i32,     // tempo が変わった時点の tick, beat が変わったとき0clear
@@ -42,6 +43,7 @@ impl TickGen {
             bpm: DEFAULT_BPM,
             beat: Beat(4, 4),
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+            bpm_stock: DEFAULT_BPM,
             origin_time: Instant::now(),
             bpm_start_time: Instant::now(),
             bpm_start_tick: 0,
@@ -71,14 +73,17 @@ impl TickGen {
         self.bpm_start_time = self.crnt_time;
         self.bpm_start_tick = 0;
     }
-    pub fn change_bpm_event(&mut self, bpm: i16) {
+    pub fn change_bpm(&mut self, bpm: i16) {
+        self.bpm_stock = bpm;
+    }
+    fn change_bpm_event(&mut self, bpm: i16) {
         self.rit_state = false;
         self.fermata_state = false;
         self.bpm_start_tick = self.calc_crnt_tick();
         self.bpm_start_time = self.crnt_time; // Get current time
         self.bpm = bpm;
     }
-    pub fn change_fermata_event(&mut self) {
+    fn _change_fermata_event(&mut self) {
         self.rit_state = false;
         self.bpm_start_tick = self.calc_crnt_tick();
         self.bpm_start_time = self.crnt_time; // Get current time
@@ -93,6 +98,7 @@ impl TickGen {
         self.bpm_start_tick = 0;
         self.bpm_start_time = time;
         self.bpm = bpm;
+        self.bpm_stock = bpm;
         if resume {
             self.beat_start_msr = self.crnt_msr;
         } else {
@@ -104,15 +110,24 @@ impl TickGen {
         self.crnt_time = crnt_time;
         if self.rit_state {
             self.calc_tick_rit(crnt_time);
-        } else if self.fermata_state {
-            self.crnt_tick_inmsr = 0;
         } else {
             let tick_from_beat_starts = self.calc_crnt_tick();
             self.crnt_msr =
                 (tick_from_beat_starts / self.tick_for_onemsr + self.beat_start_msr) as i32;
             self.crnt_tick_inmsr = tick_from_beat_starts % self.tick_for_onemsr;
         }
-        self.crnt_msr != former_msr
+        let new_msr = self.crnt_msr != former_msr;
+        if new_msr {
+            if !self.rit_state && (self.bpm != self.bpm_stock) {
+                // Tempo Change
+                self.change_bpm_event(self.bpm_stock);
+                if self.bpm == 0 {
+                    // fermata
+                    self.crnt_tick_inmsr = 0;
+                }
+            }
+        }
+        new_msr
     }
     pub fn get_crnt_msr_tick(&self) -> CrntMsrTick {
         CrntMsrTick {
@@ -157,7 +172,7 @@ impl TickGen {
     //        50:  1secで tempo を 50%(1/2)
     //        100: 何もしない
     // bar    0: 次の小節まで、1: 次の次の小節まで (何回小節跨ぎをスルーするか)
-    pub fn start_rit(&mut self, start_time: Instant, ratio: i32, bar: i32) {
+    pub fn start_rit(&mut self, start_time: Instant, ratio: i32, bar: i32, target_bpm: i16) {
         if ratio >= 100 || self.rit_state || self.fermata_state {
             return;
         } else {
@@ -171,7 +186,8 @@ impl TickGen {
         self.bpm_start_time = start_time;
         self.bpm_start_tick = self.crnt_tick_inmsr;
         self.rit_bar = bar;
-        self.rit_bar_count = 0
+        self.rit_bar_count = 0;
+        self.bpm_stock = target_bpm;
     }
     fn calc_tick_rit(&mut self, crnt_time: Instant) {
         // output: self.crnt_msr の更新
@@ -187,6 +203,7 @@ impl TickGen {
             self.bpm_start_tick = 0;
             self.minus_bpm_for_gui = 0;
             self.rit_bar = 0;
+            self.bpm = self.bpm_stock;
         } else {
             let r_msr = tick_from_rit_starts / self.tick_for_onemsr;
             let r_tick_inmsr = tick_from_rit_starts % self.tick_for_onemsr;
