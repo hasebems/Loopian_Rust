@@ -18,6 +18,7 @@ pub struct LoopianCmd {
     indicator_key_stock: String,
     ui_hndr: mpsc::Receiver<String>,
     input_part: usize,
+    during_play: bool,
     dtstk: SeqDataStock,
     graphic_ev: Vec<String>,
     graphic_msg: i16,
@@ -35,6 +36,7 @@ impl LoopianCmd {
             indicator_key_stock: "C".to_string(),
             ui_hndr,
             input_part: RIGHT1,
+            during_play: false,
             dtstk: SeqDataStock::new(),
             graphic_ev: Vec::new(),
             graphic_msg: NO_MSG,
@@ -110,6 +112,8 @@ impl LoopianCmd {
             self.letter_bracket(input_text)
         } else if first_letter == "{" {
             self.letter_brace(input_text)
+        } else if first_letter == "." {
+            self.letter_dot(input_text)
         } else if first_letter == "c" {
             self.letter_c(input_text)
         } else if first_letter == "e" {
@@ -251,12 +255,17 @@ impl LoopianCmd {
             Some("what?".to_string())
         }
     }
-    fn letter_p(&self, input_text: &str) -> Option<String> {
+    fn letter_p(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
         if (len == 4 && &input_text[0..4] == "play") || (len == 1 && &input_text[0..1] == "p") {
-            // play
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
-            Some("Phrase has started!".to_string())
+            if !self.during_play {
+                // play
+                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
+                self.during_play = true;
+                Some("Phrase has started!".to_string())
+            } else {
+                Some("Playing now!".to_string())
+            }
         } else if len == 5 && &input_text[0..5] == "panic" {
             // panic
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_PANIC));
@@ -285,9 +294,14 @@ impl LoopianCmd {
     fn letter_s(&mut self, input_text: &str) -> Option<String> {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "stop" {
-            // stop
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
-            Some("Stopped!".to_string())
+            if self.during_play {
+                // stop
+                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+                self.during_play = false;
+                Some("Stopped!".to_string())
+            } else {
+                Some("Settle down!".to_string())
+            }
         } else if len >= 3 && &input_text[0..3] == "set" {
             // set
             let responce = self.parse_set_command(input_text);
@@ -360,6 +374,22 @@ impl LoopianCmd {
             self.sndr
                 .send_composition_to_elapse(self.input_part, &self.dtstk);
             Some("Set Composition!".to_string())
+        } else {
+            Some("what?".to_string())
+        }
+    }
+    fn letter_dot(&mut self, input_text: &str) -> Option<String> {
+        let len = input_text.chars().count();
+        if len == 1 {
+            if self.during_play {
+                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+                self.during_play = false;
+                Some("Stopped!".to_string())
+            } else {
+                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
+                self.during_play = true;
+                Some("Phrase has started!".to_string())
+            }
         } else {
             Some("what?".to_string())
         }
@@ -556,6 +586,10 @@ impl LoopianCmd {
         } else if strength_txt == "molto" {
             strength_value = MSG_RIT_MLT;
         }
+        println!(
+            "Rit,strength:{}, bar:{}, after:{}",
+            strength_value, bar, aft_rit
+        );
         self.sndr
             .send_msg_to_elapse(ElpsMsg::Rit([strength_value + bar * 10, aft_rit]));
 

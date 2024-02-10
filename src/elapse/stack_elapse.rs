@@ -492,7 +492,8 @@ impl ElapseStack {
             self.send_msg_to_ui(&bpm_disp);
             // tick
             let (m, b, t, _c) = self.tg.get_tick();
-            let tick_disp = format!("3{} : {} : {:>03}", m, b, t);
+            let play = if self.during_play { ">" } else { "" };
+            let tick_disp = format!("3{} {} : {} : {:>03}", play.to_string(), m, b, t);
             self.send_msg_to_ui(&tick_disp);
             // part
             self.part_vec.iter().for_each(|x| {
