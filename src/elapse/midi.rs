@@ -38,6 +38,7 @@ impl MidiTx {
         for (i, p) in out_ports.iter().enumerate() {
             let driver = MidiOutput::new("Loopian_tx")?;
             let drv_name = driver.port_name(p).unwrap();
+            println!(">Available MIDI Output Driver No.{}: {}", i, drv_name);
             if drv_name.find(MIDI_OUT) != None {
                 match driver.connect(p, "loopian_tx") {
                     Ok(c) => {
@@ -61,7 +62,7 @@ impl MidiTx {
                     }
                 }
             } else {
-                println!("[no connect]{}: {}", i, drv_name);
+                println!("[no connect]: {}", drv_name);
             }
         }
         if !an_least_one {
@@ -118,10 +119,11 @@ impl MidiRx {
         let mut in_port: Option<&MidiInputPort> = None;
         for (i, p) in in_ports.iter().enumerate() {
             let drv_name = midi_in.port_name(p).unwrap();
+            println!(">Available MIDI Input Driver No.{}: {}", i, drv_name);
             if drv_name.find(MIDI_DEVICE) != None {
                 println!("{}: {}", i, midi_in.port_name(p).unwrap());
                 in_port = in_ports.get(i);
-                break;
+                //break;
             }
         }
         if let Some(pt) = in_port {
