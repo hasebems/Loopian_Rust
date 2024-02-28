@@ -63,12 +63,15 @@ impl Note {
     }
     fn note_on(&mut self, estk: &mut ElapseStack) -> bool {
         let num = self.note_num + self.keynote;
+        let bpm = estk.tg().get_bpm();
+        let beat = estk.tg().get_beat();
+        self.duration = Self::auto_duration(bpm, beat, self.duration);
         if Note::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
             self.real_note = num;
             let vel = self.random_velocity(self.velocity);
             estk.inc_key_map(num, vel);
             estk.midi_out(0x90, self.real_note, vel);
-            println!("On: N{} V{} Trns: {}, ", num, vel, self.deb_txt);
+            println!("On: N{} V{} D{} Trns: {}, ", num, vel, self.duration, self.deb_txt);
             true
         } else {
             println!("NoteOn: => Note Limit Failed!! Num:{}", num);
@@ -104,6 +107,19 @@ impl Note {
         } else {
             input_vel
         }
+    }
+    fn auto_duration(bpm: i16, beat: Beat, dur: i32) -> i32 {
+        // 0.3 秒以内の音価なら、音価はそのまま
+        // それ以上の音価なら、10%程度短くなる
+        let beat_per_sec = (bpm as f32)/60.0;
+        let note_per_beat = (dur as f32)/(1920.0/(beat.1 as f32));
+        let sec = note_per_beat/beat_per_sec;
+        let real_sec: f32;
+        if sec > 0.3 {
+            real_sec = sec - (sec*0.1 - 0.03);
+        }
+        else {real_sec = sec;}
+        (real_sec*(bpm as f32)*1920.0/(60.0*(beat.1 as f32))) as i32
     }
 }
 impl Elapse for Note {

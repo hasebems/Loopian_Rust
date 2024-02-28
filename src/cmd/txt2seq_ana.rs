@@ -24,7 +24,6 @@ fn put_exp_data(exps: &Vec<String>) -> Vec<AnaEvt> {
     let noped = exps.iter().any(|exp| exp == "dmp(off)");
     let mut exp = Vec::new();
     if noped {
-        //exp.add_dt(vec![TYPE_EXP, NOPED]);
         let mut anev = AnaEvt::new();
         anev.mtype = TYPE_EXP;
         anev.atype = NOPED;
@@ -266,9 +265,6 @@ pub fn crispy_tick(rcmb: &Vec<PhrEvt>, exp_others: &Vec<String>) -> Vec<PhrEvt> 
         let mut return_dur = dt.dur;
         if stacc {
             return_dur = return_dur / 2;
-        } else if return_dur > 160 {
-            // 一律 duration 40 を引く
-            return_dur -= 40;
         }
         dt.dur = return_dur;
     }
