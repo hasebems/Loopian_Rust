@@ -294,6 +294,7 @@ Phrase 追加
     - `@n=[..]` : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
     - 追加された Variation Phrase は、Composition で以下のように指定する
         - `{I/II:@n}` Chord指定の後に `:@n`(n:1-9) と書くと、この小節冒頭から Variation Phrase が再生される
+        - chord指定せずに直接 `:@n` のみを書いた場合、Chord は何も書かなかった時と同じ扱いになる 
         - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
         - Phrase より Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
         - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される

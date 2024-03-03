@@ -323,6 +323,7 @@ pub fn recombine_to_chord_loop(
                 })
             }
             chord = msgs_in_same[0].to_string();
+            if chord.len() == 0 {chord = "X".to_string();}
         }
 
         let (root, table) = convert_chord_to_num(chord);
