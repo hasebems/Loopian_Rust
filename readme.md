@@ -293,7 +293,7 @@ Phrase 追加
         - これにより Loop 内で、定期的に異なる Phrase を再生することができる
     - `@n=[..]` : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
     - 追加された Variation Phrase は、Composition で以下のように指定する
-        - {I/@n:II} 小節線の直後に @n:(n:1-9) と書くと、この小説冒頭から Variation Phrase が再生される
+        - `{I/II:@n}` Chord指定の後に `:@n`(n:1-9) と書くと、この小節冒頭から Variation Phrase が再生される
         - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
         - Phrase より Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
         - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される

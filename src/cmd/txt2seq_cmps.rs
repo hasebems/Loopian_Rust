@@ -299,13 +299,20 @@ pub fn recombine_to_chord_loop(
             msr += 1;
         }
 
-        let mut msgs = comp[read_ptr].clone();
-        if msgs.chars().any(|x| x == ':') {
+        let msgs = comp[read_ptr].clone();
+        (chord, dur) = divide_chord_and_dur(msgs);
+        if chord == "" {
+            chord = same_chord.clone();
+        } else {
+            same_chord = chord.clone();
+        }
+
+        if chord.chars().any(|x| x == ':') {
             // Variation 指定があるか
-            let msgs_in_same: Vec<&str> = msgs.split(':').collect();
-            let ltr = msgs_in_same[0].chars().nth(0).unwrap_or(' ');
-            let num = msgs_in_same[0][1..].parse().unwrap_or(0);
-            if msgs_in_same[0].len() == 2 && ltr == '@' && num > 0 {
+            let msgs_in_same: Vec<&str> = chord.split(':').collect();
+            let ltr = msgs_in_same[1].chars().nth(0).unwrap_or(' ');
+            let num = msgs_in_same[1][1..].parse().unwrap_or(0);
+            if msgs_in_same[1].len() == 2 && ltr == '@' && num > 0 {
                 // 2文字で、1文字目は'@' 2文字目は 1-9 の数字
                 //rcmb.add_dt(vec![TYPE_VARI, tick as i16, num, 0]);
                 rcmb.push(ChordEvt {
@@ -315,14 +322,7 @@ pub fn recombine_to_chord_loop(
                     tbl: 0,
                 })
             }
-            msgs = msgs_in_same[1].to_string();
-        }
-
-        (chord, dur) = divide_chord_and_dur(msgs);
-        if chord == "" {
-            chord = same_chord.clone();
-        } else {
-            same_chord = chord.clone();
+            chord = msgs_in_same[0].to_string();
         }
 
         let (root, table) = convert_chord_to_num(chord);
