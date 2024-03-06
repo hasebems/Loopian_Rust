@@ -201,6 +201,9 @@ impl PhraseLoop {
             } else if option == TRNS_COM {
                 trans_note = translate_note_com(root, ctbl, ev.note);
                 deb_txt = "com:".to_string();
+            } else if option == TRNS_NONE {
+                trans_note = ev.note;
+                deb_txt = "none:".to_string();
             } else {
                 // Arpeggio
                 //trans_note = NoteTranslation::translate_note_arp(root, ctbl, option);

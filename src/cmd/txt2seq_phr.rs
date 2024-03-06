@@ -94,6 +94,8 @@ fn divide_arrow_bracket(nt: String) -> String {
                 one_arrow_flg = false;
             } else if arrow_cnt == -1 {
                 two_arrow_flg = false;
+            } else {
+                ret_str.push(ltr);
             }
         } else {
             arrow_cnt = 0;
@@ -337,10 +339,10 @@ fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     (vel, retvec)
 }
 fn extract_trans_info(origin: String) -> (String, i16) {
-    if &origin[0..1] == ">" {
-        (origin[1..].to_string(), TRNS_PARA)
-    } else if origin.len() > 2 && &origin[0..2] == ">>" {
+    if origin.len() > 2 && &origin[0..2] == ">>" {
         (origin[2..].to_string(), TRNS_NONE)
+    } else if &origin[0..1] == ">" {
+        (origin[1..].to_string(), TRNS_PARA)
     } else {
         (origin, TRNS_COM)
     }
