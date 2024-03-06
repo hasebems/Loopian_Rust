@@ -130,8 +130,9 @@ impl ChordData {
 //-------------------------------------------------------------------
 // MSG_ANA
 /// for mtype
-pub const TYPE_BEAT: i16 = 1006; // for index TYPE
-pub const TYPE_EXP: i16 = 1010; // for index TYPE
+pub const TYPE_BEAT: i16 = 1006; // for message TYPE
+pub const TYPE_EXP: i16 = 1010; // for message TYPE
+pub const _TYPE_DUR: i16 = 1012; // for message TYPE
 /// for atype ( mtype: TYPE_EXP のとき )
 pub const NOPED: i16 = 10; // Note情報より先に置く
 /// for atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
@@ -202,7 +203,7 @@ pub enum ElpsMsg {
     //    SetKey([i16; 3]),
     Phr(i16, i16, PhrData), //  Phr : part, vari, (whole_tick,evts)
     Cmp(i16, ChordData),    //  Cmp : part, (whole_tick,evts)
-    Ana(i16, i16, AnaData), //  Ana : part, var, (evts)
+    Ana(i16, i16, AnaData), //  Ana : part, vari, (evts)
     PhrX(i16, i16),         //  PhrX : part, vari
     CmpX(i16),              //  CmpX : part
     AnaX(i16, i16),         //  AnaX : part, vari

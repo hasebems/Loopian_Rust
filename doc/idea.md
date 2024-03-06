@@ -3,7 +3,7 @@
 ## Outline
 ### 1.what's this
 
-- text command による loop sequencer
+- text ベースの loop sequencer
 - 音色はピアノを想定し、ミニマルな音楽を指向する
 - script は一行単位で入力
 - 移動ド(d,r,m..)による階名指定
@@ -470,6 +470,9 @@ NoteObj <|-- WaterRipple
 - [...]+ 複数 Phrase 追加入力機能 1/31
 - [...//] Phrase にも Loopしなくなる機能追加 2/4
 - 昔の phrase がときどき一度だけなってしまう不具合修正 2/6
+- space key で start/stop をトグルで操作可能にした 2/11
+- 音価を一律短くする処理をやめて、elapse noteにて、音価の時間に応じて短さを調整する 2/29
+- variation の記法を @n:chord から chord:@n にした 3/3
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -487,6 +490,9 @@ NoteObj <|-- WaterRipple
 - <d,r,m>*3 で3回繰り返し、みたいな記法はとても便利だが、octaveの指定がおかしくなりやすく、結局変なことになる
 
 次の対応、考えられる新機能
+- スタカートや音価の操作
+    - stacatoを Main Thread ではなく、Play Thread の elapse note でリアルタイムに制御したい
+- Tempoを微分ベースで
 - Phrase を入力したとき、次のループからではなく、リアルタイムで変わる機能
     - リアルタイムか、次のループ先頭かを選べる
         - [RT:xxxx] RTをつけたらリアルタイムに変わる
