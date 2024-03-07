@@ -116,7 +116,8 @@ impl DamperPart {
             } else if let Some(phr) = estk.get_phr(i) {
                 if phr.borrow().get_noped() {
                     // 一パートでも noped 指定があれば
-                    return NO_DATA;
+                    chord_map = vec![false; beat_num];
+                    break;
                 } else {
                     chord_map = DamperPart::merge_chord_map(
                         crnt_,
