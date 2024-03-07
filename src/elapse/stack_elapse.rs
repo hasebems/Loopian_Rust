@@ -487,7 +487,11 @@ impl ElapseStack {
         if self.crnt_time - self.display_time > Duration::from_millis(80) {
             self.display_time = self.crnt_time;
             // bpm
-            let bpm_num = if self.during_play {self.tg.get_real_bpm()} else {self.bpm_stock};
+            let bpm_num = if self.during_play {
+                self.tg.get_real_bpm()
+            } else {
+                self.bpm_stock
+            };
             let bpm_disp = format!("1{}", bpm_num);
             self.send_msg_to_ui(&bpm_disp);
             // tick
