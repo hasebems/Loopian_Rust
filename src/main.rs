@@ -153,6 +153,7 @@ impl LoopianApp {
         } else if key == &Key::ArrowUp {
             if let Some(txt) = self.history.arrow_up() {
                 self.input_text = txt.0;
+                self.history_cnt = txt.1;
             }
             self.input_locate = 0;
             self.visible_locate = 0;
