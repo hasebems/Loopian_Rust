@@ -30,7 +30,7 @@ impl MidiTx {
         // Get an output port (read from console if multiple are available)
         let driver = MidiOutput::new("Loopian_tx")?;
         let out_ports = driver.ports();
-        if out_ports.len() == 0 {
+        if out_ports.is_empty() {
             return Err("no output port found".into());
         }
 
@@ -39,7 +39,7 @@ impl MidiTx {
             let driver = MidiOutput::new("Loopian_tx")?;
             let drv_name = driver.port_name(p).unwrap();
             println!(">Available MIDI Output Driver No.{}: {}", i, drv_name);
-            if drv_name.find(MIDI_OUT) != None {
+            if drv_name.find(MIDI_OUT).is_some() {
                 match driver.connect(p, "loopian_tx") {
                     Ok(c) => {
                         me.connection_tx = Some(Box::new(c));
@@ -50,7 +50,7 @@ impl MidiTx {
                         println!("Connection Failed! for No.{}", i);
                     }
                 }
-            } else if drv_name.find(MIDI_DEVICE) != None {
+            } else if drv_name.find(MIDI_DEVICE).is_some() {
                 match driver.connect(p, "loopian_tx") {
                     Ok(c) => {
                         me.connection_tx_led = Some(Box::new(c));
@@ -120,7 +120,7 @@ impl MidiRx {
         for (i, p) in in_ports.iter().enumerate() {
             let drv_name = midi_in.port_name(p).unwrap();
             println!(">Available MIDI Input Driver No.{}: {}", i, drv_name);
-            if drv_name.find(MIDI_DEVICE) != None {
+            if drv_name.find(MIDI_DEVICE).is_some() {
                 println!("{}: {}", i, midi_in.port_name(p).unwrap());
                 in_port = in_ports.get(i);
                 //break;
