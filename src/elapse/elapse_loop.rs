@@ -45,6 +45,7 @@ pub struct PhraseLoop {
     last_note: i16,
     noped: bool,
     turnnote: i16,
+    para_root_base: i16,
     same_note_stuck: Vec<i16>,
     same_note_msr: i32,
     same_note_tick: i32,
@@ -71,6 +72,12 @@ impl PhraseLoop {
             .clone()
             .iter()
             .any(|x| x.mtype == TYPE_EXP && x.atype == NOPED);
+        let mut para_root_base = 0;
+        ana.iter().for_each(|x| {
+            if x.mtype == TYPE_EXP && x.atype == PARA_ROOT {
+                para_root_base = x.note;
+            }
+        });
         Rc::new(RefCell::new(Self {
             id: ElapseId {
                 pid,
@@ -86,6 +93,7 @@ impl PhraseLoop {
             last_note: NO_NOTE as i16,
             noped,
             turnnote,
+            para_root_base,
             same_note_stuck: Vec::new(),
             same_note_msr: 0,
             same_note_tick: 0,
@@ -192,7 +200,9 @@ impl PhraseLoop {
         } else {
             let option = self.specify_trans_option(next_tick, ev.note);
             if option == TRNS_PARA {
-                let mut tgt_nt = ev.note + root;
+                let para_root = root - self.para_root_base;
+                let mut tgt_nt = ev.note + para_root;
+//                let mut tgt_nt = ev.note + root;
                 if root > self.turnnote {
                     tgt_nt -= 12;
                 }

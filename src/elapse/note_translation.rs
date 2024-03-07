@@ -50,7 +50,7 @@ pub fn translate_note_com(root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
     let oct_adjust = if tgt_nt - real_root >= 0 {
         (tgt_nt - (real_root + tbl[0])) / 12
     } else {
-        ((tgt_nt - 11) - (real_root + tbl[0])) / 12
+        ((tgt_nt - 12) - (real_root + tbl[0])) / 12
     };
     for ntx in tbl.iter() {
         proper_nt = *ntx + real_root + oct_adjust * 12;

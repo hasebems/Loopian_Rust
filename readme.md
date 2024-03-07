@@ -248,9 +248,10 @@ Phrase 追加
         - `rpt(n)` :n=繰り返し回数、2ならそれ自身を含め合計3回繰り返し
     - **音楽表現関数**(musical expression function)
         - `dyn(f)` : f,mf,mp,p,pp を引数に入れ、フレーズの音量指定
+        - `dmp(on)` `dmp(off)` : off: 和音指定時でも Pedal Off指定
         - `artic(stacc)` or `stacc()` : 音価を半分にする
         - `trns(para)` or `para()` : 和音変換時、parallel 指定する。（全フレーズの parallel と同じ）
-        - `dmp(on)` `dmp(off)` : off: 和音指定時でも Pedal Off指定
+        - `asMin()` or `as(VI)` : parallel 指定の時、Phrase を VI のスケールとみなし、VI からの差分で並行移動する
 
 
 
@@ -260,7 +261,7 @@ Phrase 追加
     - アプリのあるフォルダに、/log フォルダが自動的に作られ、その中にログファイル（拡張子はlpn）がセーブされる
     - 2023-06-02_19-56-54.lpn というように、日時がファイル名となる
     - 終了時に `quit nosave` と書くと、自動セーブされない
-- プロンプトに `load filename` と書くと、指定したファイルがロードされる
+- プロンプトに `load` *filename* と書くと、指定したファイルがロードされる
     - 最初のloadコマンド入力時、アプリのあるフォルダに、/load フォルダが自動的に作られる
     - ロードファイルの拡張子はlpn限定で、プロンプトからのファイル指定時にlpnを書く必要はない
     - loadしたいファイルは、この /load フォルダに入れておく必要がある

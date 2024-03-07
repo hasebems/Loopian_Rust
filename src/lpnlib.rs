@@ -135,6 +135,7 @@ pub const TYPE_EXP: i16 = 1010; // for message TYPE
 pub const _TYPE_DUR: i16 = 1012; // for message TYPE
 /// for atype ( mtype: TYPE_EXP のとき )
 pub const NOPED: i16 = 10; // Note情報より先に置く
+pub const PARA_ROOT: i16 = 12; // note に並行移動の基本rootの値を書く(0-11)
 /// for atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
 pub const TRNS_COM: i16 = 0; // Common 変換
 pub const TRNS_PARA: i16 = 10000; // Parallel 変換

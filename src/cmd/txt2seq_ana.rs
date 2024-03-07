@@ -19,14 +19,23 @@ pub fn analyse_data(generated: &Vec<PhrEvt>, exps: &Vec<String>) -> Vec<AnaEvt> 
 // other music expression data format:
 //      1st     TYPE_BEAT:  TYPE_EXP
 //      2nd     EXP:        NOPED
+//                          PARA_ROOT(noteに値を入れる)
 //*******************************************************************
 fn put_exp_data(exps: &Vec<String>) -> Vec<AnaEvt> {
     let noped = exps.iter().any(|exp| exp == "dmp(off)");
+    let asmin = exps.iter().any(|exp| exp == "asMin()" || exp == "as(VI)");
     let mut exp = Vec::new();
     if noped {
         let mut anev = AnaEvt::new();
         anev.mtype = TYPE_EXP;
         anev.atype = NOPED;
+        exp.push(anev);
+    }
+    if asmin {
+        let mut anev = AnaEvt::new();
+        anev.mtype = TYPE_EXP;
+        anev.note = -3; // VI
+        anev.atype = PARA_ROOT;
         exp.push(anev);
     }
     exp //.copy_to()
@@ -37,7 +46,7 @@ fn put_exp_data(exps: &Vec<String>) -> Vec<AnaEvt> {
 ///     - 和音の場合は高音のみをそのタイミングに記載
 ///     - phr.trns が、TRNS_COM 以外の場合、意図的なのでそのまま atype に入れる
 ///     - RPT_HEAD のタイミングは、atype = TRNS_COM (arp_translation()で評価しない)
-///     - 上記以外は、ARP の可能性があるので、atypen = NOTHING に書き換える
+///     - 上記以外は、ARP の可能性があるので、atype = NOTHING に書き換える
 // fn analyse_beat()
 //      mtype   TYPE_BEAT
 //      tick
