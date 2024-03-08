@@ -473,6 +473,8 @@ NoteObj <|-- WaterRipple
 - space key で start/stop をトグルで操作可能にした 2/11
 - 音価を一律短くする処理をやめて、elapse noteにて、音価の時間に応じて短さを調整する 2/29
 - variation の記法を @n:chord から chord:@n にした 3/3
+- asMin()関数追加 3/7
+- historyを操作すると、scrollviewがスクロールする 3/8
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
