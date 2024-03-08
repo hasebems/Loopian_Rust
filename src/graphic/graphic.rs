@@ -74,11 +74,11 @@ impl Graphic {
         &mut self,
         ui: &mut Ui,
         infs: (
-            usize,// cursor position
-            &String,// input text
-            &Vec<(TextAttribute, String, String)>,// scroll text
-            usize,// selected scroll text line
-            &LoopianCmd,// eight indicator
+            usize,                                 // cursor position
+            &String,                               // input text
+            &Vec<(TextAttribute, String, String)>, // scroll text
+            usize,                                 // selected scroll text line
+            &LoopianCmd,                           // eight indicator
         ),
         msg: i16,
         frame: &mut eframe::Frame,
@@ -317,36 +317,44 @@ impl Graphic {
         let letter_color = self.letter_color();
         let lines = scroll_lines.len();
         let max_line_in_window = ((self.full_size.y - 340.0) as usize) / 25;
-
-        if lines < max_line_in_window { // not filled yet
+        if lines < max_line_in_window {
+            // not filled yet
             self.top_scroll_line = 0;
-        } else if lines == crnt_location*2 {    // last line is latest input
-            self.top_scroll_line = crnt_location*2 - max_line_in_window;
-        } else { // moving history
-            if lines - max_line_in_window > crnt_location*2 { // older
-                if self.top_scroll_line > crnt_location*2 {
-                    self.top_scroll_line = crnt_location*2;
+        } else if lines == crnt_location * 2 {
+            // last line is latest input
+            self.top_scroll_line = crnt_location * 2 - max_line_in_window;
+        } else {
+            // moving history
+            if lines - max_line_in_window > crnt_location * 2 {
+                // older
+                if self.top_scroll_line > crnt_location * 2 {
+                    self.top_scroll_line = crnt_location * 2;
                 }
-            } else { // newer
-                if self.top_scroll_line + max_line_in_window <= (crnt_location+1)*2 {
-                    self.top_scroll_line = (crnt_location+1)*2 - max_line_in_window;
+            } else {
+                // newer
+                if self.top_scroll_line + max_line_in_window <= (crnt_location + 1) * 2 {
+                    self.top_scroll_line = (crnt_location + 1) * 2 - max_line_in_window;
                 }
             }
         }
-        if self.last_location != crnt_location*2 {
-            self.last_location = crnt_location*2;
+        if self.last_location != crnt_location * 2 {
+            self.last_location = crnt_location * 2;
             //println!("Scroll:{},{},{}",lines,crnt_location,self.top_scroll_line);
         }
 
         // Draw Letters
-        let max_disp_line = if lines < max_line_in_window { lines } else { max_line_in_window };
+        let max_disp_line = if lines < max_line_in_window {
+            lines
+        } else {
+            max_line_in_window
+        };
         for i in 0..max_disp_line {
             let past_text_set = scroll_lines[self.top_scroll_line + i].clone();
             let past_text = past_text_set.1.clone() + &past_text_set.2;
             let cnt = past_text.chars().count();
 
             // line
-            if self.top_scroll_line + i == crnt_location*2 {
+            if self.top_scroll_line + i == crnt_location * 2 {
                 ui.painter().rect_filled(
                     Rect {
                         min: Pos2 {
@@ -355,8 +363,8 @@ impl Graphic {
                         },
                         max: Pos2 {
                             x: rs.scroll_txt_left
-                            + SPACE2_TXT_LEFT_MARGIN
-                            + FONT16_WIDTH * (cnt as f32),
+                                + SPACE2_TXT_LEFT_MARGIN
+                                + FONT16_WIDTH * (cnt as f32),
                             y: rs.scroll_txt_top + FONT16_HEIGHT + FONT16_HEIGHT * (i as f32),
                         },
                     },
@@ -398,11 +406,11 @@ impl Graphic {
         &mut self,
         ui: &mut egui::Ui,
         infs: (
-            usize,// cursor position
-            &String,// input text
-            &Vec<(TextAttribute, String, String)>,// scroll text
-            usize,// selected scroll text line
-            &LoopianCmd,// eight indicator
+            usize,                                 // cursor position
+            &String,                               // input text
+            &Vec<(TextAttribute, String, String)>, // scroll text
+            usize,                                 // selected scroll text line
+            &LoopianCmd,                           // eight indicator
         ),
         rs: &Resize,
     ) {

@@ -202,7 +202,6 @@ impl PhraseLoop {
             if option == TRNS_PARA {
                 let para_root = root - self.para_root_base;
                 let mut tgt_nt = ev.note + para_root;
-//                let mut tgt_nt = ev.note + root;
                 if root > self.turnnote {
                     tgt_nt -= 12;
                 }
