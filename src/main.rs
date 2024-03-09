@@ -296,9 +296,8 @@ impl LoopianApp {
 //     Egui/Eframe framework basic
 //*******************************************************************
 impl eframe::App for LoopianApp {
-    fn on_close_event(&mut self) -> bool {
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.app_end(true);
-        true
     }
     fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         // 40fps で画面更新
@@ -315,6 +314,7 @@ impl eframe::App for LoopianApp {
                         pressed,
                         modifiers,
                         repeat: _,
+                        physical_key: _,
                     } => {
                         if pressed == &true {
                             self.pressed_key(&key, &modifiers);
@@ -340,9 +340,7 @@ impl eframe::App for LoopianApp {
 //*******************************************************************
 fn main() {
     let options = eframe::NativeOptions {
-        initial_window_size: Some((WINDOW_X, WINDOW_Y).into()),
-        //        resizable: false,
-        //        follow_system_theme: false,
+        viewport: egui::ViewportBuilder::default().with_inner_size([WINDOW_X, WINDOW_Y]),
         ..eframe::NativeOptions::default()
     };
     let _ = eframe::run_native(

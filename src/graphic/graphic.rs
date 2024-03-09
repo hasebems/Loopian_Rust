@@ -81,7 +81,7 @@ impl Graphic {
             &LoopianCmd,                           // eight indicator
         ),
         msg: i16,
-        frame: &mut eframe::Frame,
+        _frame: &mut eframe::Frame,
         ntev: Vec<String>,
     ) {
         if msg != NO_MSG {
@@ -93,8 +93,8 @@ impl Graphic {
         }
 
         // window size を得る
-        let new_x = frame.info().window_info.size.x;
-        let new_y = frame.info().window_info.size.y;
+        let new_x = ui.available_size().x;
+        let new_y = ui.available_size().y;
         if new_x != self.full_size.x {
             self.full_size.x = new_x;
             println!("New Window Size X={}", new_x);

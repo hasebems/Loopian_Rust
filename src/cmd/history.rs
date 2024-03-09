@@ -16,8 +16,8 @@ pub struct History {
 }
 
 impl History {
-    const LOG_FOLDER: &str = "log";
-    const LOAD_FOLDER: &str = "load";
+    const LOG_FOLDER: &'static str = "log";
+    const LOAD_FOLDER: &'static str = "load";
 
     pub fn new() -> Self {
         Self {

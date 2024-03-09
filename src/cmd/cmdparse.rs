@@ -498,7 +498,7 @@ impl LoopianCmd {
         let mut rtn_str = "what?".to_string();
         let org_part = self.input_part;
         self.input_part = part_num;
-        if let Some(ans) = self.set_and_responce(input_text.clone()) {
+        if let Some(ans) = self.set_and_responce(input_text) {
             rtn_str = ans;
         }
         self.input_part = org_part;
