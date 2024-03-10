@@ -137,7 +137,7 @@ pub const _TYPE_DUR: i16 = 1012; // for message TYPE
 /// atype
 pub const NOPED: i16 = 10; // TYPE_BEAT の Note情報より先に置く
 pub const PARA_ROOT: i16 = 12; // note に並行移動の基本rootの値を書く(0-11)
-pub const STACC: i16 = 14; // cnt に Staccato の長さを書く(1-99%)
+pub const ARTIC: i16 = 14; // cnt に Staccato/legato の長さを書く(1-200%)
 /// mtype: TYPE_BEAT のとき
 ///   note: highest note,
 ///   cnt: same timing note number

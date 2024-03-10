@@ -200,7 +200,7 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
 }
 //*******************************************************************
 //  fn crispy_tick()
-//      mtype = TYPE_EXP, atype = STACC
+//      mtype = TYPE_EXP, atype = ARTIC
 //      cnt: Staccato Rate
 //*******************************************************************
 pub fn crispy_tick(exp_others: &Vec<String>) -> Vec<AnaEvt> {
@@ -209,12 +209,31 @@ pub fn crispy_tick(exp_others: &Vec<String>) -> Vec<AnaEvt> {
         if x.contains("stacc(") {
             let mut rate = extract_number_from_parentheses(x);
             if rate == 0 {
-                rate = 50;
+                rate = 50; //default
+            } else if rate >= 100 {
+                rate = 100;
             }
             let mut anev = AnaEvt::new();
             anev.mtype = TYPE_EXP;
             anev.cnt = rate as i16;
-            anev.atype = STACC;
+            anev.atype = ARTIC;
+            ana.push(anev);
+        }
+    });
+    exp_others.iter().for_each(|x| {
+        if x.contains("legato(") {
+            let mut rate = extract_number_from_parentheses(x);
+            if rate == 0 {
+                rate = 120; //default
+            } else if rate < 100 {
+                rate = 100;
+            } else if rate > 200 {
+                rate = 200;
+            }
+            let mut anev = AnaEvt::new();
+            anev.mtype = TYPE_EXP;
+            anev.cnt = rate as i16;
+            anev.atype = ARTIC;
             ana.push(anev);
         }
     });

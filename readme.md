@@ -249,7 +249,8 @@ Phrase 追加
     - **音楽表現関数**(musical expression function)
         - `dyn(f)` : f,mf,mp,p,pp を引数に入れ、フレーズの音量指定
         - `dmp(on)` `dmp(off)` : off: 和音指定時でも Pedal Off指定
-        - `stacc(50)` : 音価を半分にする
+        - `stacc(50)` : 音価を半分にする（1-100まで調整可能）
+        - `legato(120)` : 音価を20%増やす（100-200まで調整可能）
         - `trns(para)` or `para()` : 和音変換時、parallel 指定する。（全フレーズの parallel と同じ）
         - `asMin()` or `as(VI)` : parallel 指定の時、Phrase を VI のスケールとみなし、VI からの差分で並行移動する
 

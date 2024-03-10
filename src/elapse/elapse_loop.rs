@@ -81,7 +81,7 @@ impl PhraseLoop {
         });
         let mut staccato_rate = 100;
         ana.iter().for_each(|x| {
-            if x.mtype == TYPE_EXP && x.atype == STACC {
+            if x.mtype == TYPE_EXP && x.atype == ARTIC {
                 staccato_rate = x.cnt as i32;
             }
         });
