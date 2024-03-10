@@ -271,8 +271,7 @@ impl PhraseDataStock {
         self.ana = analyse_data(&self.phr, &self.cmpl_ex);
 
         // 5.humanized data
-        let human1 = beat_filter(&mut self.phr, bpm, tick_for_onemsr);
-        self.phr = crispy_tick(&human1, &self.cmpl_ex);
+        self.phr = beat_filter(&mut self.phr, bpm, tick_for_onemsr);
         println!("final_phrase: {:?}", self.phr);
         println!(
             "whole_tick: {:?} do_loop: {:?}",

@@ -133,10 +133,15 @@ impl ChordData {
 pub const TYPE_BEAT: i16 = 1006; // for message TYPE
 pub const TYPE_EXP: i16 = 1010; // for message TYPE
 pub const _TYPE_DUR: i16 = 1012; // for message TYPE
-/// for atype ( mtype: TYPE_EXP のとき )
-pub const NOPED: i16 = 10; // Note情報より先に置く
+/// mtype: TYPE_EXP のとき
+/// atype
+pub const NOPED: i16 = 10; // TYPE_BEAT の Note情報より先に置く
 pub const PARA_ROOT: i16 = 12; // note に並行移動の基本rootの値を書く(0-11)
-/// for atype ( mtype: TYPE_BEAT のとき )、PhrEvt.trns
+pub const STACC: i16 = 14; // cnt に Staccato の長さを書く(1-99%)
+/// mtype: TYPE_BEAT のとき
+///   note: highest note,
+///   cnt: same timing note number
+/// atype、PhrEvt.trns, Arpeggio
 pub const TRNS_COM: i16 = 0; // Common 変換
 pub const TRNS_PARA: i16 = 10000; // Parallel 変換
 pub const TRNS_NONE: i16 = 10001; // 変換しない
@@ -146,9 +151,9 @@ pub struct AnaEvt {
     pub mtype: i16, // message type
     pub tick: i16,
     pub dur: i16,   // duration
-    pub note: i16,  // highest note
-    pub cnt: i16,   // same timing noteon number
-    pub atype: i16, // arpeggio(translation) type
+    pub note: i16,  // note
+    pub cnt: i16,   // value for something
+    pub atype: i16, // type for something
 }
 impl AnaEvt {
     pub fn new() -> Self {
@@ -235,29 +240,6 @@ pub const MSG_SET_KEY: i16 = 2;
 pub const MSG_SET_TURN: i16 = 3;
 //  Set BEAT  : numerator, denomirator
 
-// 以前のフォーマット
-//-------------------------------------
-//  MSG1st      |  2nd        |  3rd  |
-//-------------------------------------
-// MSG_QUIT     | --          |
-// MSG_START    | --          |
-// MSG_STOP     | --          |
-// MSG_FERMATA  | --          |
-// MSG_SYNC     |( [0-3] / MSG2_LFT / MSG2_RGT / MSG2_ALL )|
-// MSG_FLOW     | [0-3]       |
-// MSG_RIT      |( MSG2_NRM / MSG2_POCO / MSG2_MLT )|( MSG3_ATP | MSG3_FERMATA |[tempo])
-// MSG_SET      | MSG2_BPM    |[bpm]| --
-//              | MSG2_BEAT   |[numerator]|[denomirator]| --
-//              | MSG2_KEY    |[key]| --
-//              | MSG2_TURN   |[turnnote(0-11)]| --
-// MSG_PHR+var+part |[whole_tick] |(( TYPE_NOTE | <TICK> | <DURATION> | <NOTE> | <VELOCITY> ) or
-//                              ( TYPE_INFO | <TICK> | [info_type] | 0 | 0 ))*n
-// MSG_CMP+part |[whole_tick] |( <TYPE> | <TICK> | <CD_ROOT> | <CD_TABLE> )*n
-// MSG_ANA+part |             |( <TYPE> | <TICK> | <DURATION> | <NOTE> | [ntcnt] | [arp_type] )*n
-// MSG_PHR_X+part|--          |
-// MSG_CMP_X+part|--          |
-// MSG_ANA_X+part|--          |
-
 //*******************************************************************
 //          Graphic
 //*******************************************************************
@@ -334,4 +316,34 @@ pub fn doremi_semi_number(ltr: char, mut base_note: i32) -> i32 {
         _ => (),
     }
     base_note
+}
+//*******************************************************************
+//          extract_xxx_from_parentheses
+//*******************************************************************
+pub fn extract_number_from_parentheses(ne: &str) -> usize {
+    if let Some(i) = ne.find('(') {
+        if let Some(e) = ne.find(')') {
+            if i < e {
+                let numtxt = if i + 1 < e {
+                    ne[(i + 1)..e].to_string()
+                } else {
+                    '1'.to_string()
+                };
+                return numtxt.parse().unwrap_or(0);
+            } else {
+                return 1;
+            }
+        }
+    }
+    0
+}
+pub fn extract_texts_from_parentheses(ne: &str) -> &str {
+    if let Some(i) = ne.find('(') {
+        if let Some(e) = ne.find(')') {
+            if i <= e {
+                return &ne[(i + 1)..e];
+            }
+        }
+    }
+    ""
 }

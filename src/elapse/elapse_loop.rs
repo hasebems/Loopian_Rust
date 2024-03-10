@@ -49,6 +49,7 @@ pub struct PhraseLoop {
     same_note_stuck: Vec<i16>,
     same_note_msr: i32,
     same_note_tick: i32,
+    staccato_rate: i32,
 
     // for super's member
     whole_tick: i32,
@@ -78,6 +79,12 @@ impl PhraseLoop {
                 para_root_base = x.note;
             }
         });
+        let mut staccato_rate = 100;
+        ana.iter().for_each(|x| {
+            if x.mtype == TYPE_EXP && x.atype == STACC {
+                staccato_rate = x.cnt as i32;
+            }
+        });
         Rc::new(RefCell::new(Self {
             id: ElapseId {
                 pid,
@@ -97,6 +104,7 @@ impl PhraseLoop {
             same_note_stuck: Vec::new(),
             same_note_msr: 0,
             same_note_tick: 0,
+            staccato_rate,
             // for super's member
             whole_tick,
             destroy: false,
@@ -174,6 +182,10 @@ impl PhraseLoop {
         }
 
         //  Generate Note Struct
+        if self.staccato_rate != 100 {
+            let old = crnt_ev.dur as i32;
+            crnt_ev.dur = ((old * self.staccato_rate) / 100) as i16;
+        }
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             trace as u32, //  read pointer
             self.id.sid,  //  loop.sid -> note.pid

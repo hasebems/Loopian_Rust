@@ -11,8 +11,10 @@ use crate::lpnlib::*;
 pub fn analyse_data(generated: &Vec<PhrEvt>, exps: &Vec<String>) -> Vec<AnaEvt> {
     let mut exp_analysis = put_exp_data(exps);
     let mut beat_analysis = analyse_beat(&generated);
-    beat_analysis.append(&mut exp_analysis);
-    let rcmb = arp_translation(beat_analysis, exps);
+    exp_analysis.append(&mut beat_analysis);
+    let mut crispy_analysis = crispy_tick(exps);
+    exp_analysis.append(&mut crispy_analysis);
+    let rcmb = arp_translation(exp_analysis, exps);
     rcmb
 }
 //*******************************************************************
@@ -197,6 +199,28 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
     all_dt
 }
 //*******************************************************************
+//  fn crispy_tick()
+//      mtype = TYPE_EXP, atype = STACC
+//      cnt: Staccato Rate
+//*******************************************************************
+pub fn crispy_tick(exp_others: &Vec<String>) -> Vec<AnaEvt> {
+    let mut ana: Vec<AnaEvt> = vec![];
+    exp_others.iter().for_each(|x| {
+        if x.contains("stacc(") {
+            let mut rate = extract_number_from_parentheses(x);
+            if rate == 0 {
+                rate = 50;
+            }
+            let mut anev = AnaEvt::new();
+            anev.mtype = TYPE_EXP;
+            anev.cnt = rate as i16;
+            anev.atype = STACC;
+            ana.push(anev);
+        }
+    });
+    ana
+}
+//*******************************************************************
 //          beat_filter
 //*******************************************************************
 pub fn beat_filter(rcmb: &Vec<PhrEvt>, bpm: i16, tick_for_onemsr: i32) -> Vec<PhrEvt> {
@@ -255,27 +279,6 @@ pub fn beat_filter(rcmb: &Vec<PhrEvt>, bpm: i16, tick_for_onemsr: i32) -> Vec<Ph
             }
             dt.vel = vel;
         }
-    }
-    all_dt
-}
-pub fn crispy_tick(rcmb: &Vec<PhrEvt>, exp_others: &Vec<String>) -> Vec<PhrEvt> {
-    let mut stacc = false;
-    if exp_others
-        .iter()
-        .any(|x| x == "stacc()" || x == "artic(stacc)")
-    {
-        stacc = true;
-    }
-    let mut all_dt = rcmb.clone();
-    for dt in all_dt.iter_mut() {
-        if dt.mtype != TYPE_NOTE {
-            continue;
-        }
-        let mut return_dur = dt.dur;
-        if stacc {
-            return_dur = return_dur / 2;
-        }
-        dt.dur = return_dur;
     }
     all_dt
 }

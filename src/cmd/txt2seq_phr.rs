@@ -771,34 +771,3 @@ pub fn split_note(txt: String) -> Vec<String> {
     set_vec(txt.len());
     splitted
 }
-
-//*******************************************************************
-//          extract_xxx_from_parentheses
-//*******************************************************************
-fn extract_number_from_parentheses(ne: &str) -> usize {
-    if let Some(i) = ne.find('(') {
-        if let Some(e) = ne.find(')') {
-            if i < e {
-                let numtxt = if i + 1 < e {
-                    ne[(i + 1)..e].to_string()
-                } else {
-                    '1'.to_string()
-                };
-                return numtxt.parse().unwrap_or(0);
-            } else {
-                return 1;
-            }
-        }
-    }
-    0
-}
-fn extract_texts_from_parentheses(ne: &str) -> &str {
-    if let Some(i) = ne.find('(') {
-        if let Some(e) = ne.find(')') {
-            if i <= e {
-                return &ne[(i + 1)..e];
-            }
-        }
-    }
-    ""
-}
