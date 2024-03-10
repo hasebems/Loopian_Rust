@@ -14,6 +14,7 @@ use eframe::{egui, egui::*};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
+use cli_clipboard::{ClipboardContext, ClipboardProvider};
 
 use cmd::cmdparse;
 use cmd::history::History;
@@ -123,6 +124,12 @@ impl LoopianApp {
         let itxt: String = self.input_text.clone();
         if key == &Key::Enter {
             self.pressed_enter(itxt);
+        } else if key == &Key::V {
+            if modifiers.ctrl {
+                let mut ctx = ClipboardContext::new().unwrap();
+                let clip_text = ctx.get_contents().unwrap();
+                self.input_text += &clip_text;
+            } 
         } else if key == &Key::Backspace {
             if self.input_locate > 0 {
                 self.input_locate -= 1;

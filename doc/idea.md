@@ -68,7 +68,7 @@
     - rpt(n) : repeat
     - 一つの音を複数に分割
 - 音楽表現関数
-    - artic() : stacc, legato
+    - stacc() : staccato
     - dyn() : ff,f,mf,mp,p,pp, ^, %, cresc, dim などVelocity指定
     - dmp() : on,off,half などdamper pedal奏法
     - trns() : para などコード変換方法の指定
@@ -182,13 +182,13 @@ NoteObj <|-- WaterRipple
 - 入力文字一覧
     - 全体区切り: [],{},@
     - 複数音符を跨ぐ、あるいは区切る指定子: /,|,*,<>:
-    - 一音符内の指定子: (0:>)(1:',",e,q,h,3,5,`)(2:-,+)(3:d,r,m,f,s,l,t,x,c)(3':i,a)(4:^,%)(5:.,~,o)
+    - 一音符内の指定子: (0:>)(1:',",v,e,q,h,3,5,`)(2:-,+)(3:d,r,m,f,s,l,t,x,c)(3':i,a)(4:^,%)(5:.,~,o)
         - 3と3'を合わせたものは =,_ で繋ぐか、連続して音符を書くことで同時発音を表現できる
         - 1と2は順序が逆でも動作する
     - ーノート変換子内の指定子: (1:@[n]:)(2:I,V)(3:#,b)(4:[table name])(5:!)(6:.)
         - !は、para/common時に、上下の音と等距離なら上側を採用することを表す
-    - 関数表記: .xxx()
-- まだ使われていない文字: w,r,y,u,p,j,k,z,v,b,n,?,;,\,&,$,
+    - 関数表記: .fn()
+- まだ使われていない文字: w,r,y,u,p,j,k,z,b,n,?,;,\,&,$,
 - 同じ意味に使う文字 : 小節(/,|)、同時(=,_)、タイ(.,~)
 
 
@@ -475,6 +475,8 @@ NoteObj <|-- WaterRipple
 - variation の記法を @n:chord から chord:@n にした 3/3
 - asMin()関数追加 3/7
 - historyを操作すると、scrollviewがスクロールする 3/8
+- stacc(nn) の nn で数値入力可能にした 3/10
+- ctrl-V で clipboard の内容を入力できるようにした 3/10
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
