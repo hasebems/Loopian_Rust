@@ -14,6 +14,8 @@ use eframe::{egui, egui::*};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
+use std::env;
+use std::io;
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
 
 use cmd::cmdparse;
@@ -343,16 +345,36 @@ impl eframe::App for LoopianApp {
     }
 }
 //*******************************************************************
+//      Server CUI
+//*******************************************************************
+fn cui_loop() {
+    loop {
+        // 標準入力から文字列を String で取得
+        let mut buf = String::new();
+        io::stdin().read_line(&mut buf).expect("Failed to read line.");
+        let input = buf.trim().to_string();
+        if input == "q" || input == "quit" {break;}
+    }
+}
+//*******************************************************************
 //      Main
 //*******************************************************************
 fn main() {
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([WINDOW_X, WINDOW_Y]),
-        ..eframe::NativeOptions::default()
-    };
-    let _ = eframe::run_native(
-        "Loopian",
-        options,
-        Box::new(|cc| Box::new(LoopianApp::new(cc))),
-    );
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}",args);
+    if args.len() > 1 && args[1] == "server" {
+        // CUI version
+        cui_loop();
+    } else {
+        // GUI version
+        let options = eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default().with_inner_size([WINDOW_X, WINDOW_Y]),
+            ..eframe::NativeOptions::default()
+        };
+        let _ = eframe::run_native(
+            "Loopian",
+            options,
+            Box::new(|cc| Box::new(LoopianApp::new(cc))),
+        );
+    }
 }

@@ -22,6 +22,8 @@ pub const NO_TABLE: i16 = 10000;
 pub const _CANCEL: i16 = -1;
 pub const NOTHING: i16 = -1;
 
+pub const MAX_INDICATOR: usize = 8;
+
 //*******************************************************************
 //          part count
 //*******************************************************************

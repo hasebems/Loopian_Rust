@@ -12,8 +12,6 @@ use eframe::{egui, egui::*};
 use rand::{rngs, thread_rng, Rng};
 use std::time::Instant;
 
-pub const MAX_INDICATOR: usize = 8;
-
 const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
 const TEXT_GRAY: Color32 = Color32::from_rgb(0, 0, 0);
 const _TEXT_BG: Color32 = Color32::from_rgb(0, 200, 200);

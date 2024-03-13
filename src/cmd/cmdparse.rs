@@ -5,7 +5,6 @@
 //
 use super::send_msg::*;
 use super::seq_stock::*;
-use crate::graphic::graphic;
 use crate::lpnlib::*;
 use std::sync::{mpsc, mpsc::*};
 
@@ -27,7 +26,7 @@ pub struct LoopianCmd {
 }
 impl LoopianCmd {
     pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>, ui_hndr: mpsc::Receiver<String>) -> Self {
-        let mut indicator = vec![String::from("---"); graphic::MAX_INDICATOR];
+        let mut indicator = vec![String::from("---"); MAX_INDICATOR];
         indicator[0] = "C".to_string();
         indicator[1] = DEFAULT_BPM.to_string();
         indicator[3] = "1 : 1 : 000".to_string();
@@ -86,7 +85,7 @@ impl LoopianCmd {
                             let txt = uitxt.split_off(1);
                             if ind_num == 0 && txt == "_" {
                                 self.indicator[0] = self.indicator_key_stock.clone();
-                            } else if ind_num < graphic::MAX_INDICATOR {
+                            } else if ind_num < MAX_INDICATOR {
                                 self.indicator[ind_num] = txt;
                             } else if ind_num == 9 {
                                 // ElapseStack からの発音 Note Number/Velocity
