@@ -10,13 +10,13 @@ mod lpnlib;
 mod test;
 
 use chrono::Local;
+use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use eframe::{egui, egui::*};
+use std::env;
+use std::io;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
-use std::env;
-use std::io;
-use cli_clipboard::{ClipboardContext, ClipboardProvider};
 
 use cmd::cmdparse;
 use cmd::history::History;
@@ -131,7 +131,7 @@ impl LoopianApp {
                 let mut ctx = ClipboardContext::new().unwrap();
                 let clip_text = ctx.get_contents().unwrap();
                 self.input_text += &clip_text;
-            } 
+            }
         } else if key == &Key::Backspace {
             if self.input_locate > 0 {
                 self.input_locate -= 1;
@@ -351,9 +351,13 @@ fn cui_loop() {
     loop {
         // 標準入力から文字列を String で取得
         let mut buf = String::new();
-        io::stdin().read_line(&mut buf).expect("Failed to read line.");
+        io::stdin()
+            .read_line(&mut buf)
+            .expect("Failed to read line.");
         let input = buf.trim().to_string();
-        if input == "q" || input == "quit" {break;}
+        if input == "q" || input == "quit" {
+            break;
+        }
     }
 }
 //*******************************************************************
@@ -361,7 +365,7 @@ fn cui_loop() {
 //*******************************************************************
 fn main() {
     let args: Vec<String> = env::args().collect();
-    println!("{:?}",args);
+    println!("{:?}", args);
     if args.len() > 1 && args[1] == "server" {
         // CUI version
         cui_loop();
