@@ -23,11 +23,7 @@ const _BACK_MAZENTA: Color32 = Color32::from_rgb(180, 160, 180);
 const _BACK_GRAY: Color32 = Color32::from_rgb(48, 48, 48);
 const BACK_DARK_GRAY: Color32 = Color32::from_rgb(32, 32, 32);
 const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
-
 const FONT16: f32 = 16.0;
-const FONT16_WIDTH: f32 = 9.56;
-
-const _LEFT_MERGIN: f32 = 5.0;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum TextAttribute {
@@ -220,6 +216,7 @@ impl Graphic {
         const BLOCK_LENGTH: f32 = 200.0;
         const BLOCK_HEIGHT: f32 = 30.0;
         const MIN_MERGIN: f32 = 20.0; // (NEXT_BLOCK - BLOCK_LENGTH)/2
+        const EI_FONT16_WIDTH: f32 = 9.56;
 
         let mut interval: f32 = 240.0;
         let mut min_left: f32 = rs.eight_indic_left;
@@ -263,13 +260,13 @@ impl Graphic {
                             min: Pos2 {
                                 x: min_left + raw - BLOCK_LENGTH / 2.0
                                     + 10.0
-                                    + FONT16_WIDTH * (k as f32),
+                                    + EI_FONT16_WIDTH * (k as f32),
                                 y: rs.eight_indic_top + 2.0 + line,
                             },
                             max: Pos2 {
                                 x: min_left + raw - BLOCK_LENGTH / 2.0
                                     + 10.0
-                                    + FONT16_WIDTH * ((k + 1) as f32),
+                                    + EI_FONT16_WIDTH * ((k + 1) as f32),
                                 y: rs.eight_indic_top + 27.0 + line,
                             },
                         },
@@ -310,6 +307,7 @@ impl Graphic {
     ) {
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
         const FONT16_HEIGHT: f32 = 25.0;
+        const FONT16_WIDTH: f32 = 10.0;
 
         // generate max_line_in_window, update self.top_scroll_line
         let letter_color = self.letter_color();
@@ -349,7 +347,7 @@ impl Graphic {
         for i in 0..max_disp_line {
             let past_text_set = scroll_lines[self.top_scroll_line + i].clone();
             let past_text = past_text_set.1.clone() + &past_text_set.2;
-            let cnt = past_text.chars().count();
+            let ltrcnt = past_text.chars().count();
 
             // line
             if self.top_scroll_line + i == crnt_location * 2 {
@@ -357,13 +355,13 @@ impl Graphic {
                     Rect {
                         min: Pos2 {
                             x: rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN,
-                            y: rs.scroll_txt_top + FONT16_HEIGHT + FONT16_HEIGHT * (i as f32) - 2.0,
+                            y: rs.scroll_txt_top + FONT16_HEIGHT * (i as f32) + 21.0,
                         },
                         max: Pos2 {
                             x: rs.scroll_txt_left
                                 + SPACE2_TXT_LEFT_MARGIN
-                                + FONT16_WIDTH * (cnt as f32),
-                            y: rs.scroll_txt_top + FONT16_HEIGHT + FONT16_HEIGHT * (i as f32),
+                                + FONT16_WIDTH * (ltrcnt as f32),
+                            y: rs.scroll_txt_top + FONT16_HEIGHT * (i as f32) + 23.0,
                         },
                     },
                     0.0,        //  curve
@@ -377,26 +375,31 @@ impl Graphic {
             } else {
                 letter_color
             };
-            ui.put(
-                Rect {
-                    min: Pos2 {
-                        x: rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN,
-                        y: rs.scroll_txt_top + FONT16_HEIGHT * (i as f32),
+            for j in 0..ltrcnt {
+                // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
+                ui.put(
+                    Rect {
+                        min: Pos2 {
+                            x: rs.scroll_txt_left
+                                + SPACE2_TXT_LEFT_MARGIN
+                                + FONT16_WIDTH * (j as f32),
+                            y: rs.scroll_txt_top + FONT16_HEIGHT * (i as f32),
+                        },
+                        max: Pos2 {
+                            x: rs.scroll_txt_left
+                                + SPACE2_TXT_LEFT_MARGIN
+                                + FONT16_WIDTH * ((j as f32) + 1.0),
+                            y: rs.scroll_txt_top + FONT16_HEIGHT * ((i + 1) as f32),
+                        },
                     },
-                    max: Pos2 {
-                        x: rs.scroll_txt_left
-                            + SPACE2_TXT_LEFT_MARGIN
-                            + FONT16_WIDTH * (cnt as f32),
-                        y: rs.scroll_txt_top + FONT16_HEIGHT * ((i + 1) as f32),
-                    },
-                },
-                Label::new(
-                    RichText::new(&past_text)
-                        .size(FONT16)
-                        .color(txt_color)
-                        .family(FontFamily::Monospace),
-                ),
-            );
+                    Label::new(
+                        RichText::new(past_text[j..j + 1].to_string())
+                            .size(FONT16)
+                            .color(txt_color)
+                            .family(FontFamily::Monospace),
+                    ),
+                );
+            }
         }
     }
     //*******************************************************************
