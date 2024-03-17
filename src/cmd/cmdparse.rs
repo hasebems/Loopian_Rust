@@ -13,6 +13,7 @@ use std::sync::{mpsc, mpsc::*};
 //  2. 解析に送る/elapseに送る
 //  3. eguiに返事を返す
 pub struct LoopianCmd {
+    has_gui: bool,
     indicator: Vec<String>,
     indicator_key_stock: String,
     ui_hndr: mpsc::Receiver<String>,
@@ -25,12 +26,17 @@ pub struct LoopianCmd {
     path: Option<String>,
 }
 impl LoopianCmd {
-    pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>, ui_hndr: mpsc::Receiver<String>) -> Self {
+    pub fn new(
+        msg_hndr: mpsc::Sender<ElpsMsg>,
+        ui_hndr: mpsc::Receiver<String>,
+        has_gui: bool,
+    ) -> Self {
         let mut indicator = vec![String::from("---"); MAX_INDICATOR];
         indicator[0] = "C".to_string();
         indicator[1] = DEFAULT_BPM.to_string();
         indicator[3] = "1 : 1 : 000".to_string();
         Self {
+            has_gui,
             indicator,
             indicator_key_stock: "C".to_string(),
             ui_hndr,
@@ -44,7 +50,7 @@ impl LoopianCmd {
         }
     }
     pub fn move_ev_from_gev(&mut self) -> Option<String> {
-        if self.graphic_ev.len() > 0 {
+        if self.graphic_ev.len() > 0 && self.has_gui {
             let gev = self.graphic_ev[0].clone();
             self.graphic_ev.remove(0);
             return Some(gev);
@@ -87,7 +93,7 @@ impl LoopianCmd {
                                 self.indicator[0] = self.indicator_key_stock.clone();
                             } else if ind_num < MAX_INDICATOR {
                                 self.indicator[ind_num] = txt;
-                            } else if ind_num == 9 {
+                            } else if ind_num == 9 && self.has_gui {
                                 // ElapseStack からの発音 Note Number/Velocity
                                 self.graphic_ev.push(txt);
                             }
@@ -101,6 +107,9 @@ impl LoopianCmd {
     }
     //*************************************************************************
     pub fn set_and_responce(&mut self, input_text: &str) -> Option<String> {
+        if input_text.len() == 0 {
+            return None;
+        }
         println!("Set Text: {}", input_text);
         let first_letter = &input_text[0..1];
         if first_letter == "q" {

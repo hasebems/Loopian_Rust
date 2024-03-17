@@ -15,6 +15,7 @@ use eframe::{egui, egui::*};
 use std::env;
 use std::io;
 use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 
@@ -22,6 +23,7 @@ use cmd::cmdparse;
 use cmd::history::History;
 use elapse::stack_elapse::ElapseStack;
 use graphic::graphic::{Graphic, TextAttribute};
+use lpnlib::*;
 
 pub const WINDOW_X: f32 = 1000.0; //  Main Window
 pub const WINDOW_Y: f32 = 860.0;
@@ -36,26 +38,12 @@ pub struct LoopianApp {
     history: History,
     graph: Graphic,
 }
-
 impl LoopianApp {
     //*******************************************************************
     //      App Initialize / Log File /  App End
     //*******************************************************************
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        //  create new thread & channel
-        let (txmsg, rxmsg) = mpsc::channel();
-        let (txui, rxui) = mpsc::channel();
-        thread::spawn(move || match ElapseStack::new(txui) {
-            Some(mut est) => loop {
-                if est.periodic(rxmsg.try_recv()) {
-                    break;
-                }
-            },
-            None => {
-                println!("Elps thread does't work")
-            }
-        });
-
+        let (txmsg, rxui) = gen_thread();
         Self::init_font(cc);
         Self {
             input_locate: 0,
@@ -63,7 +51,7 @@ impl LoopianApp {
             input_text: String::new(),
             scroll_lines: Vec::new(),
             history_cnt: 0,
-            cmd: cmdparse::LoopianCmd::new(txmsg, rxui),
+            cmd: cmdparse::LoopianCmd::new(txmsg, rxui, true),
             history: History::new(),
             graph: Graphic::new(),
         }
@@ -345,9 +333,24 @@ impl eframe::App for LoopianApp {
     }
 }
 //*******************************************************************
-//      Server CUI
+//      LoopianServer
 //*******************************************************************
+pub struct LoopianServer {
+    //input_text: String,
+    cmd: cmdparse::LoopianCmd,
+}
+impl LoopianServer {
+    pub fn new() -> Self {
+        let (txmsg, rxui) = gen_thread();
+        Self {
+            //input_text: "".to_string(),
+            cmd: cmdparse::LoopianCmd::new(txmsg, rxui, false),
+        }
+    }
+}
 fn cui_loop() {
+    let mut srv = LoopianServer::new();
+    let _ = srv.cmd.set_and_responce("flow");
     loop {
         // 標準入力から文字列を String で取得
         let mut buf = String::new();
@@ -358,11 +361,30 @@ fn cui_loop() {
         if input == "q" || input == "quit" {
             break;
         }
+        if let Some(answer) = srv.cmd.set_and_responce(&input) {
+            println!("{}", answer);
+        }
     }
 }
 //*******************************************************************
 //      Main
 //*******************************************************************
+fn gen_thread() -> (Sender<ElpsMsg>, Receiver<String>) {
+    //  create new thread & channel
+    let (txmsg, rxmsg) = mpsc::channel();
+    let (txui, rxui) = mpsc::channel();
+    thread::spawn(move || match ElapseStack::new(txui) {
+        Some(mut est) => loop {
+            if est.periodic(rxmsg.try_recv()) {
+                break;
+            }
+        },
+        None => {
+            println!("Elps thread does't work")
+        }
+    });
+    (txmsg, rxui)
+}
 fn main() {
     let args: Vec<String> = env::args().collect();
     println!("{:?}", args);
