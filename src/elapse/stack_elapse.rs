@@ -349,14 +349,14 @@ impl ElapseStack {
         }
     }
     fn flow(&mut self, msg: Vec<i16>) {
-        let ptnum = msg[1] as usize;
+        let ptnum = msg[0] as usize;
         if ptnum < MAX_KBD_PART {
             let pt = self.part_vec[ptnum].clone();
             pt.borrow_mut().activate_flow(self);
         }
     }
     fn endflow(&mut self, msg: Vec<i16>) {
-        let ptnum = msg[1] as usize;
+        let ptnum = msg[0] as usize;
         if ptnum < MAX_KBD_PART {
             self.part_vec[ptnum].borrow_mut().deactivate_flow();
         }
