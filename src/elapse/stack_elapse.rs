@@ -139,13 +139,8 @@ impl ElapseStack {
         //  for GUI
         self.update_gui();
 
-        // play 中でなければ return
-        if !self.during_play {
-            return false;
-        }
-
         // 小節先頭ならば、beat/bpm のイベント調査
-        if self.tg.gen_tick(self.crnt_time) {
+        if self.during_play && self.tg.gen_tick(self.crnt_time) {
             println!(
                 "<New measure! in stack_elapse> Max Debcnt: {}/{}",
                 self.limit_for_deb,
@@ -163,45 +158,46 @@ impl ElapseStack {
             self.update_gui_at_msrtop();
         }
         //  新tick計算
-        let crnt_ = self.tg.get_crnt_msr_tick();
+        let crnt_ = if self.during_play {
+            self.tg.get_crnt_msr_tick()
+        } else {
+            CrntMsrTick::default()
+        };
 
         // MIDI IN 受信処理
-        if let Some(msg_ext) = self.mdr_buf.lock().unwrap().take() {
-            //println!("{}: {:?} (len = {})", msg_ext.0, msg_ext.1, msg_ext.1.len());
-            self.part_vec.iter().for_each(|x| {
-                x.borrow_mut()
-                    .rcv_midi_in(&crnt_, msg_ext.1[0], msg_ext.1[1], msg_ext.1[2]);
-            });
-        }
+        self.receive_midi_event(&crnt_);
 
-        let mut debcnt = 0;
-        loop {
-            // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
-            let playable = self.pick_out_playable(&crnt_);
-            if playable.len() == 0 {
-                break;
-            } else {
-                //println!("$$$deb:{},{},{},{:?}",self.limit_for_deb,crnt_.msr,crnt_.tick,self.crnt_time);
-                assert!(
-                    debcnt < 100,
-                    "Last Elapse:{:?}, Tick:{:?}",
-                    playable.last().unwrap().borrow().id(),
-                    crnt_.tick
-                );
-                debcnt += 1;
+        if self.during_play {
+            let mut debcnt = 0;
+            loop {
+                // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
+                let playable = self.pick_out_playable(&crnt_);
+                if playable.len() == 0 {
+                    break;
+                } else {
+                    //println!("$$$deb:{},{},{},{:?}",self.limit_for_deb,crnt_.msr,crnt_.tick,self.crnt_time);
+                    assert!(
+                        debcnt < 100,
+                        "Last Elapse:{:?}, Tick:{:?}",
+                        playable.last().unwrap().borrow().id(),
+                        crnt_.tick
+                    );
+                    debcnt += 1;
+                }
+                // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
+                for elps in playable {
+                    elps.borrow_mut().process(&crnt_, self);
+                }
             }
-            // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
-            for elps in playable {
-                elps.borrow_mut().process(&crnt_, self);
+            if self.limit_for_deb < debcnt {
+                self.limit_for_deb = debcnt;
             }
-        }
-        if self.limit_for_deb < debcnt {
-            self.limit_for_deb = debcnt;
+
+            // remove ended obj
+            self.destroy_finished_elps();
         }
 
-        // remove ended obj
-        self.destroy_finished_elps();
-
+        // play 中でなければ return
         return false;
     }
     fn parse_emsg(&mut self, msg: ElpsMsg) {
@@ -279,6 +275,26 @@ impl ElapseStack {
         match self.ui_hndr.send(msg.to_string()) {
             Err(e) => println!("Something happened on MPSC for UI! {}", e),
             _ => {}
+        }
+    }
+    fn receive_midi_event(&mut self, crnt_: &CrntMsrTick) {
+        if let Some(msg_ext) = self.mdr_buf.lock().unwrap().take() {
+            let msg = msg_ext.1;
+            println!(
+                "MIDI Received >{}: {:?} (len = {})",
+                msg_ext.0,
+                msg,
+                msg.len()
+            );
+            if self.during_play && ((msg[0] & 0xe0) == 0x80) {
+                self.part_vec.iter().for_each(|x| {
+                    x.borrow_mut().rcv_midi_in(&crnt_, msg[0], msg[1], msg[2]);
+                });
+            } else if (msg[0] & 0xf0) == 0xc0 {
+                // PCN は Pattern 切り替えに使用する
+                let key_disp = "@Pattern No.".to_string();
+                self.send_msg_to_ui(&key_disp);
+            }
         }
     }
     fn start(&mut self, resume: bool) {

@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 
 pub const MIDI_OUT: &str = "IACdriver";
 pub const MIDI_DEVICE: &str = "Loopian-ORBIT";
+//pub const MIDI_DEVICE: &str = "Arduino Leonardo";
 
 pub struct MidiTx {
     connection_tx: Option<Box<MidiOutputConnection>>,
@@ -34,11 +35,16 @@ impl MidiTx {
             return Err("no output port found".into());
         }
 
+        // 全outputを表示
+        for (i, p) in out_ports.iter().enumerate() {
+            let driver = MidiOutput::new("Loopian_tx")?;
+            let drv_name = driver.port_name(p).unwrap();
+            println!("[MIDI Output] No.{}: {}", i, drv_name);
+        }
         let mut an_least_one = false;
         for (i, p) in out_ports.iter().enumerate() {
             let driver = MidiOutput::new("Loopian_tx")?;
             let drv_name = driver.port_name(p).unwrap();
-            println!(">Available MIDI Output Driver No.{}: {}", i, drv_name);
             if drv_name.find(MIDI_OUT).is_some() {
                 match driver.connect(p, "loopian_tx") {
                     Ok(c) => {
@@ -72,7 +78,15 @@ impl MidiTx {
     }
     pub fn midi_out(&mut self, status: u8, dt1: u8, dt2: u8) {
         if let Some(cnct) = self.connection_tx.as_mut() {
-            let _ = cnct.send(&[status, dt1, dt2]);
+            let status_with_ch = status & 0xf0; // ch.1
+            let _ = cnct.send(&[status_with_ch, dt1, dt2]);
+        }
+        if let Some(cnct) = self.connection_tx_led.as_mut() {
+            let midi_cmnd = status & 0x0f;
+            if midi_cmnd == 0x90 || midi_cmnd == 0x80 {
+                let status_with_ch = midi_cmnd | 0x0f; // ch.16
+                let _ = cnct.send(&[status_with_ch, dt1, dt2]);
+            }
         }
     }
 }
@@ -117,20 +131,24 @@ impl MidiRx {
         }
 
         let mut in_port: Option<&MidiInputPort> = None;
+        // 全inputを表示
         for (i, p) in in_ports.iter().enumerate() {
             let drv_name = midi_in.port_name(p).unwrap();
-            println!(">Available MIDI Input Driver No.{}: {}", i, drv_name);
+            println!("[MIDI Input] No.{}: {}", i, drv_name);
+        }
+        for (i, p) in in_ports.iter().enumerate() {
+            let drv_name = midi_in.port_name(p).unwrap();
             if drv_name.find(MIDI_DEVICE).is_some() {
-                println!("{}: {}", i, midi_in.port_name(p).unwrap());
+                println!("{}: {} <as Flow>", i, midi_in.port_name(p).unwrap());
                 in_port = in_ports.get(i);
-                //break;
+                break;
             }
         }
-        if let Some(pt) = in_port {
+        if let Some(port) = in_port {
             self._conn_in = Some(
                 midi_in
                     .connect(
-                        pt,
+                        port,
                         "midir-read-input",
                         move |stamp, message, _| {
                             let msg = message.iter().fold(Vec::new(), |mut s, i| {

@@ -36,6 +36,15 @@ pub struct CrntMsrTick {
     pub tick: i32,
     pub tick_for_onemsr: i32,
 }
+impl Default for CrntMsrTick {
+    fn default() -> Self {
+        Self {
+            msr: 0,
+            tick: 0,
+            tick_for_onemsr: 0,
+        }
+    }
+}
 
 impl TickGen {
     pub fn new() -> Self {

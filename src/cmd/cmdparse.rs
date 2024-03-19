@@ -85,19 +85,26 @@ impl LoopianCmd {
             match self.ui_hndr.try_recv() {
                 Ok(mut uitxt) => {
                     if let Some(letter) = uitxt.chars().nth(0) {
-                        let ind_num: usize = letter.to_digit(10).unwrap() as usize;
-                        let len = uitxt.chars().count();
-                        if len >= 2 {
-                            let txt = uitxt.split_off(1);
-                            if ind_num == 0 && txt == "_" {
-                                self.indicator[0] = self.indicator_key_stock.clone();
-                            } else if ind_num < MAX_INDICATOR {
-                                self.indicator[ind_num] = txt;
-                            } else if ind_num == 9 && self.has_gui {
-                                // ElapseStack からの発音 Note Number/Velocity
-                                self.graphic_ev.push(txt);
+                        if let Some(ind_num) = letter.to_digit(10) {
+                            // 数字だったら
+                            let len = uitxt.chars().count();
+                            if len >= 2 {
+                                let txt = uitxt.split_off(1);
+                                if ind_num == 0 && txt == "_" {
+                                    self.indicator[0] = self.indicator_key_stock.clone();
+                                } else if (ind_num as usize) < MAX_INDICATOR {
+                                    self.indicator[ind_num as usize] = txt;
+                                } else if ind_num == 9 && self.has_gui {
+                                    // ElapseStack からの発音 Note Number/Velocity
+                                    self.graphic_ev.push(txt);
+                                }
+                            }
+                        } else {
+                            if letter == '@' {
+                                println!("Get Command!: {:?}", &uitxt[1..]);
                             }
                         }
+                        //let ind_num: usize = letter.to_digit(10).unwrap() as usize;
                     }
                 }
                 Err(TryRecvError::Disconnected) => break, // Wrong!
