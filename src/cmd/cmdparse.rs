@@ -3,10 +3,12 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use std::fs;
+use std::sync::{mpsc, mpsc::*};
+
 use super::send_msg::*;
 use super::seq_stock::*;
 use crate::lpnlib::*;
-use std::sync::{mpsc, mpsc::*};
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -79,15 +81,15 @@ impl LoopianCmd {
     pub fn get_path(&self) -> Option<String> {
         self.path.clone()
     }
-    pub fn read_from_ui_hndr(&mut self) {
-        // Play Thread からの、8indicator表示用メッセージを受信する処理
+    pub fn read_from_ui_hndr(&mut self) -> u8 {
+        // Play Thread からの、8indicator表示/PC時のFile Loadメッセージを受信する処理
         loop {
             match self.ui_hndr.try_recv() {
                 Ok(mut uitxt) => {
                     if let Some(letter) = uitxt.chars().nth(0) {
+                        let len = uitxt.chars().count();
                         if let Some(ind_num) = letter.to_digit(10) {
                             // 数字だったら
-                            let len = uitxt.chars().count();
                             if len >= 2 {
                                 let txt = uitxt.split_off(1);
                                 if ind_num == 0 && txt == "_" {
@@ -99,18 +101,58 @@ impl LoopianCmd {
                                     self.graphic_ev.push(txt);
                                 }
                             }
-                        } else {
-                            if letter == '@' {
-                                println!("Get Command!: {:?}", &uitxt[1..]);
-                            }
+                        } else if letter == '@' {
+                            // MIDI Program Change
+                            return self.get_pcmsg_from_midi(&uitxt[1..]);
                         }
-                        //let ind_num: usize = letter.to_digit(10).unwrap() as usize;
                     }
                 }
                 Err(TryRecvError::Disconnected) => break, // Wrong!
                 Err(TryRecvError::Empty) => break,
             }
         }
+        127
+    }
+    fn get_pcmsg_from_midi(&mut self, msg: &str) -> u8 {
+        // MIDI PC Message (1-128)
+        println!("Get Command!: {:?}", msg);
+        let len = msg.len();
+        if len > 3 && &msg[0..3] == "ptn" {
+            let pc_num: u8 = msg[3..].parse().unwrap_or(16);
+            if pc_num < 16 {
+                let fname = format!("{}.lpn", &msg[3..]);
+                let command_stk = self.load_lpn_when_pc(fname);
+                for cmd in command_stk.iter() {
+                    let _answer = self.set_and_responce(cmd);
+                }
+            }
+            return pc_num;
+        }
+        127
+    }
+    fn load_lpn_when_pc(&mut self, fname: String) -> Vec<String> {
+        let mut command: Vec<String> = Vec::new();
+        let path = "pattern/".to_owned() + &fname;
+        println!("Pattern File: {}", path);
+        match fs::read_to_string(path) {
+            Ok(content) => {
+                for line in content.lines() {
+                    let mut comment = false;
+                    if line.len() > 1 {
+                        // コメントでないか、過去の 2023.. が書かれてないか
+                        let notxt = line[0..2].to_string();
+                        if notxt == "//" || notxt == "20" {
+                            comment = true;
+                        }
+                    }
+                    if line.len() > 0 && !comment {
+                        command.push(line.to_string());
+                    }
+                }
+            }
+            Err(_err) => println!("Can't open a file"),
+        };
+        command
     }
     //*************************************************************************
     pub fn set_and_responce(&mut self, input_text: &str) -> Option<String> {

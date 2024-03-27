@@ -286,13 +286,21 @@ impl ElapseStack {
                 msg,
                 msg.len()
             );
+            // midi ch=12,13 のみ受信
+            let input_ch = msg[0] & 0x0f;
+            if input_ch != 0x0b && input_ch != 0x0c {
+                return;
+            }
+
             if self.during_play && ((msg[0] & 0xe0) == 0x80) {
+                // 再生中 & Note Message
                 self.part_vec.iter().for_each(|x| {
-                    x.borrow_mut().rcv_midi_in(&crnt_, msg[0], msg[1], msg[2]);
+                    x.borrow_mut()
+                        .rcv_midi_in(&crnt_, msg[0] & 0xf0, msg[1], msg[2]);
                 });
             } else if (msg[0] & 0xf0) == 0xc0 {
                 // PCN は Pattern 切り替えに使用する
-                let key_disp = "@Pattern No.".to_string();
+                let key_disp = format!("@ptn{}", msg[1]);
                 self.send_msg_to_ui(&key_disp);
             }
         }

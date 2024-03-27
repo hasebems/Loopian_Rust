@@ -181,37 +181,39 @@ impl LoopianApp {
         if itxt.len() == 0 {
             return;
         }
-        let dt = Local::now();
-        let time = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
         self.input_text = "".to_string();
         self.input_locate = 0;
         self.visible_locate = 0;
-
+        let dt = Local::now();
+        let time = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
         self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone()); // for history
         if itxt.chars().count() >= 6 && &itxt[0..4] == "load" {
             self.scroll_lines
                 .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
-                                                                            // load のときだけ特別処理
-            let command_stk = self.history.load_lpn(&itxt[5..], self.cmd.get_path());
-            if command_stk.len() == 0 {
-                self.scroll_lines.push((
-                    TextAttribute::Answer,
-                    "".to_string(),
-                    "No history".to_string(),
-                ));
-            } else {
-                for cmd in command_stk.iter() {
-                    self.history_cnt = self.history.set_scroll_text(time.clone(), cmd.clone()); // for history
-                    self.one_command(time.clone(), cmd.clone(), false);
-                }
-                self.scroll_lines.push((
-                    TextAttribute::Answer,
-                    "".to_string(),
-                    "Loaded from history".to_string(),
-                ));
-            }
+            self.load_file(time.clone(), &itxt[5..]);
         } else {
             self.one_command(time, itxt, true);
+        }
+    }
+    fn load_file(&mut self, time: String, itxt: &str) {
+        // load のときだけ特別処理
+        let command_stk = self.history.load_lpn(itxt, self.cmd.get_path());
+        if command_stk.len() == 0 {
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "No history".to_string(),
+            ));
+        } else {
+            for cmd in command_stk.iter() {
+                self.history_cnt = self.history.set_scroll_text(time.clone(), cmd.clone()); // for history
+                self.one_command(time.clone(), cmd.clone(), false);
+            }
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "Loaded from history".to_string(),
+            ));
         }
     }
     fn one_command(&mut self, time: String, itxt: String, verbose: bool) {
@@ -338,6 +340,7 @@ impl eframe::App for LoopianApp {
 pub struct LoopianServer {
     //input_text: String,
     cmd: cmdparse::LoopianCmd,
+    cui_mode: bool,
 }
 impl LoopianServer {
     pub fn new() -> Self {
@@ -345,6 +348,7 @@ impl LoopianServer {
         Self {
             //input_text: "".to_string(),
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui, false),
+            cui_mode: false,
         }
     }
 }
@@ -352,17 +356,27 @@ fn cui_loop() {
     let mut srv = LoopianServer::new();
     let _ = srv.cmd.set_and_responce("flow");
     loop {
-        // 標準入力から文字列を String で取得
-        let mut buf = String::new();
-        io::stdin()
-            .read_line(&mut buf)
-            .expect("Failed to read line.");
-        let input = buf.trim().to_string();
-        if input == "q" || input == "quit" {
-            break;
-        }
-        if let Some(answer) = srv.cmd.set_and_responce(&input) {
-            println!("{}", answer);
+        if srv.cui_mode {
+            // 標準入力から文字列を String で取得
+            let mut buf = String::new();
+            io::stdin()
+                .read_line(&mut buf)
+                .expect("Failed to read line.");
+            let input = buf.trim().to_string();
+            if input == "q" || input == "quit" {
+                break;  // 終了
+            }
+            if let Some(answer) = srv.cmd.set_and_responce(&input) {
+                println!("{}", answer);
+            }
+        } else {
+            //  Read imformation from StackElapse
+            let rtn = srv.cmd.read_from_ui_hndr();
+            if rtn == 16 {
+                break; // 終了
+            } else if rtn == 17 {
+                srv.cui_mode = true;
+            }
         }
     }
 }

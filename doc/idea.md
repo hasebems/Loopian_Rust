@@ -75,8 +75,13 @@
 - 条件処理
     - xxx?yyy : xxx-条件、yyy-処理
 
-### 3.MIDI Flow機能
+### 3.MIDI Flow(Server)機能
 
+- Loopian は、Window上で動作するGUI Modeと、CUI Modeで動作する二つの状態があり、起動時にオプションスイッチで指定する
+    - GUI Modeは、大きさを変えられるWindowと、その中には8つのインジケータ、音に合わせたビジュアライズ機能もある
+    - CUI Modeは、Windowを廃し、ターミナル/MIDI入力だけで動作可能。Server として動作させるためのもの。
+    - MIDI Flow機能は、Server として動作した場合、すなわち CUI Mode の時のみ動作する
+    - MIDI PC 0-15 で .lpn ファイルをロード、PC#16 でアプリを終了、PC#17でターミナル入力モードとなる
 - 専用外部デバイスを接続し、インタラクティブな演奏を楽しめる機能を提供する
     - Loopian::ORBIT という専用デバイスを接続
     - Loopian::ORBIT は MIDI Note On/Off を Note Number 0-95 の範囲で出力する
