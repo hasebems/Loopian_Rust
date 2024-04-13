@@ -68,7 +68,7 @@ impl ElapseStack {
                 let mut _mdrx = MidiRx::new();
                 let mdr_buf = Arc::new(Mutex::new(MidiRxBuf::new()));
                 match _mdrx.connect(Arc::clone(&mdr_buf)) {
-                    Ok(()) => (),
+                    Ok(()) => println!("MIDI receive Connection OK."),
                     Err(err) => println!("{}", err),
                 };
                 Some(Self {
@@ -89,7 +89,10 @@ impl ElapseStack {
                     limit_for_deb: 0,
                 })
             }
-            Err(_e) => None,
+            Err(e) => {
+                println!("{}",e);
+                None
+            }
         }
     }
     pub fn add_elapse(&mut self, elps: Rc<RefCell<dyn Elapse>>) {
