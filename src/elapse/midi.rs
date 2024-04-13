@@ -9,12 +9,7 @@ use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use midir::{MidiOutput, /*MidiOutputPort,*/ MidiOutputConnection};
 use std::error::Error;
 use std::sync::{Arc, Mutex};
-
-pub const MIDI_OUT: &str = "IACdriver";
-pub const MIDI_DEVICE: &str = "Loopian-ORBIT";
-//pub const MIDI_DEVICE: &str = "Arduino Leonardo";
-//pub const MIDI_DEVICE: &str = "TouchMIDI32 MIDI OUT";
-//pub const MIDI_DEVICE: &str = "IACdriver InternalBus1"; // MAX によるチェック
+use crate::setting::*;
 
 pub struct MidiTx {
     connection_tx: Option<Box<MidiOutputConnection>>,

@@ -7,6 +7,7 @@ mod cmd;
 mod elapse;
 mod graphic;
 mod lpnlib;
+mod setting;
 mod test;
 
 use chrono::Local;
@@ -24,9 +25,7 @@ use cmd::history::History;
 use elapse::stack_elapse::ElapseStack;
 use graphic::graphic::{Graphic, TextAttribute};
 use lpnlib::*;
-
-pub const WINDOW_X: f32 = 1000.0; //  Main Window
-pub const WINDOW_Y: f32 = 860.0;
+use setting::*;
 
 pub struct LoopianApp {
     input_locate: usize,   //  カーソルの位置
@@ -64,10 +63,12 @@ impl LoopianApp {
         fonts.font_data.insert(
             "profont".to_owned(),
             FontData::from_static(include_bytes!("../assets/newyork.ttf")),
+            //FontData::from_static(include_bytes!("/home/pi/loopian/Loopian_Rust/assets/NewYork.ttf")),
         );
         fonts.font_data.insert(
             "monofont".to_owned(),
             FontData::from_static(include_bytes!("../assets/courier.ttc")),
+            //FontData::from_static(include_bytes!("/home/pi/loopian/Loopian_Rust/assets/Courier.ttf")),
         );
 
         // Put my font first (highest priority) for proportional text:
@@ -408,7 +409,7 @@ fn main() {
     } else {
         // GUI version
         let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size([WINDOW_X, WINDOW_Y]),
+            viewport: egui::ViewportBuilder::default().with_inner_size([WINDOW_X_DEFAULT, WINDOW_Y_DEFAULT]),
             ..eframe::NativeOptions::default()
         };
         let _ = eframe::run_native(

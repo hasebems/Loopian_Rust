@@ -7,7 +7,7 @@ use super::noteobj::NoteObj;
 use super::waterripple::WaterRipple;
 use crate::cmd::cmdparse::LoopianCmd;
 use crate::lpnlib::*;
-use crate::{WINDOW_X, WINDOW_Y};
+use crate::setting::*;
 use eframe::{egui, egui::*};
 use rand::{rngs, thread_rng, Rng};
 use std::time::Instant;
@@ -52,8 +52,8 @@ impl Graphic {
     pub fn new() -> Graphic {
         Self {
             full_size: Pos2 {
-                x: WINDOW_X,
-                y: WINDOW_Y,
+                x: WINDOW_X_DEFAULT,
+                y: WINDOW_Y_DEFAULT,
             },
             nobj: Vec::new(),
             start_time: Instant::now(),
