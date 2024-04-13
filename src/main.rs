@@ -56,20 +56,7 @@ impl LoopianApp {
         }
     }
     fn init_font(cc: &eframe::CreationContext<'_>) {
-        // Start with the default fonts (we will be adding to them rather than replacing them).
-        let mut fonts = FontDefinitions::default();
-
-        // Install my own font (maybe supporting non-latin characters).
-        fonts.font_data.insert(
-            "profont".to_owned(),
-            FontData::from_static(include_bytes!("../assets/newyork.ttf")),
-            //FontData::from_static(include_bytes!("/home/pi/loopian/Loopian_Rust/assets/NewYork.ttf")),
-        );
-        fonts.font_data.insert(
-            "monofont".to_owned(),
-            FontData::from_static(include_bytes!("../assets/courier.ttc")),
-            //FontData::from_static(include_bytes!("/home/pi/loopian/Loopian_Rust/assets/Courier.ttf")),
-        );
+        let mut fonts = setting::add_myfont();
 
         // Put my font first (highest priority) for proportional text:
         fonts
