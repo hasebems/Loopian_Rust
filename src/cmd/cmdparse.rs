@@ -9,6 +9,7 @@ use std::sync::{mpsc, mpsc::*};
 use super::send_msg::*;
 use super::seq_stock::*;
 use crate::lpnlib::*;
+use crate::setting::*;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
