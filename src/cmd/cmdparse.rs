@@ -118,8 +118,8 @@ impl LoopianCmd {
         println!("Get Command!: {:?}", msg);
         let len = msg.len();
         if len > 3 && &msg[0..3] == "ptn" {
-            let pc_num: u8 = msg[3..].parse().unwrap_or(16);
-            if pc_num < 16 {
+            let pc_num: u8 = msg[3..].parse().unwrap_or(MAX_PATTERN_NUM);
+            if pc_num < MAX_PATTERN_NUM {
                 let fname = format!("{}.lpn", &msg[3..]);
                 let command_stk = self.load_lpn_when_pc(fname);
                 for cmd in command_stk.iter() {

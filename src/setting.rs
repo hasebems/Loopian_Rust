@@ -35,3 +35,6 @@ pub fn add_myfont() -> FontDefinitions {
     );
     fonts
 }
+
+// Max Pattern Number
+pub const MAX_PATTERN_NUM: u8 = 16;

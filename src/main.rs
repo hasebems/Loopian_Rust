@@ -360,9 +360,9 @@ fn cui_loop() {
         } else {
             //  Read imformation from StackElapse
             let rtn = srv.cmd.read_from_ui_hndr();
-            if rtn == 16 {
+            if rtn == MAX_PATTERN_NUM {
                 break; // 終了
-            } else if rtn == 17 {
+            } else if rtn == MAX_PATTERN_NUM+1 {
                 srv.cui_mode = true;
             }
         }
