@@ -78,11 +78,11 @@ impl MidiTx {
             let status_with_ch = status & 0xf0; // ch.1
             let _ = cnct.send(&[status_with_ch, dt1, dt2]);
         }
-        if let Some(cnct) = self.connection_tx_led.as_mut() {
-            let midi_cmnd = status & 0x0f;
+        if let Some(cnctl) = self.connection_tx_led.as_mut() {
+            let midi_cmnd = status & 0xf0;
             if midi_cmnd == 0x90 || midi_cmnd == 0x80 {
                 let status_with_ch = midi_cmnd | 0x0f; // ch.16
-                let _ = cnct.send(&[status_with_ch, dt1, dt2]);
+                let _ = cnctl.send(&[status_with_ch, dt1, dt2]);
             }
         }
     }
