@@ -2,7 +2,7 @@
 ![loopian_logo](loopian_logo.gif)
 -->
 
-# loopian Alpha-version written in Rust
+# Loopian Alpha-version written in Rust
 
 
 <img src="doc/window.png" width="80%">
@@ -322,7 +322,13 @@ Graphic
     - 単音の連続する八分音符以下のフレーズは、アルペジオ的奏法とみなし、なるべく同じ音が続かないようにする
 - ベロシティ（音の強さ）を、拍に合わせて変化させている
 - noped 指定されない限り、一番細かい和音指定に合わせて、ペダル情報を自動的に算出する
-- [詳細設計はここ](doc/idea.md)
+
+
+設計資料へのリンク
+---------------------
+
+- [Loopian::ORBIT仕様](doc/orbit.md)
+- [詳細設計](doc/idea.md)
 
 
 <!--
