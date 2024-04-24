@@ -10,6 +10,10 @@ use midir::{MidiOutput, /*MidiOutputPort,*/ MidiOutputConnection};
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use crate::setting::*;
+#[cfg(feature="raspi")]
+use rppal::uart::{Parity, Uart};
+#[cfg(feature="raspi")]
+use std::time::Duration;
 
 pub struct MidiTx {
     connection_tx: Option<Box<MidiOutputConnection>>,
@@ -113,11 +117,17 @@ impl MidiRxBuf {
 pub struct MidiRx {
     // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
     _conn_in: Option<MidiInputConnection<()>>,
+  #[cfg(feature="raspi")]
+    uart: Option<Uart>,
 }
 
 impl MidiRx {
     pub fn new() -> Self {
-        Self { _conn_in: None }
+        Self { 
+            _conn_in: None,
+          #[cfg(feature="raspi")]
+            uart: None, 
+        }
     }
     pub fn connect(&mut self, mdr_buf: Arc<Mutex<MidiRxBuf>>) -> Result<(), &str> {
         let mut midi_in = MidiInput::new("midir reading input").unwrap();
@@ -159,6 +169,12 @@ impl MidiRx {
                     .unwrap(),
             );
         }
+        #[cfg(feature="raspi")]
+        {   // UARTポートを31250 bpsで設定
+            self.uart = Uart::new(31250, Parity::None, 8, 1)?;
+            self.uart.set_read_mode(1, Duration::from_millis(100))?;
+        }
+
         Ok(())
     }
 }
