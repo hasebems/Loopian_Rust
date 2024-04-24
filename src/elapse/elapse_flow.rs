@@ -115,6 +115,7 @@ impl Flow {
     fn convert_evt(&mut self, estk: &mut ElapseStack) {
         loop {
             if let Some(ev) = self.raw_ev.pop() {
+                let _ = ev.0; // warning 対策
                 let ch_status = ev.2 & 0xf0;
                 let locate_idx = ev.3 as usize;
                 if ch_status != 0x80 && (ch_status == 0x90 && ev.4 != 0x00) {
@@ -177,7 +178,7 @@ impl Flow {
     }
     fn same_note_index(&self, rnote: u8) -> Option<usize> {
         for (i, x) in self.gen_stock.iter().enumerate() {
-            if x.0 == rnote {
+            if x.0 == rnote && x.1 != 0 {
                 return Some(i);
             }
         }
