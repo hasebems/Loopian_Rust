@@ -171,8 +171,13 @@ impl MidiRx {
         }
         #[cfg(feature="raspi")]
         {   // UARTポートを31250 bpsで設定
-            self.uart = Uart::new(31250, Parity::None, 8, 1)?;
-            self.uart.set_read_mode(1, Duration::from_millis(100))?;
+            match Uart::new(31250, Parity::None, 8, 1) {
+                Ok(mut u) => {
+                    let _ = u.set_read_mode(1, Duration::from_millis(100));
+                    self.uart = Some(u);
+                }
+                Err(_e) => self.uart = None,
+            }
         }
 
         Ok(())
