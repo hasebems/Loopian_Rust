@@ -307,6 +307,13 @@ impl ElapseStack {
                 self.send_msg_to_ui(&key_disp);
             }
         }
+        #[cfg(feature="raspi")]
+        if let Some(urxmd) = self._mdrx.uart {
+            let mut byte = [0];
+            if urxmd.read(&mut byte)? == 1 {
+                println!(byte[0]);
+            }
+        }
     }
     fn start(&mut self, resume: bool) {
         if self.during_play && !resume {
