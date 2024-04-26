@@ -308,12 +308,12 @@ impl ElapseStack {
                 let key_disp = format!("@ptn{}", msg[1]);
                 self.send_msg_to_ui(&key_disp);
             }
-            #[cfg(feature="raspi")]
-            let _ = self.rcv_uart_midi();
         }
+        #[cfg(feature="raspi")]
+        let _ = self.rcv_uart_midi();
     }
     #[cfg(feature="raspi")]
-    fn rcv_uart_midi() -> io::Result<()> {
+    fn rcv_uart_midi(&mut self) -> io::Result<()> {
         if let Some(ref mut urx) = self._mdrx.uart {
             let mut byte = [0];
             if urx.read(&mut byte).unwrap() == 1 {
