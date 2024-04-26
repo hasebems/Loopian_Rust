@@ -118,7 +118,7 @@ pub struct MidiRx {
     // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
     _conn_in: Option<MidiInputConnection<()>>,
   #[cfg(feature="raspi")]
-    uart: Option<Uart>,
+    pub uart: Option<Uart>,
 }
 
 impl MidiRx {
@@ -179,7 +179,6 @@ impl MidiRx {
                 Err(_e) => self.uart = None,
             }
         }
-
         Ok(())
     }
 }
