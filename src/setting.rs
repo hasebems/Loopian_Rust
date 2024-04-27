@@ -10,8 +10,10 @@ pub const WINDOW_X_DEFAULT: f32 = 1000.0; //  Main Window
 pub const WINDOW_Y_DEFAULT: f32 = 860.0;
 
 // MIDI Connection
+#[cfg(not(feature = "raspi"))]
 pub const MIDI_OUT: &str = "IACdriver";
-//pub const MIDI_OUT: &str = "Midi Through:Midi Through Port-0 14:0"; // for Raspi5
+#[cfg(feature = "raspi")]
+pub const MIDI_OUT: &str = "Midi Through:Midi Through Port-0 14:0"; // for Raspi5
 pub const MIDI_DEVICE: &str = "Pico";
 //pub const MIDI_DEVICE: &str = "Loopian-ORBIT";
 //pub const MIDI_DEVICE: &str = "Arduino Leonardo";         // Arduino によるチェック
@@ -23,15 +25,29 @@ pub fn add_myfont() -> FontDefinitions {
     let mut fonts = FontDefinitions::default();
 
     // Install my own font (maybe supporting non-latin characters).
+    #[cfg(not(feature = "raspi"))]
     fonts.font_data.insert(
         "profont".to_owned(),
-        FontData::from_static(include_bytes!("../assets/newyork.ttf")),// for Mac
-        //FontData::from_static(include_bytes!("/home/pi/loopian/Loopian_Rust/assets/NewYork.ttf")),// for linux
+        FontData::from_static(include_bytes!("../assets/newyork.ttf")), // for Mac
     );
+    #[cfg(feature = "raspi")]
+    fonts.font_data.insert(
+        "profont".to_owned(),
+        FontData::from_static(include_bytes!(
+            "/home/pi/loopian/Loopian_Rust/assets/NewYork.ttf"
+        )), // for linux
+    );
+    #[cfg(not(feature = "raspi"))]
     fonts.font_data.insert(
         "monofont".to_owned(),
-        FontData::from_static(include_bytes!("../assets/courier.ttc")),// for Mac
-        //FontData::from_static(include_bytes!("/home/pi/loopian/Loopian_Rust/assets/Courier.ttc")),// for linux
+        FontData::from_static(include_bytes!("../assets/courier.ttc")), // for Mac
+    );
+    #[cfg(feature = "raspi")]
+    fonts.font_data.insert(
+        "monofont".to_owned(),
+        FontData::from_static(include_bytes!(
+            "/home/pi/loopian/Loopian_Rust/assets/Courier.ttc"
+        )), // for linux
     );
     fonts
 }

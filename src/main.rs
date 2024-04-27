@@ -352,7 +352,7 @@ fn cui_loop() {
                 .expect("Failed to read line.");
             let input = buf.trim().to_string();
             if input == "q" || input == "quit" {
-                break;  // 終了
+                break; // 終了
             }
             if let Some(answer) = srv.cmd.set_and_responce(&input) {
                 println!("{}", answer);
@@ -362,7 +362,7 @@ fn cui_loop() {
             let rtn = srv.cmd.read_from_ui_hndr();
             if rtn == MAX_PATTERN_NUM {
                 break; // 終了
-            } else if rtn == MAX_PATTERN_NUM+1 {
+            } else if rtn == MAX_PATTERN_NUM + 1 {
                 srv.cui_mode = true;
             }
         }
@@ -396,7 +396,8 @@ fn main() {
     } else {
         // GUI version
         let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size([WINDOW_X_DEFAULT, WINDOW_Y_DEFAULT]),
+            viewport: egui::ViewportBuilder::default()
+                .with_inner_size([WINDOW_X_DEFAULT, WINDOW_Y_DEFAULT]),
             ..eframe::NativeOptions::default()
         };
         let _ = eframe::run_native(

@@ -10,8 +10,6 @@ use std::sync::mpsc::TryRecvError;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use std::vec::Vec;
-#[cfg(feature="raspi")]
-use std::io;
 
 use super::elapse::*;
 use super::elapse_damper::DamperPart;
@@ -92,7 +90,7 @@ impl ElapseStack {
                 })
             }
             Err(e) => {
-                println!("{}",e);
+                println!("{}", e);
                 None
             }
         }
@@ -309,18 +307,24 @@ impl ElapseStack {
                 self.send_msg_to_ui(&key_disp);
             }
         }
-        #[cfg(feature="raspi")]
-        let _ = self.rcv_uart_midi();
-    }
-    #[cfg(feature="raspi")]
-    fn rcv_uart_midi(&mut self) -> io::Result<()> {
+        #[cfg(feature = "raspi")]
         if let Some(ref mut urx) = self._mdrx.uart {
             let mut byte = [0];
-            if urx.read(&mut byte).unwrap() == 1 {
-                println!("{}", byte[0]);
+            match urx.read(&mut byte) {
+                Ok(c) => {
+                    if c == 1 {
+                        self.parse_1byte_midi(byte[0]);
+                    }
+                }
+                Err(e) => {
+                    println("{}", e);
+                }
             }
         }
-        Ok(())
+    }
+    #[allow(dead_code)]
+    fn parse_1byte_midi(&mut self, input_data: u8) {
+        println!("{}", input_data);
     }
     fn start(&mut self, resume: bool) {
         if self.during_play && !resume {
