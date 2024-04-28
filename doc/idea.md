@@ -502,6 +502,8 @@ NoteObj <|-- WaterRipple
 - スタカートや音価の操作
     - stacatoを Main Thread ではなく、Play Thread の elapse note でリアルタイムに制御したい
 - Tempoを微分ベースで
+- setコマンド書き方の変更
+    - set bpm=120 -> set.bpm(120)
 - Phrase を入力したとき、次のループからではなく、リアルタイムで変わる機能
     - リアルタイムか、次のループ先頭かを選べる
         - [RT:xxxx] RTをつけたらリアルタイムに変わる

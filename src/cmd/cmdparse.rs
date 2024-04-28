@@ -274,7 +274,7 @@ impl LoopianCmd {
             // fermata
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_NRM, MSG2_RIT_FERMATA]));
-            Some("Will be longer!".to_string())
+            Some("Will stop!".to_string())
         } else if len == 4 && &input_text[0..4] == "flow" {
             // flow
             self.sndr
