@@ -338,7 +338,7 @@ impl ElapseStack {
                     }
                 }
                 Err(e) => {
-                    println("{}", e);
+                    println!("{}", e);
                 }
             }
         }
