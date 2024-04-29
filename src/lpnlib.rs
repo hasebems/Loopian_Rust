@@ -46,6 +46,7 @@ pub const DEFAULT_NOTE_NUMBER: u8 = 60; // C4
 pub const MAX_NOTE_NUMBER: u8 = 108; // C8
 pub const MIN_NOTE_NUMBER: u8 = 21; // A0
 pub const NO_NOTE: u8 = 255;
+pub const INVALID: u8 = 255;
 pub const REST: u8 = 254;
 pub const RPT_HEAD: u8 = 253; // Head of Repeat
 pub const NO_MIDI_VALUE: u8 = 128;

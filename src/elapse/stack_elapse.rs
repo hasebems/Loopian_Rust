@@ -27,6 +27,9 @@ pub enum SameKeyState {
     NOTHING, //  もうない
 }
 
+//*******************************************************************
+//          Elapse Stack Struct
+//*******************************************************************
 //  ElapseStack の責務
 //  1. Elapse Object の生成と集約
 //  2. Timing/Tempo の生成とtick管理
@@ -48,9 +51,15 @@ pub struct ElapseStack {
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
 
+    // for analyzing MIDI stream
+    midi_stream_status: u8,
+    midi_stream_data1: u8,
+
     limit_for_deb: i32,
 }
-
+//*******************************************************************
+//          Public Method for Elapse Stack Struct
+//*******************************************************************
 impl ElapseStack {
     pub fn new(ui_hndr: mpsc::Sender<String>) -> Option<Self> {
         match MidiTx::connect() {
@@ -86,6 +95,8 @@ impl ElapseStack {
                     _damper_part: damper_part,
                     elapse_vec,
                     key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
+                    midi_stream_status: INVALID,
+                    midi_stream_data1: INVALID,
                     limit_for_deb: 0,
                 })
             }
@@ -116,28 +127,54 @@ impl ElapseStack {
             None
         }
     }
+    pub fn get_phr(&self, part_num: usize) -> Option<Rc<RefCell<PhraseLoop>>> {
+        self.part_vec[part_num].borrow().get_phr()
+    }
+    pub fn get_cmps(&self, part_num: usize) -> Option<Rc<RefCell<CompositionLoop>>> {
+        self.part_vec[part_num].borrow().get_cmps()
+    }
+    pub fn get_flow(&self, part_num: usize) -> Option<Rc<RefCell<Flow>>> {
+        self.part_vec[part_num].borrow().get_flow()
+    }
+    pub fn tg(&self) -> &TickGen {
+        &self.tg
+    }
+    pub fn inc_key_map(&mut self, key_num: u8, vel: u8) {
+        self.key_map[(key_num - MIN_NOTE_NUMBER) as usize] += 1;
+        let key_disp = format!("9{}/{}", key_num, vel);
+        self.send_msg_to_ui(&key_disp);
+    }
+    pub fn dec_key_map(&mut self, key_num: u8) -> SameKeyState {
+        let idx = (key_num - MIN_NOTE_NUMBER) as usize;
+        if self.key_map[idx] > 1 {
+            self.key_map[idx] -= 1;
+            SameKeyState::MORE
+        } else if self.key_map[idx] == 1 {
+            self.key_map[idx] = 0;
+            SameKeyState::LAST
+        } else {
+            SameKeyState::NOTHING
+        }
+    }
+    pub fn set_phrase_vari(&self, part_num: usize, vari_num: usize) {
+        self.part_vec[part_num]
+            .borrow_mut()
+            .set_phrase_vari(vari_num);
+    }
+    pub fn set_loop_end(&self, part_num: usize) {
+        self.part_vec[part_num].borrow_mut().set_loop_end();
+    }
+    pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
+        self.mdx.midi_out(status, data1, data2);
+    }
+    //*******************************************************************
+    //      Periodic
+    //*******************************************************************
     pub fn periodic(&mut self, msg: Result<ElpsMsg, TryRecvError>) -> bool {
         self.crnt_time = Instant::now();
 
         // message 受信処理
-        match msg {
-            Ok(n) => {
-                match n {
-                    Ctrl(m) => {
-                        if m == MSG_CTRL_QUIT {
-                            return true;
-                        } else {
-                            self.parse_emsg(n)
-                        }
-                    }
-                    _ => self.parse_emsg(n),
-                }
-                //if n[0] == MSG_QUIT {return true;}
-                //else {self.parse_msg(n);}
-            }
-            Err(TryRecvError::Disconnected) => return true, // Wrong!
-            Err(TryRecvError::Empty) => {}                  // No event
-        }
+        if self.handle_msg(msg) {return true;}
 
         //  for GUI
         self.update_gui();
@@ -203,7 +240,31 @@ impl ElapseStack {
         // play 中でなければ return
         return false;
     }
-    fn parse_emsg(&mut self, msg: ElpsMsg) {
+    //*******************************************************************
+    //      handle message
+    //*******************************************************************
+    fn handle_msg(&mut self, msg: Result<ElpsMsg, TryRecvError>) -> bool {
+        match msg {
+            Ok(n) => {
+                match n {
+                    Ctrl(m) => {
+                        if m == MSG_CTRL_QUIT {
+                            return true;
+                        } else {
+                            self.parse_elps_msg(n)
+                        }
+                    }
+                    _ => self.parse_elps_msg(n),
+                }
+                //if n[0] == MSG_QUIT {return true;}
+                //else {self.parse_msg(n);}
+            }
+            Err(TryRecvError::Disconnected) => return true, // Wrong!
+            Err(TryRecvError::Empty) => return false        // No event
+        }
+        return false
+    }
+    fn parse_elps_msg(&mut self, msg: ElpsMsg) {
         match msg {
             Ctrl(m) => self.ctrl_msg(m),
             Sync(m) => self.sync(m),
@@ -233,46 +294,6 @@ impl ElapseStack {
         } else if msg >= MSG_CTRL_ENDFLOW && msg < MSG_CTRL_ENDFLOW + 5 {
             self.endflow(vec![msg - MSG_CTRL_ENDFLOW]);
         }
-    }
-    pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
-        self.mdx.midi_out(status, data1, data2);
-    }
-    pub fn get_phr(&self, part_num: usize) -> Option<Rc<RefCell<PhraseLoop>>> {
-        self.part_vec[part_num].borrow().get_phr()
-    }
-    pub fn get_cmps(&self, part_num: usize) -> Option<Rc<RefCell<CompositionLoop>>> {
-        self.part_vec[part_num].borrow().get_cmps()
-    }
-    pub fn get_flow(&self, part_num: usize) -> Option<Rc<RefCell<Flow>>> {
-        self.part_vec[part_num].borrow().get_flow()
-    }
-    pub fn tg(&self) -> &TickGen {
-        &self.tg
-    }
-    pub fn inc_key_map(&mut self, key_num: u8, vel: u8) {
-        self.key_map[(key_num - MIN_NOTE_NUMBER) as usize] += 1;
-        let key_disp = format!("9{}/{}", key_num, vel);
-        self.send_msg_to_ui(&key_disp);
-    }
-    pub fn dec_key_map(&mut self, key_num: u8) -> SameKeyState {
-        let idx = (key_num - MIN_NOTE_NUMBER) as usize;
-        if self.key_map[idx] > 1 {
-            self.key_map[idx] -= 1;
-            SameKeyState::MORE
-        } else if self.key_map[idx] == 1 {
-            self.key_map[idx] = 0;
-            SameKeyState::LAST
-        } else {
-            SameKeyState::NOTHING
-        }
-    }
-    pub fn set_phrase_vari(&self, part_num: usize, vari_num: usize) {
-        self.part_vec[part_num]
-            .borrow_mut()
-            .set_phrase_vari(vari_num);
-    }
-    pub fn set_loop_end(&self, part_num: usize) {
-        self.part_vec[part_num].borrow_mut().set_loop_end();
     }
     fn send_msg_to_ui(&self, msg: &str) {
         match self.ui_hndr.send(msg.to_string()) {
@@ -325,7 +346,51 @@ impl ElapseStack {
     #[allow(dead_code)]
     fn parse_1byte_midi(&mut self, input_data: u8) {
         println!("{}", input_data);
+        if input_data & 0x80 == 0x80 {
+            match input_data {
+                0xfa => {},
+                0xf8 => {},
+                0xfc => {},
+                _ => {
+                    if input_data & 0x0f == 0x0a {
+                        self.midi_stream_status = input_data;
+                    }
+                }
+            }
+        } else {
+            match self.midi_stream_status & 0xf0 {
+                0x90 => {
+                    if self.midi_stream_data1 != INVALID {
+                        // do something
+                        self.midi_stream_status = INVALID;
+                        self.midi_stream_data1 = INVALID;
+                    } else {
+                        self.midi_stream_data1 = input_data;
+                    }
+                },
+                0x80 => {
+                    if self.midi_stream_data1 != INVALID {
+                        // do something
+                        self.midi_stream_status = INVALID;
+                        self.midi_stream_data1 = INVALID;
+                    } else {
+                        self.midi_stream_data1 = input_data;
+                    }
+                },
+                0xc0 => {
+                    let key_disp = format!("@ptn{}", input_data);
+                    self.send_msg_to_ui(&key_disp);
+                    self.midi_stream_status = INVALID;
+                    self.midi_stream_data1 = INVALID;
+                },
+                0xb0 => {},
+                _ => {},
+            }
+        }
     }
+    //*******************************************************************
+    //      Control Message
+    //*******************************************************************
     fn start(&mut self, resume: bool) {
         if self.during_play && !resume {
             return;
@@ -470,6 +535,9 @@ impl ElapseStack {
             .borrow_mut()
             .rcv_ana_msg(AnaData::empty(), vari_num as usize);
     }
+    //*******************************************************************
+    //      Pick out playable
+    //*******************************************************************
     fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
         for elps in self.elapse_vec.iter() {
@@ -519,6 +587,9 @@ impl ElapseStack {
             }
         }
     }
+    //*******************************************************************
+    //      Update GUI
+    //*******************************************************************
     fn update_gui_at_msrtop(&mut self) {
         // key
         let key_disp = "0_".to_string();
