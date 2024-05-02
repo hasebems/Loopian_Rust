@@ -174,7 +174,9 @@ impl ElapseStack {
         self.crnt_time = Instant::now();
 
         // message 受信処理
-        if self.handle_msg(msg) {return true;}
+        if self.handle_msg(msg) {
+            return true;
+        }
 
         //  for GUI
         self.update_gui();
@@ -260,9 +262,9 @@ impl ElapseStack {
                 //else {self.parse_msg(n);}
             }
             Err(TryRecvError::Disconnected) => return true, // Wrong!
-            Err(TryRecvError::Empty) => return false        // No event
+            Err(TryRecvError::Empty) => return false,       // No event
         }
-        return false
+        return false;
     }
     fn parse_elps_msg(&mut self, msg: ElpsMsg) {
         match msg {
@@ -348,9 +350,9 @@ impl ElapseStack {
         println!("{}", input_data);
         if input_data & 0x80 == 0x80 {
             match input_data {
-                0xfa => {},
-                0xf8 => {},
-                0xfc => {},
+                0xfa => {}
+                0xf8 => {}
+                0xfc => {}
                 _ => {
                     if input_data & 0x0f == 0x0a {
                         self.midi_stream_status = input_data;
@@ -367,7 +369,7 @@ impl ElapseStack {
                     } else {
                         self.midi_stream_data1 = input_data;
                     }
-                },
+                }
                 0x80 => {
                     if self.midi_stream_data1 != INVALID {
                         // do something
@@ -376,15 +378,15 @@ impl ElapseStack {
                     } else {
                         self.midi_stream_data1 = input_data;
                     }
-                },
+                }
                 0xc0 => {
                     let key_disp = format!("@ptn{}", input_data);
                     self.send_msg_to_ui(&key_disp);
                     self.midi_stream_status = INVALID;
                     self.midi_stream_data1 = INVALID;
-                },
-                0xb0 => {},
-                _ => {},
+                }
+                0xb0 => {}
+                _ => {}
             }
         }
     }

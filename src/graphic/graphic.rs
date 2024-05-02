@@ -6,6 +6,7 @@
 use super::noteobj::NoteObj;
 use super::waterripple::WaterRipple;
 use crate::cmd::cmdparse::LoopianCmd;
+use crate::cmd::txt_common::*;
 use crate::lpnlib::*;
 use crate::setting::*;
 use eframe::{egui, egui::*};

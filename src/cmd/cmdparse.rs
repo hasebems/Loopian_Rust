@@ -8,6 +8,7 @@ use std::sync::{mpsc, mpsc::*};
 
 use super::send_msg::*;
 use super::seq_stock::*;
+use super::txt_common::*;
 use crate::lpnlib::*;
 use crate::setting::*;
 
