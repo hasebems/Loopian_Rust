@@ -35,11 +35,12 @@ pub struct Graphic {
     full_size: Pos2,
     nobj: Vec<Box<dyn NoteObj>>,
     start_time: Instant,
-    frame_counter: i32,
+    frame_counter: i32,          // one per 20msec
+    _frame_counter_old_dbg: i32, // debug
     rndm: rngs::ThreadRng,
     mode: i16,
     top_scroll_line: usize,
-    last_location: usize,
+    _last_location: usize,
 }
 struct Resize {
     eight_indic_top: f32,
@@ -59,10 +60,11 @@ impl Graphic {
             nobj: Vec::new(),
             start_time: Instant::now(),
             frame_counter: 0,
+            _frame_counter_old_dbg: 0,
             rndm: thread_rng(),
             mode: DARK_MODE,
             top_scroll_line: 0,
-            last_location: 0,
+            _last_location: 0,
         }
     }
     pub fn update(
@@ -71,7 +73,7 @@ impl Graphic {
         infs: (
             usize,                                 // cursor position
             &String,                               // input text
-            &Vec<(TextAttribute, String, String)>, // scroll text
+            &Vec<(TextAttribute, String, String)>, // scroll text(TextAttribute::Common/Answer, time, text)
             usize,                                 // selected scroll text line
             &LoopianCmd,                           // eight indicator
         ),
@@ -303,55 +305,65 @@ impl Graphic {
         &mut self,
         ui: &mut egui::Ui,
         scroll_lines: &Vec<(TextAttribute, String, String)>,
-        crnt_location: usize,
+        crnt_history: usize,
         rs: &Resize,
     ) {
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
         const FONT16_HEIGHT: f32 = 25.0;
         const FONT16_WIDTH: f32 = 10.0;
 
-        // generate max_line_in_window, update self.top_scroll_line
+        // generating max_line_in_window, and updating self.top_scroll_line
         let letter_color = self.letter_color();
         let lines = scroll_lines.len();
         let max_line_in_window = ((self.full_size.y - 340.0) as usize) / 25;
+        let mut crnt_line: usize = lines;
+        let mut max_disp_line = max_line_in_window;
+        let max_history = scroll_lines
+            .iter()
+            .filter(|x| x.0 == TextAttribute::Common)
+            .collect::<Vec<_>>()
+            .len();
+
         if lines < max_line_in_window {
             // not filled yet
             self.top_scroll_line = 0;
-        } else if lines == crnt_location * 2 {
-            // last line is latest input
-            self.top_scroll_line = crnt_location * 2 - max_line_in_window;
-        } else {
-            // moving history
-            if lines - max_line_in_window > crnt_location * 2 {
-                // older
-                if self.top_scroll_line > crnt_location * 2 {
-                    self.top_scroll_line = crnt_location * 2;
-                }
-            } else {
-                // newer
-                if self.top_scroll_line + max_line_in_window <= (crnt_location + 1) * 2 {
-                    self.top_scroll_line = (crnt_location + 1) * 2 - max_line_in_window;
+            max_disp_line = lines;
+        }
+        if crnt_history < max_history {
+            crnt_line = 0;
+            for i in 0..lines {
+                if scroll_lines[i].0 == TextAttribute::Common {
+                    if crnt_line == crnt_history {
+                        crnt_line = i;
+                        break;
+                    }
+                    crnt_line += 1;
                 }
             }
-        }
-        if self.last_location != crnt_location * 2 {
-            self.last_location = crnt_location * 2;
-            //println!("Scroll:{},{},{}",lines,crnt_location,self.top_scroll_line);
+            if crnt_line < self.top_scroll_line {
+                self.top_scroll_line = crnt_line;
+            } else if crnt_line > self.top_scroll_line + max_line_in_window - 1 {
+                self.top_scroll_line = crnt_line - max_line_in_window + 1;
+            }
+        } else if lines >= max_line_in_window {
+            self.top_scroll_line = lines - max_line_in_window;
         }
 
+        // debug
+        //        if self.frame_counter > self._frame_counter_old_dbg + 50 || self._last_location != lines {
+        //            println!("crnt_history:{}, line:{}, top:{}, max:{}", crnt_history, crnt_line, self.top_scroll_line, max_history);
+        //            self._frame_counter_old_dbg = self.frame_counter;
+        //            self._last_location = lines;
+        //        }
+
         // Draw Letters
-        let max_disp_line = if lines < max_line_in_window {
-            lines
-        } else {
-            max_line_in_window
-        };
         for i in 0..max_disp_line {
             let past_text_set = scroll_lines[self.top_scroll_line + i].clone();
             let past_text = past_text_set.1.clone() + &past_text_set.2;
             let ltrcnt = past_text.chars().count();
 
             // line
-            if self.top_scroll_line + i == crnt_location * 2 {
+            if self.top_scroll_line + i == crnt_line {
                 ui.painter().rect_filled(
                     Rect {
                         min: Pos2 {
