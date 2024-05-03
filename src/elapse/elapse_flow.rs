@@ -129,7 +129,7 @@ impl Flow {
                         self.gen_stock[idx].2 = ev.3; // locate 差し替え
                     } else {
                         estk.inc_key_map(rnote, ev.4);
-                        estk.midi_out(0x90, rnote, ev.4);
+                        estk.midi_out_flow(0x90, rnote, ev.4);
                         println!("MIDI OUT<< 0x90:{:x}:{:x}", rnote, ev.4);
                         self.gen_stock.push(GenStock(rnote, ev.4, ev.3));
                     }
@@ -140,7 +140,7 @@ impl Flow {
                         let rnote = self.gen_stock[idx].0;
                         let snk = estk.dec_key_map(rnote);
                         if snk == stack_elapse::SameKeyState::LAST {
-                            estk.midi_out(0x90, rnote, 0); // test
+                            estk.midi_out_flow(0x90, rnote, 0); // test
                         }
                         println!("MIDI OUT<< 0x90:{:x}:0", rnote);
                         self.gen_stock.remove(idx);

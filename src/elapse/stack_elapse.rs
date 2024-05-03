@@ -165,7 +165,10 @@ impl ElapseStack {
         self.part_vec[part_num].borrow_mut().set_loop_end();
     }
     pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
-        self.mdx.midi_out(status, data1, data2);
+        self.mdx.midi_out(status, data1, data2, true);
+    }
+    pub fn midi_out_flow(&mut self, status: u8, data1: u8, data2: u8) {
+        self.mdx.midi_out(status, data1, data2, false);
     }
     //*******************************************************************
     //      Periodic
