@@ -361,7 +361,7 @@ impl LoopianCmd {
             } else {
                 Some("Settle down!".to_string())
             }
-        } else if len >= 3 && &input_text[0..3] == "set" {
+        } else if len >= 4 && &input_text[0..4] == "set." {
             // set
             let responce = self.parse_set_command(input_text);
             Some(responce)
@@ -656,70 +656,67 @@ impl LoopianCmd {
     }
     //*************************************************************************
     fn parse_set_command(&mut self, input_text: &str) -> String {
-        let cmnd = &input_text[4..];
-        let _len = cmnd.chars().count();
-        let cv = cmnd.split('=').fold(Vec::new(), |mut s, i| {
-            s.push(i.to_string());
-            s
-        });
-        if cv[0] == "key" {
-            if self.change_key(&cv[1]) {
-                "Key has changed!".to_string()
-            } else {
-                "what?".to_string()
-            }
-        } else if cv[0] == "oct" {
-            if self.change_oct(&cv[1]) {
-                "Octave has changed!".to_string()
-            } else {
-                "what?".to_string()
-            }
-        } else if cv[0] == "bpm" {
-            match cv[1].parse::<i16>() {
-                Ok(msg) => {
-                    self.dtstk.change_bpm(msg);
-                    self.sndr
-                        .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_BPM, msg]));
-                    self.sndr
-                        .send_all_vari_and_phrase(self.input_part, &self.dtstk);
-                    "BPM has changed!".to_string()
+        if let Some((cmd, prm)) = separate_cmnd_and_str(&input_text[4..]) {
+            if cmd == "key" {
+                if self.change_key(prm) {
+                    "Key has changed!".to_string()
+                } else {
+                    "what?".to_string()
                 }
-                Err(e) => {
-                    println!("{:?}", e);
-                    "Number is wrong.".to_string()
+            } else if cmd == "oct" {
+                if self.change_oct(prm) {
+                    "Octave has changed!".to_string()
+                } else {
+                    "what?".to_string()
                 }
-            }
-        } else if cv[0] == "beat" {
-            let beat = &cv[1];
-            let numvec = split_by('/', beat.to_string());
-            match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
-                (Ok(numerator), Ok(denomirator)) => {
-                    self.dtstk.change_beat(numerator, denomirator);
-                    self.sndr
-                        .send_msg_to_elapse(ElpsMsg::SetBeat([numerator, denomirator]));
-                    self.sndr
-                        .send_all_vari_and_phrase(self.input_part, &self.dtstk);
-                    "Beat has changed!".to_string()
+            } else if cmd == "bpm" {
+                match prm.parse::<i16>() {
+                    Ok(msg) => {
+                        self.dtstk.change_bpm(msg);
+                        self.sndr
+                            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_BPM, msg]));
+                        self.sndr
+                            .send_all_vari_and_phrase(self.input_part, &self.dtstk);
+                        "BPM has changed!".to_string()
+                    }
+                    Err(e) => {
+                        println!("{:?}", e);
+                        "Number is wrong.".to_string()
+                    }
                 }
-                _ => "Number is wrong.".to_string(),
-            }
-        } else if cv[0] == "input" {
-            if self.change_input_mode(&cv[1]) {
-                "Input mode has changed!".to_string()
-            } else {
+            } else if cmd == "beat" {
+                let numvec = split_by('/', prm.to_string());
+                match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
+                    (Ok(numerator), Ok(denomirator)) => {
+                        self.dtstk.change_beat(numerator, denomirator);
+                        self.sndr
+                            .send_msg_to_elapse(ElpsMsg::SetBeat([numerator, denomirator]));
+                        self.sndr
+                            .send_all_vari_and_phrase(self.input_part, &self.dtstk);
+                        "Beat has changed!".to_string()
+                    }
+                    _ => "Number is wrong.".to_string(),
+                }
+            } else if cmd == "input" {
+                if self.change_input_mode(prm) {
+                    "Input mode has changed!".to_string()
+                } else {
+                    "what?".to_string()
+                }
+            } else if cmd == "samenote" {
                 "what?".to_string()
-            }
-        } else if cv[0] == "samenote" {
-            "what?".to_string()
-        } else if cv[0] == "turnnote" {
-            if self.change_turnnote(&cv[1]) {
-                "Turn note has changed!".to_string()
-            } else {
-                "what?".to_string()
-            }
-        } else if cv[0] == "path" {
-            if self.change_path(&cv[1]) {
-                "Path has changed!".to_string()
+            } else if cmd == "turnnote" {
+                if self.change_turnnote(prm) {
+                    "Turn note has changed!".to_string()
+                } else {
+                    "what?".to_string()
+                }
+            } else if cmd == "path" {
+                if self.change_path(prm) {
+                    "Path has changed!".to_string()
+                } else {
+                    "what?".to_string()
+                }
             } else {
                 "what?".to_string()
             }

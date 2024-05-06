@@ -93,6 +93,13 @@ impl LoopianApp {
             self.input_locate += 1;
             self.update_visible_locate();
         });
+        // autofill
+        if let Some(&ltr) = letters.last() {
+            if ltr == "(" {
+                self.input_text.insert_str(self.input_locate, ")");
+            }
+        }
+        // space を . に変換
         if self.input_text.chars().any(|x| x == ' ') {
             let itx = self.input_text.clone();
             self.input_text = itx.replacen(' ', ".", 100); // egui とぶつかり replace が使えない
@@ -102,7 +109,7 @@ impl LoopianApp {
         let itxt: String = self.input_text.clone();
         if key == &Key::Enter {
             self.pressed_enter(itxt);
-        } else if key == &Key::V {
+        } else if key == &Key::V {  // for ctrl+V
             if modifiers.ctrl {
                 let mut ctx = ClipboardContext::new().unwrap();
                 let clip_text = ctx.get_contents().unwrap();

@@ -97,3 +97,13 @@ pub fn extract_texts_from_parentheses(ne: &str) -> &str {
     }
     ""
 }
+pub fn separate_cmnd_and_str(cn: &str) -> Option<(&str, &str)> {
+    if let Some(i) = cn.find('(') {
+        if let Some(e) = cn.find(')') {
+            if i <= e {
+                return Some((&cn[0..i], &cn[(i + 1)..e]));
+            }
+        }
+    }
+    None
+}
