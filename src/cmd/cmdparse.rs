@@ -213,21 +213,19 @@ impl LoopianCmd {
             } else {
                 let part_letter = &input_text[6..];
                 println!("clear>>{}", part_letter);
-                let pnum = Self::detect_part(part_letter);
-                if pnum != MAX_KBD_PART {
+                if let Some(pnum) = Self::detect_part(part_letter) {
                     self.clear_part(pnum);
-                }
-                match pnum {
-                    LEFT1 => Some("part L1 data erased!".to_string()),
-                    LEFT2 => Some("part L2 data erased!".to_string()),
-                    RIGHT1 => Some("part R1 data erased!".to_string()),
-                    RIGHT2 => Some("part R2 data erased!".to_string()),
-                    _ => Some("what?".to_string()),
+                    match pnum {
+                        LEFT1 => Some("part L1 data erased!".to_string()),
+                        LEFT2 => Some("part L2 data erased!".to_string()),
+                        RIGHT1 => Some("part R1 data erased!".to_string()),
+                        RIGHT2 => Some("part R2 data erased!".to_string()),
+                        _ => Some("some ßpart part erased!".to_string()),
+                    }
+                } else {
+                    Some("what?".to_string())
                 }
             }
-        } else if len >= 2 && &input_text[0..2] == "c=" {
-            self.dtstk.set_cluster_memory(input_text[2..].to_string());
-            Some("Set a cluster memory!".to_string())
         } else {
             Some("what?".to_string())
         }
@@ -393,8 +391,8 @@ impl LoopianCmd {
     }
     fn letter_at(&mut self, input_text: &str) -> Option<String> {
         if let Some(ltr) = input_text.chars().nth(1) {
+            let itxt = input_text.trim();
             if let Some(vari) = ltr.to_digit(10) {
-                let itxt = input_text.trim();
                 if let Some(ltr2) = itxt.chars().nth(2) {
                     if ltr2 == '=' {
                         // @n=
@@ -408,6 +406,13 @@ impl LoopianCmd {
                                 return Some("Set Phrase!".to_string());
                             }
                         }
+                    }
+                }
+            } else if ltr == 'c' {
+                if let Some(ltr2) = itxt.chars().nth(2) {
+                    if ltr2 == '=' {
+                        self.dtstk.set_cluster_memory(input_text[3..].to_string());
+                        return Some("Set a cluster memory!".to_string())
                     }
                 }
             }
@@ -454,23 +459,24 @@ impl LoopianCmd {
         }
     }
     fn letter_part(&mut self, input_text: &str) -> Option<String> {
-        let pnum = Self::detect_part(input_text);
-        if pnum != MAX_KBD_PART {
+        if let Some(pnum) = Self::detect_part(input_text) {
             self.input_part = pnum;
-        }
-        match pnum {
-            LEFT1 => Some("Changed current part to left1.".to_string()),
-            LEFT2 => Some("Changed current part to left2.".to_string()),
-            RIGHT1 => Some("Changed current part to right1.".to_string()),
-            RIGHT2 => Some("Changed current part to right2.".to_string()),
-            _ => self.shortcut_input(input_text),
+            match pnum {
+                LEFT1 => Some("Changed current part to left1.".to_string()),
+                LEFT2 => Some("Changed current part to left2.".to_string()),
+                RIGHT1 => Some("Changed current part to right1.".to_string()),
+                RIGHT2 => Some("Changed current part to right2.".to_string()),
+                _ => Some("what?".to_string()),
+            }
+        } else {
+            self.shortcut_input(input_text)
         }
     }
     fn shortcut_input(&mut self, input_text: &str) -> Option<String> {
         // shortcut input
         let mut rtn_str = "what?".to_string();
         for (i, ltr) in input_text.chars().enumerate() {
-            if ltr == '>' {
+            if ltr == '.' {
                 let first_letter = &input_text[i + 1..i + 2];
                 let part_str = &input_text[0..i];
                 let rest_text = &input_text[i + 1..];
@@ -503,38 +509,41 @@ impl LoopianCmd {
         }
         Some(rtn_str)
     }
-    fn detect_part(part_str: &str) -> usize {
+    fn detect_part(part_str: &str) -> Option<usize> {
         let len = part_str.chars().count();
         if len == 5 {
-            if &part_str[0..5] == "left1" {
-                LEFT1
-            } else if &part_str[0..5] == "left2" {
-                LEFT2
+            let pt = &part_str[0..5];
+            if pt == "left1" {
+                Some(LEFT1)
+            } else if pt == "left2" {
+                Some(LEFT2)
             } else {
-                MAX_KBD_PART
+                None
             }
         } else if len == 6 {
-            if &part_str[0..6] == "right1" {
-                RIGHT1
-            } else if &part_str[0..6] == "right2" {
-                RIGHT2
+            let pt = &part_str[0..6];
+            if pt == "right1" {
+                Some(RIGHT1)
+            } else if pt == "right2" {
+                Some(RIGHT2)
             } else {
-                MAX_KBD_PART
+                None
             }
         } else if len == 2 {
-            if &part_str[0..2] == "L1" {
-                LEFT1
-            } else if &part_str[0..2] == "L2" {
-                LEFT2
-            } else if &part_str[0..2] == "R1" {
-                RIGHT1
-            } else if &part_str[0..2] == "R2" {
-                RIGHT2
+            let pt = &part_str[0..2];
+            if pt == "L1" {
+                Some(LEFT1)
+            } else if pt == "L2" {
+                Some(LEFT2)
+            } else if pt == "R1" {
+                Some(RIGHT1)
+            } else if pt == "R2" {
+                Some(RIGHT2)
             } else {
-                MAX_KBD_PART
+                None
             }
         } else {
-            MAX_KBD_PART
+            None
         }
     }
     fn call_bracket_brace(
