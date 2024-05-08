@@ -205,6 +205,7 @@ impl LoopianCmd {
             if len == 5 {
                 // stop
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+                self.during_play = false;
                 // clear
                 for i in 0..MAX_KBD_PART {
                     self.clear_part(i);
@@ -253,6 +254,7 @@ impl LoopianCmd {
         if len == 3 && &input_text[0..3] == "end" {
             // stop
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            self.during_play = false;
             Some("Fine.".to_string())
         } else if len == 7 && &input_text[0..7] == "endflow" {
             // fermata
@@ -268,6 +270,7 @@ impl LoopianCmd {
         if len >= 4 && &input_text[0..4] == "fine" {
             // stop
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            self.during_play = false;
             Some("Fine.".to_string())
         } else if len == 7 && &input_text[0..7] == "fermata" {
             // fermata
@@ -412,7 +415,7 @@ impl LoopianCmd {
                 if let Some(ltr2) = itxt.chars().nth(2) {
                     if ltr2 == '=' {
                         self.dtstk.set_cluster_memory(input_text[3..].to_string());
-                        return Some("Set a cluster memory!".to_string())
+                        return Some("Set a cluster memory!".to_string());
                     }
                 }
             }
