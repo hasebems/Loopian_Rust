@@ -109,7 +109,8 @@ impl LoopianApp {
         let itxt: String = self.input_text.clone();
         if key == &Key::Enter {
             self.pressed_enter(itxt);
-        } else if key == &Key::V {  // for ctrl+V
+        } else if key == &Key::V {
+            // for ctrl+V
             if modifiers.ctrl {
                 let mut ctx = ClipboardContext::new().unwrap();
                 let clip_text = ctx.get_contents().unwrap();
