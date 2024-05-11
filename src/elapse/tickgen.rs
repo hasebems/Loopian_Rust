@@ -6,6 +6,9 @@
 use crate::lpnlib::{Beat, DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, DEFAULT_TICK_FOR_QUARTER};
 use std::time::Instant;
 
+//*******************************************************************
+//          Tick Generator Struct
+//*******************************************************************
 pub struct TickGen {
     bpm: i16,
     beat: Beat,
@@ -39,7 +42,12 @@ impl Default for CrntMsrTick {
 }
 
 impl TickGen {
-    pub fn new() -> Self {
+    pub fn new(tp: usize) -> Self {
+        let rit: Box<dyn Rit>;
+        match tp {
+            0 => rit = Box::new(RitLinear::new()),
+            _ => rit = Box::new(RitCtrl::new()),
+        }
         Self {
             bpm: DEFAULT_BPM,
             beat: Beat(4, 4),
@@ -54,7 +62,7 @@ impl TickGen {
             crnt_time: Instant::now(),
             rit_state: false,
             fermata_state: false,
-            ritgen: Box::new(RitGen::new()),
+            ritgen: rit,
         }
     }
     pub fn change_beat_event(&mut self, tick_for_onemsr: i32, beat: Beat) {
@@ -195,6 +203,9 @@ impl TickGen {
     }
 }
 
+//*******************************************************************
+//          Rit. Trait (Super Class)
+//*******************************************************************
 pub trait Rit {
     // rit 開始時
     fn set_rit(
@@ -217,7 +228,10 @@ pub trait Rit {
     fn get_real_bpm(&self) -> i16;
 }
 
-pub struct RitGen {
+//*******************************************************************
+//          Rit. Linear Struct
+//*******************************************************************
+pub struct RitLinear {
     original_bpm: f32,
     start_time: Instant,
     start_tick: i32,
@@ -232,7 +246,7 @@ pub struct RitGen {
     t0_addup_tick: i32, // tempo=0 到達時の積算tick
 }
 
-impl Rit for RitGen {
+impl Rit for RitLinear {
     //==== rit. ======================
     // ratio  0:   tempo 停止
     //        50:  1secで tempo を 50%(1/2)
@@ -280,7 +294,7 @@ impl Rit for RitGen {
         self.original_bpm as i16 - self.delta_bpm
     }
 }
-impl RitGen {
+impl RitLinear {
     pub fn new() -> Self {
         Self {
             original_bpm: 0.0,
@@ -315,5 +329,38 @@ impl RitGen {
                     as i32;
         }
         addup_tick
+    }
+}
+
+//*******************************************************************
+//          Rit. Control Struct
+//*******************************************************************
+pub struct RitCtrl {
+
+}
+
+impl Rit for RitCtrl {
+    //==== rit. ======================
+    // ratio  0:   tempo 停止
+    //        50:  1secで tempo を 50%(1/2)
+    //        100: そのまま
+    fn set_rit(
+        &mut self,
+        _ratio: i32,
+        _bar: i32,
+        _bpm: f32,
+        _start_time: Instant,
+        _start_tick: i32,
+        _tick_for_onemsr: i32,
+    ) {}
+    fn calc_tick_rit(&mut self, _crnt_time: Instant) -> (i32, bool) {(0, false)}
+    fn get_real_bpm(&self) -> i16 {0}
+}
+
+impl RitCtrl {
+    pub fn new() -> Self {
+        Self {
+
+        }
     }
 }

@@ -90,7 +90,7 @@ impl ElapseStack {
                     beat_stock: Beat(4, 4),
                     during_play: false,
                     display_time: Instant::now(),
-                    tg: TickGen::new(),
+                    tg: TickGen::new(0),
                     part_vec,
                     _damper_part: damper_part,
                     elapse_vec,
