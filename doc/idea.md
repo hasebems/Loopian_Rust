@@ -45,6 +45,14 @@
 
 ### 2.Command入力
 
+- Command 体系
+
+|Object|Command|Function|説明|
+|-|-|-|-|
+|||||
+|||||
+|||||
+
 - Command には以下の4種類がある
     1. Phrase Command（ [] で入力）
     1. Composition Command（{}で入力）
@@ -482,6 +490,10 @@ NoteObj <|-- WaterRipple
 - historyを操作すると、scrollviewがスクロールする 3/8
 - stacc(nn) の nn で数値入力可能にした 3/10
 - ctrl-V で clipboard の内容を入力できるようにした 3/10
+- setコマンド書き方の変更 5/6
+    - set bpm=120 -> set.bpm(120)
+    - それに合わせて ( を書いたら ) を自動挿入
+
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -502,8 +514,35 @@ NoteObj <|-- WaterRipple
 - スタカートや音価の操作
     - stacatoを Main Thread ではなく、Play Thread の elapse note でリアルタイムに制御したい
 - Tempoを微分ベースで
-- setコマンド書き方の変更
-    - set bpm=120 -> set.bpm(120)
+    - テンポが設定された過去からの時間で割り算するのではなく、もっと短い時間で tick 計算する
+    - 上記のやり方で rit. をより動的に変化させられる
+    - 外部 F8 同期も可能にする
+- flow の仕様変更
+    - server で立ち上げた時、R1 がデフォルト flow part（現行通り）
+    - play 中でなくても、音は出る（クロマティック＆テンポ同期しない）
+- 全般的なコマンド体系の変更
+    - Object.Command.Fn() の形に統一
+    - Object 種類
+        - APP: 本アプリ全体、すべての Object の親
+        - ALL, L1, L12 などのパート
+        - ctl, set, graph のコマンド大分類
+    - APP は概念的な Object なので、記載しない
+    - ctl は省略可能
+    - Part Object は、入力パートと同じなら省略可能
+    - Fn は必要に応じていくつでも後ろに追加できる
+    - Fn は、引数がなくても () をつける必要がある
+    - Command は引数を持たなければ () は必要ない
+    - APP の Command
+        - quit/q, load : ファイルには書けない
+        - wait/w       : ファイル内にしか書けない(loadを特定の拍まで止める)
+    - part(ALL,L1,L12など) の Command
+        - [], {}, sync, clear, flow, endflow
+    - ctl の Command
+        - play/p, fermata, fine, stop, sync, resume, rit, clear
+    - graph の Command
+        - light, dark
+    - 特殊なもの
+        - @c= , @n= 
 - Phrase を入力したとき、次のループからではなく、リアルタイムで変わる機能
     - リアルタイムか、次のループ先頭かを選べる
         - [RT:xxxx] RTをつけたらリアルタイムに変わる
@@ -526,6 +565,9 @@ NoteObj <|-- WaterRipple
 - @2=@2.dyn(pp) : 再代入可能
 - >d で parallel, >>d で変換しない、<xxx> で、その区間 parallel、<<xxx>> で、その区間変換しない
 - @0=[] は fermata の時に再生する特別な variation とする
+- load 時の、wait機能
+- load 時の、section機能
+
 
 先の話
 - さらなる humanized アルゴリズムの追加
