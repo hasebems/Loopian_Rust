@@ -9,10 +9,12 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use crate::elapse::tickgen::CrntMsrTick;
 
 pub struct History {
     input_lines: Vec<(String, String)>,
     history_ptr: usize,
+    loaded_text: Vec<String>,
 }
 
 impl History {
@@ -23,6 +25,7 @@ impl History {
         Self {
             input_lines: Vec::new(),
             history_ptr: 0,
+            loaded_text: Vec::new(),
         }
     }
     pub fn gen_log(&mut self) {
@@ -69,8 +72,8 @@ impl History {
         self.input_lines.push((time.clone(), cmd));
         self.update_history_ptr()
     }
-    pub fn load_lpn(&mut self, fname: &str, path: Option<String>) -> Vec<String> {
-        let mut command: Vec<String> = Vec::new();
+    pub fn load_lpn(&mut self, fname: &str, path: Option<String>) -> bool {
+        self.loaded_text = Vec::new();
         self.make_folder(Self::LOAD_FOLDER); // フォルダ作成
         let mut real_path = Self::LOAD_FOLDER.to_string();
         if let Some(lp) = path {
@@ -89,13 +92,21 @@ impl History {
                         }
                     }
                     if line.len() > 0 && !comment {
-                        command.push(line.to_string());
+                        self.loaded_text.push(line.to_string());
                     }
                 }
             }
             Err(_err) => println!("Can't open a file"),
         };
-        command
+        if self.loaded_text.len() != 0 {
+            true
+        } else {
+            false
+        }
+    }
+    pub fn get_loaded_text(&self, _mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
+        // wait を見つけたら、その値を (msr,tick) に入れて、そこまでのデータを返す
+        (self.loaded_text.clone(), None)
     }
     pub fn arrow_up(&mut self) -> Option<(String, usize)> {
         let max_count = self.input_lines.len();

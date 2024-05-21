@@ -23,6 +23,7 @@ use std::time::Duration;
 use cmd::cmdparse;
 use cmd::history::History;
 use elapse::stack_elapse::ElapseStack;
+use elapse::tickgen::CrntMsrTick;
 use graphic::graphic::{Graphic, TextAttribute};
 use lpnlib::*;
 use setting::*;
@@ -33,6 +34,7 @@ pub struct LoopianApp {
     input_text: String,
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history_cnt: usize,
+    crnt_msr_tick: Option<CrntMsrTick>,
     cmd: cmdparse::LoopianCmd,
     history: History,
     graph: Graphic,
@@ -50,6 +52,7 @@ impl LoopianApp {
             input_text: String::new(),
             scroll_lines: Vec::new(),
             history_cnt: 0,
+            crnt_msr_tick: None,
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui, true),
             history: History::new(),
             graph: Graphic::new(),
@@ -182,59 +185,72 @@ impl LoopianApp {
         self.visible_locate = 0;
         let dt = Local::now();
         let time = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
-        self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone()); // for history
-        if itxt.chars().count() >= 6 && &itxt[0..4] == "load" {
-            self.scroll_lines
-                .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
-            self.load_file(time.clone(), &itxt[5..]);
+        let len = itxt.chars().count();
+
+        if &itxt[0..1] == "!" {
+            if len >= 7 && &itxt[0..6] == "!load." {
+                // Load File
+                self.load_file(time, &itxt[6..]);
+            } else if len >= 4 && &itxt[0..3] == "!l." {
+                self.load_file(time, &itxt[3..]);
+            } else if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
+                // The end of the App
+                self.cmd.send_quit();
+                self.app_end(true);
+                std::process::exit(0);
+            }
         } else {
+            // Normal Input
+            self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone()); // input history
             self.one_command(time, itxt, true);
         }
     }
     fn load_file(&mut self, time: String, itxt: &str) {
-        // load のときだけ特別処理
-        let command_stk = self.history.load_lpn(itxt, self.cmd.get_path());
-        if command_stk.len() == 0 {
-            self.scroll_lines.push((
-                TextAttribute::Answer,
-                "".to_string(),
-                "No history".to_string(),
-            ));
-        } else {
-            for cmd in command_stk.iter() {
-                self.history_cnt = self.history.set_scroll_text(time.clone(), cmd.clone()); // for history
+        if self.history.load_lpn(itxt, self.cmd.get_path()) {
+            let loaded = self.history.get_loaded_text(CrntMsrTick::default());
+            self.crnt_msr_tick = loaded.1;
+            for cmd in loaded.0.iter() {
+                self.history_cnt = self.history.set_scroll_text(time.clone(), cmd.clone()); // input history
                 self.one_command(time.clone(), cmd.clone(), false);
             }
             self.scroll_lines.push((
                 TextAttribute::Answer,
                 "".to_string(),
-                "Loaded from history".to_string(),
+                "Loaded from designated file".to_string(),
             ));
+        } else {
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "No history".to_string(),
+            ));
+        }
+    }
+    fn auto_load_command(&mut self) {
+        let crnt: CrntMsrTick = self.cmd.get_msr_tick();
+        let last_mt = &self.crnt_msr_tick;
+        if last_mt.is_some() {
+            if last_mt.as_ref().unwrap().msr != crnt.msr && last_mt.as_ref().unwrap().tick != crnt.tick {
+                println!("{}:{}", crnt.msr, crnt.tick);
+                self.crnt_msr_tick = Some(crnt);
+            }
         }
     }
     fn one_command(&mut self, time: String, itxt: String, verbose: bool) {
         // 通常のコマンド入力
         if let Some(answer) = self.cmd.set_and_responce(&itxt) {
-            // for work
-            if answer == "nosave" {
-                // The end of the App
-                self.app_end(false);
-                std::process::exit(0);
-            } else {
-                // normal command
+            // normal command
+            self.scroll_lines
+                .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
+            if verbose {
                 self.scroll_lines
-                    .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
-                if verbose {
-                    self.scroll_lines
-                        .push((TextAttribute::Answer, "".to_string(), answer));
-                }
+                    .push((TextAttribute::Answer, "".to_string(), answer));
             }
-        } else {
-            // The end of the App
-            self.app_end(true);
-            std::process::exit(0);
         }
     }
+    //*******************************************************************
+    //      Central Panel
+    //*******************************************************************
     fn draw_central_panel(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         let mut ntev: Vec<String> = Vec::new();
         while let Some(kmsg) = self.cmd.move_ev_from_gev() {
@@ -325,6 +341,9 @@ impl eframe::App for LoopianApp {
 
         //  Read imformation from StackElapse
         self.cmd.read_from_ui_hndr();
+
+        //  Auto Load Function
+        self.auto_load_command();
 
         //  Draw CentralPanel
         self.draw_central_panel(ctx, frame);

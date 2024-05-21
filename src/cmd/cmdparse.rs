@@ -9,6 +9,7 @@ use std::sync::{mpsc, mpsc::*};
 use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
+use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 use crate::setting::*;
 
@@ -77,11 +78,28 @@ impl LoopianCmd {
     pub fn get_indicator(&self, num: usize) -> &str {
         &self.indicator[num]
     }
+    pub fn get_msr_tick(&self) -> CrntMsrTick {
+        //(msr,beat)
+        let mut mb = self.indicator[3].clone();
+        mb.retain(|c| !c.is_whitespace());
+        mb.retain(|c| c != '>');
+        let mbx: Vec<&str> = mb.split(':').collect();
+        if mbx.len() > 2 {
+            let msr = mbx[0].parse::<i32>().unwrap_or(0);
+            let beat = mbx[1].parse::<i32>().unwrap_or(0);
+            CrntMsrTick {msr, tick:beat, tick_for_onemsr:1920}
+        } else {
+            CrntMsrTick::default()
+        }
+    }
     pub fn get_graphic_msg(&self) -> i16 {
         self.graphic_msg
     }
     pub fn get_path(&self) -> Option<String> {
         self.path.clone()
+    }
+    pub fn send_quit(&self) {
+        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
     }
     pub fn read_from_ui_hndr(&mut self) -> u8 {
         // Play Thread からの、8indicator表示/PC時のFile Loadメッセージを受信する処理
@@ -163,9 +181,7 @@ impl LoopianCmd {
         }
         println!("Set Text: {}", input_text);
         let first_letter = &input_text[0..1];
-        if first_letter == "q" {
-            self.letter_q(input_text)
-        } else if first_letter == "@" {
+        if first_letter == "@" {
             self.letter_at(input_text)
         } else if first_letter == "[" {
             self.letter_bracket(input_text)
@@ -227,24 +243,6 @@ impl LoopianCmd {
                     Some("what?".to_string())
                 }
             }
-        } else {
-            Some("what?".to_string())
-        }
-    }
-    fn letter_q(&mut self, input_text: &str) -> Option<String> {
-        let len = input_text.chars().count();
-        if (len == 1 && input_text == "q") || (len >= 4 && &input_text[0..4] == "quit") {
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
-            let option = if len >= 4 {
-                input_text[4..].to_string()
-            } else {
-                "".to_string()
-            };
-            if option.trim() == "nosave" {
-                Some("nosave".to_string())
-            } else {
-                None
-            } //  The End of the App
         } else {
             Some("what?".to_string())
         }
