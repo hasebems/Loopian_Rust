@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::{Beat, DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, DEFAULT_TICK_FOR_QUARTER};
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 //*******************************************************************
 //          Tick Generator Struct
@@ -215,23 +215,23 @@ pub trait Rit {
     // rit 開始時に呼ばれる
     fn set_rit(
         &mut self,
-        ratio: i32,           // 継承によって自由な単位とする。通常は 0-100 の間で rit. の遅くなる度合いを調整する
-        bar: i32,             // これから rit.する小節数, 0: 次の小節まで、1: 次の次の小節まで (何回小節跨ぎをスルーするか)
-        bpm: f32,             // rit.開始時のテンポ
-        start_time: Instant,  // rit.開始時の時間
-        start_tick: i32,      // rit.開始時のtick
+        ratio: i32, // 継承によって自由な単位とする。通常は 0-100 の間で rit. の遅くなる度合いを調整する
+        bar: i32, // これから rit.する小節数, 0: 次の小節まで、1: 次の次の小節まで (何回小節跨ぎをスルーするか)
+        bpm: f32, // rit.開始時のテンポ
+        start_time: Instant, // rit.開始時の時間
+        start_tick: i32, // rit.開始時のtick
         tick_for_onemsr: i32, // 1小節の tick 数
     );
 
     // rit 中、定期的に呼ぶ None:rit終了、Some():rit開始時からの積算tick
     fn calc_tick_rit(
         &mut self,
-        crnt_time: Instant,     // 現在の時間
-    ) -> (i32, bool);           // (経過tick, true/false: rit終了したか)
-                                // 2小節以上のrit.の場合、経過tickはrit開始小節からの累積tick
+        crnt_time: Instant, // 現在の時間
+    ) -> (i32, bool); // (経過tick, true/false: rit終了したか)
+                      // 2小節以上のrit.の場合、経過tickはrit開始小節からの累積tick
 
     //  現在の bpm を得る
-    fn get_real_bpm(&self) -> i16;  // 現在のテンポ
+    fn get_real_bpm(&self) -> i16; // 現在のテンポ
 }
 
 //*******************************************************************
@@ -342,6 +342,7 @@ impl RitLinear {
 //          Rit. Sigmoid Struct
 //*******************************************************************
 const IDX_MAX: usize = 128;
+#[rustfmt::skip]
 const SIGMOID: [f32; IDX_MAX] = [// time -> tps(bpm)
     0.993307149,0.992767236,0.992184111,0.991554373,
     0.990874363,0.990140145,0.989347489,0.988491851,
@@ -377,6 +378,7 @@ const SIGMOID: [f32; IDX_MAX] = [// time -> tps(bpm)
     0.009125637,0.008445627,0.007815889,0.007232764,
     //0.006692851,
 ];
+#[rustfmt::skip]
 const INTEGRAL_SIGMOID: [f32; IDX_MAX] = [ // time -> tick
     0.0,0.015516206,0.031023639,0.046521595,
     0.06200932,0.077485996,0.092950743,0.108402613,
@@ -414,13 +416,13 @@ const INTEGRAL_SIGMOID: [f32; IDX_MAX] = [ // time -> tick
 ];
 pub struct RitSigmoid {
     ratio: i32,
-    bar:   i32,
-    bpm:   f32,
+    bar: i32,
+    bpm: f32,
     end_bpm: f32,
     start_tick: i32,
     start_time: Instant,
-    to_end:   Duration,     // end までの時間
-    se_tick: i32,           // rit start-end の tick
+    to_end: Duration, // end までの時間
+    se_tick: i32,     // rit start-end の tick
     crnt_idx: usize,
     tick_for_onemsr: i32,
     crnt_tick: i32,
@@ -445,25 +447,30 @@ impl Rit for RitSigmoid {
         self.start_tick = start_tick;
         self.start_time = start_time;
         self.tick_for_onemsr = tick_for_onemsr;
-        self.se_tick = tick_for_onemsr - start_tick + tick_for_onemsr*bar;
-        self.end_bpm = if bpm*(ratio as f32)/100.0 > 30.0 {bpm*(ratio as f32)/100.0} else {30.0};
+        self.se_tick = tick_for_onemsr - start_tick + tick_for_onemsr * bar;
+        self.end_bpm = if bpm * (ratio as f32) / 100.0 > 30.0 {
+            bpm * (ratio as f32) / 100.0
+        } else {
+            30.0
+        };
         //self.to_end = Duration::from_micros((((self.se_tick as f32)/(bpm*8.0))*1000000.0) as u64);
-        let t1 = (self.se_tick as f32)/(bpm*8.0);
-        self.to_end = Duration::from_micros((2.0*bpm/(bpm + self.end_bpm)*t1*1000000.0) as u64);
-        println!("end_bpm:::::{}",self.end_bpm);
-        println!("tick:::::{}",start_tick);
-        println!("se_tick:::::{}",self.se_tick);
-        println!("org_end:::::{}",t1);
-        println!("to_end:::::{:?}",self.to_end);
+        let t1 = (self.se_tick as f32) / (bpm * 8.0);
+        self.to_end =
+            Duration::from_micros((2.0 * bpm / (bpm + self.end_bpm) * t1 * 1000000.0) as u64);
+        println!("end_bpm:::::{}", self.end_bpm);
+        println!("tick:::::{}", start_tick);
+        println!("se_tick:::::{}", self.se_tick);
+        println!("org_end:::::{}", t1);
+        println!("to_end:::::{:?}", self.to_end);
     }
     fn calc_tick_rit(&mut self, crnt_time: Instant) -> (i32, bool) {
         let bunshi = crnt_time - self.start_time;
-        self.crnt_idx = ((bunshi.as_secs_f32()/self.to_end.as_secs_f32())*128.0) as usize;
+        self.crnt_idx = ((bunshi.as_secs_f32() / self.to_end.as_secs_f32()) * 128.0) as usize;
         if self.crnt_idx >= IDX_MAX {
             (self.se_tick + self.start_tick, true)
         } else {
             let tick_ratio = INTEGRAL_SIGMOID[self.crnt_idx];
-            let crnt_tick = (((self.se_tick as f32)*tick_ratio) as i32) + self.start_tick;
+            let crnt_tick = (((self.se_tick as f32) * tick_ratio) as i32) + self.start_tick;
             if self.crnt_tick != crnt_tick {
                 self.crnt_tick = crnt_tick;
             }
@@ -471,8 +478,12 @@ impl Rit for RitSigmoid {
         }
     }
     fn get_real_bpm(&self) -> i16 {
-        let tps_ratio = if self.crnt_idx >= IDX_MAX {0.0} else {SIGMOID[self.crnt_idx]};
-        let crnt_bpm = tps_ratio*(self.bpm-self.end_bpm) + self.end_bpm;
+        let tps_ratio = if self.crnt_idx >= IDX_MAX {
+            0.0
+        } else {
+            SIGMOID[self.crnt_idx]
+        };
+        let crnt_bpm = tps_ratio * (self.bpm - self.end_bpm) + self.end_bpm;
         crnt_bpm as i16
     }
 }
@@ -480,11 +491,11 @@ impl Rit for RitSigmoid {
 impl RitSigmoid {
     pub fn new() -> Self {
         Self {
-            ratio:0,
-            bar:0,
-            bpm:0.0,
-            end_bpm:0.0,
-            start_tick:0,
+            ratio: 0,
+            bar: 0,
+            bpm: 0.0,
+            end_bpm: 0.0,
+            start_tick: 0,
             start_time: Instant::now(),
             to_end: Duration::from_secs(0),
             se_tick: 0,
@@ -498,9 +509,7 @@ impl RitSigmoid {
 //*******************************************************************
 //          Rit. Control Struct
 //*******************************************************************
-pub struct RitCtrl {
-
-}
+pub struct RitCtrl {}
 
 impl Rit for RitCtrl {
     //==== rit. ======================
@@ -515,15 +524,18 @@ impl Rit for RitCtrl {
         _start_time: Instant,
         _start_tick: i32,
         _tick_for_onemsr: i32,
-    ) {}
-    fn calc_tick_rit(&mut self, _crnt_time: Instant) -> (i32, bool) {(0, true)}
-    fn get_real_bpm(&self) -> i16 {0}
+    ) {
+    }
+    fn calc_tick_rit(&mut self, _crnt_time: Instant) -> (i32, bool) {
+        (0, true)
+    }
+    fn get_real_bpm(&self) -> i16 {
+        0
+    }
 }
 
 impl RitCtrl {
     pub fn new() -> Self {
-        Self {
-
-        }
+        Self {}
     }
 }
