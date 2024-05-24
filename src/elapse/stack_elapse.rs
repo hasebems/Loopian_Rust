@@ -139,9 +139,9 @@ impl ElapseStack {
     pub fn tg(&self) -> &TickGen {
         &self.tg
     }
-    pub fn inc_key_map(&mut self, key_num: u8, vel: u8) {
+    pub fn inc_key_map(&mut self, key_num: u8, vel: u8, pt: u8) {
         self.key_map[(key_num - MIN_NOTE_NUMBER) as usize] += 1;
-        let key_disp = format!("9{}/{}", key_num, vel);
+        let key_disp = format!("9{}/{}/{}", key_num, vel, pt);
         self.send_msg_to_ui(&key_disp);
     }
     pub fn dec_key_map(&mut self, key_num: u8) -> SameKeyState {

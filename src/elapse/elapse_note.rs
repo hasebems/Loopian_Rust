@@ -29,6 +29,7 @@ pub struct Note {
     destroy: bool,
     next_msr: i32,
     next_tick: i32,
+    part: u32,
     deb_txt: String,
 }
 impl Note {
@@ -41,6 +42,7 @@ impl Note {
         deb_txt: String,
         msr: i32,
         tick: i32,
+        part: u32,
     ) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -58,6 +60,7 @@ impl Note {
             destroy: false,
             next_msr: msr,
             next_tick: tick,
+            part,
             deb_txt,
         }))
     }
@@ -69,7 +72,7 @@ impl Note {
         if Note::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
             self.real_note = num;
             let vel = self.random_velocity(self.velocity);
-            estk.inc_key_map(num, vel);
+            estk.inc_key_map(num, vel, self.part as u8);
             estk.midi_out(0x90, self.real_note, vel);
             println!(
                 "On: N{} V{} D{} Trns: {}, ",

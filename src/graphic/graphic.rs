@@ -112,6 +112,7 @@ impl Graphic {
             let nt_vel = split_by('/', ev.clone());
             let nt: i32 = nt_vel[0].parse().unwrap();
             let vel: i32 = nt_vel[1].parse().unwrap();
+            let _pt: i32 = nt_vel[2].parse().unwrap();
             let rnd: f32 = self.rndm.gen();
             self.nobj.push(Box::new(WaterRipple::new(
                 nt as f32,

@@ -128,7 +128,7 @@ impl Flow {
                     if let Some(idx) = self.same_note_index(rnote) {
                         self.gen_stock[idx].2 = ev.3; // locate 差し替え
                     } else {
-                        estk.inc_key_map(rnote, ev.4);
+                        estk.inc_key_map(rnote, ev.4, self.id.pid as u8);
                         estk.midi_out_flow(0x90, rnote, ev.4);
                         println!("MIDI OUT<< 0x90:{:x}:{:x}", rnote, ev.4);
                         self.gen_stock.push(GenStock(rnote, ev.4, ev.3));

@@ -195,6 +195,7 @@ impl PhraseLoop {
             deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
             msr,
             tick,
+            self.id.pid,
         );
         estk.add_elapse(Rc::clone(&nt));
     }
