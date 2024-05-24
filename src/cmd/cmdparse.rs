@@ -79,7 +79,7 @@ impl LoopianCmd {
         &self.indicator[num]
     }
     pub fn get_msr_tick(&self) -> CrntMsrTick {
-        let mb = self.indicator[3].clone();
+        let mb = self.get_indicator(3).to_string();
         if let Some(first) = mb.chars().nth(0) {
             if first == '>' {
                 // 再生中
@@ -89,11 +89,10 @@ impl LoopianCmd {
                 if mbvec.len() >= 2 {
                     let msr = mbvec[0].parse::<i32>().unwrap_or(0); // 小節番号
                     let bnum = mbvec[1].parse::<i32>().unwrap_or(0); // 拍
-                    let beat = self.indicator[2].clone();
+                    let beat = self.get_indicator(2).to_string();
                     let beat_ele: Vec<&str> = beat.split('/').collect();
                     let numerator = beat_ele[0].parse::<i32>().unwrap_or(0); // 拍数
                     let denomirator = beat_ele[1].parse::<i32>().unwrap_or(0); // 分母
-                                                                               //println!("XXX>>{}-{}-{}-{}",msr,bnum,numerator,denomirator);
                     let tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE * numerator / denomirator;
                     let tick = bnum * DEFAULT_TICK_FOR_QUARTER * 4 / denomirator; // 拍から算出したtick
                     return CrntMsrTick {
