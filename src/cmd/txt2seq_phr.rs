@@ -511,6 +511,8 @@ fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
         } else {
             base_dur = DEFAULT_TICK_FOR_QUARTER / 4;
         }
+    } else if fst_ltr == 'w' {
+        base_dur = DEFAULT_TICK_FOR_QUARTER / 8;
     } else if fst_ltr == 'q' {
         if ntext.chars().nth(1).unwrap_or(' ') == '\'' {
             base_dur = DEFAULT_TICK_FOR_QUARTER * 3 / 2;
