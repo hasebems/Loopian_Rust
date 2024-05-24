@@ -605,7 +605,7 @@ impl ElapseStack {
         self.send_msg_to_ui(&beat_disp);
     }
     fn update_gui(&mut self) {
-        if self.crnt_time - self.display_time > Duration::from_millis(80) {
+        if self.crnt_time - self.display_time > Duration::from_millis(50) {
             self.display_time = self.crnt_time;
             // bpm
             let bpm_num = if self.during_play {

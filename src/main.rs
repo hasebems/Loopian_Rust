@@ -10,7 +10,6 @@ mod lpnlib;
 mod setting;
 mod test;
 
-use chrono::Local;
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use eframe::{egui, egui::*};
 use std::env;
@@ -22,6 +21,7 @@ use std::time::Duration;
 
 use cmd::cmdparse;
 use cmd::history::History;
+use cmd::txt_common::*;
 use elapse::stack_elapse::ElapseStack;
 use elapse::tickgen::CrntMsrTick;
 use graphic::graphic::{Graphic, TextAttribute};
@@ -34,7 +34,7 @@ pub struct LoopianApp {
     input_text: String,
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history_cnt: usize,
-    crnt_msr_tick: Option<CrntMsrTick>,
+    next_msr_tick: Option<CrntMsrTick>,
     cmd: cmdparse::LoopianCmd,
     history: History,
     graph: Graphic,
@@ -52,7 +52,7 @@ impl LoopianApp {
             input_text: String::new(),
             scroll_lines: Vec::new(),
             history_cnt: 0,
-            crnt_msr_tick: None,
+            next_msr_tick: None,
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui, true),
             history: History::new(),
             graph: Graphic::new(),
@@ -183,16 +183,14 @@ impl LoopianApp {
         self.input_text = "".to_string();
         self.input_locate = 0;
         self.visible_locate = 0;
-        let dt = Local::now();
-        let time = dt.format("%Y-%m-%d %H:%M:%S ").to_string();
         let len = itxt.chars().count();
 
         if &itxt[0..1] == "!" {
             if len >= 7 && &itxt[0..6] == "!load." {
                 // Load File
-                self.load_file(time, &itxt[6..]);
+                self.load_file(&itxt[6..]);
             } else if len >= 4 && &itxt[0..3] == "!l." {
-                self.load_file(time, &itxt[3..]);
+                self.load_file(&itxt[3..]);
             } else if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
                 // The end of the App
                 self.cmd.send_quit();
@@ -201,23 +199,15 @@ impl LoopianApp {
             }
         } else {
             // Normal Input
-            self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone()); // input history
-            self.one_command(time, itxt, true);
+            self.history_cnt = self
+                .history
+                .set_scroll_text(get_crnt_date_txt(), itxt.clone()); // input history
+            self.one_command(get_crnt_date_txt(), itxt, true);
         }
     }
-    fn load_file(&mut self, time: String, itxt: &str) {
+    fn load_file(&mut self, itxt: &str) {
         if self.history.load_lpn(itxt, self.cmd.get_path()) {
-            let loaded = self.history.get_loaded_text(CrntMsrTick::default());
-            self.crnt_msr_tick = loaded.1;
-            for cmd in loaded.0.iter() {
-                self.history_cnt = self.history.set_scroll_text(time.clone(), cmd.clone()); // input history
-                self.one_command(time.clone(), cmd.clone(), false);
-            }
-            self.scroll_lines.push((
-                TextAttribute::Answer,
-                "".to_string(),
-                "Loaded from designated file".to_string(),
-            ));
+            self.next_msr_tick = self.get_loaded_text(CrntMsrTick::default());
         } else {
             self.scroll_lines.push((
                 TextAttribute::Answer,
@@ -227,14 +217,31 @@ impl LoopianApp {
         }
     }
     fn auto_load_command(&mut self) {
-        let crnt: CrntMsrTick = self.cmd.get_msr_tick();
-        let last_mt = &self.crnt_msr_tick;
-        if last_mt.is_some() {
-            if last_mt.as_ref().unwrap().msr != crnt.msr && last_mt.as_ref().unwrap().tick != crnt.tick {
-                println!("{}:{}", crnt.msr, crnt.tick);
-                self.crnt_msr_tick = Some(crnt);
+        if let Some(nmt) = self.next_msr_tick {
+            let crnt: CrntMsrTick = self.cmd.get_msr_tick();
+            if nmt.msr != LAST
+                && nmt.msr > 0
+                && nmt.msr - 1 == crnt.msr
+                && crnt.tick_for_onemsr - crnt.tick <= 960
+            {
+                self.next_msr_tick = self.get_loaded_text(nmt);
             }
         }
+    }
+    fn get_loaded_text(&mut self, mt: CrntMsrTick) -> Option<CrntMsrTick> {
+        let loaded = self.history.get_loaded_text(mt);
+        for cmd in loaded.0.iter() {
+            self.history_cnt = self
+                .history
+                .set_scroll_text(get_crnt_date_txt(), cmd.clone()); // input history
+            self.one_command(get_crnt_date_txt(), cmd.clone(), false);
+        }
+        self.scroll_lines.push((
+            TextAttribute::Answer,
+            "".to_string(),
+            "Loaded from designated file".to_string(),
+        ));
+        loaded.1
     }
     fn one_command(&mut self, time: String, itxt: String, verbose: bool) {
         // 通常のコマンド入力

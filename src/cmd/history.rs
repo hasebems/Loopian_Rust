@@ -9,7 +9,10 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+
+use super::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
+use crate::lpnlib::*;
 
 pub struct History {
     input_lines: Vec<(String, String)>,
@@ -104,9 +107,48 @@ impl History {
             false
         }
     }
-    pub fn get_loaded_text(&self, _mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
-        // wait を見つけたら、その値を (msr,tick) に入れて、そこまでのデータを返す
-        (self.loaded_text.clone(), None)
+    pub fn get_loaded_text(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
+        let mut txt_this_time: Vec<String> = Vec::new();
+        let mut idx: usize = 0;
+        // 先頭を探す
+        if mt.msr != 0 {
+            for crnt in self.loaded_text.iter().enumerate() {
+                let ctxt = crnt.1;
+                if ctxt.len() > 6 && ctxt[0..6] == *"!wait(" {
+                    let msr = extract_number_from_parentheses(ctxt);
+                    if msr == mt.msr.try_into().unwrap_or(0) {
+                        idx = crnt.0;
+                        break;
+                    }
+                }
+            }
+        }
+        // ここから記録
+        for n in idx + 1..self.loaded_text.len() {
+            let ctxt = &self.loaded_text[n];
+            if ctxt.len() > 6 && ctxt[0..6] == *"!wait(" {
+                let msr = extract_number_from_parentheses(ctxt);
+                return (
+                    txt_this_time,
+                    Some(CrntMsrTick {
+                        msr: msr.try_into().unwrap_or(0),
+                        tick: 0,
+                        tick_for_onemsr: 0,
+                    }),
+                );
+            } else {
+                txt_this_time.push(self.loaded_text[n].clone());
+            }
+        }
+        // 最後まで行った場合
+        (
+            txt_this_time,
+            Some(CrntMsrTick {
+                msr: LAST,
+                tick: 0,
+                tick_for_onemsr: 0,
+            }),
+        )
     }
     pub fn arrow_up(&mut self) -> Option<(String, usize)> {
         let max_count = self.input_lines.len();

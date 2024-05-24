@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::lpnlib::*;
+use chrono::Local;
 
 //*******************************************************************
 //          Func
@@ -106,4 +107,10 @@ pub fn separate_cmnd_and_str(cn: &str) -> Option<(&str, &str)> {
         }
     }
     None
+}
+//*******************************************************************
+//          Data Time Text
+//*******************************************************************
+pub fn get_crnt_date_txt() -> String {
+    Local::now().format("%Y-%m-%d %H:%M:%S ").to_string()
 }

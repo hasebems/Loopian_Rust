@@ -53,16 +53,47 @@
 |||||
 |||||
 
+- 全般的なコマンド体系
+    - Object.Command.Fn() の形に統一
+    - Object 種類
+        - APP: 本アプリ全体、すべての Object の親
+        - ALL, L1, L12 などのパート
+        - ctl, set, graph のコマンド大分類
+    - APP は概念的な Object なので、記載しない
+    - ctl は省略可能
+    - Part Object は、入力パートと同じなら省略可能
+        - `L1.[d,r,m]`  => L1>`[d,r,m]`
+    - Fn は必要に応じていくつでも後ろに追加できる
+    - Fn は、引数がなくても () をつける必要がある
+    - Command は引数を持たなければ () は必要ない
+    - APP の Command は、先頭に ! をつける
+        - ! がついた場合、log には記述されない
+        - !quit/!q : アプリ終了
+        - !load/!l : ファイルロード
+        - !wait()    : loadを特定の拍まで止める。lpnファイル内にしか書けない
+        - !section() : loadの特定部分しか読まない。lpnファイル内にしか書けない(未実装)
+    - part(ALL,L1,L12など) の Command
+        - [], {}, sync, clear, flow, endflow
+    - ctl の Command
+        - play/p, fermata, fine, stop, sync, resume, rit, clear
+    - graph の Command
+        - light, dark
+    - 特殊なもの
+        - @c= , @n= 
+
+<!--
 - Command には以下の4種類がある
     1. Phrase Command（ [] で入力）
     1. Composition Command（{}で入力）
     1. Realtime Control Command (play/stop/fine/rit./left(right,L1,R1..)/sync/[end]flow)
     1. Setting Command (set [bpm/beat/oct/key/input/samenote])
+-->
+
 - Phrase Command の考え方
     - ノート番号と音価を指示する
     - また、表情指示(Music Expression)を、さらに関数を追加して記述できる
     - exp.engine により、簡易な表情指示からベロシティ、微妙なタイミング、dulation、ペダル情報を自動生成
-    - &n で phrase の [] をマクロとして格納できる（パートを超えて使用可能）
+    - &n で phrase の [] をマクロとして格納できる（パートを超えて使用可能）(未実装)
     - @n で phrase + Music Expression を Variation として格納できる（パート内でのみ使用可能）
 - Composition Command の考え方
     - Composition では和音・スケール（ノート変換子）を指示する
@@ -80,7 +111,7 @@
     - dyn() : ff,f,mf,mp,p,pp, ^, %, cresc, dim などVelocity指定
     - dmp() : on,off,half などdamper pedal奏法
     - trns() : para などコード変換方法の指定
-- 条件処理
+- 条件処理(未実装)
     - xxx?yyy : xxx-条件、yyy-処理
 
 ### 3.MIDI Flow(Server)機能
@@ -493,6 +524,7 @@ NoteObj <|-- WaterRipple
 - setコマンド書き方の変更 5/6
     - set bpm=120 -> set.bpm(120)
     - それに合わせて ( を書いたら ) を自動挿入
+- wait機能追加(5/24)
 
 
 パス
@@ -520,29 +552,6 @@ NoteObj <|-- WaterRipple
 - flow の仕様変更
     - server で立ち上げた時、R1 がデフォルト flow part（現行通り）
     - play 中でなくても、音は出る（クロマティック＆テンポ同期しない）
-- 全般的なコマンド体系の変更
-    - Object.Command.Fn() の形に統一
-    - Object 種類
-        - APP: 本アプリ全体、すべての Object の親
-        - ALL, L1, L12 などのパート
-        - ctl, set, graph のコマンド大分類
-    - APP は概念的な Object なので、記載しない
-    - ctl は省略可能
-    - Part Object は、入力パートと同じなら省略可能
-    - Fn は必要に応じていくつでも後ろに追加できる
-    - Fn は、引数がなくても () をつける必要がある
-    - Command は引数を持たなければ () は必要ない
-    - APP の Command
-        - quit/q, load : ファイルには書けない
-        - wait/w       : ファイル内にしか書けない(loadを特定の拍まで止める)
-    - part(ALL,L1,L12など) の Command
-        - [], {}, sync, clear, flow, endflow
-    - ctl の Command
-        - play/p, fermata, fine, stop, sync, resume, rit, clear
-    - graph の Command
-        - light, dark
-    - 特殊なもの
-        - @c= , @n= 
 - Phrase を入力したとき、次のループからではなく、リアルタイムで変わる機能
     - リアルタイムか、次のループ先頭かを選べる
         - [RT:xxxx] RTをつけたらリアルタイムに変わる
