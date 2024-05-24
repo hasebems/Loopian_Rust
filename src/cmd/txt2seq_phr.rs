@@ -192,7 +192,7 @@ fn divide_notemod_and_musicex(nev: Vec<String>) -> (Vec<String>, Vec<String>) {
     let mut ne: Vec<String> = Vec::new();
 
     for nx in nev.iter() {
-        if &nx[0..3] == "rpt" {
+        if nx.len() >= 3 && &nx[0..3] == "rpt" {
             nm.push(nx.to_string());
         } else {
             ne.push(nx.to_string());
@@ -325,7 +325,7 @@ fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     let mut vel = END_OF_DATA;
     let mut retvec = expvec.clone();
     for (i, txt) in expvec.iter().enumerate() {
-        if &txt[0..3] == "dyn" {
+        if txt.len() >= 3 && &txt[0..3] == "dyn" {
             let dyntxt = extract_texts_from_parentheses(txt);
             vel = convert_exp2vel(dyntxt);
             if vel != END_OF_DATA {
