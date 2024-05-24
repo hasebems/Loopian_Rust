@@ -244,6 +244,38 @@ pub const MSG_SET_TURN: i16 = 3;
 //  Set BEAT  : numerator, denomirator
 
 //*******************************************************************
+//          UI Message from Elapse thread
+//*******************************************************************
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct UpdateUi {
+    pub running: bool, // Elapse task thinks im running
+    pub bpm: i16,
+    pub msr: i16,
+    pub beat: i16,
+    pub tick_in_beat: i16,
+    pub pt: [PartUi; MAX_KBD_PART],
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct PartUi {
+    pub exist: bool,
+    pub msr_in_loop: i16,
+    pub all_msrs: i16,
+    pub flow: bool,
+    pub chord_name: String,
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct NoteUi {
+    pub note_num: i16,
+    pub velocity: i16,
+    pub part: i16,
+}
+#[derive(Clone, Debug)]
+pub enum UiMsg {
+    _UpdateUi,
+    _PartUi,
+    _NoteUi,
+}
+//*******************************************************************
 //          Graphic
 //*******************************************************************
 // Graphic Message
