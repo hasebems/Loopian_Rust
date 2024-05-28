@@ -282,6 +282,8 @@ pub enum UiMsg {
 pub const NO_MSG: i16 = -1;
 pub const LIGHT_MODE: i16 = 1;
 pub const DARK_MODE: i16 = 2;
+pub const RIPPLE_PATTERN: i16 = 3;
+pub const VOICE_PATTERN: i16 = 4;
 
 //-------------------------------------------------------------------
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

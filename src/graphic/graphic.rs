@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::noteobj::NoteObj;
+use super::voice::Voice4;
 use super::waterripple::WaterRipple;
 use crate::cmd::cmdparse::LoopianCmd;
 use crate::cmd::txt_common::*;
@@ -39,6 +40,7 @@ pub struct Graphic {
     _frame_counter_old_dbg: i32, // debug
     rndm: rngs::ThreadRng,
     mode: i16,
+    note_ptn: i16,
     top_scroll_line: usize,
     _last_location: usize,
 }
@@ -63,6 +65,7 @@ impl Graphic {
             _frame_counter_old_dbg: 0,
             rndm: thread_rng(),
             mode: DARK_MODE,
+            note_ptn: RIPPLE_PATTERN,
             top_scroll_line: 0,
             _last_location: 0,
         }
@@ -82,10 +85,12 @@ impl Graphic {
         ntev: Vec<String>,
     ) {
         if msg != NO_MSG {
-            if msg == DARK_MODE {
-                self.mode = DARK_MODE;
-            } else if msg == LIGHT_MODE {
-                self.mode = LIGHT_MODE;
+            match msg {
+                DARK_MODE => self.mode = DARK_MODE,
+                LIGHT_MODE => self.mode = LIGHT_MODE,
+                RIPPLE_PATTERN => self.note_ptn = RIPPLE_PATTERN,
+                VOICE_PATTERN => self.note_ptn = VOICE_PATTERN,
+                _ => {}
             }
         }
 
@@ -110,17 +115,11 @@ impl Graphic {
         //  Note Object の描画
         for ev in ntev.iter() {
             let nt_vel = split_by('/', ev.clone());
-            let nt: i32 = nt_vel[0].parse().unwrap();
-            let vel: i32 = nt_vel[1].parse().unwrap();
-            let _pt: i32 = nt_vel[2].parse().unwrap();
+            let nt: i32 = nt_vel[0].parse().unwrap_or(0);
+            let vel: i32 = nt_vel[1].parse().unwrap_or(0);
+            let pt: i32 = nt_vel[2].parse().unwrap_or(0);
             let rnd: f32 = self.rndm.gen();
-            self.nobj.push(Box::new(WaterRipple::new(
-                nt as f32,
-                vel as f32,
-                rnd,
-                self.frame_counter,
-                self.mode,
-            )));
+            self.push_note_obj(nt, vel, pt, rnd);
         }
         let nlen = self.nobj.len();
         let mut rls = vec![true; nlen];
@@ -189,6 +188,25 @@ impl Graphic {
             scroll_txt_left: st_left_mertin,
             input_txt_top: self.full_size.y - INPUT_TXT_TOP_SZ,
             input_txt_left: it_left_mergin,
+        }
+    }
+    fn push_note_obj(&mut self, nt: i32, vel: i32, pt: i32, rnd: f32) {
+        match self.note_ptn {
+            RIPPLE_PATTERN => self.nobj.push(Box::new(WaterRipple::new(
+                nt as f32,
+                vel as f32,
+                rnd,
+                self.frame_counter,
+                self.mode,
+            ))),
+            VOICE_PATTERN => self.nobj.push(Box::new(Voice4::new(
+                nt as f32,
+                vel as f32,
+                pt,
+                self.frame_counter,
+                self.mode,
+            ))),
+            _ => {}
         }
     }
     //*******************************************************************
@@ -434,7 +452,7 @@ impl Graphic {
         //        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
         const CURSOR_TXT_LENGTH: f32 = 11.95; // FONT 20p
         const CURSOR_THICKNESS: f32 = 4.0;
-        const PROMPT_LETTERS: usize = 8;
+        const PROMPT_LETTERS: usize = 8; // "000: R1>"
 
         const INPUTTXT_UPPER_MARGIN: f32 = 0.0;
         const INPUTTXT_LOWER_MARGIN: f32 = 0.0;

@@ -307,6 +307,12 @@ impl LoopianCmd {
             } else if len == 10 && &input_text[6..10] == "dark" {
                 self.graphic_msg = DARK_MODE;
                 Some("Changed Graphic!".to_string())
+            } else if len == 11 && &input_text[6..11] == "ripple" {
+                self.graphic_msg = RIPPLE_PATTERN;
+                Some("Changed Graphic Note Pattern!".to_string())
+            } else if len == 11 && &input_text[6..11] == "voice" {
+                self.graphic_msg = VOICE_PATTERN;
+                Some("Changed Graphic Note Pattern!".to_string())
             } else {
                 Some("what?".to_string())
             }
