@@ -117,17 +117,18 @@ impl History {
                 if ctxt.len() > 6 && ctxt[0..6] == *"!wait(" {
                     let msr = extract_number_from_parentheses(ctxt);
                     if msr == mt.msr.try_into().unwrap_or(0) {
-                        idx = crnt.0;
+                        idx = crnt.0 + 1;
                         break;
                     }
                 }
             }
         }
         // ここから記録
-        for n in idx + 1..self.loaded_text.len() {
+        for n in idx..self.loaded_text.len() {
             let ctxt = &self.loaded_text[n];
             if ctxt.len() > 6 && ctxt[0..6] == *"!wait(" {
                 let msr = extract_number_from_parentheses(ctxt);
+                println!("YYY{:?}",txt_this_time);
                 return (
                     txt_this_time,
                     Some(CrntMsrTick {
