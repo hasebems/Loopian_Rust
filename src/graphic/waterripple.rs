@@ -13,7 +13,7 @@ pub struct WaterRipple {
     para2: f32, // 0.0 - 1.0
     para3: f32,
     time: i32,
-    mode: i16,
+    mode: GraphMode,
 }
 
 impl WaterRipple {
@@ -21,7 +21,7 @@ impl WaterRipple {
     const RIPPLE_SIZE: i32 = 32; // Bigger, Thicker
     const BRIGHTNESS: f32 = 500.0; // 明るさ
     const RIPPLE_SIZE_F: f32 = (WaterRipple::RIPPLE_SIZE - 1) as f32;
-    pub fn new(nt: f32, vel: f32, rnd: f32, tm: i32, mode: i16) -> Self {
+    pub fn new(nt: f32, vel: f32, rnd: f32, tm: i32, mode: GraphMode) -> Self {
         Self {
             para1: nt / 128.0,
             para2: rnd,
@@ -31,9 +31,9 @@ impl WaterRipple {
         }
     }
     fn gray(&self, gray_scl: u8) -> Color32 {
-        if self.mode == LIGHT_MODE {
+        if self.mode == GraphMode::Light {
             Color32::from_black_alpha(gray_scl)
-        } else if self.mode == DARK_MODE {
+        } else if self.mode == GraphMode::Dark {
             Color32::from_white_alpha(gray_scl)
         } else {
             Color32::from_white_alpha(gray_scl)

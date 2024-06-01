@@ -128,7 +128,7 @@ impl History {
             let ctxt = &self.loaded_text[n];
             if ctxt.len() > 6 && ctxt[0..6] == *"!wait(" {
                 let msr = extract_number_from_parentheses(ctxt);
-                println!("YYY{:?}",txt_this_time);
+                println!("YYY{:?}", txt_this_time);
                 return (
                     txt_this_time,
                     Some(CrntMsrTick {

@@ -26,7 +26,6 @@ pub struct LoopianCmd {
     during_play: bool,
     dtstk: SeqDataStock,
     graphic_ev: Vec<String>,
-    graphic_msg: i16,
     sndr: MessageSender,
     path: Option<String>,
 }
@@ -49,7 +48,6 @@ impl LoopianCmd {
             during_play: false,
             dtstk: SeqDataStock::new(),
             graphic_ev: Vec::new(),
-            graphic_msg: NO_MSG,
             sndr: MessageSender::new(msg_hndr),
             path: None,
         }
@@ -104,9 +102,6 @@ impl LoopianCmd {
             }
         }
         CrntMsrTick::default()
-    }
-    pub fn get_graphic_msg(&self) -> i16 {
-        self.graphic_msg
     }
     pub fn get_path(&self) -> Option<String> {
         self.path.clone()
@@ -188,47 +183,47 @@ impl LoopianCmd {
         command
     }
     //*************************************************************************
-    pub fn set_and_responce(&mut self, input_text: &str) -> Option<String> {
+    pub fn set_and_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
         if input_text.len() == 0 {
             return None;
         }
         println!("Set Text: {}", input_text);
         let first_letter = &input_text[0..1];
         if first_letter == "@" {
-            self.letter_at(input_text)
+            Some(CmndRtn(self.letter_at(input_text), NO_MSG))
         } else if first_letter == "[" {
-            self.letter_bracket(input_text)
+            Some(CmndRtn(self.letter_bracket(input_text), NO_MSG))
         } else if first_letter == "{" {
-            self.letter_brace(input_text)
+            Some(CmndRtn(self.letter_brace(input_text), NO_MSG))
         } else if first_letter == "." {
-            self.letter_dot(input_text)
+            Some(CmndRtn(self.letter_dot(input_text), NO_MSG))
         } else if first_letter == "c" {
-            self.letter_c(input_text)
+            Some(CmndRtn(self.letter_c(input_text), NO_MSG))
         } else if first_letter == "e" {
-            self.letter_e(input_text)
+            Some(CmndRtn(self.letter_e(input_text), NO_MSG))
         } else if first_letter == "f" {
-            self.letter_f(input_text)
+            Some(CmndRtn(self.letter_f(input_text), NO_MSG))
         } else if first_letter == "g" {
-            self.letter_g(input_text)
+            Some(self.letter_g(input_text))
         } else if first_letter == "l" {
-            self.letter_l(input_text)
+            Some(CmndRtn(self.letter_l(input_text), NO_MSG))
         } else if first_letter == "p" {
-            self.letter_p(input_text)
+            Some(CmndRtn(self.letter_p(input_text), NO_MSG))
         } else if first_letter == "r" {
-            self.letter_r(input_text)
+            Some(CmndRtn(self.letter_r(input_text), NO_MSG))
         } else if first_letter == "s" {
-            self.letter_s(input_text)
+            Some(CmndRtn(self.letter_s(input_text), NO_MSG))
         } else if first_letter == "L" {
-            self.letter_part(input_text)
+            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else if first_letter == "R" {
-            self.letter_part(input_text)
+            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else if first_letter == "A" {
-            self.letter_part(input_text)
+            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else {
-            Some("what?".to_string())
+            Some(CmndRtn("what?".to_string(), NO_MSG))
         }
     }
-    fn letter_c(&mut self, input_text: &str) -> Option<String> {
+    fn letter_c(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len >= 5 && &input_text[0..5] == "clear" {
             if len == 5 {
@@ -239,177 +234,173 @@ impl LoopianCmd {
                 for i in 0..MAX_KBD_PART {
                     self.clear_part(i);
                 }
-                Some("all data erased!".to_string())
+                "all data erased!".to_string()
             } else {
                 let part_letter = &input_text[6..];
                 println!("clear>>{}", part_letter);
                 if let Some(pnum) = Self::detect_part(part_letter) {
                     self.clear_part(pnum);
                     match pnum {
-                        LEFT1 => Some("part L1 data erased!".to_string()),
-                        LEFT2 => Some("part L2 data erased!".to_string()),
-                        RIGHT1 => Some("part R1 data erased!".to_string()),
-                        RIGHT2 => Some("part R2 data erased!".to_string()),
-                        _ => Some("some ßpart part erased!".to_string()),
+                        LEFT1 => "part L1 data erased!".to_string(),
+                        LEFT2 => "part L2 data erased!".to_string(),
+                        RIGHT1 => "part R1 data erased!".to_string(),
+                        RIGHT2 => "part R2 data erased!".to_string(),
+                        _ => "some ßpart part erased!".to_string(),
                     }
                 } else {
-                    Some("what?".to_string())
+                    "what?".to_string()
                 }
             }
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_e(&mut self, input_text: &str) -> Option<String> {
+    fn letter_e(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len == 3 && &input_text[0..3] == "end" {
             // stop
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
             self.during_play = false;
-            Some("Fine.".to_string())
+            "Fine.".to_string()
         } else if len == 7 && &input_text[0..7] == "endflow" {
             // fermata
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_ENDFLOW + self.input_part as i16));
-            Some("End MIDI in flow!".to_string())
+            "End MIDI in flow!".to_string()
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_f(&mut self, input_text: &str) -> Option<String> {
+    fn letter_f(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "fine" {
             // stop
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
             self.during_play = false;
-            Some("Fine.".to_string())
+            "Fine.".to_string()
         } else if len == 7 && &input_text[0..7] == "fermata" {
             // fermata
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_NRM, MSG2_RIT_FERMATA]));
-            Some("Will stop!".to_string())
+            "Will stop!".to_string()
         } else if len == 4 && &input_text[0..4] == "flow" {
             // flow
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FLOW + self.input_part as i16));
             let res = format!("MIDI in flows on Part {}!", self.get_part_txt());
-            Some(res.to_string())
+            res.to_string()
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_g(&mut self, input_text: &str) -> Option<String> {
+    fn letter_g(&mut self, input_text: &str) -> CmndRtn {
         let len = input_text.chars().count();
         if len >= 6 && &input_text[0..5] == "graph" {
             if len == 11 && &input_text[6..11] == "light" {
-                self.graphic_msg = LIGHT_MODE;
-                Some("Changed Graphic!".to_string())
+                CmndRtn("Changed Graphic!".to_string(), LIGHT_MODE)
             } else if len == 10 && &input_text[6..10] == "dark" {
-                self.graphic_msg = DARK_MODE;
-                Some("Changed Graphic!".to_string())
-            } else if len == 11 && &input_text[6..11] == "ripple" {
-                self.graphic_msg = RIPPLE_PATTERN;
-                Some("Changed Graphic Note Pattern!".to_string())
+                CmndRtn("Changed Graphic!".to_string(), DARK_MODE)
+            } else if len == 12 && &input_text[6..12] == "ripple" {
+                CmndRtn("Changed Graphic Note Pattern!".to_string(), RIPPLE_PATTERN)
             } else if len == 11 && &input_text[6..11] == "voice" {
-                self.graphic_msg = VOICE_PATTERN;
-                Some("Changed Graphic Note Pattern!".to_string())
+                CmndRtn("Changed Graphic Note Pattern!".to_string(), VOICE_PATTERN)
             } else {
-                Some("what?".to_string())
+                CmndRtn("what?".to_string(), 0)
             }
         } else {
-            Some("what?".to_string())
+            CmndRtn("what?".to_string(), 0)
         }
     }
-    fn letter_l(&mut self, input_text: &str) -> Option<String> {
+    fn letter_l(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len == 5 && &input_text[0..5] == "left1" {
             self.input_part = LEFT1;
-            Some("Changed current part to left1.".to_string())
+            "Changed current part to left1.".to_string()
         } else if len == 5 && &input_text[0..5] == "left2" {
             self.input_part = LEFT2;
-            Some("Changed current part to left2.".to_string())
+            "Changed current part to left2.".to_string()
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_p(&mut self, input_text: &str) -> Option<String> {
+    fn letter_p(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if (len == 4 && &input_text[0..4] == "play") || (len == 1 && &input_text[0..1] == "p") {
             if !self.during_play {
                 // play
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
                 self.during_play = true;
-                Some("Phrase has started!".to_string())
+                "Phrase has started!".to_string()
             } else {
-                Some("Playing now!".to_string())
+                "Playing now!".to_string()
             }
         } else if len == 5 && &input_text[0..5] == "panic" {
             // panic
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_PANIC));
-            Some("All Sound Off!".to_string())
+            "All Sound Off!".to_string()
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_r(&mut self, input_text: &str) -> Option<String> {
+    fn letter_r(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len >= 6 && &input_text[0..6] == "resume" {
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_RESUME));
-            Some("Resume.".to_string())
+            "Resume.".to_string()
         } else if len >= 6 && &input_text[0..6] == "right1" {
             self.input_part = RIGHT1;
-            Some("Changed current part to right1.".to_string())
+            "Changed current part to right1.".to_string()
         } else if len >= 6 && &input_text[0..6] == "right2" {
             self.input_part = RIGHT2;
-            Some("Changed current part to right2.".to_string())
+            "Changed current part to right2.".to_string()
         } else if len >= 4 && &input_text[0..4] == "rit." {
-            Some(self.set_rit(input_text))
+            self.set_rit(input_text)
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_s(&mut self, input_text: &str) -> Option<String> {
+    fn letter_s(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "stop" {
             if self.during_play {
                 // stop
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
                 self.during_play = false;
-                Some("Stopped!".to_string())
+                "Stopped!".to_string()
             } else {
-                Some("Settle down!".to_string())
+                "Settle down!".to_string()
             }
         } else if len >= 4 && &input_text[0..4] == "set." {
             // set
             let responce = self.parse_set_command(input_text);
-            Some(responce)
+            responce
         } else if len >= 4 && &input_text[0..4] == "sync" {
             if len == 4 {
                 self.sndr
                     .send_msg_to_elapse(ElpsMsg::Sync(self.input_part as i16));
-                Some("Synchronized!".to_string())
+                "Synchronized!".to_string()
             } else if len >= 6 {
                 let prttxt = &input_text[5..];
                 if prttxt == "right" {
                     self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_RGT));
-                    Some("Right Part Synchronized!".to_string())
+                    "Right Part Synchronized!".to_string()
                 } else if prttxt == "left" {
                     self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_LFT));
-                    Some("Left Part Synchronized!".to_string())
+                    "Left Part Synchronized!".to_string()
                 } else if prttxt == "all" {
                     self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_ALL));
-                    Some("All Part Synchronized!".to_string())
+                    "All Part Synchronized!".to_string()
                 } else {
-                    Some("what?".to_string())
+                    "what?".to_string()
                 }
             } else {
-                Some("what?".to_string())
+                "what?".to_string()
             }
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_at(&mut self, input_text: &str) -> Option<String> {
+    fn letter_at(&mut self, input_text: &str) -> String {
         if let Some(ltr) = input_text.chars().nth(1) {
             let itxt = input_text.trim();
             if let Some(vari) = ltr.to_digit(10) {
@@ -421,9 +412,9 @@ impl LoopianCmd {
                             self.set_phrase(self.input_part, vari as usize, brachet_text)
                         {
                             if addtional {
-                                return Some("Keep Phrase as being unified phrase!".to_string());
+                                return "Keep Phrase as being unified phrase!".to_string();
                             } else {
-                                return Some("Set Phrase!".to_string());
+                                return "Set Phrase!".to_string();
                             }
                         }
                     }
@@ -432,67 +423,67 @@ impl LoopianCmd {
                 if let Some(ltr2) = itxt.chars().nth(2) {
                     if ltr2 == '=' {
                         self.dtstk.set_cluster_memory(input_text[3..].to_string());
-                        return Some("Set a cluster memory!".to_string());
+                        return "Set a cluster memory!".to_string();
                     }
                 }
             }
         }
-        Some("what?".to_string())
+        "what?".to_string()
     }
-    fn letter_bracket(&mut self, input_text: &str) -> Option<String> {
+    fn letter_bracket(&mut self, input_text: &str) -> String {
         if let Some(addtional) = self.set_phrase(self.input_part, 0, input_text) {
             if addtional {
-                Some("Keep Phrase as being unified phrase!".to_string())
+                "Keep Phrase as being unified phrase!".to_string()
             } else {
-                Some("Set Phrase!".to_string())
+                "Set Phrase!".to_string()
             }
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_brace(&mut self, input_text: &str) -> Option<String> {
+    fn letter_brace(&mut self, input_text: &str) -> String {
         if self
             .dtstk
             .set_raw_composition(self.input_part, input_text.to_string())
         {
             self.sndr
                 .send_composition_to_elapse(self.input_part, &self.dtstk);
-            Some("Set Composition!".to_string())
+            "Set Composition!".to_string()
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_dot(&mut self, input_text: &str) -> Option<String> {
+    fn letter_dot(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len == 1 {
             if self.during_play {
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
                 self.during_play = false;
-                Some("Stopped!".to_string())
+                "Stopped!".to_string()
             } else {
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
                 self.during_play = true;
-                Some("Phrase has started!".to_string())
+                "Phrase has started!".to_string()
             }
         } else {
-            Some("what?".to_string())
+            "what?".to_string()
         }
     }
-    fn letter_part(&mut self, input_text: &str) -> Option<String> {
+    fn letter_part(&mut self, input_text: &str) -> String {
         if let Some(pnum) = Self::detect_part(input_text) {
             self.input_part = pnum;
             match pnum {
-                LEFT1 => Some("Changed current part to left1.".to_string()),
-                LEFT2 => Some("Changed current part to left2.".to_string()),
-                RIGHT1 => Some("Changed current part to right1.".to_string()),
-                RIGHT2 => Some("Changed current part to right2.".to_string()),
-                _ => Some("what?".to_string()),
+                LEFT1 => "Changed current part to left1.".to_string(),
+                LEFT2 => "Changed current part to left2.".to_string(),
+                RIGHT1 => "Changed current part to right1.".to_string(),
+                RIGHT2 => "Changed current part to right2.".to_string(),
+                _ => "what?".to_string(),
             }
         } else {
             self.shortcut_input(input_text)
         }
     }
-    fn shortcut_input(&mut self, input_text: &str) -> Option<String> {
+    fn shortcut_input(&mut self, input_text: &str) -> String {
         // shortcut input
         let mut rtn_str = "what?".to_string();
         for (i, ltr) in input_text.chars().enumerate() {
@@ -527,7 +518,7 @@ impl LoopianCmd {
                 break;
             }
         }
-        Some(rtn_str)
+        rtn_str
     }
     fn detect_part(part_str: &str) -> Option<usize> {
         let len = part_str.chars().count();
@@ -587,7 +578,7 @@ impl LoopianCmd {
         let org_part = self.input_part;
         self.input_part = part_num;
         if let Some(ans) = self.set_and_responce(input_text) {
-            rtn_str = ans;
+            rtn_str = ans.0;
         }
         self.input_part = org_part;
 

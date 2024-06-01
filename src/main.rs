@@ -251,7 +251,15 @@ impl LoopianApp {
                 .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
             if verbose {
                 self.scroll_lines
-                    .push((TextAttribute::Answer, "".to_string(), answer));
+                    .push((TextAttribute::Answer, "".to_string(), answer.0));
+            }
+            match answer.1 {
+                LIGHT_MODE => self.graph.set_mode(GraphMode::Light),
+                DARK_MODE => self.graph.set_mode(GraphMode::Dark),
+                RIPPLE_PATTERN => self.graph.set_noteptn(GraphNote::Ripple),
+                VOICE_PATTERN => self.graph.set_noteptn(GraphNote::Voice),
+                NO_MSG => {}
+                _ => {}
             }
         }
     }
@@ -303,7 +311,6 @@ impl LoopianApp {
                     self.history_cnt,
                     &self.cmd,
                 ),
-                self.cmd.get_graphic_msg(),
                 frame,
                 ntev,
             );
@@ -389,7 +396,7 @@ fn cui_loop() {
                 break; // 終了
             }
             if let Some(answer) = srv.cmd.set_and_responce(&input) {
-                println!("{}", answer);
+                println!("{}", answer.0);
             }
         } else {
             //  Read imformation from StackElapse

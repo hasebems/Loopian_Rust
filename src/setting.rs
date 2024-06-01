@@ -6,7 +6,7 @@
 use eframe::egui::*;
 
 // Default Window Size
-pub const WINDOW_X_DEFAULT: f32 = 1000.0; //  Main Window
+pub const WINDOW_X_DEFAULT: f32 = 1280.0; //  Main Window
 pub const WINDOW_Y_DEFAULT: f32 = 860.0;
 
 // MIDI Connection

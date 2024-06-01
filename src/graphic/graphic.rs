@@ -25,7 +25,17 @@ const _BACK_MAZENTA: Color32 = Color32::from_rgb(180, 160, 180);
 const _BACK_GRAY: Color32 = Color32::from_rgb(48, 48, 48);
 const BACK_DARK_GRAY: Color32 = Color32::from_rgb(32, 32, 32);
 const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
-const FONT16: f32 = 16.0;
+
+const EI_FONT_SIZE: f32 = 16.0;
+
+const SCRTXT_FONT_SIZE: f32 = 20.0;
+const SCRTXT_FONT_HEIGHT: f32 = 25.0;
+const SCRTXT_FONT_WIDTH: f32 = 11.95; // fsz(16) 9.56
+
+const INPUT_TXT_X_SZ: f32 = 1240.0; // fsz(20) 940.0
+const INPUT_TXT_Y_SZ: f32 = 40.0; //
+const INPUTTXT_FONT_SIZE: f32 = 28.0; // org: 20.0
+const INPUTTXT_LETTER_WIDTH: f32 = 16.73; // org: 11.95 (0.5975*fontsz)
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum TextAttribute {
@@ -39,8 +49,8 @@ pub struct Graphic {
     frame_counter: i32,          // one per 20msec
     _frame_counter_old_dbg: i32, // debug
     rndm: rngs::ThreadRng,
-    mode: i16,
-    note_ptn: i16,
+    mode: GraphMode,
+    note: GraphNote,
     top_scroll_line: usize,
     _last_location: usize,
 }
@@ -64,11 +74,17 @@ impl Graphic {
             frame_counter: 0,
             _frame_counter_old_dbg: 0,
             rndm: thread_rng(),
-            mode: DARK_MODE,
-            note_ptn: RIPPLE_PATTERN,
+            mode: GraphMode::Dark,
+            note: GraphNote::Ripple,
             top_scroll_line: 0,
             _last_location: 0,
         }
+    }
+    pub fn set_mode(&mut self, md: GraphMode) {
+        self.mode = md;
+    }
+    pub fn set_noteptn(&mut self, ptn: GraphNote) {
+        self.note = ptn;
     }
     pub fn update(
         &mut self,
@@ -80,20 +96,9 @@ impl Graphic {
             usize,                                 // selected scroll text line
             &LoopianCmd,                           // eight indicator
         ),
-        msg: i16,
         _frame: &mut eframe::Frame,
         ntev: Vec<String>,
     ) {
-        if msg != NO_MSG {
-            match msg {
-                DARK_MODE => self.mode = DARK_MODE,
-                LIGHT_MODE => self.mode = LIGHT_MODE,
-                RIPPLE_PATTERN => self.note_ptn = RIPPLE_PATTERN,
-                VOICE_PATTERN => self.note_ptn = VOICE_PATTERN,
-                _ => {}
-            }
-        }
-
         // window size を得る
         let new_x = ui.available_size().x;
         let new_y = ui.available_size().y;
@@ -149,21 +154,21 @@ impl Graphic {
         self.update_input_text(ui, infs, &rs);
     }
     pub fn back_color(&self) -> Color32 {
-        if self.mode == DARK_MODE {
+        if self.mode == GraphMode::Dark {
             Color32::BLACK
         } else {
             Color32::WHITE
         }
     }
     fn letter_color(&self) -> Color32 {
-        if self.mode == DARK_MODE {
+        if self.mode == GraphMode::Dark {
             Color32::WHITE
         } else {
             Color32::BLACK
         }
     }
     fn light_box_color(&self) -> Color32 {
-        if self.mode == DARK_MODE {
+        if self.mode == GraphMode::Dark {
             BACK_WHITE1
         } else {
             BACK_WHITE0
@@ -174,13 +179,19 @@ impl Graphic {
         const SCROLL_TXT_TOP: f32 = 200.0; // scroll text
         const INPUT_TXT_TOP_SZ: f32 = 100.0; // input text
         const MIN_LEFT_MERGIN: f32 = 140.0;
-        let it_left_mergin = (self.full_size.x - 940.0) / 2.0;
+
         let mut st_left_mertin = 0.0;
         if self.full_size.x > 1200.0 {
             st_left_mertin = 200.0;
         } else if self.full_size.x > 1000.0 {
             st_left_mertin = self.full_size.x - 1000.0;
         }
+
+        let mut it_left_mergin = 0.0;
+        if self.full_size.x > INPUT_TXT_X_SZ {
+            it_left_mergin = (self.full_size.x - INPUT_TXT_X_SZ) / 2.0;
+        }
+
         Resize {
             eight_indic_top: EIGHT_INDIC_TOP,
             eight_indic_left: MIN_LEFT_MERGIN,
@@ -191,22 +202,21 @@ impl Graphic {
         }
     }
     fn push_note_obj(&mut self, nt: i32, vel: i32, pt: i32, rnd: f32) {
-        match self.note_ptn {
-            RIPPLE_PATTERN => self.nobj.push(Box::new(WaterRipple::new(
+        match self.note {
+            GraphNote::Ripple => self.nobj.push(Box::new(WaterRipple::new(
                 nt as f32,
                 vel as f32,
                 rnd,
                 self.frame_counter,
                 self.mode,
             ))),
-            VOICE_PATTERN => self.nobj.push(Box::new(Voice4::new(
+            GraphNote::Voice => self.nobj.push(Box::new(Voice4::new(
                 nt as f32,
                 vel as f32,
                 pt,
                 self.frame_counter,
                 self.mode,
             ))),
-            _ => {}
         }
     }
     //*******************************************************************
@@ -294,7 +304,7 @@ impl Graphic {
                         },
                         Label::new(
                             RichText::new(&tx[k..k + 1])
-                                .size(FONT16)
+                                .size(EI_FONT_SIZE)
                                 .color(TEXT_GRAY)
                                 .family(FontFamily::Monospace)
                                 .text_style(TextStyle::Monospace),
@@ -328,13 +338,13 @@ impl Graphic {
         rs: &Resize,
     ) {
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
-        const FONT16_HEIGHT: f32 = 25.0;
-        const FONT16_WIDTH: f32 = 10.0;
+        const SCRTXT_HEIGHT_LIMIT: f32 = 340.0;
 
         // generating max_line_in_window, and updating self.top_scroll_line
         let letter_color = self.letter_color();
         let lines = scroll_lines.len();
-        let max_line_in_window = ((self.full_size.y - 340.0) as usize) / 25;
+        let max_line_in_window =
+            ((self.full_size.y - SCRTXT_HEIGHT_LIMIT) as usize) / (SCRTXT_FONT_HEIGHT as usize);
         let mut crnt_line: usize = lines;
         let mut max_disp_line = max_line_in_window;
         let max_history = scroll_lines
@@ -387,13 +397,13 @@ impl Graphic {
                     Rect {
                         min: Pos2 {
                             x: rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN,
-                            y: rs.scroll_txt_top + FONT16_HEIGHT * (i as f32) + 21.0,
+                            y: rs.scroll_txt_top + SCRTXT_FONT_HEIGHT * (i as f32) + 21.0,
                         },
                         max: Pos2 {
                             x: rs.scroll_txt_left
                                 + SPACE2_TXT_LEFT_MARGIN
-                                + FONT16_WIDTH * (ltrcnt as f32),
-                            y: rs.scroll_txt_top + FONT16_HEIGHT * (i as f32) + 23.0,
+                                + SCRTXT_FONT_WIDTH * (ltrcnt as f32),
+                            y: rs.scroll_txt_top + SCRTXT_FONT_HEIGHT * (i as f32) + 23.0,
                         },
                     },
                     0.0,        //  curve
@@ -414,19 +424,19 @@ impl Graphic {
                         min: Pos2 {
                             x: rs.scroll_txt_left
                                 + SPACE2_TXT_LEFT_MARGIN
-                                + FONT16_WIDTH * (j as f32),
-                            y: rs.scroll_txt_top + FONT16_HEIGHT * (i as f32),
+                                + SCRTXT_FONT_WIDTH * (j as f32),
+                            y: rs.scroll_txt_top + SCRTXT_FONT_HEIGHT * (i as f32),
                         },
                         max: Pos2 {
                             x: rs.scroll_txt_left
                                 + SPACE2_TXT_LEFT_MARGIN
-                                + FONT16_WIDTH * ((j as f32) + 1.0),
-                            y: rs.scroll_txt_top + FONT16_HEIGHT * ((i + 1) as f32),
+                                + SCRTXT_FONT_WIDTH * ((j as f32) + 1.0),
+                            y: rs.scroll_txt_top + SCRTXT_FONT_HEIGHT * ((i + 1) as f32),
                         },
                     },
                     Label::new(
                         RichText::new(past_text[j..j + 1].to_string())
-                            .size(FONT16)
+                            .size(SCRTXT_FONT_SIZE)
                             .color(txt_color)
                             .family(FontFamily::Monospace),
                     ),
@@ -450,21 +460,16 @@ impl Graphic {
         const CURSOR_LEFT_MARGIN: f32 = 10.0;
         const CURSOR_LOWER_MERGIN: f32 = 6.0;
         //        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
-        const CURSOR_TXT_LENGTH: f32 = 11.95; // FONT 20p
+        const CURSOR_TXT_LENGTH: f32 = INPUTTXT_LETTER_WIDTH;
         const CURSOR_THICKNESS: f32 = 4.0;
         const PROMPT_LETTERS: usize = 8; // "000: R1>"
 
         const INPUTTXT_UPPER_MARGIN: f32 = 0.0;
         const INPUTTXT_LOWER_MARGIN: f32 = 0.0;
 
-        const INPUTTXT_FONT_SIZE: f32 = 20.0;
-        const INPUTTXT_LETTER_WIDTH: f32 = 11.95;
         const PROMPT_MERGIN: f32 = INPUTTXT_LETTER_WIDTH * (PROMPT_LETTERS as f32);
         const INPUT_MERGIN_OFFSET: f32 = 3.25;
         const INPUT_MERGIN: f32 = PROMPT_MERGIN + INPUT_MERGIN_OFFSET;
-
-        const INPUT_TXT_Y_SZ: f32 = 40.0;
-        const INPUT_TXT_X_SZ: f32 = 940.0;
 
         const SPACE3_TXT_LEFT_MARGIN: f32 = 5.0;
 

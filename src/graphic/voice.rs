@@ -13,13 +13,13 @@ pub struct Voice4 {
     vel: f32,
     part: i32,
     time: i32,
-    mode: i16,
+    mode: GraphMode,
 }
 
 impl Voice4 {
     const DISAPPEAR_RATE: f32 = 100.0; // Bigger, Slower
     const THICKNESS: f32 = 20.0;
-    pub fn new(nt: f32, vel: f32, pt: i32, tm: i32, mode: i16) -> Self {
+    pub fn new(nt: f32, vel: f32, pt: i32, tm: i32, mode: GraphMode) -> Self {
         Self {
             note: nt / 127.0,
             vel: (vel * vel / 16384.0), // velは小さい時に薄くするため二乗
@@ -29,9 +29,9 @@ impl Voice4 {
         }
     }
     fn gray(&self, gray_scl: u8) -> Color32 {
-        if self.mode == LIGHT_MODE {
+        if self.mode == GraphMode::Light {
             Color32::from_black_alpha(gray_scl)
-        } else if self.mode == DARK_MODE {
+        } else if self.mode == GraphMode::Dark {
             Color32::from_white_alpha(gray_scl)
         } else {
             Color32::from_white_alpha(gray_scl)
