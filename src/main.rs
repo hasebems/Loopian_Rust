@@ -100,6 +100,10 @@ impl LoopianApp {
         if let Some(&ltr) = letters.last() {
             if ltr == "(" {
                 self.input_text.insert_str(self.input_locate, ")");
+            } else if ltr == "[" {
+                self.input_text.insert_str(self.input_locate, "]");
+            } else if ltr == "{" {
+                self.input_text.insert_str(self.input_locate, "}");
             }
         }
         // space を . に変換
@@ -222,7 +226,7 @@ impl LoopianApp {
             if nmt.msr != LAST
                 && nmt.msr > 0
                 && nmt.msr - 1 == crnt.msr
-                && crnt.tick_for_onemsr - crnt.tick <= 960
+                && crnt.tick_for_onemsr - crnt.tick < 240
             {
                 self.next_msr_tick = self.get_loaded_text(nmt);
             }
