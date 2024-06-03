@@ -18,7 +18,7 @@ pub struct WaterRipple {
 
 impl WaterRipple {
     const DISAPPEAR_RATE: f32 = 500.0; // Bigger, Slower
-    const RIPPLE_SIZE: i32 = 32; // Bigger, Thicker
+    const RIPPLE_SIZE: i32 = 48; // Bigger, Thicker
     const BRIGHTNESS: f32 = 500.0; // 明るさ
     const RIPPLE_SIZE_F: f32 = (WaterRipple::RIPPLE_SIZE - 1) as f32;
     pub fn new(nt: f32, vel: f32, rnd: f32, tm: i32, mode: GraphMode) -> Self {
