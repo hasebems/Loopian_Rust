@@ -498,15 +498,15 @@ fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
         fst_ltr = ntext.chars().nth(1).unwrap_or(' ');
     }
     if fst_ltr == '\'' || fst_ltr == 'e' {
-        if ntext.chars().nth(1).unwrap_or(' ') == '\"' {
-            base_dur = DEFAULT_TICK_FOR_QUARTER / 8;
+        if ntext.chars().nth(1).unwrap_or(' ') == '\'' {
+            base_dur = DEFAULT_TICK_FOR_QUARTER * 3 / 4;
             idx = 2;
         } else {
             base_dur = DEFAULT_TICK_FOR_QUARTER / 2;
         }
     } else if fst_ltr == '\"' || fst_ltr == 'v' {
-        if ntext.chars().nth(1).unwrap_or(' ') == '\"' {
-            base_dur = DEFAULT_TICK_FOR_QUARTER / 16;
+        if ntext.chars().nth(1).unwrap_or(' ') == '\'' {
+            base_dur = DEFAULT_TICK_FOR_QUARTER * 3 / 8;
             idx = 2;
         } else {
             base_dur = DEFAULT_TICK_FOR_QUARTER / 4;
