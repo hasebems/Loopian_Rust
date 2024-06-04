@@ -6,6 +6,7 @@
 use super::txt2seq_ana::*;
 use super::txt2seq_cmps::*;
 use super::txt2seq_phr::*;
+use super::txt_common::*;
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -136,7 +137,19 @@ impl SeqDataStock {
     }
     pub fn check_if_additional_phrase(&mut self, raw: String) -> Option<String> {
         let strlen = raw.len();
-        if strlen >= 2 && &raw[(strlen - 2)..] == "]+" {
+        if strlen >= 9 && &raw[(strlen - 9)..(strlen - 3)] == "].rpt(" && &raw[(strlen - 2)..] == ")+" {
+            let rpt_cnt = extract_number_from_parentheses(&raw[(strlen - 9)..]);
+            for i in 0..(rpt_cnt + 1) {
+                if i == 0 && self.raw_additional.len() == 0 {
+                    // 1st time
+                    self.raw_additional = (&raw[0..(strlen - 9)]).to_string();
+                } else {
+                    // 2nd and more time
+                    self.raw_additional += &raw[1..(strlen - 9)];
+                }
+            }
+            None
+        } else if strlen >= 2 && &raw[(strlen - 2)..] == "]+" {
             if self.raw_additional.len() == 0 {
                 // 1st time
                 self.raw_additional = (&raw[0..(strlen - 2)]).to_string();
