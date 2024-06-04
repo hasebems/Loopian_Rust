@@ -33,7 +33,7 @@ const CHORD_TABLE: [ChordTable; 54] = [
     ChordTable {name: "_maj9",  table: &MAJ9TH,},
     ChordTable {name: "_+5",    table: &AUG5TH,},
     ChordTable {name: "_aug",   table: &AUG5TH,},
-    ChordTable {name: "_7+5",   table: &AUG7TH,},
+    ChordTable {name: "_7+5",   table: &AUG57TH,},
     ChordTable {name: "_aug7",  table: &AUG7TH,},
     ChordTable {name: "_7-9",   table: &M7MNS9,},
     ChordTable {name: "_7+9",   table: &M7PLS9,},
@@ -89,7 +89,8 @@ const M9TH: [i16; 5] = [0, 2, 4, 7, 10];
 const MIN9TH: [i16; 5] = [0, 2, 3, 7, 10];
 const MAJ9TH: [i16; 5] = [0, 2, 4, 7, 11];
 const AUG5TH: [i16; 3] = [0, 4, 8];
-const AUG7TH: [i16; 4] = [0, 4, 8, 10];
+const AUG57TH: [i16; 4] = [0, 4, 8, 10];
+const AUG7TH: [i16; 4] = [0, 4, 8, 11];
 const M7MNS9: [i16; 5] = [0, 1, 4, 7, 10];
 const M7PLS9: [i16; 5] = [0, 3, 4, 7, 10];
 const DIM: [i16; 4] = [0, 3, 6, 9];
