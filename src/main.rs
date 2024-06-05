@@ -210,7 +210,16 @@ impl LoopianApp {
         }
     }
     fn load_file(&mut self, itxt: &str) {
-        if self.history.load_lpn(itxt, self.cmd.get_path()) {
+        let mut blk: Option<&str> = None;
+        let mut fname = itxt.to_string();
+        if itxt.contains(".blk(") {
+            blk = Some(extract_texts_from_parentheses(itxt));
+            println!("{:?}",blk);
+            let fnx = split_by('.', fname);
+            fname = fnx[0].clone();
+        }
+        if self.history.load_lpn(fname, self.cmd.get_path().as_deref(), blk) {
+
             self.next_msr_tick = self.get_loaded_text(CrntMsrTick::default());
         } else {
             self.scroll_lines.push((
