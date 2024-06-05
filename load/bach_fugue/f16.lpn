@@ -1,12 +1,8 @@
 // bach fugue No.16 
-//0:load.1
-//4:load.2
-//11:load.3
-//19:load.4
-//27:load.5
 //34:rit.b2/fine
 
 clear
+graph.dark
 graph.voice
 set.bpm(60)
 set.key(Bb)
