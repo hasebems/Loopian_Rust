@@ -1,4 +1,8 @@
-# Loopian記法
+# Loopian記法の説明
+
+## ◆about loopian
+
+'loopian' is a sequencer for piano tones with text input that we are developing for use mostly in Live Coding.
 
 ## ◆Loopianについて
 
