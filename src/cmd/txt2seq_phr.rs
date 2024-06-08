@@ -667,38 +667,13 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
         base_note = doremi_semi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
     }
 
-    let base_pitch: i32;
-    if oct_pitch == 0 {
-        // +/- が書かれていない場合
-        let mut diff = base_note - last_doremi;
-        if diff < 0 {
-            diff += 12;
-        }
-        if diff > 6 {
-            base_pitch = last_nt + diff - 12;
-        } else {
-            base_pitch = last_nt + diff;
-        }
-    } else if oct_pitch > 0 {
-        // + 書かれている場合
-        while base_note - last_nt >= 12 {
-            base_note -= 12;
-        }
-        while base_note - last_nt <= oct_pitch - 12 {
-            base_note += 12;
-        }
-        base_pitch = base_note;
-    } else {
-        // - 書かれている場合
-        while base_note - last_nt <= -12 {
-            base_note += 12;
-        }
-        while base_note - last_nt >= oct_pitch + 12 {
-            base_note -= 12;
-        }
-        base_pitch = base_note;
+    let mut diff = base_note - last_doremi;
+    if diff <= -6 {
+        diff += 12;
+    } else if diff > 6 {
+        diff -= 12;
     }
-    base_pitch
+    last_nt + diff + oct_pitch // return
 }
 fn convert_doremi_fixed(doremi: String) -> i32 {
     if doremi.len() == 0 {
