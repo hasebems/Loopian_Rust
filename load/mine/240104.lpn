@@ -1,17 +1,21 @@
-# 0104: 1
+// 240104
+//  Voice: NY Steinway D New Age
+//
+// set.path(mine)
+// !l.240104.blk(setting) 
 !blk(setting)
 set.beat(3/4)
 set.key(Ab)
 set.bpm(144)
 set.turnnote(3)
 
-# 2
+// by hand
 L1
 [<do>].dyn(mp)
 L12.{VIm/IIIm7/IVM7!/V6}
 p
 
-# by hand
+// by hand
 L2
 @c=dms
 [x,c.]
@@ -25,7 +29,7 @@ set.oct(1)
 
 []
 
-# 3
+// !l.240104.blk(chg)
 !blk(chg)
 graph.light
 L12.{VIm/VIm/II7!/II7!}
@@ -33,20 +37,21 @@ R1
 [l../t,d,t/l,s,l/em,r,qd.]
 set.oct(1)
 
-# by hand
+// by hand after 5bar
 L12.{VIm/VIm/II7!/II7!/IIm7/IIIm7/IVM7!/VIIb9}
 
-# by hand
+// by hand after 5bar
 [l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,d,ta]
 [l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,d,ta].dyn(mf)
 [l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,er,d,qta].dyn(mf)
+R2
 [l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,er,d,ta,si].dyn(mf)
-[]
+R12.[]
 
-# by hand (select)
+// by hand
 L12.{VIm/IIIm7/IVM7!/V6}
+graph.dark
 [mo/o/.,r,d/t,l,s/l,mo/o/o/o]
-graph dark
 L2
 []
 L1

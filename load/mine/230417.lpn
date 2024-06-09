@@ -1,4 +1,7 @@
-// Setting: U4 Tall Concert 230321
+// Voice: U4 Tall Concert 230321
+//
+// set.path(mine)
+// !l.230417.blk(setting) 
 !blk(setting)
 graph.dark
 graph.ripple
