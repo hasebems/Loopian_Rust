@@ -1,18 +1,11 @@
 // bach fugue No.1  '1 "50
+// 25:rit.b2/fine
 clear
 graph.voice
 graph.dark
 set.beat(4/4)
 set.bpm(60)
 set.key(C)
-R1
-set.oct(0)
-R2
-set.oct(0)
-L1
-set.oct(0)
-L2
-set.oct(0)
 
 R1
 [ex,d^^,r^,m^,vf^..,ws,f,em,l/-r,vs..,l,s,f,m,f,m,r,d,r,d,t/]+

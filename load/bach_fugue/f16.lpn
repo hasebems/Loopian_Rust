@@ -1,19 +1,11 @@
 // bach fugue No.16 
-//34:rit.b2/fine
-
+// 34:rit./fine
 clear
 graph.dark
 graph.voice
 set.bpm(60)
+set.beat(4/4)
 set.key(Bb)
-R1
-set.oct(0)
-R2
-set.oct(0)
-L1
-set.oct(0)
-L2
-set.oct(0)
 
 R1
 set.oct(-1)
