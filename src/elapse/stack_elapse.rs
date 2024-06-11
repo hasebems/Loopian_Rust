@@ -462,7 +462,7 @@ impl ElapseStack {
     }
     fn rit(&mut self, msg: [i16; 2]) {
         let strength_set: [(i16, i32); 3] =
-            [(MSG_RIT_POCO, 95), (MSG_RIT_NRM, 80), (MSG_RIT_MLT, 75)];
+            [(MSG_RIT_POCO, 95), (MSG_RIT_NRM, 90), (MSG_RIT_MLT, 80)];
         let strength_msg = msg[0] % 10;
         let bar = (msg[0] / 10) as i32;
         let target_bpm: i16;
