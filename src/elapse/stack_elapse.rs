@@ -331,6 +331,9 @@ impl ElapseStack {
                 // PCN は Pattern 切り替えに使用する
                 let key_disp = format!("@ptn{}", msg[1]);
                 self.send_msg_to_ui(&key_disp);
+            } else if (msg[0] & 0xe0) == 0x80 {
+                // 普通に鳴らす
+                self.mdx.midi_out(msg[0], msg[1]+12, msg[2], false);
             }
         }
         #[cfg(feature = "raspi")]
