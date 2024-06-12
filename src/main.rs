@@ -188,25 +188,22 @@ impl LoopianApp {
         self.input_locate = 0;
         self.visible_locate = 0;
         let len = itxt.chars().count();
-
-        if &itxt[0..1] == "!" {
+        if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
+            // The end of the App
+            self.cmd.send_quit();
+            self.app_end(true);
+            std::process::exit(0);
+        } else {
             if len >= 7 && &itxt[0..6] == "!load." {
                 // Load File
                 self.load_file(&itxt[6..]);
             } else if len >= 4 && &itxt[0..3] == "!l." {
+                // Load File
                 self.load_file(&itxt[3..]);
-            } else if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
-                // The end of the App
-                self.cmd.send_quit();
-                self.app_end(true);
-                std::process::exit(0);
+            } else {
+                // Normal Input
+                self.one_command(get_crnt_date_txt(), itxt, true);
             }
-        } else {
-            // Normal Input
-            self.history_cnt = self
-                .history
-                .set_scroll_text(get_crnt_date_txt(), itxt.clone()); // input history
-            self.one_command(get_crnt_date_txt(), itxt, true);
         }
     }
     fn load_file(&mut self, itxt: &str) {
@@ -214,12 +211,14 @@ impl LoopianApp {
         let mut fname = itxt.to_string();
         if itxt.contains(".blk(") {
             blk = Some(extract_texts_from_parentheses(itxt));
-            println!("{:?}",blk);
+            println!("{:?}", blk);
             let fnx = split_by('.', fname);
             fname = fnx[0].clone();
         }
-        if self.history.load_lpn(fname, self.cmd.get_path().as_deref(), blk) {
-
+        if self
+            .history
+            .load_lpn(fname, self.cmd.get_path().as_deref(), blk)
+        {
             self.next_msr_tick = self.get_loaded_text(CrntMsrTick::default());
         } else {
             self.scroll_lines.push((
@@ -244,9 +243,6 @@ impl LoopianApp {
     fn get_loaded_text(&mut self, mt: CrntMsrTick) -> Option<CrntMsrTick> {
         let loaded = self.history.get_loaded_text(mt);
         for cmd in loaded.0.iter() {
-            self.history_cnt = self
-                .history
-                .set_scroll_text(get_crnt_date_txt(), cmd.clone()); // input history
             self.one_command(get_crnt_date_txt(), cmd.clone(), false);
         }
         self.scroll_lines.push((
@@ -260,6 +256,9 @@ impl LoopianApp {
         // 通常のコマンド入力
         if let Some(answer) = self.cmd.set_and_responce(&itxt) {
             // normal command
+            self.history_cnt = self
+                .history
+                .set_scroll_text(get_crnt_date_txt(), itxt.clone()); // input history
             self.scroll_lines
                 .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
             if verbose {

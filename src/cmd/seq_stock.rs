@@ -137,7 +137,10 @@ impl SeqDataStock {
     }
     pub fn check_if_additional_phrase(&mut self, raw: String) -> Option<String> {
         let strlen = raw.len();
-        if strlen >= 9 && &raw[(strlen - 9)..(strlen - 3)] == "].rpt(" && &raw[(strlen - 2)..] == ")+" {
+        if strlen >= 9
+            && &raw[(strlen - 9)..(strlen - 3)] == "].rpt("
+            && &raw[(strlen - 2)..] == ")+"
+        {
             let rpt_cnt = extract_number_from_parentheses(&raw[(strlen - 9)..]);
             for i in 0..(rpt_cnt + 1) {
                 if i == 0 && self.raw_additional.len() == 0 {

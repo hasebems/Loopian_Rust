@@ -83,7 +83,7 @@ impl History {
             real_path = real_path + "/" + &lp;
         }
         println!("Path: {}", real_path);
-        let enable_blk = if blk.is_some() {true} else {false};
+        let enable_blk = if blk.is_some() { true } else { false };
         let mut inside_blk = !enable_blk;
         match fs::read_to_string(real_path + "/" + &fname + ".lpn") {
             Ok(content) => {
@@ -91,8 +91,8 @@ impl History {
                     let mut lodable = true;
                     if line.len() > 1 {
                         let notxt = line[0..2].to_string();
-                        if notxt == "//" || notxt == "20" {
-                            // コメントでないか、過去の 2023.. が書かれてないか
+                        if notxt == "//" || notxt == "20" || notxt == "!l" {
+                            // コメントでないか、過去の 2023.. が書かれてないか、loadではないか
                             lodable = false;
                         }
                         if enable_blk && line.chars().nth(0).unwrap_or('_') == '!' {
@@ -106,6 +106,7 @@ impl History {
                             }
                         }
                     } else if line.len() == 1 {
+                        // nothing
                     } else if enable_blk && inside_blk {
                         inside_blk = false;
                     }
