@@ -117,7 +117,11 @@ impl Flow {
             if let Some(ev) = self.raw_ev.pop() {
                 let _ = ev.0; // warning 対策
                 let ch_status = ev.2 & 0xf0;
-                let locate_idx = ev.3 as usize;
+                let locate_idx = if (ev.3 as usize) < LOCATION_ALL {
+                    ev.3 as usize
+                } else {
+                    break;
+                };
                 if ch_status != 0x80 && (ch_status == 0x90 && ev.4 != 0x00) {
                     // on
                     if self.raw_state[locate_idx] != NO_DATA {
