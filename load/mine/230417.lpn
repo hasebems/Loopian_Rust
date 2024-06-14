@@ -1,8 +1,9 @@
 // Voice: U4 Tall Concert 230321
 //
 // set.path(mine)
-// !l.230417.blk(setting) 
+// !l.230417.blk(setting)  ← これをそのまま書く
 !blk(setting)
+clear
 graph.dark
 graph.ripple
 set.bpm(69)

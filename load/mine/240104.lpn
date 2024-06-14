@@ -2,8 +2,9 @@
 //  Voice: NY Steinway D New Age
 //
 // set.path(mine)
-// !l.240104.blk(setting) 
+// !l.240104.blk(setting) ← これをそのまま書く
 !blk(setting)
+clear
 set.beat(3/4)
 set.key(Ab)
 set.bpm(144)
@@ -29,7 +30,7 @@ set.oct(1)
 
 []
 
-// !l.240104.blk(chg)
+// !l.240104.blk(chg)  ← これをそのまま書く
 !blk(chg)
 graph.light
 L12.{VIm/VIm/II7!/II7!}
