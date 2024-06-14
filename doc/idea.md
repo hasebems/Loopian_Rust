@@ -525,7 +525,9 @@ NoteObj <|-- WaterRipple
     - set bpm=120 -> set.bpm(120)
     - それに合わせて ( を書いたら ) を自動挿入（[],{}も自動挿入追加）
 - wait機能追加(5/24)
+- graph に voice 追加(5/28)
 - [...].rpt(n)+ (nは一桁)とやることで、リピートしながら複数のフレーズを追加入力できる仕様追加 (6/1)
+- load 時の、blk機能(6/5)
 
 
 パス
@@ -544,6 +546,13 @@ NoteObj <|-- WaterRipple
 - <d,r,m>*3 で3回繰り返し、みたいな記法はとても便利だが、octaveの指定がおかしくなりやすく、結局変なことになる
 
 次の対応、考えられる新機能
+- Tempo/Beat を打ち込みたい（変拍子、rit打ち込み）
+    - COND partを作るより、loadの仕方で対応した方が簡単かも
+- !コマンドの整理
+    - ファイルからのロードができないもの
+        - l,load,q,quit,blk,
+    - ファイル上でしか使えないもの（通常のコマンドでは使えない）
+        - wait,blk
 - スタカートや音価の操作
     - stacatoを Main Thread ではなく、Play Thread の elapse note でリアルタイムに制御したい
 - Tempoを微分ベースで
@@ -575,8 +584,6 @@ NoteObj <|-- WaterRipple
 - @2=@2.dyn(pp) : 再代入可能
 - >d で parallel, >>d で変換しない、<xxx> で、その区間 parallel、<<xxx>> で、その区間変換しない
 - @0=[] は fermata の時に再生する特別な variation とする
-- load 時の、wait機能
-- load 時の、section機能
 
 
 先の話

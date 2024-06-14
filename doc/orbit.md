@@ -3,11 +3,27 @@
 
 ## Loopian::ORBIT とは
 
-- Loopian::App に接続して使用する、円周状に配置されたセンサーを持つデバイス
-- ORBIT は、App と繋げることで以下のような機能を実現する
-    - ORBIT をタッチしたときに、App が現在流している音楽（伴奏）に沿った音を鳴らすことができる
-    - App は、ORBITの任意の位置のLEDを光らせることができる
+- Loopian::APP に接続して使用する、円周状に配置されたセンサーを持つデバイス
+- ORBIT は、APP と繋げることで以下のような機能を実現する
+    - ORBIT をタッチしたときに、APP が現在流している音楽（伴奏）に沿った音を鳴らすことができる
+    - APP は、ORBITの任意の位置のLEDを光らせることができる
         - 今鳴っている音楽に合わせてLEDを光らせる
+
+## Loopian::APP の立ち上げ方
+
+- ORBIT と APP の接続方法
+    - PCと繋ぐ場合、ORBITのマイコンのUSBをPCに挿し、Loopian::APP を立ち上げればよい
+    - Raspberry pi5 （以下 Raspi）と繋ぐ場合、ORBITのUSBを Raspi に挿し、APPは以下のように準備する
+
+- 実行方法
+    - Raspi でターミナルを立ち上げる
+    - `./autostart_loopian.sh` とタイプすると、Pianoteq8と同時に立ち上げる
+    - 上記シェルスクリプト中では、 `loopian server` とオプションスイッチで `server` をつけている
+
+- ビルド方法
+    - /home/pi/loopian/Loopian_Rust に移動
+    - `git pull` でリポジトリから最新バージョンを落としてくる
+    - `cargo build --release --feature raspi`  ビルドを行う
 
 ## MIDI仕様
 
