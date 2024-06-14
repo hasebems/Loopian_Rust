@@ -12,47 +12,47 @@ R1
 [el,+fi,qs,ex,vf,m,ef,r/es,f,m,r,d,x,x,+s/]+
 [.,vf,m,qf,vx,f,em,qr/ed,f,vx,s,f,m,ef,r,qs/.,o//].dyn(mp)
 
-!wait(2)
+!auto(2)
 R2
 [hx,ex,s^^,l^,t^/vd^..,wr,d,et,m,-l,vr..,m,r,d/]+
 [t,s,l,t,d,t,d,r,m,r,m,fi,es,-t/d,l,vr,d,t,l,s..,s,f,m,f,s/]+
 [l,s,l,t,hd,qt//].dyn(mp)
 
-!wait(4)
+!auto(4)
 L2
 [ex,+s^^,l^,t^,vd^..,wr,d,et,m/-l,vr..,m,r,d,et,d.,ta/]+
 [l,r,-s,d,v,l,t,d,qr/-s,ex,s^^,l^,t^,vd^..,wr,d/]+
 [et,m,-l,vr..,m,r,d,et,m/..,qr,vd,t,d,l,+m,r,d,t/]+
 [d,l,t,d,r,d,t,l,qs,x//].dyn(mp)
 
-!wait(5)
+!auto(5)
 L1
 [hx,ex,+d^^,r^,m^/vf^..,ws,f,em,l,-r,vs..,l,s,f/m,f,m,r,d,r,d,t,el,r,+l,fi/]+
 [vs,l,ta,s,-edi,r,+ql,m/vl,t,d,r,d,t,l,s,ed,x,x,x//].dyn(mp)
 
-!wait(7)
+!auto(7)
 R2
 [ex,d^^,r^,m^,vf^..,ws,f,em,l/]+
 [-r,vs..,l,s,f,em,vl..,t,l,s/hf,em,fi,qs/]+
 [.,fi,vs,f,m,r,d,r,d,t/l,d,t,l,es,x,vx,d,t,l,esi,+m/]+
 [r,vd,t,l,si,l,t,d,-fi,l,si,t.,l,t/ed,f,m,r.,vd,t,t..,l%/el%%,xo//].dyn(mp)
 
-!wait(9)
+!auto(9)
 R1
 [ex,+s^^,l^,t^,vd^..,wr,d,et,m/-l,r,vx,m,r,d,et,x,x,-r^^/]+
 [m^,fi^,vs^..,wl,s,efi,t,-m,l/vx,t,l,si,efi,f,m,vr..,m,fi,si/]+
 [l,si,l,t,si,fi,si,l,et,x,x,x//].dyn(mp)
 
-!wait(10)
+!auto(10)
 L1
 [hx,ex,+s^^,l^,t^/vd^..,wr,d,et,m,-l,vr..,m,r,d/]+
 [et,m.,r,d,f.,m/.,r.,m,f,vm,r,qm%/-el%%,xo//].dyn(mp)
 
-!wait(12)
+!auto(12)
 L2
 [ex,m^^,fi^,si^,vl^..,wt,l,esi,d/-fi,vt..,d,t,l,esi,l.,si%/el%%,xo//].dyn(mp)
 
-!wait(14)
+!auto(14)
 R1
 [ex,d^^,r^,m^,vf^..,ws,f,em,l/-r,vs..,l,s,f,em,m^,fi^,s^/]+
 [.,fi,si,l.,s^^,l^,t^/vd^..,wr,d,et,m,-l,r,vx,m,r,d/]+
@@ -61,7 +61,7 @@ L2
 [A2:ex,+s^^,l^,t^,vd^..,wr,d/et,m,-l,r.,-s,+qr/ed,l,+qm,er,x..//].dyn(mf)
 graph.light
 
-!wait(15)
+!auto(15)
 R2
 [A3:ex,s^^,l^,t^/vd^..,wr,d,et,d^^,r^,m^,vf^..,ws,f/]+
 [em,l,-r,s,vx,l,s,f,em,l/-r,+ta,l,vs,f,s,f,s,m,f,s,s,wf,s/]+
@@ -71,11 +71,11 @@ L1
 [el,+fi,s,m,qr,em,f/s,vl,s,ef,ta,-m,l,vx,t,l,s/]+
 [vf,m,f,r,es,l,-hr/vx,m,r,d,t,l,s,fi,em,x..].dyn(mf)
 
-!wait(17)
+!auto(17)
 L2
 [ex,+l^^,t^,di^,vr^..,wm,r,ed,f/-t,m,vx,f,m,r,edi,x..//].dyn(mf)
 
-!wait(19)
+!auto(19)
 R1
 [A2:ex,m^^,fi^,s^,vl^..,wt,l/es,d,-fi,t,vx,d,t,l,s,fi,m,r/]+
 [qm,r,vx,+l,s,f,m,s,f,l/vs....,l,ta,qd,er,-s/]+
@@ -85,7 +85,7 @@ L2
 [vx,r,d,t,l,s,l,fi,es,t^^,d^,r^/vm^..,wf,m,er,s,-d,f,vx,s,f,m/]+
 [qr,em,r.,s,es.//].dyn(mp)
 
-!wait(20)
+!auto(20)
 R2
 [A4:ex,s^^/l^,t^,vd^..,wr,d,et,m,-l,vr./.,m,r,d,t,d,r,m,f,s,l,s,f,m,r,d/]+
 [qt,ed,r,-s,qd,et/qd,et,ta,l,qr,ed/]+
@@ -96,7 +96,7 @@ L1
 [.,ql,et,d/-vf,l,s,f,m,r,d,t,d,r,m,f,es,-s/]+
 [do/o/o/o//].dyn(mp)
 
-!wait(24)
+!auto(24)
 R1
 [A3:ex,f^^,s^,l^/]+
 [vta^..,wd,ta,el,r,-s,d,vx,r,d,ta/l,ta,l,s,f,s,f,m,vr......,s/]+

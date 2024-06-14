@@ -13,33 +13,33 @@ set.oct(-1)
 [ex,vt,l,es,vl,t,ed,l,fi,+ri/em..,fi,s,fi,s,l/]+
 [et,vl%,si%,el,-ri,m,+t.,vl,si/ql,esi,t%,qm%,x//].dyn(mp)
 
-!wait(2)
+!auto(2)
 R2
 set.oct(-1)
 [hx,ex,l^,d^,-m^/qri^,m^,ex,vfi,s,el,vs,fi/]+
 [es,vl,t,ed,vt%,l%,et,vd,r,em,vr%,d%/]+
 [qr,d,et,vm,r,ed,vr,m/ef,r,t,+si%,ql%,x//].dyn(mp)
 
-!wait(5)
+!auto(5)
 L1
 [ex,m^,f^,-l^,qsi^,l^/ex,vt,d,er,vd,t,qd,l/]+
 [ex,vt,l,es,vl,t,ed,l,fi,+ri/mo/]+
 [efi,vt,l,esi,vl,t,-ed,vr,m,ef,vm,r/hm,-el..,t/ed,]+
 [+s,l,m,f,vm,f,es,-s/qd,xo//].dyn(mp)
 
-!wait(6)
+!auto(6)
 L2
 [hx,ex,l^,d^,-m^/qri^,m^,ex,vfi,s,el,vs,fi/]+
 [es,vl,t,ed,vt,l,et,vd,r,em,vr,d/qr..,ed,f/]+
 [-vt,d,t,d,er,vd,t,ed,vr,m,qf/.,m,hr/qm,xo//].dyn(mp)
 
-!wait(7)
+!auto(7)
 R2
 [ex,-fi^,t^,s^,qm^,eri,fi/.,m,l.,vx,vsi,l,t,qd/]+
 [.,t,vx,-m%,fi%,si%,el./.,vsi%,l%,et,vl%,si%,el..,r/]+
 [-s,vl,t,hd,qt%/d%,xo//].dyn(mp)
 
-!wait(12)
+!auto(12)
 R1
 [ex,+s^,l^,-d^,qt^,d^/ex,vr,m,ef,vm%,r%,m,fi,m,fi,es,vfi%,m%/]+
 [el..,vs,fi,qs,efi,d/.,qt,vl,t,ed,vt%,l%,et./]+
@@ -52,21 +52,21 @@ L2
 [ex,vr,d,et,vd%,r%,em,d,l,+fi/vs..,f,qm,er..,vm,r/hd,qt,]+
 [vx,d,r,m/ef,vs,f,em,-l.,s,d,ta/ql,et,r%,-s%,x..//].dyn(mp)
 
-!wait(13)
+!auto(13)
 L1
 [hx,ex,d^,m^,-s^/qfi^,s^,ex,vl,t,ed,vt%,l%/qt,d,]+
 [ex,vr,d,et,vd%,r%/em,d,l,+fi,hs/]+
 [ex,s^,l^,m^,qt^,d^/ex,vr,m,ef,vm%,r%,em,vr,d,er,m/]+
 [f,vm,r,em,fi,s,-vs,l,eta,vl%,s%/el,x..,hx//].dyn(mp)
 
-!wait(15)
+!auto(15)
 R2
 [ex,r^,m^,-s^,qfi^,s^/ex,vl,t,ed,vt%,l%,et,vd,r,em,vr%,d%/]+
 [er,vm,r,ed,vr%,m%,ef,vs,f,em,vf%,s%/el,f,r,+t,d,x../]+
 [ex,vl,ta,ed,vta%,l%,eta,vta,l,es,vl%,ta%/-em,ql,vs,f,em..,vr,di/]+
 [qr,edi,m,-l,x..//].dyn(mp)
 
-!wait(20)
+!auto(20)
 L1
 [A1:ex,+l^^,ta^^,-r^^,qdi^^,r^^/ex,vm^,f^,es^,vf^,m^,ef^^,fi^^,s^^,si^^/]+
 [vl^,ta,l,s,ef,vs%,l%,eta,s,m,+di/vr....,m,r,d,t,-m,r,m,f,m,r%,d%/]+
@@ -81,7 +81,7 @@ R2
 [vf,m,r,d,et,+si,l,x,vx,m,r%,d%/t%....,d,r%,m%,-l%....,d,ta%,l%/]+
 [s%....,l,ta%,d%,-f%....,l,s%,f%/m%....,m,fi,si,l^....,d^,t^^,l^^/si^,x,qx..//].dyn(p)
 
-!wait(28)
+!auto(28)
 R2
 [A1:ex,m^^,f^^,-l^,qsi^,l^/ex,vt,d,er,vd%,t%,em%,x../]+
 [hx,ex,vm,f,es,vf%,m%/vf....,m,r,d,qt,ex,vf,m/]+

@@ -130,7 +130,7 @@ impl History {
         if mt.msr != 0 {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
-                if ctxt.len() > 6 && ctxt[0..6] == *"!wait(" {
+                if ctxt.len() > 6 && ctxt[0..6] == *"!auto(" {
                     let msr = extract_number_from_parentheses(ctxt);
                     if msr == mt.msr.try_into().unwrap_or(0) {
                         idx = crnt.0 + 1;
@@ -142,7 +142,7 @@ impl History {
         // ここから記録
         for n in idx..self.loaded_text.len() {
             let ctxt = &self.loaded_text[n];
-            if ctxt.len() > 6 && ctxt[0..6] == *"!wait(" {
+            if ctxt.len() > 6 && ctxt[0..6] == *"!auto(" {
                 let msr = extract_number_from_parentheses(ctxt);
                 println!("YYY{:?}", txt_this_time);
                 return (
