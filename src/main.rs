@@ -150,14 +150,14 @@ impl LoopianApp {
                 self.input_locate = maxlen;
             }
             //println!("Key>>{:?}",key);
-        } else if key == &Key::ArrowUp {
+        } else if key == &Key::ArrowUp && self.input_locate == 0 {
             if let Some(txt) = self.history.arrow_up() {
                 self.input_text = txt.0;
                 self.history_cnt = txt.1;
             }
             self.input_locate = 0;
             self.visible_locate = 0;
-        } else if key == &Key::ArrowDown {
+        } else if key == &Key::ArrowDown && self.input_locate == 0 {
             if let Some(txt) = self.history.arrow_down() {
                 self.input_text = txt.0;
                 self.history_cnt = txt.1;
