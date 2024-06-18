@@ -1,8 +1,8 @@
 clear
-set bpm=72
-set key=Gb
+set.bpm(72)
+set.key(Gb)
 L1
-['d^,+s,+r,m%,s%...].para().dyn(mp)
+[ed^,+s,+r,m%,s%...].para().dyn(mp)
 {Imaj9/IVmaj9/IIm9/IVm9}
 R1
 {Iion/IVmaj9/IIm9/sc3}
