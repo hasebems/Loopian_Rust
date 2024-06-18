@@ -333,7 +333,9 @@ impl ElapseStack {
                 self.send_msg_to_ui(&key_disp);
             } else if (msg[0] & 0xe0) == 0x80 {
                 // 普通に鳴らす
-                self.mdx.midi_out(msg[0], msg[1]+12, msg[2], false);
+                if msg[1] >= 4 && msg[1] < 92 { // 4->21 A0, 91->108 C8
+                    self.mdx.midi_out(msg[0], msg[1]+17, msg[2], false);
+                }
             }
         }
         #[cfg(feature = "raspi")]
