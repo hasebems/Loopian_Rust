@@ -1,13 +1,13 @@
 clear
 set.key(E)
 set.beat(4/4)
-set.bpm(40)
+set.bpm(42)
 
 R1
-[ex....,-ldm,dm,dm].dyn(pp)
+[ex...,-ldm,-ldm,dm,dm].dyn(pp)
+{O.,O.}
 L2
 [qx..,+l^].dyn(p)
-{O.,O.}
 
 !auto(2)
 R1
@@ -33,6 +33,7 @@ L2
 !auto(5)
 R1
 [e-m-sr^,-m-sr^,-m-sdi,-m-sdi%,-ldm,-ldm,-l-tr,-l-tr].dyn(p)
+{O,O,O,O}
 L2
 [ql..,s].dyn(p)
 L1
@@ -50,6 +51,7 @@ L1
 !auto(7)
 R1
 [e-m-ld,-m-ld,-m-ld,dm,x,-ldm,-ldm,-ldm].dyn(p)
+{O.,O.}
 L2
 [ex..,v+l,s,el,vs,fi,es,vri,m].dyn(mp)
 L1
@@ -70,18 +72,18 @@ R2
 [q-ri,m..].dyn(mp)
 R1
 @c=-s-t
-[e-fi-s-t,-fi-s-t,c,c,c,c,c,c].dyn(p)
+[e-fi-s-t,-fi-s-t,c,c,c%,c%,c%,c%].dyn(p)
 L2
-[q't,vm,r,em,vr,di,er,vdi,t].dyn(mp)
+[q't,vm^,r^,em,vr^,di,er,vdi^,t].dyn(mp)
 L1
 [em....,x..].dyn(p)
 
 !auto(10)
 R2
-[ex..,-vm,r,em,vr,di,er,v--ta-di,--t-r].dyn(mp)
+[ex..,-vm^,r,em,vr^,di,er,v--ta-di,--t-r].dyn(mp)
 R1
 @c=-sdi
-[ec,c,c,c,c,s,s,s].dyn(p)
+[ec%,c%,c%,c,c,s,s^,s^].dyn(p)
 L2
 [hta,ex,qt,vdi,t].dyn(mp)
 L1
@@ -92,7 +94,7 @@ R2
 [-qm,er,ex,hx].dyn(p)
 R1
 @c=-tr
-[e-fidi,-sdi,-fi-t,c,c,c,c,-ldi].dyn(p)
+[e-fidi^,-sdi,-fi-t,c%,c%,c%,c,-ldi].dyn(p)
 L2
 [ex..,vfi,f,hfi].dyn(mp)
 L1
@@ -105,85 +107,89 @@ R1
 @c=-l-t
 [ec,c,c,c,c,c,c,c].dyn(p)
 L2
-[ex,vf,m,q'f,vm,ri,qm].dyn(mp)
+[ex,vf^,m^,q'f,vm^,ri^,qm].dyn(mp)
 L1
-[qx,-rr.,-didi]
+[qx,-rr.,-didi].dyn(mp)
 
 !auto(13)
 R2
-[ex..,--vm,fi,hs].dyn(mp)
+[ex..,--vm^,fi^,hs].dyn(mp)
 R1
 [e-si-t,-m-si-t,-m-l,l,x,-m-l,-m-l,-r-s-l].dyn(p)
 L2
-[ex..,-vm,fi,qs./.,x..].dyn(mp)
+[ex..,-vm^,fi^,qs./.,x..].dyn(mp)
 L1
-[h-dd,q'd,er]
+[h-dd,q'd^,er].dyn(mp)
 
 !auto(14)
 R2
-[ex..,--vma,r,q'ma,vr,di].dyn(mp)
+[ex..,--vma^,r^,q'ma,vr^,di^].dyn(mp)
 R1
 [e-d-s-l,-r-s-l,-m-s-l,-s-l,-s-l,-s-l,-s-l,-fi-l].dyn(p)
 L1
-[em,r,h-dd,q--t-t].dyn(p)
+[em,r,h-dd,q--t-t].dyn(mp)
 
 !auto(15)
 R2
 [q'--r,vr,m,hf].dyn(mp)
 R1
 @c=-r-s
-[e-fil,-r-fi-l,-r-s,-s,x,c,c,c].dyn(p)
+[e-fi-l^,-r-fi-l^,-r-s,-s,x,c,c%,c%].dyn(p)
 L2
 [ex..,-vr,m,h--t-f].dyn(mf)
 L1
-[h'--ta-ta,qx].dyn(p)
+[h'--ta-ta,qx].dyn(mp)
 
 !auto(16)
 R2
-[hx,--efi,s,l,vt,d].dyn(mp)
+[hx,--efi,s,l,vt^,d^].dyn(mp)
 R1
-[e-di-m-s,-di-m-s,-d-m-s,-d-m-s,q'-d-m,e-m-l].dyn(p)
+[e-di-m-s%,-di-m-s%,-d-m-s%,-d-m-s%,q'-d-m,e-m-l].dyn(p)
 L2
 []
 L1
 [qta,l,+el,s,fi,f].dyn(mp)
 
 !auto(17)
+set.bpm(72)
 R2
-[-q'r,eri,m,fi,qri].dyn(mp)
+[-q'r,eri,m,fi%,qri%].dyn(mp)
 R1
-[q-r-si,e-fd,-fi,q-sdi,-l-t].dyn(p)
+[q-r-si^,e-fd,-fi,q-sdi%,-l-t%%].dyn(p)
 L2
 []
 L1
-[qm,-ld,-ldi,t].dyn(p)
+[qm^,-ld,-ldi%,t%].dyn(p)
 
 !auto(18)
+set.bpm(42)
 R2
 [-hm,ex..,vr,-d-m].dyn(mp)
 R1
-[e-s-t,-s-t,q-s-t,ex,-si-tr,-si-tr,-si-t].dyn(p)
+[e-s-t%,-s-t%,q-s-t%%,ex,-si-tr,-si-tr,-si-t].dyn(p)
 L2
 []
 L1
-[+q'm,vr,m,hf].dyn(p)
+[+q'm%,vr,m^,hf^].dyn(p)
 
 !auto(19)
+set.bpm(45)
 R2
 [-q'f,v-r-f,-d-m,e-r-f,v-d-m,--t-r,e-d-m,v--t-r,-d-m].dyn(mp)
 R1
-[e-si-tr,-si-tr,-si-tr,si,-f-si,-f-si,-f-si,-f-si].dyn(p)
+[e-si-tr^,-si-tr^,-si-tr^,si,-f-si,-f-si,-f-si,-f-si].dyn(pp)
+{O,O,O,O}
 L2
-[ex..,vf,m,ex,vm,r,em,vr,m].dyn(p)
+[ex..,vf^,m^,ex,vm^,r^,em,vr^,m^].dyn(mp)
 L1
 [e-m,qmt,ex,hx].dyn(p)
 
 !auto(20)
 R2
-[-q'f,v-r,-d-m,q'-r-f,v-d-m,+r].dyn(mp)
+[-q'f,v-r^,-d-m^,q'-r-f,v-d-m^,+r^].dyn(mp)
 R1
 @c=-si-tr
-[ec,c,c,c,-f-l,-f-l,-f-l,-f-l].dyn(p)
+[ec,c,c,c,-f-l,-f-l,-f-l,-f-l].dyn(pp)
 L2
 [q'f,ex,hx].dyn(p)
 L1
@@ -191,9 +197,9 @@ L1
 
 !auto(21)
 R2
-[-q'm,vr,d,q'r,vd,-t].dyn(mp)
+[-q'm,vr^,d^,q'r,vd^,-t^].dyn(mp)
 R1
-[e-f-s-t,-f-s-t,-f-s-t,-f-s,-m-s,-m-s,-m-si,-m-si].dyn(p)
+[e-f-s-t,-f-s-t,-f-s-t,-f-s,-m-s,-m-s,-m-si,-m-si].dyn(pp)
 L2
 [hx,qt,ed,r].dyn(p)
 L1
@@ -201,100 +207,103 @@ L1
 
 !auto(22)
 R2
-[-q'd,+vl,s,el,vs,fi,es,vri,m].dyn(mp)
+[-q'd,+vl^,s,el,vs^,fi,es,vri^,m].dyn(mp)
 R1
-[e-m-l,-m-l,-m-l,dm,dm,dm,dm,-ld].dyn(p)
+[e-m-l,-m-l,-m-l,dm,dm,dm,dm,-ld].dyn(pp)
 L2
-[q'd,+vl,s,el,vs,fi,es,vri,m].dyn(p)
+[q'd,+vl^,s,el,vs^,fi,es,vri^,m].dyn(mp)
 L1
 [q'l].dyn(p)
 
 !auto(23)
 R2
-[-q'fi,vl,s,el,vs,fi,es,vri,m].dyn(mp)
+[-q'fi,vl^,s,el,vs^,fi,es,vri^,m].dyn(mp)
 R1
 [e-fidri,-fidri,-fidri,dm,dm,dm,dm,-ld].dyn(p)
 L2
-[q'-lri,+vl,s,el,vs,fi,es,vri,m].dyn(p)
+[q'-lri,+vl^,s,el,vs^,fi,es,vri^,m].dyn(mp)
 L1
 [qx,l,hx].dyn(p)
 
 !auto(24)
 R2
-[-q'fi,vf,m,q'f,vm,ri].dyn(mp)
+[-q'fi,vf^,m,q'f,vm^,ri].dyn(mp)
 R1
 [e-fidri,-fidri,-fidri,dma,dma,-fdma,-fdma,-ld].dyn(p)
 L2
-[q'-lri,vf,m,q'-lf,vm,ri].dyn(p)
+[q'-lri,vf^,m,q'-lf,vm^,ri].dyn(mp)
 L1
 [qx,l,qx,l].dyn(p)
 
 !auto(25)
 R2
-[-em,vd,r,hma,ex,-vf,s].dyn(mp)
+[-em,vd^,r,hma,ex,-vf^,s^].dyn(mp)
 R1
 @c=-ma-ld
 [e-ld,d,c,c,c,c,c,-ma].dyn(p)
 L2
-[em,vd,r,hx,ex,-vf,s].dyn(p)
+[em,vd^,r,hx,ex,-vf^,s^].dyn(mp)
 L1
 [+ql,s,q'f,ex].dyn(p)
 
 !auto(26)
 R2
-[-el,vsi,s,esi,vm,f,qs,vx,si,l,li].dyn(mp)
+[-el,vsi^,s,esi,vm^,f,qs,vx^,si,l,li].dyn(mp)
 R1
 [q'-r-f,e-r,-r-m,-r-m,-r-m,-r-m].dyn(p)
 L2
-[el,vsi,s,esi,vm,f,qs,vx,si,l,li].dyn(p)
+[el,vsi^,s,esi,vm^,f,qs,vx^,si,l,li].dyn(mp)
 L1
 [hta,t].dyn(p)
 
 !auto(27)
 R2
-[-et,vta,l,eta,vs,si,ql,esi,vm,f].dyn(mp)
+[-et,vta^,l^,eta,vs^,si^,ql,esi,vm^,f^].dyn(mp)
 R1
 [q'-m-si,-em,-m-si,-m-si,-r-f,-r].dyn(p)
 L2
-[et,vta,l,eta,vs,si,ql,si].dyn(p)
+[et,vta^,l^,eta,vs^,si^,ql,si].dyn(mp)
 L1
 [hd,qdi,et,ta].dyn(p)
 
 !auto(28)
 R2
-[-es,vf,m,ef..,x.,+vd,t].dyn(mp)
+[-es,vf,m%,ef%..,x.,+vd,t].dyn(mp)
 R1
-[e-di-m,-di,--l-r,--l-r,x,-r-f,-r-f,-f-l].dyn(p)
+[e-di-m,-di,--l-r%,--l-r%,x,-r-f%,-r-f%,-f-l%].dyn(p)
 L2
 []
 L1
-[q-ll,-rr,+l,et,d].dyn(p)
+[q-ll,-rr%,+l%,et,d].dyn(p)
 
 !auto(29)
 R2
-[-ed,vta,t,ed..,vt,d,er,vd,r].dyn(mp)
+[-ed,vta^,t^,ed..,vt^,d^,er,vd^,r^].dyn(mp)
 R1
-[e-f-si,-f-si,-f-l,-f-l,-f-l,-f-l,-f-l,-f-si].dyn(p)
+[e-f-si,-f-si,-f-l,-f-l,-f-l,-f-l,-f-l,-f-si].dyn(pp)
+{O.,O.}
 L2
 [em,r,qd.,et,vta,t].dyn(p)
 L1
 [qr..,x].dyn(p)
 
 !auto(30)
+set.bpm(38)
 R2
-[-qm..,ex,+vd,t].dyn(mp)
+[-qm..,ex,+vd^,t].dyn(mp)
 R1
-[e-m-l,-f-lr,-fi-ld,-si-tr,q-ld,ex,m].dyn(p)
+[e-m-l,-f-lr,-fi-ld%,-si-tr%,q-ld%,ex,m].dyn(p)
 L2
 [ed,r,ri,m.,l+d,l+d,l+d].dyn(p)
 L1
 [hm,el,x..].dyn(p)
 
 !auto(31)
+set.bpm(42)
 R2
 [q'd,vl,t,ed,vt,l,et,vs,l].dyn(mp)
 R1
-[e-ldm,-ldm,-ldm,-ldm,-ldm,-ldm,-l-tr,-s-tr].dyn(p)
+[e-ldm,-ldm,-ldm,-ldm,-ldm,-ldm,-l-tr,-s-tr].dyn(pp)
 L2
 []
 L1
@@ -305,7 +314,7 @@ R2
 [et....,vl,s,el,vf,s].dyn(mp)
 R1
 @c=-s-tr
-[ec,c,c,c,-f-ld,-f-ld,-f-l-t,-f-l-t].dyn(p)
+[ec,c,c,c,-f-ld,-f-ld,-f-l-t,-f-l-t].dyn(pp)
 L1
 [+qm..,r].dyn(p)
 
@@ -314,16 +323,16 @@ R2
 [el....,vs,f^,m^..,r].dyn(mp)
 R1
 @c=-m-ld
-[ec,c,c,c,-m-lr,-m-lr,-r-si,-r-si].dyn(p)
+[ec%,c%,c%,c%,-m-lr,-m-lr,-r-si^,-r-si^^].dyn(p)
 L1
 [+qd.,t,ta]
 
 !auto(34)
-set.bpm(36)
+set.bpm(38)
 R2
 [-vm^..,f,m....,f,l,d^,er^,m].dyn(mp)
 R1
-[e-m-sr,-m-sr,-s-ldi,-s-ldi,-f-ld,-f-ld,f,f].dyn(p)
+[e-m-sr^,-m-sr,-s-ldi,-s-ldi^,-f-ld^^,-f-ld^,f,f].dyn(p)
 L2
 [qx..,eft,vfl,t].dyn(p)
 L1
@@ -341,6 +350,7 @@ L1
 [+ql,er,vd,r,hm].dyn(p)
 
 !auto(36)
+set.bpm(42)
 R2
 [q'l%,vl,-m-s,el,vs,-r-f,e--ta-s,vf,-m-s].dyn(mp)
 R1
@@ -348,17 +358,17 @@ R1
 L2
 [qx,ex,+l,l,s.,l/hl,x//].dyn(p)
 L1
-[+vf,m,f,s^,l^,ta^,l,s,ef%,vs,f,ma,m^,f^,m].dyn(p)
+[+vf,m,f,s^,l^,ta^,l,s,ef%,vs,f,ma,m^,f^,m].dyn(mp)
 
 !auto(37)
+rit.poco.b3
 R2
 [lo/.//].dyn(p)
 R1
-[erf,rf,dm,-tr,-ld,dm,dm,dm,dm].dyn(p)
+[erf,rf,dm,-tr,-ld,dm,dm,dm%,dm%].dyn(p)
 L1
-[+vr,t,d,r^,m^,f,em%,-e'l^,+vm%,ql%%/o//].dyn(p)
+[+vr,t,d,r^,m^,f,em%,-e'l^,+vm%,ql%%/o//].dyn(mp)
 
 !auto(38)
-rit.b2
 R1
-[edm,qdm%,edm%%//].dyn(p)
+[edm,qdm%,edm%%//].dyn(pp)
