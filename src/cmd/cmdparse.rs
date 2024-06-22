@@ -24,6 +24,7 @@ pub struct LoopianCmd {
     ui_hndr: mpsc::Receiver<String>,
     input_part: usize,
     during_play: bool,
+    recursive: bool,
     dtstk: SeqDataStock,
     graphic_ev: Vec<String>,
     sndr: MessageSender,
@@ -46,6 +47,7 @@ impl LoopianCmd {
             ui_hndr,
             input_part: RIGHT1,
             during_play: false,
+            recursive: false,
             dtstk: SeqDataStock::new(),
             graphic_ev: Vec::new(),
             sndr: MessageSender::new(msg_hndr),
@@ -226,7 +228,7 @@ impl LoopianCmd {
     fn letter_c(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len >= 5 && &input_text[0..5] == "clear" {
-            if len == 5 {
+            if self.recursive == false && len == 5 {
                 // stop
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
                 self.during_play = false;
@@ -235,6 +237,9 @@ impl LoopianCmd {
                     self.clear_part(i);
                 }
                 "all data erased!".to_string()
+            } else if self.recursive == true {
+                self.clear_part(self.input_part);
+                "designated part data erased!".to_string()               
             } else {
                 let part_letter = &input_text[6..];
                 println!("clear>>{}", part_letter);
@@ -245,7 +250,7 @@ impl LoopianCmd {
                         LEFT2 => "part L2 data erased!".to_string(),
                         RIGHT1 => "part R1 data erased!".to_string(),
                         RIGHT2 => "part R2 data erased!".to_string(),
-                        _ => "some ßpart part erased!".to_string(),
+                        _ => "some part data erased!".to_string(),
                     }
                 } else {
                     "what?".to_string()
@@ -495,18 +500,34 @@ impl LoopianCmd {
                     "L1" => rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text),
                     "L2" => rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text),
                     "L12" => {
-                        rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text);
-                        if rtn_str != "what?" {
-                            rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
-                        }
+                        self.call_bracket_brace(LEFT1, first_letter, rest_text);
+                        rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
+                    }
+                    "L1!" => {
+                        self.call_bracket_brace(LEFT2, first_letter, rest_text);
+                        self.call_bracket_brace(RIGHT1, first_letter, rest_text);
+                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
+                    }
+                    "L2!" => {
+                        self.call_bracket_brace(LEFT1, first_letter, rest_text);
+                        self.call_bracket_brace(RIGHT1, first_letter, rest_text);
+                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);                        
                     }
                     "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
                     "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),
                     "R12" => {
+                        self.call_bracket_brace(RIGHT1, first_letter, rest_text);
+                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
+                    }
+                    "R1!" => {
+                        self.call_bracket_brace(LEFT1, first_letter, rest_text);
+                        self.call_bracket_brace(LEFT2, first_letter, rest_text);
+                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
+                    }
+                    "R2!" => {
+                        self.call_bracket_brace(LEFT1, first_letter, rest_text);
+                        self.call_bracket_brace(LEFT2, first_letter, rest_text);
                         rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
-                        if rtn_str != "what?" {
-                            rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
-                        }
                     }
                     "ALL" => {
                         for i in 0..MAX_KBD_PART {
@@ -574,13 +595,16 @@ impl LoopianCmd {
         } else {
             return "Invalid Syntax!".to_string();
         }
+
         let mut rtn_str = "what?".to_string();
         let org_part = self.input_part;
+        self.recursive = true;
         self.input_part = part_num;
         if let Some(ans) = self.set_and_responce(input_text) {
             rtn_str = ans.0;
         }
         self.input_part = org_part;
+        self.recursive = false;
 
         /*if first_letter == "[" {
             if self.set_phrase(part_num, 0, rest_text) {
