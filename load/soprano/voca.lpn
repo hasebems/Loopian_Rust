@@ -1,3 +1,9 @@
+// Vocalise
+//  Voice: NY Steinway New Age
+//
+// set.path(soprano)
+graph.dark
+graph.ripple
 clear
 set.key(E)
 set.beat(4/4)
