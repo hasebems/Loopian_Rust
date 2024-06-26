@@ -282,6 +282,7 @@ Phrase 追加
     - `L1.[...]`  : left1パート
     - `L12.[...]` : left1,left2パート二つ同時に同じ Phrase をセット
     - `ALL.[...]` : 全パートに同じ Phrase をセット
+    - `L1!.[...]` : left1パート以外全て
 
 * Phrase の cluster memory 機能
     - 一拍分の音符を、Phraseに使うために事前に登録することができる
@@ -320,6 +321,9 @@ Graphic
 
 - `graph.light` : 白基調の画面に変化
 - `graph.dark`  : 黒基調の画面に変化
+- `graph.ripple`: 水紋の画面に変化
+- `graph.voice` : 各声部が分割される画面に変化
+
 
 
 アプリの内部で自動的に行われること

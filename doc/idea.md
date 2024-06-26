@@ -111,8 +111,6 @@
     - dyn() : ff,f,mf,mp,p,pp, ^, %, cresc, dim などVelocity指定
     - dmp() : on,off,half などdamper pedal奏法
     - trns() : para などコード変換方法の指定
-- 条件処理(未実装)
-    - xxx?yyy : xxx-条件、yyy-処理
 
 ### 3.MIDI Flow(Server)機能
 
@@ -528,7 +526,7 @@ NoteObj <|-- WaterRipple
 - graph に voice 追加(5/28)
 - [...].rpt(n)+ (nは一桁)とやることで、リピートしながら複数のフレーズを追加入力できる仕様追加 (6/1)
 - load 時の、blk機能(6/5)
-
+- flow の仕様変更 : play 中でなくても、音は出る（クロマティック＆テンポ同期しない）(6/12)
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -559,9 +557,6 @@ NoteObj <|-- WaterRipple
     - テンポが設定された過去からの時間で割り算するのではなく、もっと短い時間で tick 計算する
     - 上記のやり方で rit. をより動的に変化させられる
     - 外部 F8 同期も可能にする
-- flow の仕様変更
-    - server で立ち上げた時、R1 がデフォルト flow part（現行通り）
-    - play 中でなくても、音は出る（クロマティック＆テンポ同期しない）
 - Phrase を入力したとき、次のループからではなく、リアルタイムで変わる機能
     - リアルタイムか、次のループ先頭かを選べる
         - [RT:xxxx] RTをつけたらリアルタイムに変わる
@@ -593,6 +588,13 @@ NoteObj <|-- WaterRipple
 ## loopian 計画
 - loopian を使った動画制作
 - loopian::dev によるリアルタイム演奏
+
+## build & 起動
+- ラズパイの場合、 cargo xxx --features raspi
+- サーバ機能で立ち上げる場合、 cargo xxx server
+- ただし、pianoteq8と同時に立ち上げる shell script:
+    - ./autostart_loopian.sh
+
 
 ### 動画作成
 - QuickTime Player で新規画面収録
