@@ -239,7 +239,7 @@ impl LoopianCmd {
                 "all data erased!".to_string()
             } else if self.recursive == true {
                 self.clear_part(self.input_part);
-                "designated part data erased!".to_string()               
+                "designated part data erased!".to_string()
             } else {
                 let part_letter = &input_text[6..];
                 println!("clear>>{}", part_letter);
@@ -511,7 +511,7 @@ impl LoopianCmd {
                     "L2!" => {
                         self.call_bracket_brace(LEFT1, first_letter, rest_text);
                         self.call_bracket_brace(RIGHT1, first_letter, rest_text);
-                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);                        
+                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
                     }
                     "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
                     "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),

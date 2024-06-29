@@ -23,7 +23,7 @@
 - ビルド方法
     - /home/pi/loopian/Loopian_Rust に移動
     - `git pull` でリポジトリから最新バージョンを落としてくる
-    - `cargo build --release --feature raspi`  ビルドを行う
+    - `cargo build --release --features raspi`  ビルドを行う
 
 ## MIDI仕様
 

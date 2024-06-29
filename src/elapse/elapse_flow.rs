@@ -122,7 +122,7 @@ impl Flow {
                 } else {
                     break;
                 };
-                if ch_status != 0x80 && (ch_status == 0x90 && ev.4 != 0x00) {
+                if ch_status == 0x90 && ev.4 != 0x00 {
                     // on
                     if self.raw_state[locate_idx] != NO_DATA {
                         break;
@@ -137,7 +137,7 @@ impl Flow {
                         println!("MIDI OUT<< 0x90:{:x}:{:x}", rnote, ev.4);
                         self.gen_stock.push(GenStock(rnote, ev.4, ev.3));
                     }
-                } else {
+                } else if ch_status == 0x80 || (ch_status == 0x90 && ev.4 == 0x00) {
                     // off
                     self.raw_state[locate_idx] = NO_DATA;
                     if let Some(idx) = self.same_locate_index(ev.3) {

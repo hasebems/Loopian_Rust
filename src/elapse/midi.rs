@@ -99,12 +99,15 @@ impl MidiTx {
             let _ = cnct.send(&[status_with_ch, dt1, dt2]);
         }
         if to_led {
-            if let Some(cnctl) = self.connection_tx_led.as_mut() {
-                let midi_cmnd = status & 0xf0;
-                if midi_cmnd == 0x90 || midi_cmnd == 0x80 {
-                    let status_with_ch = midi_cmnd | 0x0f; // ch.16
-                    let _ = cnctl.send(&[status_with_ch, dt1, dt2]);
-                }
+            self.midi_out_for_led(status, dt1, dt2);
+        }
+    }
+    pub fn midi_out_for_led(&mut self, status: u8, dt1: u8, dt2: u8) {
+        if let Some(cnctl) = self.connection_tx_led.as_mut() {
+            let midi_cmnd = status & 0xf0;
+            if midi_cmnd == 0x90 || midi_cmnd == 0x80 {
+                let status_with_ch = midi_cmnd | 0x0f; // ch.16
+                let _ = cnctl.send(&[status_with_ch, dt1, dt2]);
             }
         }
     }

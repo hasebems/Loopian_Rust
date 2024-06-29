@@ -333,8 +333,9 @@ impl ElapseStack {
                 self.send_msg_to_ui(&key_disp);
             } else if (msg[0] & 0xe0) == 0x80 {
                 // 普通に鳴らす
-                if msg[1] >= 4 && msg[1] < 92 { // 4->21 A0, 91->108 C8
-                    self.mdx.midi_out(msg[0], msg[1]+17, msg[2], false);
+                if msg[1] >= 4 && msg[1] < 92 {
+                    // 4->21 A0, 91->108 C8
+                    self.mdx.midi_out(msg[0], msg[1] + 17, msg[2], false);
                 }
             }
         }
@@ -355,7 +356,7 @@ impl ElapseStack {
     }
     #[allow(dead_code)]
     fn parse_1byte_midi(&mut self, input_data: u8) {
-        println!("{}", input_data);
+        let dt1 = self.midi_stream_data1;
         if input_data & 0x80 == 0x80 {
             match input_data {
                 0xfa => {}
@@ -370,8 +371,14 @@ impl ElapseStack {
         } else {
             match self.midi_stream_status & 0xf0 {
                 0x90 => {
-                    if self.midi_stream_data1 != INVALID {
-                        // do something
+                    if dt1 != INVALID {
+                        // LED
+                        self.mdx
+                            .midi_out_for_led(self.midi_stream_status, dt1, input_data);
+                        println!(
+                            "ExtLoopian: {}-{}-{}",
+                            self.midi_stream_status, dt1, input_data
+                        );
                         self.midi_stream_status = INVALID;
                         self.midi_stream_data1 = INVALID;
                     } else {
@@ -379,8 +386,14 @@ impl ElapseStack {
                     }
                 }
                 0x80 => {
-                    if self.midi_stream_data1 != INVALID {
-                        // do something
+                    if dt1 != INVALID {
+                        // LED
+                        self.mdx
+                            .midi_out_for_led(self.midi_stream_status, dt1, input_data);
+                        println!(
+                            "ExtLoopian: {}-{}-{}",
+                            self.midi_stream_status, dt1, input_data
+                        );
                         self.midi_stream_status = INVALID;
                         self.midi_stream_data1 = INVALID;
                     } else {
