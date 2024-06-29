@@ -18,7 +18,7 @@ use std::time::Duration;
 pub struct MidiTx {
     connection_tx: Option<Box<MidiOutputConnection>>,
     connection_tx_led: Option<Box<MidiOutputConnection>>,
-    //connection_rx_orbit: Box<MidiOutputConnection>,
+    connection_ext_loopian: Option<Box<MidiOutputConnection>>,
 }
 
 impl MidiTx {
@@ -27,6 +27,7 @@ impl MidiTx {
         let mut me = MidiTx {
             connection_tx: None,
             connection_tx_led: None,
+            connection_ext_loopian: None,
         };
 
         // Get an output port (read from console if multiple are available)
@@ -47,7 +48,7 @@ impl MidiTx {
             let driver = MidiOutput::new("Loopian_tx")?;
             let drv_name = driver.port_name(p).unwrap();
             if drv_name.find(MIDI_OUT).is_some() {
-                match driver.connect(p, "loopian_tx") {
+                match driver.connect(p, "loopian_tx1") {
                     Ok(c) => {
                         me.connection_tx = Some(Box::new(c));
                         an_least_one = true;
@@ -58,11 +59,22 @@ impl MidiTx {
                     }
                 }
             } else if drv_name.find(MIDI_DEVICE).is_some() {
-                match driver.connect(p, "loopian_tx") {
+                match driver.connect(p, "loopian_tx2") {
                     Ok(c) => {
                         me.connection_tx_led = Some(Box::new(c));
                         an_least_one = true;
                         println!("{}: {} <as LED>", i, drv_name);
+                    }
+                    Err(_e) => {
+                        println!("Connection Failed! for No.{}", i);
+                    }
+                }
+            } else if drv_name.find(MIDI_EXT_OUT).is_some() {
+                match driver.connect(p, "loopian_tx3") {
+                    Ok(c) => {
+                        me.connection_ext_loopian = Some(Box::new(c));
+                        an_least_one = true;
+                        println!("{}: {} <as Ext>", i, drv_name);
                     }
                     Err(_e) => {
                         println!("Connection Failed! for No.{}", i);
@@ -80,6 +92,10 @@ impl MidiTx {
     pub fn midi_out(&mut self, status: u8, dt1: u8, dt2: u8, to_led: bool) {
         if let Some(cnct) = self.connection_tx.as_mut() {
             let status_with_ch = status & 0xf0; // ch.1
+            let _ = cnct.send(&[status_with_ch, dt1, dt2]);
+        }
+        if let Some(cnct) = self.connection_ext_loopian.as_mut() {
+            let status_with_ch = status & 0xf0 + 10; // ch.11
             let _ = cnct.send(&[status_with_ch, dt1, dt2]);
         }
         if to_led {
@@ -158,7 +174,7 @@ impl MidiRx {
                 midi_in
                     .connect(
                         port,
-                        "midir-read-input",
+                        "loopian_rx1",
                         move |stamp, message, _| {
                             let msg = message.iter().fold(Vec::new(), |mut s, i| {
                                 s.push(*i);
@@ -177,6 +193,7 @@ impl MidiRx {
             match Uart::with_path("/dev/ttyAMA0", 38400, Parity::None, 8, 1) {
                 Ok(mut u) => {
                     let _ = u.set_read_mode(0, Duration::ZERO);
+                    println!("Uart MIDI available, now!");
                     self.uart = Some(u);
                 }
                 Err(_e) => {

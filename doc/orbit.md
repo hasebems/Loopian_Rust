@@ -33,12 +33,11 @@
 - ORBIT::Main は、MIDI ch = 12 でNote情報(number:00-5Fh)/Damper情報/PC情報(0-17)を送る
 - Sub/Main 両方とも、MIDI ch = 16 のNote情報(number:15-6Ch)を受信したら、Note番号の位置にある White LED を光らせる
     - なお、MIDI ch = 14 を受信したときは Main が、MIDI ch = 15 を受信したときは Sub が、White LED を光らせる
+    - ch = 14/15 で光らせる機能は、Main/Sub を個別に光らせたい場合の予備機能
 - 従って Loopian::App は ORBIT より以下のMIDI情報を得る
     - MIDI ch=12/13 によるNote情報(number:00-5Fh)
     - Damper情報
     - PC情報(0-17)
-
-
 
 ## Loopian 受信時の処理
 
@@ -49,3 +48,13 @@
 - PC = 16 のときは、Loopian::App は終了する
 - PC = 17 のときは、Loopian::App は、ターミナルによるコマンド入力になる
 
+## Loopian::AppのMIDIプログラム
+
+- Loopian::App立ち上げ時のMIDI周りの表示は以下の意味である
+    - 用例> N: ----- <as XXX>
+    - N は、Output/Input それぞれのつづき番号
+    - ----- は接続したポートの名前
+    - <as Piano> : Piano音源を鳴らすための出力ポート(1ch)
+    - <as LED> : LEDを光らすための出力ポート(16ch)
+    - <as Ext> : 外部のLoopianへの出力ポート(11ch)
+    - <as Flow> : ORBITなどから送られてくるMIDI外部操作(12,13ch)
