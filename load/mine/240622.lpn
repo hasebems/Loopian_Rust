@@ -43,6 +43,7 @@ graph.light
 
 // !l.240622.blk(keydown)
 !blk(keydown)
+set.bpm(96)
 set.key(Gb)
 graph.dark
 [q'm,t,es./.,q'l,qm,s].dyn(mf)
