@@ -365,6 +365,7 @@ impl ElapseStack {
                 _ => {
                     if input_data & 0x0f == 0x0a {
                         self.midi_stream_status = input_data;
+                        println!("{}",input_data);
                     }
                 }
             }
@@ -383,6 +384,7 @@ impl ElapseStack {
                         self.midi_stream_data1 = INVALID;
                     } else {
                         self.midi_stream_data1 = input_data;
+                        println!("{}",input_data);
                     }
                 }
                 0x80 => {
