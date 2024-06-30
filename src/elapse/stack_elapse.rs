@@ -357,6 +357,7 @@ impl ElapseStack {
     #[allow(dead_code)]
     fn parse_1byte_midi(&mut self, input_data: u8) {
         let dt1 = self.midi_stream_data1;
+        println!("{}",input_data);
         if input_data & 0x80 == 0x80 {
             match input_data {
                 0xfa => {}
