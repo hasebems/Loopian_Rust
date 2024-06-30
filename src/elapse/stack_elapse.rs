@@ -357,7 +357,6 @@ impl ElapseStack {
     #[allow(dead_code)]
     fn parse_1byte_midi(&mut self, input_data: u8) {
         let dt1 = self.midi_stream_data1;
-        println!("{}",input_data);
         if input_data & 0x80 == 0x80 {
             match input_data {
                 0xfa => {}
@@ -366,7 +365,6 @@ impl ElapseStack {
                 _ => {
                     if input_data & 0x0f == 0x0a {
                         self.midi_stream_status = input_data;
-                        println!("{}",input_data);
                     }
                 }
             }
@@ -385,7 +383,6 @@ impl ElapseStack {
                         self.midi_stream_data1 = INVALID;
                     } else {
                         self.midi_stream_data1 = input_data;
-                        println!("{}",input_data);
                     }
                 }
                 0x80 => {

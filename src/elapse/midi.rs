@@ -95,7 +95,7 @@ impl MidiTx {
             let _ = cnct.send(&[status_with_ch, dt1, dt2]);
         }
         if let Some(cnct) = self.connection_ext_loopian.as_mut() {
-            let status_with_ch = status & 0xf0 + 10; // ch.11
+            let status_with_ch = (status & 0xf0) + 10; // ch.11
             let _ = cnct.send(&[status_with_ch, dt1, dt2]);
         }
         if to_led {
