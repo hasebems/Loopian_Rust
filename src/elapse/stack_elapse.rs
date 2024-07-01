@@ -340,16 +340,18 @@ impl ElapseStack {
             }
         }
         #[cfg(feature = "raspi")]
-        if let Some(ref mut urx) = self._mdrx.uart {
-            let mut byte = [0];
-            match urx.read(&mut byte) {
-                Ok(c) => {
-                    if c == 1 {
-                        self.parse_1byte_midi(byte[0]);
+        if !self.during_play {  // pattern 再生中は、External Loopian とは繋がない
+            if let Some(ref mut urx) = self._mdrx.uart {
+                let mut byte = [0];
+                match urx.read(&mut byte) {
+                    Ok(c) => {
+                        if c == 1 {
+                            self.parse_1byte_midi(byte[0]);
+                        }
                     }
-                }
-                Err(e) => {
-                    println!("{}", e);
+                    Err(e) => {
+                        println!("{}", e);
+                    }
                 }
             }
         }
