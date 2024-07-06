@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 eframe = "0.26.2"
 device_query = "1.1.0"
-midir = "0.9.1"
+midir = "0.10.0"
 rand = "0.8.5"
 rand_distr = "0.4.3"
 chrono = "0.4.24"
