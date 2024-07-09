@@ -730,16 +730,20 @@ impl LoopianCmd {
                 }
             } else if cmd == "beat" {
                 let numvec = split_by('/', prm.to_string());
-                match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
-                    (Ok(numerator), Ok(denomirator)) => {
-                        self.dtstk.change_beat(numerator, denomirator);
-                        self.sndr
-                            .send_msg_to_elapse(ElpsMsg::SetBeat([numerator, denomirator]));
-                        self.sndr
-                            .send_all_vari_and_phrase(self.input_part, &self.dtstk);
-                        "Beat has changed!".to_string()
+                if numvec.len() < 2 {
+                    "Number is wrong.".to_string()
+                } else {
+                    match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
+                        (Ok(numerator), Ok(denomirator)) => {
+                            self.dtstk.change_beat(numerator, denomirator);
+                            self.sndr
+                                .send_msg_to_elapse(ElpsMsg::SetBeat([numerator, denomirator]));
+                            self.sndr
+                                .send_all_vari_and_phrase(self.input_part, &self.dtstk);
+                            "Beat has changed!".to_string()
+                        }
+                        _ => "Number is wrong.".to_string(),
                     }
-                    _ => "Number is wrong.".to_string(),
                 }
             } else if cmd == "input" {
                 if self.change_input_mode(prm) {
