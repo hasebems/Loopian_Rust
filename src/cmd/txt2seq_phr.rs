@@ -426,17 +426,10 @@ fn break_up_nt_dur_vel(
     (notes, mes_end, dur_cnt, diff_vel, base_dur, next_last_nt)
 }
 fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
-    let mut base_pitch: i32;
-    if doremi >= NO_MIDI_VALUE as i32 {
+    let mut base_pitch = doremi;
+    if doremi < NO_MIDI_VALUE as i32 {
         // special meaning ex. NO_NOTE
-        base_pitch = doremi;
-    } else {
         base_pitch = base_note + doremi;
-        if base_pitch >= MAX_NOTE_NUMBER as i32 {
-            base_pitch = MAX_NOTE_NUMBER as i32;
-        } else if base_pitch < MIN_NOTE_NUMBER as i32 {
-            base_pitch = MIN_NOTE_NUMBER as i32;
-        }
     }
     return base_pitch as u8;
 }
