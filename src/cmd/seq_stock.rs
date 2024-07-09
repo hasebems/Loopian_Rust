@@ -303,7 +303,6 @@ impl PhraseDataStock {
 pub struct CompositionDataStock {
     raw: String,
     cmpl_cd: Vec<String>,
-    cmpl_ex: Vec<String>,
     chord: Vec<ChordEvt>,
     do_loop: bool,
     whole_tick: i32,
@@ -313,7 +312,6 @@ impl Default for CompositionDataStock {
         Self {
             raw: "".to_string(),
             cmpl_cd: vec!["".to_string()],
-            cmpl_ex: vec!["".to_string()],
             chord: Vec::new(),
             do_loop: true,
             whole_tick: 0,
@@ -337,9 +335,8 @@ impl CompositionDataStock {
 
         // 2.complement data
         if let Some(cmpl) = complement_composition(input_text) {
-            self.cmpl_cd = cmpl[0].clone();
-            self.cmpl_ex = cmpl[1].clone();
-            println!("complement_composition: {:?} exp: {:?}", cmpl[0], cmpl[1]);
+            self.cmpl_cd = cmpl.clone();
+            println!("complement_composition: {:?}", cmpl);
             true
         } else {
             println!("Composition input failed!");

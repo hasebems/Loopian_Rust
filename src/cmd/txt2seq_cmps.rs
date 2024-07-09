@@ -172,51 +172,22 @@ pub fn is_movable_scale(mut idx_num: i16, root: i16) -> (bool, i16) {
 //*******************************************************************
 //          complement_composition
 //*******************************************************************
-pub fn complement_composition(input_text: String) -> Option<[Vec<String>; 2]> {
+pub fn complement_composition(input_text: String) -> Option<Vec<String>> {
     // 1. {} を抜き出し、２つ分の brackets を Vec に入れて戻す
-    if let Some((cd, ce)) = divide_brace(input_text) {
-        //println!("{:?}",cd);
+    if let Some(cd) = divide_brace(input_text) {
 
         // 2. 重複補填と ',' で分割
         let cmps_vec = fill_omitted_chord_data(cd);
 
-        // 3. Expression を ',' で分割
-        let ex_vec = split_by(',', ce);
-
-        Some([cmps_vec, ex_vec])
+        Some(cmps_vec)
     } else {
         None
     }
 }
-pub fn divide_brace(input_text: String) -> Option<(String, String)> {
-    let mut cmps_info: Vec<String> = Vec::new();
-
-    // {} のセットを抜き出し、中身を cmps_info に入れる
-    let mut isx: &str = &input_text;
-    loop {
-        if let Some(n2) = isx.find('}') {
-            cmps_info.push(isx[1..n2].to_string());
-            isx = &isx[n2 + 1..];
-            if isx.len() == 0 {
-                break;
-            }
-            if let Some(n3) = isx.find('{') {
-                if n3 != 0 {
-                    break;
-                }
-            } else {
-                break;
-            }
-        } else {
-            break;
-        }
-    }
-
-    let blk_cnt = cmps_info.len();
-    if blk_cnt >= 2 {
-        Some((cmps_info[0].clone(), cmps_info[1].clone()))
-    } else if blk_cnt == 1 {
-        Some((cmps_info[0].clone(), "".to_string()))
+pub fn divide_brace(input_text: String) -> Option<String> {
+    let isx: &str = &input_text;
+    if let Some(n2) = isx.find('}') {
+        Some(isx[1..n2].to_string())
     } else {
         None
     }
@@ -301,22 +272,11 @@ pub fn recombine_to_chord_loop(
             msr += 1;
         }
 
-        let msgs = comp[read_ptr].clone();
-        (chord, dur) = divide_chord_and_dur(msgs);
-        if chord == "" {
-            chord = same_chord.clone();
-        } else {
-            same_chord = chord.clone();
-        }
-
-        if chord.chars().any(|x| x == ':') {
-            // Variation 指定があるか
-            let msgs_in_same: Vec<&str> = chord.split(':').collect();
-            let ltr = msgs_in_same[1].chars().nth(0).unwrap_or(' ');
-            let num = msgs_in_same[1][1..].parse().unwrap_or(0);
-            if msgs_in_same[1].len() == 2 && ltr == '@' && num > 0 {
-                // 2文字で、1文字目は'@' 2文字目は 1-9 の数字
-                //rcmb.add_dt(vec![TYPE_VARI, tick as i16, num, 0]);
+        let mut msgs = comp[read_ptr].clone();
+        if msgs.contains("@") {
+            let msgs_sp: Vec<&str> = msgs.split('@').collect();
+            let num = msgs_sp[1].chars().nth(0).unwrap_or('0').to_digit(10).unwrap_or(0) as i16;
+            if num > 0 && num <= 9 {
                 rcmb.push(ChordEvt {
                     mtype: TYPE_VARI,
                     tick: tick as i16,
@@ -324,10 +284,22 @@ pub fn recombine_to_chord_loop(
                     tbl: 0,
                 })
             }
-            chord = msgs_in_same[0].to_string();
-            if chord.len() == 0 {
-                chord = "X".to_string();
+            if msgs_sp[1][1..].len() > 0 {
+                let rest = msgs_sp[1][1..].to_string();
+                msgs = format!("{}{}",msgs_sp[0],rest);
+            } else {
+                msgs = msgs_sp[0].to_string();
             }
+            if msgs.len() == 0 {
+                msgs = "X".to_string();
+            }
+        }
+
+        (chord, dur) = divide_chord_and_dur(msgs);
+        if chord == "" {
+            chord = same_chord.clone();
+        } else {
+            same_chord = chord.clone();
         }
 
         let (root, table) = convert_chord_to_num(chord);
