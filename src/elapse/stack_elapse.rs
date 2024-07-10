@@ -340,7 +340,8 @@ impl ElapseStack {
             }
         }
         #[cfg(feature = "raspi")]
-        if !self.during_play {  // pattern 再生中は、External Loopian とは繋がない
+        if !self.during_play {
+            // pattern 再生中は、External Loopian とは繋がない
             if let Some(ref mut urx) = self._mdrx.uart {
                 let mut byte = [0];
                 match urx.read(&mut byte) {
