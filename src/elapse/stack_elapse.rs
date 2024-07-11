@@ -382,7 +382,7 @@ impl ElapseStack {
                             "ExtLoopian: {}-{}-{}",
                             self.midi_stream_status, dt1, input_data
                         );
-                        self.midi_stream_status = INVALID;
+                        //self.midi_stream_status = INVALID;
                         self.midi_stream_data1 = INVALID;
                     } else {
                         self.midi_stream_data1 = input_data;
@@ -397,7 +397,7 @@ impl ElapseStack {
                             "ExtLoopian: {}-{}-{}",
                             self.midi_stream_status, dt1, input_data
                         );
-                        self.midi_stream_status = INVALID;
+                        //self.midi_stream_status = INVALID;
                         self.midi_stream_data1 = INVALID;
                     } else {
                         self.midi_stream_data1 = input_data;
@@ -406,7 +406,7 @@ impl ElapseStack {
                 0xc0 => {
                     let key_disp = format!("@ptn{}", input_data);
                     self.send_msg_to_ui(&key_disp);
-                    self.midi_stream_status = INVALID;
+                    //self.midi_stream_status = INVALID;
                     self.midi_stream_data1 = INVALID;
                 }
                 0xb0 => {}
