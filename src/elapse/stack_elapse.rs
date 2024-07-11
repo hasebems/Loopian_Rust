@@ -359,7 +359,6 @@ impl ElapseStack {
     }
     #[allow(dead_code)]
     fn parse_1byte_midi(&mut self, input_data: u8) {
-        let dt1 = self.midi_stream_data1;
         if input_data & 0x80 == 0x80 {
             match input_data {
                 0xfa => {}
@@ -374,30 +373,32 @@ impl ElapseStack {
         } else {
             match self.midi_stream_status & 0xf0 {
                 0x90 => {
-                    if dt1 != INVALID {
+                    if self.midi_stream_data1 != INVALID {
                         // LED
+                        let dt1 = self.midi_stream_data1;
                         self.mdx
                             .midi_out_for_led(self.midi_stream_status, dt1, input_data);
                         println!(
                             "ExtLoopian: {}-{}-{}",
                             self.midi_stream_status, dt1, input_data
                         );
-                        //self.midi_stream_status = INVALID;
                         self.midi_stream_data1 = INVALID;
-                    } else {
+                    } else if input_data != 0x00 { // note num = 0 は受け付けない
                         self.midi_stream_data1 = input_data;
+                    } else {
+                        self.midi_stream_data1 = INVALID;
                     }
                 }
                 0x80 => {
-                    if dt1 != INVALID {
+                    if self.midi_stream_data1 != INVALID {
                         // LED
+                        let dt1 = self.midi_stream_data1;
                         self.mdx
                             .midi_out_for_led(self.midi_stream_status, dt1, input_data);
                         println!(
                             "ExtLoopian: {}-{}-{}",
                             self.midi_stream_status, dt1, input_data
                         );
-                        //self.midi_stream_status = INVALID;
                         self.midi_stream_data1 = INVALID;
                     } else {
                         self.midi_stream_data1 = input_data;
