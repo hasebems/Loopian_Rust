@@ -400,7 +400,7 @@ fn main() {
     println!("{:?}", args);
     if args.len() > 1 && args[1] == "server" {
         // CUI version
-        cui_loop();
+        let _ = cui_loop();
     } else {
         // GUI version
         let options = eframe::NativeOptions {
