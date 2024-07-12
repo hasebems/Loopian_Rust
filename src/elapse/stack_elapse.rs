@@ -383,7 +383,8 @@ impl ElapseStack {
                             self.midi_stream_status, dt1, input_data
                         );
                         self.midi_stream_data1 = INVALID;
-                    } else if input_data != 0x00 { // note num = 0 は受け付けない
+                    } else if input_data != 0x00 {
+                        // note num = 0 は受け付けない
                         self.midi_stream_data1 = input_data;
                     } else {
                         self.midi_stream_data1 = INVALID;

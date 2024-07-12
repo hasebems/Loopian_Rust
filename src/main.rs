@@ -7,13 +7,13 @@ mod cmd;
 mod elapse;
 mod graphic;
 mod lpnlib;
+mod server;
 mod setting;
 mod test;
 
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use eframe::{egui, egui::*};
 use std::env;
-use std::io;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
@@ -26,6 +26,7 @@ use elapse::stack_elapse::ElapseStack;
 use elapse::tickgen::CrntMsrTick;
 use graphic::graphic::{Graphic, TextAttribute};
 use lpnlib::*;
+use server::server::cui_loop;
 use setting::*;
 
 pub struct LoopianApp {
@@ -373,52 +374,6 @@ impl eframe::App for LoopianApp {
 
         //  Draw CentralPanel
         self.draw_central_panel(ctx, frame);
-    }
-}
-//*******************************************************************
-//      LoopianServer
-//*******************************************************************
-pub struct LoopianServer {
-    //input_text: String,
-    cmd: cmdparse::LoopianCmd,
-    cui_mode: bool,
-}
-impl LoopianServer {
-    pub fn new() -> Self {
-        let (txmsg, rxui) = gen_thread();
-        Self {
-            //input_text: "".to_string(),
-            cmd: cmdparse::LoopianCmd::new(txmsg, rxui, false),
-            cui_mode: false,
-        }
-    }
-}
-fn cui_loop() {
-    let mut srv = LoopianServer::new();
-    let _ = srv.cmd.set_and_responce("flow");
-    loop {
-        if srv.cui_mode {
-            // 標準入力から文字列を String で取得
-            let mut buf = String::new();
-            io::stdin()
-                .read_line(&mut buf)
-                .expect("Failed to read line.");
-            let input = buf.trim().to_string();
-            if input == "q" || input == "quit" {
-                break; // 終了
-            }
-            if let Some(answer) = srv.cmd.set_and_responce(&input) {
-                println!("{}", answer.0);
-            }
-        } else {
-            //  Read imformation from StackElapse
-            let rtn = srv.cmd.read_from_ui_hndr();
-            if rtn == MAX_PATTERN_NUM {
-                break; // 終了
-            } else if rtn == MAX_PATTERN_NUM + 1 {
-                srv.cui_mode = true;
-            }
-        }
     }
 }
 //*******************************************************************
