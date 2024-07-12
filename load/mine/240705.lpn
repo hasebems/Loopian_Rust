@@ -1,0 +1,52 @@
+//  Voice: HB Steinway D Felt I
+//
+// set.path(mine)
+// !l.240705.blk(setting) ← これをそのまま書く
+
+!blk(setting)
+clear
+graph.dark
+graph.ripple
+set.key(C)
+set.bpm(80)
+R2
+
+[e+d^^,rs%,rs%,d^].rpt(1).dyn(pp)
+{O}
+p
+
+L1
+[er..,+l.,r.,l].dyn(p)
+@1=[ema..,+ta.,ma.,ta].dyn(p)
+@2=[em..,+t.,m.,t].dyn(p)
+{O/./.@1/.@1/.@2/.@2}
+
+R1
+[xo/ef^,s,l,t%..../]+
+[xo/-ef^,s,ta,r%..../]+
+[xo/-es^,t,d,m%....].dyn(mp)
+
+!blk(change)
+set.key(Bb)
+graph.light
+R1.clear
+R2
+[el^^,mfl%,mfl%,l^].rpt(1).dyn(mf)
+L1
+[ef..,+d.,f.,d].dyn(mp)
+set.oct(-1)
+@1=[]
+@2=[]
+
+@1=[es..,+r.,s.,r].dyn(mp)
+@2=[el..,+m.,l.,m].dyn(mp)
+{O/./.@1/./.@2/.}
+
+// メロディ
+R1
+[x,s,f,m/r,d..].dyn(ff)
+[x,s,f,m/r,d.,r/x,s,f,m/r,d,r,m/x,+d,t,s/m,d..].dyn(ff)
+[x,s,f,m/r,d.,r/x,s,f,m/r,d,er,d,r,m/qx,+d,t,s/m,d..].dyn(ff)
+[x,s,f,m/r,d.,r/x,s,f,m/r,d,er,d,r,m/qx,+d,t,el,s/m,l,qd.,t,s].dyn(ff)
+
+rit./fermata
