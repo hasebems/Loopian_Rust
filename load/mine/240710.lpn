@@ -22,12 +22,18 @@ L1
 {VIaeo/./IIaeo/.}
 
 // ORBIT
-
+R1
 [es^^,m,r,t^,l%,+m^,t%].dyn(mf).stacc(60)
 set.oct(2)
 
 @1=[el^^,s,r,d^,l%,+m^,d%].dyn(mf).stacc(60)
 {X/./@1/@1}
+
+[es^^,vm,ma,er,t^,l%,+m^,t%].dyn(mf).stacc(60)
+@1=[el^^,vs,fi,er,d^,l%,+m^,d%].dyn(mf).stacc(60)
+
+[es^^,vm,ma,er,t^,l%,+vm^,ma,t%].dyn(mf).stacc(60)
+@1=[el^^,vs,fi,er,d^,l%,+vm^,ma,d%].dyn(mf).stacc(60)
 
 fermata
 fine
