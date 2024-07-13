@@ -5,7 +5,6 @@
 //
 #[cfg(feature = "raspi")]
 use rppal::gpio::{Gpio, InputPin, Level};
-use std::error::Error;
 use std::io;
 
 use crate::cmd::cmdparse;
@@ -27,10 +26,10 @@ impl LoopianServer {
         }
     }
 }
-pub fn cui_loop() -> Result<(), Box<dyn Error>> {
+pub fn cui_loop() {
     let mut srv = LoopianServer::new();
     #[cfg(feature = "raspi")]
-    let pin = get_rasp_pin(17);
+    let pin_or = get_rasp_pin(17);
 
     let _ = srv.cmd.set_and_responce("flow");
     loop {
@@ -55,19 +54,19 @@ pub fn cui_loop() -> Result<(), Box<dyn Error>> {
             } else if rtn == MAX_PATTERN_NUM + 1 {
                 srv.cui_mode = true;
             }
-            #[cfg(feature = "raspi")] 
-            {
-                let pin_value = pin.read();
-                if pin_value == Level::Low {
-                    break;
-                } // Gpio Button を押されたら終了
+            #[cfg(feature = "raspi")] {
+                if let pin = Ok(pin_or) {
+                    if pin.read() == Level::Low {
+                        // Gpio Button を押されたら終了
+                        //break;
+                    }
+                }
             }
         }
     }
-    Ok(())
 }
 #[cfg(feature = "raspi")]
-pub fn get_rasp_pin(pin: u8) -> InputPin {
+pub fn get_rasp_pin(pin: u8) -> Result<InputPin, Box<dyn Error>> {
     let gpio = Gpio::new()?;
     gpio.get(17)?.into_input()
 }
