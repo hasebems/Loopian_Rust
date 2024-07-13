@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 #[cfg(feature = "raspi")]
-use rppal::gpio::{Gpio, Level::*};
+use rppal::gpio::{Gpio, InputPin, Level};
 use std::error::Error;
 use std::io;
 
@@ -30,11 +30,7 @@ impl LoopianServer {
 pub fn cui_loop() -> Result<(), Box<dyn Error>> {
     let mut srv = LoopianServer::new();
     #[cfg(feature = "raspi")]
-    let pin_number = 17;
-    #[cfg(feature = "raspi")]
-    let gpio = Gpio::new()?;
-    #[cfg(feature = "raspi")]
-    let pin = gpio.get(pin_number)?.into_input();
+    let pin = get_rasp_pin(17);
 
     let _ = srv.cmd.set_and_responce("flow");
     loop {
@@ -59,14 +55,19 @@ pub fn cui_loop() -> Result<(), Box<dyn Error>> {
             } else if rtn == MAX_PATTERN_NUM + 1 {
                 srv.cui_mode = true;
             }
-            #[cfg(feature = "raspi")]
+            #[cfg(feature = "raspi")] 
             {
                 let pin_value = pin.read();
-                if pin_value == Low {
+                if pin_value == Level::Low {
                     break;
                 } // Gpio Button を押されたら終了
             }
         }
     }
     Ok(())
+}
+#[cfg(feature = "raspi")]
+pub fn get_rasp_pin(pin: u8) -> InputPin {
+    let gpio = Gpio::new()?;
+    gpio.get(17)?.into_input()
 }
