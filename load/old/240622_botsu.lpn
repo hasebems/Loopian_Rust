@@ -1,0 +1,60 @@
+// 240622
+//  Voice: NY Steinway D Pop
+//
+// set.path(mine)
+// !l.240622.blk(setting) ← これをそのまま書く
+!blk(setting)
+clear
+set.beat(4/4)
+set.key(F)
+set.bpm(156)
+R1
+
+{IM9}
+[ed%%,t%,s,m^,t^^,d^,m,s%].dyn(mp)
+p
+set.oct(1)
+{IM9/./VIbM9/.}
+
+@1=[-et^,d,m,s%,m^^,s^,t,m%].dyn(mp)
+{IM9/./VIbM9/VIbM9:@1}
+
+L1
+{IM9/./VIbM9/.}
+[d^,+s,+r,m/s,m,t%,s%].dyn(mp).para()
+
+L2
+[x,+r^,m^./-so%/x,r^,ma^./tao%].dyn(mf)
+[x,+r^,m^./-so%/x,r^,ma^./hta%,3qx,d^^,f^^].dyn(mf)
+// +octave
+// 
+
+R2
+{IM9/./VIbM9/.}
+@c=tdms
+[ec,c,x,c,x,c,x,c].dyn(mp)
+
+// 他消す
+R2!.clear
+
+{IM9/./VIIbM7!/.}
+
+L1
+{IM9/./VIIbM7!/.}
+[ed^,d,t,d,x,s,l,s].dyn(f).para().stacc(60).dmp(off)
+
+R1
+{Ichr/./VIIbchr/.}
+[ex,t,d,r,m,f,s,l/t,d,r,d,t,l,s,m].dyn(mf)R
+
+@1=[ex,+t,l,s,m,r,d,r/d,t,r,d,t,d,m,s].dyn(mf)
+{Ichr/./VIIbchr:@1/VIIbchr}
+
+L1
+[ed^,d,+dm,-d].rpt(1).dyn(f).para().stacc(60).dmp(off)
+
+[]
+
+[ed^,d,+dm,-d].rpt(1).dyn(f).para().stacc(60).dmp(off)
+
+fine

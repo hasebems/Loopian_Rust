@@ -1,0 +1,42 @@
+set bpm=66
+set key=E
+L2
+[x,drsmo]
+L1
+[do].para().dyn(mf)
+
+#L>{IM9/IM9/IVM9/IVM9}
+
+#R1
+#['s,d,+r,s....].dyn(mf)
+#set oct=1
+
+#L1
+#[d.,'x,s.,+r].para().dyn(mf)
+
+#ALL>{IM96/IM96/IVM96/IVM96/IIIbM7/VIbM7/IIm9/IIb7}
+
+#R1
+#@1=['s,d,+r,s.,m,t.].dyn(mf)
+#{IM96/IM96/IVM96/IVM96/IIIbM7/VIbM7/IIm9/@1:IIb7}
+
+#R2
+#["m,t,d,r,m,r,m,s,d,t,l,t,r,d,s,m]
+
+#L2
+#[]
+
+#R1
+#set oct=-1
+
+#R2
+#set oct=-1
+
+#R1
+#[]
+
+#L1
+#[]
+
+#R2
+#{IM96/IM96/IVM96/IVM96}

@@ -1,0 +1,12 @@
+clear
+set.key(D)
+set.bpm(144)
+L1
+[d^^,m,s^,m].para().dyn(mp).dmp(off)
+@2=[3ex.,+d^,qta^,s^,m].para().dyn(mf).dmp(off)
+set oct=-1
+{I/I/IV/I/V/IV/I/V7:@2}
+R1
+{I9/I9/IV9/I9/V9/IV9/I9/V7}
+flow
+play

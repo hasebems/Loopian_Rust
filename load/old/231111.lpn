@@ -1,0 +1,24 @@
+set beat=6/8
+set bpm=60
+L1
+['d^,+s,+m%,-s^,+m,+t%].dyn(mp).para()
+
+// {Imaj9/./IVmaj9/.}
+// R1
+// ['m..,t../s..,r../m..,-l../+r..,s..].dyn(mf)
+// set oct=2
+
+// load 231111!
+// L1>@1=['d^,+s,l,ta^,d^,m^/r^^,m,s,ta,-m%,d%].dyn(mp).para()
+// L1>{Imaj9/./IVmaj9/./IIm9/./VIIm7:@1/VIIb9}
+// R1>@1=['m..,-l../d..,+s..].dyn(mf)
+// R1>@2=['f..,r../ta.,la%.,f%%.].dyn(mf)
+// R1>{O/./././:@1/./:@2/.}
+
+// ['m..,t../s..,r.,"r^^,ri^/'m..,-l../+r..,s..].dyn(mf)
+// @1=['m..,-l../d.,"x,f^^,'-s..].dyn(mf)
+// @2=['f..,'r.,"d^^,t^/'ta,l,la%,s%,f%%,r%%].dyn(mf)
+
+// []
+// {}
+// L1>set oct=2

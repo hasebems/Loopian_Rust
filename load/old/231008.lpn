@@ -1,0 +1,10 @@
+clear
+set oct=2
+set bpm=60
+set key=F
+[hm,-l/d,+s/-t,-m/s,+r][mp]
+L1
+{IIm9/V9/IM9/VIm9}
+['x,d,+s,ta,d,r,m.][para]
+{IIm9/VIIb9/IM9/VIm9}
+{IIm9/V9/IM9/VIm9}

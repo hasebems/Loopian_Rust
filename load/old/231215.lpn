@@ -1,0 +1,13 @@
+set bpm=66
+set key=E
+L2
+[x,drsmo]
+{IM9/IM9/IVM9/IVM9/IIIbM7/VIbM7/IIm9/IIb7}
+L1
+[do].para().dyn(mf)
+{I/I/IV/IV/IIIb/VIb/II/IIb}
+R1
+['s,d,+r,s....].dyn(mf)
+@1=['s,d,+r,s.,m,t.].dyn(mf)
+{IM96/IM96/IVM96/IVM96/IIIbM7/VIbM7/IIm9/@1:IIb7}
+set oct=1

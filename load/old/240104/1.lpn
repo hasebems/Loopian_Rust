@@ -1,0 +1,4 @@
+set.beat(3/4)
+set.key(Ab)
+set.bpm(144)
+set.turnnote(2)
