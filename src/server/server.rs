@@ -62,7 +62,7 @@ pub fn cui_loop() -> Result<(), Box<dyn Error>> {
             #[cfg(feature = "raspi")]
             {
                 let pin_value = pin.read();
-                if !pin_value {
+                if pin_value == Low {
                     break;
                 } // Gpio Button を押されたら終了
             }
