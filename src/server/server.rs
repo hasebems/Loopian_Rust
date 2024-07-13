@@ -30,11 +30,12 @@ impl LoopianServer {
 pub fn cui_loop() -> Result<(), Box<dyn Error>> {
     let mut srv = LoopianServer::new();
     #[cfg(feature = "raspi")]
-    {
-        let pin_number = 17;
-        let gpio = Gpio::new()?;
-        let pin = gpio.get(pin_number)?.into_input();
-    }
+    let pin_number = 17;
+    #[cfg(feature = "raspi")]
+    let gpio = Gpio::new()?;
+    #[cfg(feature = "raspi")]
+    let pin = gpio.get(pin_number)?.into_input();
+
     let _ = srv.cmd.set_and_responce("flow");
     loop {
         if srv.cui_mode {
