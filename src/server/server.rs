@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 #[cfg(feature = "raspi")]
-use rppal::gpio::{Gpio, Level};
+use rppal::gpio::{Gpio, Level::*};
 use std::error::Error;
 use std::io;
 
