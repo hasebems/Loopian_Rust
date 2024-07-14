@@ -9,6 +9,7 @@ graph.dark
 graph.ripple
 set.beat(7/8)
 set.bpm(144)
+set.key(C)
 R2
 
 @c=+d+di+r++r
