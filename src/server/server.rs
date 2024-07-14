@@ -5,6 +5,7 @@
 //
 #[cfg(feature = "raspi")]
 use rppal::gpio::{Gpio, InputPin, Level};
+use std::error::Error;
 use std::io;
 
 use crate::cmd::cmdparse;
@@ -55,7 +56,7 @@ pub fn cui_loop() {
                 srv.cui_mode = true;
             }
             #[cfg(feature = "raspi")] {
-                if let pin = Ok(pin_or) {
+                if let Ok(ref pin) = pin_or {
                     if pin.read() == Level::Low {
                         // Gpio Button を押されたら終了
                         //break;
@@ -68,5 +69,5 @@ pub fn cui_loop() {
 #[cfg(feature = "raspi")]
 pub fn get_rasp_pin(pin: u8) -> Result<InputPin, Box<dyn Error>> {
     let gpio = Gpio::new()?;
-    gpio.get(17)?.into_input()
+    Ok(gpio.get(pin)?.into_input())
 }
