@@ -5,6 +5,7 @@
 //
 #[cfg(feature = "raspi")]
 use rppal::gpio::{Gpio, InputPin, Level};
+#[cfg(feature = "raspi")]
 use std::error::Error;
 use std::io;
 
