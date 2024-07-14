@@ -5,7 +5,7 @@ L1
 [el^^,m,d,+l^,m,d,+l^,m].dyn(mp)
 set.oct(1)
 @1=[el^^,m,d,+d^^^,l,m,+m^^^,-m^^].dyn(mp)
-{VIm/VIm/IV/IV/I/V/III7/@1:III7}
+{VIm/VIm/IV/IV/I/V/III7/.@1}
 R1
 {VIm9/VIm9/IVadd9/IVadd9/IM7/V/III7-9/III7-9}
 flow
