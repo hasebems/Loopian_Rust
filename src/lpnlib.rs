@@ -216,6 +216,7 @@ pub enum ElpsMsg {
     PhrX(i16, i16),         //  PhrX : part, vari
     CmpX(i16),              //  CmpX : part
     AnaX(i16, i16),         //  AnaX : part, vari
+    MIDIRx(u8, u8, u8),
 }
 //  Ctrl
 pub const MSG_CTRL_QUIT: i16 = -1;

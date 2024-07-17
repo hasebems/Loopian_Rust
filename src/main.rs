@@ -7,6 +7,7 @@ mod cmd;
 mod elapse;
 mod graphic;
 mod lpnlib;
+mod midirx;
 mod server;
 mod setting;
 mod test;
@@ -45,7 +46,7 @@ impl LoopianApp {
     //      App Initialize / Log File /  App End
     //*******************************************************************
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        let (txmsg, rxui) = gen_thread();
+        let (txmsg, rxui) = gen_elapse_thread();
         Self::init_font(cc);
         Self {
             input_locate: 0,
@@ -379,7 +380,7 @@ impl eframe::App for LoopianApp {
 //*******************************************************************
 //      Main
 //*******************************************************************
-fn gen_thread() -> (Sender<ElpsMsg>, Receiver<String>) {
+fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<String>) {
     //  create new thread & channel
     let (txmsg, rxmsg) = mpsc::channel();
     let (txui, rxui) = mpsc::channel();

@@ -10,7 +10,7 @@ use std::error::Error;
 use std::io;
 
 use crate::cmd::cmdparse;
-use crate::gen_thread;
+use crate::gen_elapse_thread;
 use crate::setting::*;
 
 pub struct LoopianServer {
@@ -20,7 +20,7 @@ pub struct LoopianServer {
 }
 impl LoopianServer {
     pub fn new() -> Self {
-        let (txmsg, rxui) = gen_thread();
+        let (txmsg, rxui) = gen_elapse_thread();
         Self {
             //input_text: "".to_string(),
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui, false),
@@ -56,7 +56,8 @@ pub fn cui_loop() {
             } else if rtn == MAX_PATTERN_NUM + 1 {
                 srv.cui_mode = true;
             }
-            #[cfg(feature = "raspi")] {
+            #[cfg(feature = "raspi")]
+            {
                 if let Ok(ref pin) = pin_or {
                     if pin.read() == Level::Low {
                         // Gpio Button を押されたら終了

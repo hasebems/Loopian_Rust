@@ -7,7 +7,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{Receiver, Sender};
+//use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::{Duration, Instant};
 use std::vec::Vec;
 
@@ -16,9 +18,10 @@ use super::elapse_damper::DamperPart;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{CompositionLoop, PhraseLoop};
 use super::elapse_part::Part;
-use super::midi::{MidiRx, MidiRxBuf, MidiTx};
+use super::miditx::MidiTx;
 use super::tickgen::{CrntMsrTick, TickGen};
 use crate::lpnlib::{ElpsMsg::*, *};
+use crate::midirx::midirx::MidiRx;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SameKeyState {
@@ -36,9 +39,10 @@ pub enum SameKeyState {
 //  3. MIDI Out の生成と管理
 pub struct ElapseStack {
     ui_hndr: mpsc::Sender<String>,
+    rx_hndr: mpsc::Receiver<ElpsMsg>,
+    tx_ctrl: mpsc::Sender<ElpsMsg>,
     mdx: MidiTx,
-    _mdrx: MidiRx,
-    mdr_buf: Arc<Mutex<MidiRxBuf>>,
+
     crnt_time: Instant,
     bpm_stock: i16,
     beat_stock: Beat,
@@ -50,16 +54,27 @@ pub struct ElapseStack {
     _damper_part: Rc<RefCell<DamperPart>>,
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
-
-    // for analyzing MIDI stream
-    midi_stream_status: u8,
-    midi_stream_data1: u8,
-
     limit_for_deb: i32,
 }
 //*******************************************************************
 //          Public Method for Elapse Stack Struct
 //*******************************************************************
+fn gen_midirx_thread() -> (Receiver<ElpsMsg>, Sender<ElpsMsg>) {
+    //  create new thread & channel
+    let (txmsg, rxmsg) = mpsc::channel();
+    let (txctrl, rxctrl) = mpsc::channel();
+    thread::spawn(move || match MidiRx::new(txmsg /* , rxctrl*/) {
+        Some(mut rx) => loop {
+            if rx.periodic(rxctrl.try_recv()) == true {
+                break;
+            }
+        },
+        None => {
+            println!("MIDI Rx thread does't work")
+        }
+    });
+    (rxmsg, txctrl)
+}
 impl ElapseStack {
     pub fn new(ui_hndr: mpsc::Sender<String>) -> Option<Self> {
         match MidiTx::connect() {
@@ -74,17 +89,12 @@ impl ElapseStack {
                 }
                 let damper_part = DamperPart::new(DAMPER_PEDAL_PART as u32);
                 elapse_vec.push(Rc::clone(&damper_part) as Rc<RefCell<dyn Elapse>>);
-                let mut _mdrx = MidiRx::new();
-                let mdr_buf = Arc::new(Mutex::new(MidiRxBuf::new()));
-                match _mdrx.connect(Arc::clone(&mdr_buf)) {
-                    Ok(()) => println!("MIDI receive Connection OK."),
-                    Err(err) => println!("{}", err),
-                };
+                let (rx_hndr, tx_ctrl) = gen_midirx_thread();
                 Some(Self {
                     ui_hndr,
+                    rx_hndr,
+                    tx_ctrl,
                     mdx: c,
-                    _mdrx,
-                    mdr_buf,
                     crnt_time: Instant::now(),
                     bpm_stock: DEFAULT_BPM,
                     beat_stock: Beat(4, 4),
@@ -95,8 +105,6 @@ impl ElapseStack {
                     _damper_part: damper_part,
                     elapse_vec,
                     key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
-                    midi_stream_status: INVALID,
-                    midi_stream_data1: INVALID,
                     limit_for_deb: 0,
                 })
             }
@@ -178,6 +186,7 @@ impl ElapseStack {
 
         // message 受信処理
         if self.handle_msg(msg) {
+            self.send_msg_to_rx(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
             return true;
         }
 
@@ -209,8 +218,8 @@ impl ElapseStack {
             CrntMsrTick::default()
         };
 
-        // MIDI IN 受信処理
-        self.receive_midi_event(&crnt_);
+        //　MIDI Rx処理
+        self.check_rcv_midi(&crnt_);
 
         if self.during_play {
             let mut debcnt = 0;
@@ -282,7 +291,7 @@ impl ElapseStack {
             PhrX(m0, m1) => self.del_phrase(m0, m1),
             CmpX(m) => self.del_composition(m),
             AnaX(m0, m1) => self.del_ana(m0, m1),
-            //_ => {}
+            _ => (),
         }
     }
     fn ctrl_msg(&mut self, msg: i16) {
@@ -306,113 +315,48 @@ impl ElapseStack {
             _ => {}
         }
     }
-    fn receive_midi_event(&mut self, crnt_: &CrntMsrTick) {
-        if let Some(msg_ext) = self.mdr_buf.lock().unwrap().take() {
-            let msg = msg_ext.1;
-            println!(
-                "MIDI Received >{}: {:?} (len = {})",
-                msg_ext.0,
-                msg,
-                msg.len()
-            );
-            // midi ch=12,13 のみ受信
-            let input_ch = msg[0] & 0x0f;
-            if input_ch != 0x0b && input_ch != 0x0c {
-                return;
-            }
-
-            if self.during_play && ((msg[0] & 0xe0) == 0x80) {
-                // 再生中 & Note Message
-                self.part_vec.iter().for_each(|x| {
-                    x.borrow_mut()
-                        .rcv_midi_in(&crnt_, msg[0] & 0xf0, msg[1], msg[2]);
-                });
-            } else if (msg[0] & 0xf0) == 0xc0 {
-                // PCN は Pattern 切り替えに使用する
-                let key_disp = format!("@ptn{}", msg[1]);
-                self.send_msg_to_ui(&key_disp);
-            } else if (msg[0] & 0xe0) == 0x80 {
-                // 普通に鳴らす
-                if msg[1] >= 4 && msg[1] < 92 {
-                    // 4->21 A0, 91->108 C8
-                    self.mdx.midi_out(msg[0], msg[1] + 17, msg[2], false);
-                }
-            }
-        }
-        #[cfg(feature = "raspi")]
-        if !self.during_play {
-            // pattern 再生中は、External Loopian とは繋がない
-            if let Some(ref mut urx) = self._mdrx.uart {
-                let mut byte = [0];
-                match urx.read(&mut byte) {
-                    Ok(c) => {
-                        if c == 1 {
-                            self.parse_1byte_midi(byte[0]);
-                        }
-                    }
-                    Err(e) => {
-                        println!("{}", e);
-                    }
-                }
-            }
+    fn send_msg_to_rx(&self, msg: ElpsMsg) {
+        match self.tx_ctrl.send(msg) {
+            Err(e) => println!("Something happened on MPSC To MIDIRx! {}", e),
+            _ => {}
         }
     }
-    #[allow(dead_code)]
-    fn parse_1byte_midi(&mut self, input_data: u8) {
-        if input_data & 0x80 == 0x80 {
-            match input_data {
-                0xfa => {}
-                0xf8 => {}
-                0xfc => {}
-                _ => {
-                    if input_data & 0x0f == 0x0a {
-                        self.midi_stream_status = input_data;
-                    }
+    fn check_rcv_midi(&mut self, crnt_: &CrntMsrTick) {
+        match self.rx_hndr.try_recv() {
+            Ok(rxmsg) => match rxmsg {
+                MIDIRx(sts, nt, vel) => {
+                    self.rcv_midi_msg(crnt_, sts, nt, vel);
                 }
+                _ => (),
+            },
+            Err(TryRecvError::Disconnected) => {} // Wrong!
+            Err(TryRecvError::Empty) => {}
+        }
+    }
+    fn rcv_midi_msg(&mut self, crnt_: &CrntMsrTick, sts: u8, nt: u8, vel: u8) {
+        if sts & 0x0f == 0x0a {
+            // 0a ch <from another loopian>
+            if !self.during_play {
+                // pattern 再生中は、External Loopian とは繋がない
+                self.mdx.midi_out_for_led(sts, nt, vel);
             }
         } else {
-            match self.midi_stream_status & 0xf0 {
-                0x90 => {
-                    if self.midi_stream_data1 != INVALID {
-                        // LED
-                        let dt1 = self.midi_stream_data1;
-                        self.mdx
-                            .midi_out_for_led(self.midi_stream_status, dt1, input_data);
-                        println!(
-                            "ExtLoopian: {}-{}-{}",
-                            self.midi_stream_status, dt1, input_data
-                        );
-                        self.midi_stream_data1 = INVALID;
-                    } else if input_data != 0x00 {
-                        // note num = 0 は受け付けない
-                        self.midi_stream_data1 = input_data;
-                    } else {
-                        self.midi_stream_data1 = INVALID;
-                    }
+            // 0b/0c ch <from ORBIT>
+            if self.during_play && ((sts & 0xe0) == 0x80) {
+                // 再生中 & Note Message
+                self.part_vec.iter().for_each(|x| {
+                    x.borrow_mut().rcv_midi_in(crnt_, sts & 0xf0, nt, vel);
+                });
+            } else if (sts & 0xf0) == 0xc0 {
+                // PCN は Pattern 切り替えに使用する
+                let key_disp = format!("@ptn{}", nt);
+                self.send_msg_to_ui(&key_disp);
+            } else if (sts & 0xe0) == 0x80 {
+                // 普通に鳴らす
+                if nt >= 4 && nt < 92 {
+                    // 4->21 A0, 91->108 C8
+                    self.mdx.midi_out(sts, nt + 17, vel, false);
                 }
-                0x80 => {
-                    if self.midi_stream_data1 != INVALID {
-                        // LED
-                        let dt1 = self.midi_stream_data1;
-                        self.mdx
-                            .midi_out_for_led(self.midi_stream_status, dt1, input_data);
-                        println!(
-                            "ExtLoopian: {}-{}-{}",
-                            self.midi_stream_status, dt1, input_data
-                        );
-                        self.midi_stream_data1 = INVALID;
-                    } else {
-                        self.midi_stream_data1 = input_data;
-                    }
-                }
-                0xc0 => {
-                    let key_disp = format!("@ptn{}", input_data);
-                    self.send_msg_to_ui(&key_disp);
-                    //self.midi_stream_status = INVALID;
-                    self.midi_stream_data1 = INVALID;
-                }
-                0xb0 => {}
-                _ => {}
             }
         }
     }
@@ -428,9 +372,7 @@ impl ElapseStack {
         for elps in self.elapse_vec.iter() {
             elps.borrow_mut().start();
         }
-        if let Ok(mut mb) = self.mdr_buf.lock() {
-            mb.flush(); // MIDI In Buffer をクリア
-        }
+        self.send_msg_to_rx(ElpsMsg::Ctrl(MSG_CTRL_START));
         println!("<Start Playing! in stack_elapse>",);
     }
     fn panic(&mut self) {
