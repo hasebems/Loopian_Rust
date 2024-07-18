@@ -15,6 +15,8 @@ use std::sync::{Arc, Mutex};
 
 #[cfg(feature = "raspi")]
 use std::time::Duration;
+#[cfg(feature = "raspi")]
+use rppal::uart::{Parity, Uart};
 
 //*******************************************************************
 //          MIDI Rx Buffer
@@ -182,12 +184,12 @@ impl MidiRx {
             self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2]))
         }
         #[cfg(feature = "raspi")]
-        if let Some(ref mut urx) = self._mdrx.uart {
+        if let Some(ref mut urx) = self.uart {
             let mut byte = [0];
             match urx.read(&mut byte) {
                 Ok(c) => {
                     if c == 1 {
-                        self.parse_1byte_midi(tx_hndr, byte[0]);
+                        self.parse_1byte_midi(self.tx_hndr, byte[0]);
                     }
                 }
                 Err(e) => {
