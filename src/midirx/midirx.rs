@@ -189,7 +189,7 @@ impl MidiRx {
             match urx.read(&mut byte) {
                 Ok(c) => {
                     if c == 1 {
-                        self.parse_1byte_midi(self.tx_hndr, byte[0]);
+                        self.parse_1byte_midi(byte[0]);
                     }
                 }
                 Err(e) => {
