@@ -31,7 +31,7 @@ impl LoopianServer {
 pub fn cui_loop() {
     let mut srv = LoopianServer::new();
     #[cfg(feature = "raspi")]
-    let pin_or = get_rasp_pin(17);
+    let pin_or = get_rasp_pin(26);
 
     let _ = srv.cmd.set_and_responce("flow");
     loop {
@@ -61,7 +61,7 @@ pub fn cui_loop() {
                 if let Ok(ref pin) = pin_or {
                     if pin.read() == Level::Low {
                         // Gpio Button を押されたら終了
-                        //break;
+                        break;
                     }
                 }
             }
