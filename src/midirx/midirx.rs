@@ -181,7 +181,11 @@ impl MidiRx {
             if input_ch != 0x0b && input_ch != 0x0c {
                 return;
             }
-            self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2]))
+            if msg.len() == 2 {
+                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0));
+            } else {
+                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2]));
+            }
         }
         #[cfg(feature = "raspi")]
         if let Some(ref mut urx) = self.uart {
