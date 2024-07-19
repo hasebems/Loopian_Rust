@@ -34,6 +34,7 @@ pub struct LoopianApp {
     input_locate: usize,   //  カーソルの位置
     visible_locate: usize, //  入力部に表示する最初の文字の位置
     input_text: String,
+    file_name_stock: String,
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history_cnt: usize,
     next_msr_tick: Option<CrntMsrTick>,
@@ -52,6 +53,7 @@ impl LoopianApp {
             input_locate: 0,
             visible_locate: 0,
             input_text: String::new(),
+            file_name_stock: String::new(),
             scroll_lines: Vec::new(),
             history_cnt: 0,
             next_msr_tick: None,
@@ -196,12 +198,12 @@ impl LoopianApp {
             self.app_end(true);
             std::process::exit(0);
         } else {
-            if len >= 7 && &itxt[0..6] == "!load." {
+            if len >= 5 && &itxt[0..5] == "!load" {
                 // Load File
-                self.load_file(&itxt[6..]);
-            } else if len >= 4 && &itxt[0..3] == "!l." {
+                self.load_file(&itxt[0..]);
+            } else if len >= 2 && &itxt[0..2] == "!l" {
                 // Load File
-                self.load_file(&itxt[3..]);
+                self.load_file(&itxt[0..]);
             } else {
                 // Normal Input
                 self.one_command(get_crnt_date_txt(), itxt, true);
@@ -209,14 +211,34 @@ impl LoopianApp {
         }
     }
     fn load_file(&mut self, itxt: &str) {
-        let mut blk: Option<&str> = None;
-        let mut fname = itxt.to_string();
-        if itxt.contains(".blk(") {
-            blk = Some(extract_texts_from_parentheses(itxt));
-            println!("{:?}", blk);
-            let fnx = split_by('.', fname);
-            fname = fnx[0].clone();
+        let blk_exists = |fnm: String| -> Option<String> {
+            let mut ltr = None;
+            if fnm.contains("blk") {
+                ltr = Some(extract_texts_from_parentheses(fnm.as_str()).to_string());
+            }
+            ltr // blk命令があるか調べ、あった場合は () 内の文字列取得
+        };
+
+        let mut blk: Option<String> = None;
+        let mut fname;
+        let fnx = split_by('.', itxt.to_string());
+        //println!("{:?}",fnx);
+        let fn_ele_num = fnx.len();
+        if fn_ele_num >= 3 {
+            blk = blk_exists(fnx[2].clone());
+            fname = fnx[1].clone();
+        } else if fn_ele_num == 2 {
+            blk = blk_exists(fnx[1].clone());
+            fname = fnx[1].clone();
+            if blk.is_none() {
+                self.file_name_stock = fname.clone(); // file名を保存しておく
+            } else {
+                fname = self.file_name_stock.clone(); // 保存したfile名を使用する
+            }
+        } else { // "1l" だけ
+            fname = self.file_name_stock.clone(); // 保存したfile名を使用する
         }
+
         if self
             .history
             .load_lpn(fname, self.cmd.get_path().as_deref(), blk)

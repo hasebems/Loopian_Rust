@@ -14,9 +14,9 @@ use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use std::sync::{Arc, Mutex};
 
 #[cfg(feature = "raspi")]
-use std::time::Duration;
-#[cfg(feature = "raspi")]
 use rppal::uart::{Parity, Uart};
+#[cfg(feature = "raspi")]
+use std::time::Duration;
 
 //*******************************************************************
 //          MIDI Rx Buffer

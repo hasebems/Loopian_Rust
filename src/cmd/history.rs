@@ -75,7 +75,7 @@ impl History {
         self.input_lines.push((time.clone(), cmd));
         self.update_history_ptr()
     }
-    pub fn load_lpn(&mut self, fname: String, path: Option<&str>, blk: Option<&str>) -> bool {
+    pub fn load_lpn(&mut self, fname: String, path: Option<&str>, blk: Option<String>) -> bool {
         self.loaded_text = Vec::new();
         self.make_folder(Self::LOAD_FOLDER); // フォルダ作成
         let mut real_path = Self::LOAD_FOLDER.to_string();
@@ -83,7 +83,8 @@ impl History {
             real_path = real_path + "/" + &lp;
         }
         println!("Path: {}", real_path);
-        let enable_blk = if blk.is_some() { true } else { false };
+        println!("File: {}", fname.clone() + ".lpn");
+        let enable_blk = if blk.clone().is_some() { true } else { false };
         let mut inside_blk = !enable_blk;
         match fs::read_to_string(real_path + "/" + &fname + ".lpn") {
             Ok(content) => {
@@ -99,7 +100,7 @@ impl History {
                             // blk指定があるか
                             if line.len() > 5 && line[0..5] == *"!blk(" {
                                 let blk_mark = extract_texts_from_parentheses(line);
-                                if blk.unwrap() == blk_mark {
+                                if blk.as_ref().unwrap() == blk_mark {
                                     inside_blk = true;
                                     continue;
                                 }
