@@ -12,7 +12,7 @@ pub const WINDOW_Y_DEFAULT: f32 = 860.0;
 // MIDI Connection
 #[cfg(not(feature = "raspi"))]
 pub const MIDI_OUT: &str = "IACdriver";
-pub const MIDI_EXT_OUT: &str = "USB MIDI";
+pub const MIDI_EXT_OUT: &str = "U6MIDI Pro ポート1";
 #[cfg(feature = "raspi")]
 pub const MIDI_OUT: &str = "Midi Through:Midi Through Port-0 14:0"; // for Raspi5
 pub const MIDI_DEVICE: &str = "Pico";
