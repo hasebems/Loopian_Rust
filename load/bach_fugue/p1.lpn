@@ -11,105 +11,105 @@ R1
 {O}
 [vd,m,s,d,m,-s,d,m%,-d,m,s,d,m,-s,d,m%].dyn(p)
 
-!auto(2)
+!msr(2)
 [vd,r,+l,r,f,-l,r,f%,-d,r,+l,r,f,-l,r,f%].dyn(p)
 
-!auto(3)
+!msr(3)
 [vt,r,s,+r,f,-s,+r,f%,--t,r,s,+r,f,-s,+r,f%].dyn(p)
 
-!auto(4)
+!msr(4)
 [vd,m,s,d,m,-s,d,m%,-d,m,s,d,m,-s,d,m%].dyn(p)
 
-!auto(5)
+!msr(5)
 [vd,m,l,+m,l,-l,+m,l%,--d,m,l,+m,l,-l,+m,l%].dyn(p)
 
-!auto(6)
+!msr(6)
 [vd,r,fi,l,r,-fi,l,r%,-d,r,fi,l,r,-fi,l,r%].dyn(p)
 
-!auto(7)
+!msr(7)
 [vt,r,s,+r,s,-s,+r,s%,--t,r,s,+r,s,-s,+r,s%].dyn(p)
 
-!auto(8)
+!msr(8)
 [vt,d,m,s,d,-m,s,d%,-t,d,m,s,d,-m,s,d%].dyn(p)
 
-!auto(9)
+!msr(9)
 [vl,d,m,s,d,-m,s,d%,-l,d,m,s,d,-m,s,d%].dyn(p)
 
-!auto(10)
+!msr(10)
 [-vr,+l,r,fi,d,-r,fi,d%,--r,+l,r,fi,d,-r,fi,d%].dyn(p)
 
-!auto(11)
+!msr(11)
 [vs,t,r,s,t,-r,s,t%,-s,t,r,s,t,-r,s,t%].dyn(p)
 
-!auto(12)
+!msr(12)
 [vs,ta,m,s,di,-m,s,di%,--s,ta,m,s,di,-m,s,di%].dyn(p)
 
-!auto(13)
+!msr(13)
 [-vf,l,r,+l,r,-r,+l,r%,--f,l,r,+l,r,-r,+l,r%].dyn(p)
 
-!auto(14)
+!msr(14)
 [-vf,la,r,f,t,-r,f,t%,--f,la,r,f,t,-r,f,t%].dyn(p)
 
-!auto(15)
+!msr(15)
 [-vm,s,d,+s,d,-d,+s,d%,--m,s,d,+s,d,-d,+s,d%].dyn(p)
 
-!auto(16)
+!msr(16)
 [-vm,f,l,d,f,-l,d,f%,-m,f,l,d,f,-l,d,f%].dyn(p)
 
-!auto(17)
+!msr(17)
 [-vr,f,l,d,f,-l,d,f%,-r,f,l,d,f,-l,d,f%].dyn(p)
 
-!auto(18)
+!msr(18)
 [-vs,+r,s,t,f,-s,t,f%,--s,+r,s,t,f,-s,t,f%].dyn(p)
 
-!auto(19)
+!msr(19)
 [-vd,m,s,d,m,-s,d,m%,-d,m,s,d,m,-s,d,m%].dyn(p)
 
-!auto(20)
+!msr(20)
 [-vd,+s,ta,d,m,-ta,d,m%,-d,+s,ta,d,m,-ta,d,m%].dyn(p)
 
-!auto(21)
+!msr(21)
 [--vf,+f,l,d,m,-l,d,m%,--f,+f,l,d,m,-l,d,m%].dyn(p)
 
-!auto(22)
+!msr(22)
 [--vfi,d,+l,d,ma,-l,d,ma%,--fi,d,+l,d,ma,-l,d,ma%].dyn(p)
 
-!auto(23)
+!msr(23)
 [-vla,+f,t,d,r,t,d,r%,--la,+f,t,d,r,t,d,r%].dyn(p)
 
-!auto(24)
+!msr(24)
 [-vs,+f,s,t,r,-s,t,r%,--s,+f,s,t,r,-s,t,r%].dyn(p)
 
-!auto(25)
+!msr(25)
 [-vs,+m,s,d,m,-s,d,m%,--s,+m,s,d,m,-s,d,m%].dyn(p)
 
-!auto(26)
+!msr(26)
 [-vs,+r,s,d,f,-s,d,f%,--s,+r,s,d,f,-s,d,f%].dyn(p)
 
-!auto(27)
+!msr(27)
 [-vs,+r,s,t,f,-s,t,f%,--s,+r,s,t,f,-s,t,f%].dyn(p)
 
-!auto(28)
+!msr(28)
 [-vs,+ma,l,d,fi,-l,d,fi%,--s,+ma,l,d,fi,-l,d,fi%].dyn(p)
 
-!auto(29)
+!msr(29)
 [-vs,+m,s,d,+s,-s,d,+s%,--s,+m,s,d,+s,-s,d,+s%].dyn(p)
 
-!auto(30)
+!msr(30)
 [-vs,+r,s,d,f,-s,d,f%,--s,+r,s,d,f,-s,d,f%].dyn(p)
 
-!auto(31)
+!msr(31)
 [-vs,+r,s,t,f,-s,t,f%,--s,+r,s,t,f,-s,t,f%].dyn(p)
 
-!auto(32)
+!msr(32)
 [--vd,+d,+s,ta,m,-s,ta,m%,--d,+d,+s,ta,m,-s,ta,m%].dyn(p)
 
-!auto(33)
+!msr(33)
 [--vd,+d,f,l,d^,f^,d^,l,d,l,f,l,f,r,f%,r%].dyn(p)
 
-!auto(34)
+!msr(34)
 rit.b2
 [--vd,+t,++s,t,r^,f^,r^,t,r,t,s,t,-r,f%,m%,r%/--d-dms+d%%o//].dyn(p)
 
-!auto(37)
+!msr(37)
 fine
