@@ -75,7 +75,12 @@ impl History {
         self.input_lines.push((time.clone(), cmd));
         self.update_history_ptr()
     }
-    pub fn load_lpn(&mut self, fname: String, path: Option<&str>, blk: Option<String>) -> bool {
+    pub fn load_lpn(
+        &mut self,
+        fname: String,
+        path: Option<&str>,
+        blk: Option<String>
+    ) -> bool {
         self.loaded_text = Vec::new();
         self.make_folder(Self::LOAD_FOLDER); // フォルダ作成
         let mut real_path = Self::LOAD_FOLDER.to_string();
@@ -131,7 +136,7 @@ impl History {
         if mt.msr != 0 {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
-                if ctxt.len() > 6 && ctxt[0..6] == *"!auto(" {
+                if ctxt.len() > 5 && ctxt[0..5] == *"!msr(" {
                     let msr = extract_number_from_parentheses(ctxt);
                     if msr == mt.msr.try_into().unwrap_or(0) {
                         idx = crnt.0 + 1;
@@ -143,7 +148,7 @@ impl History {
         // ここから記録
         for n in idx..self.loaded_text.len() {
             let ctxt = &self.loaded_text[n];
-            if ctxt.len() > 6 && ctxt[0..6] == *"!auto(" {
+            if ctxt.len() > 5 && ctxt[0..5] == *"!msr(" {
                 let msr = extract_number_from_parentheses(ctxt);
                 println!("YYY{:?}", txt_this_time);
                 return (

@@ -522,11 +522,12 @@ NoteObj <|-- WaterRipple
 - setコマンド書き方の変更 5/6
     - set bpm=120 -> set.bpm(120)
     - それに合わせて ( を書いたら ) を自動挿入（[],{}も自動挿入追加）
-- wait機能追加(5/24)
+- wait機能追加(5/24) -> auto -> msr に変わる
 - graph に voice 追加(5/28)
 - [...].rpt(n)+ (nは一桁)とやることで、リピートしながら複数のフレーズを追加入力できる仕様追加 (6/1)
 - load 時の、blk機能(6/5)
 - flow の仕様変更 : play 中でなくても、音は出る（クロマティック＆テンポ同期しない）(6/12)
+- !load.ファイル名、の後、ファイル名を覚えていて、!l のみでも再生可能とした。また !load.msr(n) で途中再生も可能とした (7/20)
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -546,11 +547,6 @@ NoteObj <|-- WaterRipple
 次の対応、考えられる新機能
 - Tempo/Beat を打ち込みたい（変拍子、rit打ち込み）
     - COND partを作るより、loadの仕方で対応した方が簡単かも
-- !コマンドの整理
-    - ファイルからのロードができないもの
-        - l,load,q,quit,blk,
-    - ファイル上でしか使えないもの（通常のコマンドでは使えない）
-        - wait,blk
 - スタカートや音価の操作
     - stacatoを Main Thread ではなく、Play Thread の elapse note でリアルタイムに制御したい
 - Tempoを微分ベースで

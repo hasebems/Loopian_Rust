@@ -37,6 +37,7 @@ pub struct LoopianApp {
     file_name_stock: String,
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history_cnt: usize,
+    start_msr: i32,
     next_msr_tick: Option<CrntMsrTick>,
     cmd: cmdparse::LoopianCmd,
     history: History,
@@ -56,6 +57,7 @@ impl LoopianApp {
             file_name_stock: String::new(),
             scroll_lines: Vec::new(),
             history_cnt: 0,
+            start_msr: 0,
             next_msr_tick: None,
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui, true),
             history: History::new(),
@@ -198,10 +200,7 @@ impl LoopianApp {
             self.app_end(true);
             std::process::exit(0);
         } else {
-            if len >= 5 && &itxt[0..5] == "!load" {
-                // Load File
-                self.load_file(&itxt[0..]);
-            } else if len >= 2 && &itxt[0..2] == "!l" {
+            if (len >= 5 && &itxt[0..5] == "!load") || (len >= 2 && &itxt[0..2] == "!l") {
                 // Load File
                 self.load_file(&itxt[0..]);
             } else {
@@ -211,31 +210,38 @@ impl LoopianApp {
         }
     }
     fn load_file(&mut self, itxt: &str) {
-        let blk_exists = |fnm: String| -> Option<String> {
+        let blk_exists = |fnm: String| -> (Option<String>, Option<usize>) {
             let mut ltr = None;
+            let mut num = None;
             if fnm.contains("blk") {
                 ltr = Some(extract_texts_from_parentheses(fnm.as_str()).to_string());
+            } else if fnm.contains("msr") {
+                num = Some(extract_number_from_parentheses(fnm.as_str()));
             }
-            ltr // blk命令があるか調べ、あった場合は () 内の文字列取得
+            (ltr, num) // blk命令があるか調べ、あった場合は () 内の文字列取得
         };
 
         let mut blk: Option<String> = None;
-        let mut fname;
+        let mut msr: Option<usize> = None;
+        let fname;
         let fnx = split_by('.', itxt.to_string());
         //println!("{:?}",fnx);
         let fn_ele_num = fnx.len();
         if fn_ele_num >= 3 {
-            blk = blk_exists(fnx[2].clone());
+            (blk, msr) = blk_exists(fnx[2].clone());
             fname = fnx[1].clone();
         } else if fn_ele_num == 2 {
-            blk = blk_exists(fnx[1].clone());
-            fname = fnx[1].clone();
-            if blk.is_none() {
+            (blk, msr) = blk_exists(fnx[1].clone());
+            if blk.is_none() && msr.is_none() {
+                // !l.nnn はファイル名と考える
+                fname = fnx[1].clone();
                 self.file_name_stock = fname.clone(); // file名を保存しておく
             } else {
+                // ファイル名は省略
                 fname = self.file_name_stock.clone(); // 保存したfile名を使用する
             }
-        } else { // "1l" だけ
+        } else {
+            // "!l" だけ（ファイル名は省略）
             fname = self.file_name_stock.clone(); // 保存したfile名を使用する
         }
 
@@ -243,8 +249,15 @@ impl LoopianApp {
             .history
             .load_lpn(fname, self.cmd.get_path().as_deref(), blk)
         {
-            self.next_msr_tick = self.get_loaded_text(CrntMsrTick::default());
-        } else {
+            // load_lpn() でファイルを読み込み、
+            // get_loaded_text() で一行ずつ Scroll Text に入れていく
+            let mut mt: CrntMsrTick = CrntMsrTick::default();
+            if let Some(msr_num) = msr {
+                mt.msr = if msr_num > 0 {(msr_num as i32)-1} else {0};
+                self.start_msr = mt.msr;
+            }
+            self.next_msr_tick = self.get_loaded_text(mt);
+        } else {    // 適切なファイルや中身がなかった場合
             self.scroll_lines.push((
                 TextAttribute::Answer,
                 "".to_string(),
@@ -253,11 +266,12 @@ impl LoopianApp {
         }
     }
     fn auto_load_command(&mut self) {
+        // from main loop
         if let Some(nmt) = self.next_msr_tick {
             let crnt: CrntMsrTick = self.cmd.get_msr_tick();
             if nmt.msr != LAST
                 && nmt.msr > 0
-                && nmt.msr - 1 == crnt.msr
+                && nmt.msr - 1 == crnt.msr + self.start_msr
                 && crnt.tick_for_onemsr - crnt.tick < 240
             {
                 self.next_msr_tick = self.get_loaded_text(nmt);
