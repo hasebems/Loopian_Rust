@@ -1,5 +1,5 @@
 // Pavane
-//  Voice: 
+//  Voice: NY Steinway D Classical
 //
 // set.path(classy)
 graph.dark
@@ -79,7 +79,7 @@ L1
 L1
 [ed^,+m,d,m%,--ta^,++s,-d,+s%].dyn(p)
 L2
-[+hx,qs./.,f.,m/.,ri,r./d..,x//].dyn(mp)
+[+hx,qs./.,f.,m/.,ri,r./d..,x//].dyn(p)
 R1
 [v-ld......,-tar,dm......,rf].dyn(mp)
 
@@ -216,32 +216,32 @@ L1
 L1
 [-ffo/o].dyn(f)
 R2
-[ex..,f^^,vm^,r,d,t,ed^,t/t^,l,s,f,vm^,r,d,t,ed^,t].dyn(mf)
+[ex..,f^^,vm^,r,d%,t%,ed^,t%/t^,l,s,f%,vm^,r,d%,t%,ed^,t].dyn(mf)
 {O}
 
 !msr(37)
 L1
 [qx,m^.,r/f^,m,l^,f^^].dyn(mp)
 R2
-[-el^,s,l,t%,d,r,m,f^/m^,r,d,t,d,ta,vl^,ta^,d^^,r^^].dyn(mp)
+[-el^,s,l,t%,d,r,m,f^/m^,r,d%,t%,d,ta,vl^,ta^,d^^,r^^].dyn(mp)
 
 !msr(39)
 L1
 [-mamao/o].dyn(f)
 R2
-[-ema^^..,+ma^^,vr^,d,ta,l,eta^,l/el^,s,f,ma,vr^,d,ta,l,eta^,l].dyn(mf)
+[-ema^^..,+ma^^,vr^,d,ta%,l%,eta^,l%/el^,s,f,ma%,vr^,d,ta%,l%,eta^,l].dyn(mf)
 
 !msr(41)
 L1
 [qx,r^.,d/ma^,r,s^,ma^^].dyn(mp)
 R2
-[-es^,f,s,l%,ta,d,r,ma^/r^,d,ta,l,ta,la,vs^,l^,ta^^,d^^].dyn(mp)
+[-es^,f,s,l%,ta,d,r,ma^/r^,d,ta,l%,ta,la,vs^,l^,ta^^,d^^].dyn(mp)
 
 !msr(43)
 L1
 [-rarao/o].dyn(f)
 R2
-[-era^^..,+ra^^,vd^,ta,la,s,ela^,s/s^,f,ma,ra,vd^,ta,la,s,ela^,s].dyn(mf)
+[-era^^..,+ra^^,vd^,ta,la%,s%,ela^,s%/s^,f,ma,ra%,vd^,ta,la%,s%,ela^,s].dyn(mf)
 
 !msr(45)
 L1
@@ -257,7 +257,7 @@ R2
 
 !msr(47)
 L1
-[+ed,m,s,m,d,m,s,m].dyn(p)
+[+ed,m,s,m%,d,m,s,m%].dyn(p)
 {O.,O}
 
 !msr(48)
@@ -364,7 +364,7 @@ R2
 L1
 [ef^,+m,l,-ri%,-m^,+r,m,r%].dyn(mf)
 L2
-[hx,ex,ri,m,mi].dyn(mf)
+[hx,ex,ri%,m,mi^].dyn(mp)
 R1
 [e-ld,-si-t,-ld,-d-l,q-d-l%,--t-si%/q--l-l%..,x//].dyn(mp)
 R2
@@ -380,7 +380,7 @@ L2
 L1
 []
 L2
-[qs%,fi%,ef%,ri^,m,mi].dyn(p)
+[qs%,fi%,ef%,ri^,m,mi^].dyn(p)
 R1
 [e-d,t,d,l,ql%,si%/ql%..,x//].dyn(p)
 R2
@@ -390,9 +390,10 @@ R2
 L1
 [qr].dyn(mp)
 L2
-[efi,si^,si^,fi,fla,fil^,fil^,fla].dyn(p)
+[efi,si^,si^,fi%,fla,fil^,fil^,fla%].dyn(p)
 
 !msr(67)
+rit.poco.b2
 L1
 [qf,x,m,x].dyn(mp)
 L2
