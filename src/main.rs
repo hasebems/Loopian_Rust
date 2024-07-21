@@ -221,6 +221,7 @@ impl LoopianApp {
             (ltr, num) // blk命令があるか調べ、あった場合は () 内の文字列取得
         };
 
+        self.start_msr = 0;
         let mut blk: Option<String> = None;
         let mut msr: Option<usize> = None;
         let fname;
