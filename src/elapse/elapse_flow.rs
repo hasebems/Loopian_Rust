@@ -100,7 +100,7 @@ impl Flow {
         locate: u8,
         vel: u8,
     ) {
-        println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
+        //println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
         if !self.during_play {
             // 普通に鳴らす
             if locate >= 4 && locate < 92 {
