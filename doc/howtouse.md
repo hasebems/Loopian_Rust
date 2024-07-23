@@ -149,7 +149,7 @@ Phrase 追加
     - `e`:八分音符 (例: `[em,r,d,r,qm,r]`)
     - `v`:十六分音符 (例: `[em,vr,d,et,vd,r,em,vr,d,t,d,r,d])
     - `w`:三十二分音符
-    - `[3'd,r,m]` : 'の前に3を書くと、一拍三連の音価になる
+    - `[3ed,r,m]` : 'の前に3を書くと、一拍三連の音価になる
         - 同様に、5連符が可能
         - 同様に、3q で二拍三連
     - `[h'd]``[q'd]` : 'の前にhを書くと付点二分音符、qを書くと付点四分音符
@@ -317,9 +317,14 @@ Phrase 追加
 
 ## Loopian::ORBIT での演奏
 
-- `flow` `endflow` : Loopian::ORBIT を接続した場合、そのパートに Loopian::ORBIT からの演奏情報を入力したり、解除したりする
-- flow を指定したパートでは、Phrase を入力しても演奏されないが、Composition は ORBIT 入力に対して効果する
-
+- Loopian::ORBIT からの MIDI 情報は、`FLOW` パートという内部パートが受信し、適切な処理を行う。
+    - `FLOW` パートは `FLOW.{...}` のように、パート指定による Composition 入力が可能である。Phrase は入力できない。
+    - `FLOW` パート自体を入力パートにすることはできない。
+- FLOWパートで再生されている Composition は、USB MIDI 経由で外部出力され、入力側は UART MIDI で受信する。
+    - Composition は、AAh-0rh-cch の形式で送信される。
+        - AAh : Poly After Touch を MIDI Ch.11 に送信
+        - 0rh : root (0-11)
+        - cch : CHORD_TABLE[] の index 番号
 
 Graphic
 ---------------
