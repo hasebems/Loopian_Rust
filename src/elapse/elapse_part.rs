@@ -8,6 +8,7 @@ use std::rc::Rc;
 
 use super::elapse::*;
 use super::elapse_loop::{CompositionLoop, Loop, PhraseLoop};
+use super::miditx::MidiTx;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::elapse::elapse_flow::Flow;
@@ -453,7 +454,7 @@ pub struct Part {
     start_flag: bool,
 }
 impl Part {
-    pub fn new(num: u32) -> Rc<RefCell<Part>> {
+    pub fn new(num: u32, flow: Option<Rc<RefCell<Flow>>>) -> Rc<RefCell<Part>> {
         let new_id = ElapseId {
             pid: 0,
             sid: num,
@@ -468,7 +469,7 @@ impl Part {
             next_tick: 0,
             pm: PhrLoopManager::new(),
             cm: CmpsLoopManager::new(),
-            flow: None,
+            flow,
             sync_next_msr_flag: false,
             start_flag: false,
         }))
@@ -533,9 +534,16 @@ impl Part {
             self.flow = None;
         }
     }
-    pub fn rcv_midi_in(&mut self, crnt_: &CrntMsrTick, status: u8, locate: u8, vel: u8) {
+    pub fn rcv_midi_in(
+        &mut self,
+        mdx_: &mut MidiTx,
+        crnt_: &CrntMsrTick,
+        status: u8,
+        locate: u8,
+        vel: u8,
+    ) {
         if let Some(fl) = &self.flow {
-            fl.borrow_mut().rcv_midi(crnt_, status, locate, vel);
+            fl.borrow_mut().rcv_midi(mdx_, crnt_, status, locate, vel);
         }
     }
     pub fn set_phrase_vari(&mut self, vari_num: usize) {

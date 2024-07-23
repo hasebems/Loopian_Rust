@@ -75,12 +75,7 @@ impl History {
         self.input_lines.push((time.clone(), cmd));
         self.update_history_ptr()
     }
-    pub fn load_lpn(
-        &mut self,
-        fname: String,
-        path: Option<&str>,
-        blk: Option<String>
-    ) -> bool {
+    pub fn load_lpn(&mut self, fname: String, path: Option<&str>, blk: Option<String>) -> bool {
         self.loaded_text = Vec::new();
         self.make_folder(Self::LOAD_FOLDER); // フォルダ作成
         let mut real_path = Self::LOAD_FOLDER.to_string();

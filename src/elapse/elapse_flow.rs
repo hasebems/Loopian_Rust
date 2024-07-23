@@ -7,6 +7,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse::*;
+use super::miditx::MidiTx;
 use super::note_translation::*;
 use super::stack_elapse;
 use super::stack_elapse::ElapseStack;
@@ -91,21 +92,32 @@ impl Flow {
     pub fn set_keynote(&mut self, keynote: u8) {
         self.keynote = keynote;
     }
-    pub fn rcv_midi(&mut self, crnt_: &CrntMsrTick, status: u8, locate: u8, vel: u8) {
+    pub fn rcv_midi(
+        &mut self,
+        mdx_: &mut MidiTx,
+        crnt_: &CrntMsrTick,
+        status: u8,
+        locate: u8,
+        vel: u8,
+    ) {
         println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
         if !self.during_play {
-            return;
-        }
-
-        self.raw_ev
-            .insert(0, RawEv(crnt_.msr, crnt_.tick, status, locate, vel));
-        let tk = (crnt_.tick / TICK_RESOLUTION + 1) * TICK_RESOLUTION;
-        if tk >= crnt_.tick_for_onemsr {
-            self.next_msr = crnt_.msr + 1;
-            self.next_tick = tk - crnt_.tick_for_onemsr;
+            // 普通に鳴らす
+            if locate >= 4 && locate < 92 {
+                // 4->21 A0, 91->108 C8
+                mdx_.midi_out(status, locate + 17, vel, false);
+            }
         } else {
-            self.next_msr = crnt_.msr;
-            self.next_tick = tk;
+            self.raw_ev
+                .insert(0, RawEv(crnt_.msr, crnt_.tick, status, locate, vel));
+            let tk = (crnt_.tick / TICK_RESOLUTION + 1) * TICK_RESOLUTION;
+            if tk >= crnt_.tick_for_onemsr {
+                self.next_msr = crnt_.msr + 1;
+                self.next_tick = tk - crnt_.tick_for_onemsr;
+            } else {
+                self.next_msr = crnt_.msr;
+                self.next_tick = tk;
+            }
         }
     }
     /// 考え方：

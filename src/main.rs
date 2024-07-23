@@ -254,11 +254,12 @@ impl LoopianApp {
             // get_loaded_text() で一行ずつ Scroll Text に入れていく
             let mut mt: CrntMsrTick = CrntMsrTick::default();
             if let Some(msr_num) = msr {
-                mt.msr = if msr_num > 0 {(msr_num as i32)-1} else {0};
+                mt.msr = if msr_num > 0 { (msr_num as i32) - 1 } else { 0 };
                 self.start_msr = mt.msr;
             }
             self.next_msr_tick = self.get_loaded_text(mt);
-        } else {    // 適切なファイルや中身がなかった場合
+        } else {
+            // 適切なファイルや中身がなかった場合
             self.scroll_lines.push((
                 TextAttribute::Answer,
                 "".to_string(),

@@ -81,14 +81,24 @@ impl ElapseStack {
             Ok(c) => {
                 let mut part_vec = Vec::new();
                 let mut elapse_vec = Vec::new();
+
+                // Keyboard Part
                 for i in 0..MAX_KBD_PART {
                     // 同じ Part を part_vec, elapse_vec 両方に繋げる
-                    let pt = Part::new(i as u32);
+                    let pt = Part::new(i as u32, None);
                     part_vec.push(Rc::clone(&pt));
                     elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
                 }
+                // Flow Part
+                let flow = Flow::new(0, FLOW_PART as u32, false);
+                elapse_vec.push(flow.clone() as Rc<RefCell<dyn Elapse>>);
+                let pt = Part::new(FLOW_PART as u32, Some(flow));
+                part_vec.push(Rc::clone(&pt));
+                elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
+                // Damper Part
                 let damper_part = DamperPart::new(DAMPER_PEDAL_PART as u32);
                 elapse_vec.push(Rc::clone(&damper_part) as Rc<RefCell<dyn Elapse>>);
+
                 let (rx_hndr, tx_ctrl) = gen_midirx_thread();
                 Some(Self {
                     ui_hndr,
@@ -101,7 +111,7 @@ impl ElapseStack {
                     during_play: false,
                     display_time: Instant::now(),
                     tg: TickGen::new(0),
-                    part_vec,
+                    part_vec: part_vec.clone(),
                     _damper_part: damper_part,
                     elapse_vec,
                     key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
@@ -342,21 +352,19 @@ impl ElapseStack {
             }
         } else {
             // 0b/0c ch <from ORBIT>
-            if self.during_play && ((sts & 0xe0) == 0x80) {
+            if (sts & 0xe0) == 0x80 {
                 // 再生中 & Note Message
-                self.part_vec.iter().for_each(|x| {
-                    x.borrow_mut().rcv_midi_in(crnt_, sts & 0xf0, nt, vel);
-                });
+                self.part_vec[FLOW_PART].borrow_mut().rcv_midi_in(
+                    &mut self.mdx,
+                    crnt_,
+                    sts & 0xf0,
+                    nt,
+                    vel,
+                );
             } else if (sts & 0xf0) == 0xc0 {
                 // PCN は Pattern 切り替えに使用する
                 let key_disp = format!("@ptn{}", nt);
                 self.send_msg_to_ui(&key_disp);
-            } else if (sts & 0xe0) == 0x80 {
-                // 普通に鳴らす
-                if nt >= 4 && nt < 92 {
-                    // 4->21 A0, 91->108 C8
-                    self.mdx.midi_out(sts, nt + 17, vel, false);
-                }
             }
         }
     }

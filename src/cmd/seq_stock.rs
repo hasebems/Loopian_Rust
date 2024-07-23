@@ -16,7 +16,7 @@ use crate::lpnlib::*;
 //  入力された Phrase/Composition Data の変換と保持
 pub struct SeqDataStock {
     pdt: Vec<Vec<PhraseDataStock>>,
-    cdt: [CompositionDataStock; MAX_KBD_PART],
+    cdt: [CompositionDataStock; MAX_COMPOSITION_PART],
     input_mode: InputMode,
     cluster_memory: String,
     raw_additional: String,
@@ -79,7 +79,7 @@ impl SeqDataStock {
         None
     }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
-        if part < MAX_KBD_PART {
+        if part < MAX_COMPOSITION_PART {
             if self.cdt[part].set_raw(input_text) {
                 self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
                 return true;
@@ -137,10 +137,7 @@ impl SeqDataStock {
     }
     pub fn check_if_additional_phrase(&mut self, raw: String) -> Option<String> {
         let strlen = raw.len();
-        if strlen >= 9
-            && raw.contains("].rpt(")
-            && &raw[(strlen - 2)..] == ")+"
-        {
+        if strlen >= 9 && raw.contains("].rpt(") && &raw[(strlen - 2)..] == ")+" {
             let input_txt = split_by('.', raw);
             let rpt_cnt = extract_number_from_parentheses(&input_txt[1]);
             let plen = input_txt[0].len();

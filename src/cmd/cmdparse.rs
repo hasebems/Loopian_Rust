@@ -219,6 +219,8 @@ impl LoopianCmd {
             Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else if first_letter == "R" {
             Some(CmndRtn(self.letter_part(input_text), NO_MSG))
+        } else if first_letter == "F" {
+            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else if first_letter == "A" {
             Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else {
@@ -267,11 +269,6 @@ impl LoopianCmd {
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
             self.during_play = false;
             "Fine.".to_string()
-        } else if len == 7 && &input_text[0..7] == "endflow" {
-            // fermata
-            self.sndr
-                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_ENDFLOW + self.input_part as i16));
-            "End MIDI in flow!".to_string()
         } else {
             "what?".to_string()
         }
@@ -288,12 +285,6 @@ impl LoopianCmd {
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_NRM, MSG2_RIT_FERMATA]));
             "Will stop!".to_string()
-        } else if len == 4 && &input_text[0..4] == "flow" {
-            // flow
-            self.sndr
-                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FLOW + self.input_part as i16));
-            let res = format!("MIDI in flows on Part {}!", self.get_part_txt());
-            res.to_string()
         } else {
             "what?".to_string()
         }
@@ -493,7 +484,7 @@ impl LoopianCmd {
         let mut rtn_str = "what?".to_string();
         for (i, ltr) in input_text.chars().enumerate() {
             if ltr == '.' {
-                let first_letter = &input_text[i + 1..i + 2];
+                let first_letter = &input_text[i + 1..i + 2]; // '{' '['
                 let part_str = &input_text[0..i];
                 let rest_text = &input_text[i + 1..];
                 match part_str {
@@ -528,6 +519,11 @@ impl LoopianCmd {
                         self.call_bracket_brace(LEFT1, first_letter, rest_text);
                         self.call_bracket_brace(LEFT2, first_letter, rest_text);
                         rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
+                    }
+                    "FLOW" => {
+                        if first_letter == "{" {
+                            rtn_str = self.call_bracket_brace(FLOW_PART, first_letter, rest_text);
+                        }
                     }
                     "ALL" => {
                         for i in 0..MAX_KBD_PART {
