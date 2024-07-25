@@ -206,7 +206,8 @@ impl Flow {
                 real_note = translate_note_com(root, ctbl, temp_note) as u8;
             }
         } else {
-            real_note = translate_note_com(self.root, self.translation_tbl, temp_note) as u8;
+            let root: i16 = ROOT2NTNUM[self.root as usize];
+            real_note = translate_note_com(root, self.translation_tbl, temp_note) as u8;
         }
 
         real_note += self.keynote;
