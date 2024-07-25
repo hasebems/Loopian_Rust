@@ -49,6 +49,8 @@ pub struct Flow {
     raw_ev: Vec<RawEv>,             // 外部からの MIDI In Ev 受信時に格納し、処理後に削除
     gen_stock: Vec<GenStock>,       // MIDI In Ev処理し、外部音源発音時に生成される
     keynote: u8,
+    root: i16,
+    translation_tbl: i16,
 
     // for super's member
     during_play: bool,
@@ -75,6 +77,8 @@ impl Flow {
             raw_ev: Vec::new(),
             gen_stock: Vec::new(),
             keynote: 0,
+            root: 0,
+            translation_tbl: NO_TABLE,
 
             // for super's member
             during_play,
@@ -102,7 +106,7 @@ impl Flow {
     ) {
         //println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
         if !self.during_play {
-            // 普通に鳴らす
+            // ORBIT 自身の Pattern が鳴っていない時
             if locate >= 4 && locate < 92 {
                 // 4->21 A0, 91->108 C8
                 mdx_.midi_out(status, locate + 17, vel, false);
@@ -140,27 +144,11 @@ impl Flow {
                         break;
                     }
                     self.raw_state[locate_idx] = ev.1;
-                    let rnote = self.detect_real_note(estk, ev.3 as i16);
-                    if let Some(idx) = self.same_note_index(rnote) {
-                        self.gen_stock[idx].2 = ev.3; // locate 差し替え
-                    } else {
-                        estk.inc_key_map(rnote, ev.4, self.id.pid as u8);
-                        estk.midi_out_flow(0x90, rnote, ev.4);
-                        println!("MIDI OUT<< 0x90:{:x}:{:x}", rnote, ev.4);
-                        self.gen_stock.push(GenStock(rnote, ev.4, ev.3));
-                    }
+                    self.flow_note_on(estk, ev.3, ev.4);
                 } else if ch_status == 0x80 || (ch_status == 0x90 && ev.4 == 0x00) {
                     // off
                     self.raw_state[locate_idx] = NO_DATA;
-                    if let Some(idx) = self.same_locate_index(ev.3) {
-                        let rnote = self.gen_stock[idx].0;
-                        let snk = estk.dec_key_map(rnote);
-                        if snk == stack_elapse::SameKeyState::LAST {
-                            estk.midi_out_flow(0x90, rnote, 0); // test
-                        }
-                        println!("MIDI OUT<< 0x90:{:x}:0", rnote);
-                        self.gen_stock.remove(idx);
-                    }
+                    self.flow_note_off(estk, ev.3);
                 }
             } else {
                 break;
@@ -168,22 +156,49 @@ impl Flow {
         }
         self.next_msr = FULL; // process() は呼ばれないようになる
     }
+    fn flow_note_on(&mut self, estk: &mut ElapseStack, nt: u8, vel: u8) {
+        let rnote = self.detect_real_note(estk, nt as i16);
+        if let Some(idx) = self.same_note_index(rnote) {
+            self.gen_stock[idx].2 = nt; // locate 差し替え
+        } else {
+            estk.inc_key_map(rnote, vel, self.id.pid as u8);
+            estk.midi_out_flow(0x90, rnote, vel);
+            println!("MIDI OUT<< 0x90:{:x}:{:x}", rnote, vel);
+            self.gen_stock.push(GenStock(rnote, vel, nt));
+        }
+    }
+    fn flow_note_off(&mut self, estk: &mut ElapseStack, nt: u8) {
+        if let Some(idx) = self.same_locate_index(nt) {
+            let rnote = self.gen_stock[idx].0;
+            let snk = estk.dec_key_map(rnote);
+            if snk == stack_elapse::SameKeyState::LAST {
+                estk.midi_out_flow(0x90, rnote, 0); // test
+            }
+            println!("MIDI OUT<< 0x90:{:x}:0", rnote);
+            self.gen_stock.remove(idx);
+        }
+    }
     fn detect_real_note(&mut self, estk: &mut ElapseStack, locate: i16) -> u8 {
         let mut temp_note = (locate * 12) / 16;
-        if self.id.pid / 2 == 0 {
-            temp_note += 24
-        } else {
-            temp_note += 36
-        }
+        //if self.id.pid / 2 == 0 {
+        //    temp_note += 24
+        //} else {
+        temp_note += 36;
+        //}
         if temp_note >= 128 {
             temp_note = 127;
         }
         let mut real_note: u8 = temp_note as u8;
-        if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
-            let (rt, ctbl) = cmps.borrow().get_chord();
-            let root: i16 = ROOT2NTNUM[rt as usize];
-            real_note = translate_note_com(root, ctbl, temp_note) as u8;
+        if self.during_play {
+            if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
+                let (rt, ctbl) = cmps.borrow().get_chord();
+                let root: i16 = ROOT2NTNUM[rt as usize];
+                real_note = translate_note_com(root, ctbl, temp_note) as u8;
+            }
+        } else {
+            real_note = translate_note_com(self.root, self.translation_tbl, temp_note) as u8;
         }
+
         real_note += self.keynote;
         if real_note >= MAX_NOTE_NUMBER {
             real_note = MAX_NOTE_NUMBER;
@@ -207,6 +222,10 @@ impl Flow {
             }
         }
         None
+    }
+    pub fn set_chord_for_noplay(&mut self, root: u8, tblnum: u8) {
+        self.root = root as i16;
+        self.translation_tbl = tblnum as i16;
     }
 }
 

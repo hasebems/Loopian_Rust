@@ -437,7 +437,7 @@ impl CompositionLoop {
                         self.no_loop = true;
                     }
                 } else if cd.mtype == TYPE_CHORD {
-                    self.prepare_note_translation(cd);
+                    self.prepare_note_translation(cd, _estk);
                 } else if cd.mtype == TYPE_VARI {
                     _estk.set_phrase_vari(self.id.pid as usize, cd.root as usize);
                 }
@@ -449,7 +449,7 @@ impl CompositionLoop {
         self.play_counter = trace;
         next_tick
     }
-    fn prepare_note_translation(&mut self, cd: ChordEvt) {
+    fn prepare_note_translation(&mut self, cd: ChordEvt, _estk: &mut ElapseStack) {
         self.root = cd.root;
         self.translation_tbl = cd.tbl;
 
@@ -469,7 +469,16 @@ impl CompositionLoop {
         } else {
             self.chord_name = cname;
         }
-        println!("Chord Data: {}, {}, {}", self.chord_name, cd.root, cd.tbl);
+        if self.id.pid == FLOW_PART as u32 {
+            // MIDI Out
+            _estk.midi_out_ext(0xa0, cd.root as u8, cd.tbl as u8);
+            println!(
+                "Flow Chord Data: {}, {}, {}",
+                self.chord_name, cd.root, cd.tbl
+            );
+        } else {
+            println!("Chord Data: {}, {}, {}", self.chord_name, cd.root, cd.tbl);
+        }
     }
     fn _reset_note_translation(&mut self) { /*<<DoItLater>>*/
     }

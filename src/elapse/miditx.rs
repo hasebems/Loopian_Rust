@@ -105,4 +105,10 @@ impl MidiTx {
             }
         }
     }
+    pub fn midi_out_only_for_another(&mut self, status: u8, dt1: u8, dt2: u8) {
+        if let Some(cnct) = self.connection_ext_loopian.as_mut() {
+            let status_with_ch = (status & 0xf0) + 10; // ch.11
+            let _ = cnct.send(&[status_with_ch, dt1, dt2]);
+        }
+    }
 }

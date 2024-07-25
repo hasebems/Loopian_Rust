@@ -176,7 +176,7 @@ impl MidiRx {
                 msg_ext.0,
                 msg[0],
                 msg[1],
-                if length > 2 {msg[2]} else {0},
+                if length > 2 { msg[2] } else { 0 },
                 length
             );
             // midi ch=12,13 のみ受信 (Loopian::ORBIT)
@@ -268,7 +268,21 @@ impl MidiRx {
                     self.midi_stream_status = INVALID;
                     self.midi_stream_data1 = INVALID;
                 }
-                0xb0 => {}
+                0xa0 => {
+                    if self.midi_stream_data1 != INVALID {
+                        // Chord from External Loopian
+                        let dt1 = self.midi_stream_data1;
+                        self.send_msg_to_elapse(ElpsMsg::MIDIRx(
+                            self.midi_stream_status,
+                            dt1,
+                            input_data,
+                        ));
+                        println!("Chord from ExtLoopian: root:{},ctbl:{}", dt1, input_data);
+                        self.midi_stream_data1 = INVALID;
+                    } else {
+                        self.midi_stream_data1 = input_data;
+                    }
+                }
                 _ => {}
             }
         }

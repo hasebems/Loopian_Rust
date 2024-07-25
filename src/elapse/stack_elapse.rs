@@ -188,6 +188,9 @@ impl ElapseStack {
     pub fn midi_out_flow(&mut self, status: u8, data1: u8, data2: u8) {
         self.mdx.midi_out(status, data1, data2, false);
     }
+    pub fn midi_out_ext(&mut self, status: u8, data1: u8, data2: u8) {
+        self.mdx.midi_out_only_for_another(status, data1, data2);
+    }
     //*******************************************************************
     //      Periodic
     //*******************************************************************
@@ -348,7 +351,15 @@ impl ElapseStack {
             // 0a ch <from another loopian>
             if !self.during_play {
                 // pattern 再生中は、External Loopian とは繋がない
-                self.mdx.midi_out_for_led(sts, nt, vel);
+                if sts & 0xe0 == 0x80 {
+                    // LED を光らせる
+                    self.mdx.midi_out_for_led(sts, nt, vel);
+                } else if sts & 0xf0 == 0xa0 {
+                    // Flow Part に和音を設定する
+                    if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+                        fl.borrow_mut().set_chord_for_noplay(nt, vel);
+                    }
+                }
             }
         } else {
             // 0b/0c ch <from ORBIT>
