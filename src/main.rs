@@ -231,6 +231,7 @@ impl LoopianApp {
         if fn_ele_num >= 3 {
             (blk, msr) = blk_exists(fnx[2].clone());
             fname = fnx[1].clone();
+            self.file_name_stock = fname.clone(); // file名を保存しておく
         } else if fn_ele_num == 2 {
             (blk, msr) = blk_exists(fnx[1].clone());
             if blk.is_none() && msr.is_none() {
