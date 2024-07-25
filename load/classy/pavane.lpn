@@ -399,7 +399,7 @@ L1
 L2
 [+qs%,fi,ef,fi,la%,s%].dyn(p)
 R2
-[-ed,t,d,l,ql,si/lo/o//].dyn(p)
+[ed,t,d,l,ql,si/lo/o//].dyn(p)
 
 !msr(68)
 L1
@@ -456,5 +456,6 @@ R1
 !msr(75)
 L1
 [l%%o//].dyn(p)
+{O}
 R1
 [ldm%%o//].dyn(p)
