@@ -336,8 +336,8 @@ impl ElapseStack {
     fn check_rcv_midi(&mut self, crnt_: &CrntMsrTick) {
         match self.rx_hndr.try_recv() {
             Ok(rxmsg) => match rxmsg {
-                MIDIRx(sts, nt, vel) => {
-                    self.rcv_midi_msg(crnt_, sts, nt, vel);
+                MIDIRx(sts, nt, vel, extra) => {
+                    self.rcv_midi_msg(crnt_, sts, nt, vel, extra);
                 }
                 _ => (),
             },
@@ -345,7 +345,7 @@ impl ElapseStack {
             Err(TryRecvError::Empty) => {}
         }
     }
-    fn rcv_midi_msg(&mut self, crnt_: &CrntMsrTick, sts: u8, nt: u8, vel: u8) {
+    fn rcv_midi_msg(&mut self, crnt_: &CrntMsrTick, sts: u8, nt: u8, vel: u8, ex: u8) {
         if sts & 0x0f == 0x0a {
             // 0a ch <from another loopian>
             if !self.during_play {
@@ -356,7 +356,7 @@ impl ElapseStack {
                 } else if sts & 0xf0 == 0xa0 {
                     // Flow Part に和音を設定する
                     if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
-                        fl.borrow_mut().set_chord_for_noplay(nt, vel);
+                        fl.borrow_mut().set_chord_for_noplay(nt, vel, ex);
                     }
                 }
             }

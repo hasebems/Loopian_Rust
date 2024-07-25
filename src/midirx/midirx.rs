@@ -7,7 +7,6 @@ extern crate midir;
 
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
-//use std::sync::mpsc::{Receiver, Sender};
 use crate::lpnlib::{ElpsMsg::*, *};
 use crate::setting::MIDI_DEVICE;
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
@@ -53,6 +52,7 @@ pub struct MidiRx {
     mdr_buf: Option<Arc<Mutex<MidiRxBuf>>>,
     midi_stream_status: u8,
     midi_stream_data1: u8,
+    keynote: u8,
     #[cfg(feature = "raspi")]
     pub uart: Option<Uart>,
 }
@@ -64,6 +64,7 @@ impl MidiRx {
             mdr_buf: None,
             midi_stream_status: INVALID,
             midi_stream_data1: INVALID,
+            keynote: 0,
             #[cfg(feature = "raspi")]
             uart: None,
         };
@@ -185,9 +186,9 @@ impl MidiRx {
                 return;
             }
             if msg.len() == 2 {
-                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0));
+                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0, 0,));
             } else {
-                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2]));
+                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2], 0,));
             }
         }
         #[cfg(feature = "raspi")]
@@ -228,6 +229,7 @@ impl MidiRx {
                             self.midi_stream_status,
                             dt1,
                             input_data,
+                            0,
                         ));
                         println!(
                             "ExtLoopian: {}-{}-{}",
@@ -249,6 +251,7 @@ impl MidiRx {
                             self.midi_stream_status,
                             dt1,
                             input_data,
+                            0,
                         ));
                         println!(
                             "ExtLoopian: {}-{}-{}",
@@ -263,7 +266,7 @@ impl MidiRx {
                     self.send_msg_to_elapse(ElpsMsg::MIDIRx(
                         self.midi_stream_status,
                         input_data,
-                        0,
+                        0, 0,
                     ));
                     self.midi_stream_status = INVALID;
                     self.midi_stream_data1 = INVALID;
@@ -272,12 +275,17 @@ impl MidiRx {
                     if self.midi_stream_data1 != INVALID {
                         // Chord from External Loopian
                         let dt1 = self.midi_stream_data1;
-                        self.send_msg_to_elapse(ElpsMsg::MIDIRx(
-                            self.midi_stream_status,
-                            dt1,
-                            input_data,
-                        ));
-                        println!("Chord from ExtLoopian: root:{},ctbl:{}", dt1, input_data);
+                        if dt1 == 0x7f {
+                            self.keynote = input_data; // 一旦保持しておく
+                        } else {
+                            self.send_msg_to_elapse(ElpsMsg::MIDIRx(
+                                self.midi_stream_status,
+                                dt1,
+                                input_data,
+                                self.keynote,
+                            ));
+                            println!("Chord from ExtLoopian: root:{},ctbl:{}", dt1, input_data);
+                        }
                         self.midi_stream_data1 = INVALID;
                     } else {
                         self.midi_stream_data1 = input_data;

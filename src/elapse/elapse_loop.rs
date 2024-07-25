@@ -321,7 +321,7 @@ pub struct CompositionLoop {
     priority: u32,
 
     cmps_dt: Vec<ChordEvt>,
-    _keynote: u8,
+    keynote: u8,
     play_counter: usize,
     next_tick_in_cmps: i32,
     // for Composition
@@ -355,7 +355,7 @@ impl CompositionLoop {
             },
             priority: PRI_CMPS_LOOP,
             cmps_dt: msg,
-            _keynote: knt,
+            keynote: knt,
             play_counter: 0,
             next_tick_in_cmps: 0,
 
@@ -470,7 +470,8 @@ impl CompositionLoop {
             self.chord_name = cname;
         }
         if self.id.pid == FLOW_PART as u32 {
-            // MIDI Out
+            // MIDI Out (keynoteも一緒に送る)
+            _estk.midi_out_ext(0xa0, 0x7f, self.keynote);
             _estk.midi_out_ext(0xa0, cd.root as u8, cd.tbl as u8);
             println!(
                 "Flow Chord Data: {}, {}, {}",

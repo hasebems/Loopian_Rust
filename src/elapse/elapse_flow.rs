@@ -234,9 +234,10 @@ impl Flow {
         }
         None
     }
-    pub fn set_chord_for_noplay(&mut self, root: u8, tblnum: u8) {
+    pub fn set_chord_for_noplay(&mut self, root: u8, tblnum: u8, keynote: u8) {
         self.root = root as i16;
         self.translation_tbl = tblnum as i16;
+        self.keynote = keynote;
     }
 }
 
