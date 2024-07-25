@@ -8,7 +8,6 @@ use std::rc::Rc;
 
 use super::elapse::*;
 use super::elapse_loop::{CompositionLoop, Loop, PhraseLoop};
-use super::miditx::MidiTx;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::elapse::elapse_flow::Flow;
@@ -536,14 +535,14 @@ impl Part {
     }
     pub fn rcv_midi_in(
         &mut self,
-        mdx_: &mut MidiTx,
+        estk_: &mut ElapseStack,
         crnt_: &CrntMsrTick,
         status: u8,
         locate: u8,
         vel: u8,
     ) {
         if let Some(fl) = &self.flow {
-            fl.borrow_mut().rcv_midi(mdx_, crnt_, status, locate, vel);
+            fl.borrow_mut().rcv_midi(estk_, crnt_, status, locate, vel);
         }
     }
     pub fn set_phrase_vari(&mut self, vari_num: usize) {

@@ -8,7 +8,6 @@ use std::rc::Rc;
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::{Receiver, Sender};
-//use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::vec::Vec;
@@ -365,8 +364,9 @@ impl ElapseStack {
             // 0b/0c ch <from ORBIT>
             if (sts & 0xe0) == 0x80 {
                 // 再生中 & Note Message
-                self.part_vec[FLOW_PART].borrow_mut().rcv_midi_in(
-                    &mut self.mdx,
+                let pt = self.part_vec[FLOW_PART].clone();
+                pt.borrow_mut().rcv_midi_in(
+                    self,
                     crnt_,
                     sts & 0xf0,
                     nt,

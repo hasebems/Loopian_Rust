@@ -7,7 +7,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse::*;
-use super::miditx::MidiTx;
 use super::note_translation::*;
 use super::stack_elapse;
 use super::stack_elapse::ElapseStack;
@@ -98,7 +97,7 @@ impl Flow {
     }
     pub fn rcv_midi(
         &mut self,
-        mdx_: &mut MidiTx,
+        estk_: &mut ElapseStack,
         crnt_: &CrntMsrTick,
         status: u8,
         locate: u8,
@@ -107,9 +106,20 @@ impl Flow {
         //println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
         if !self.during_play {
             // ORBIT 自身の Pattern が鳴っていない時
-            if locate >= 4 && locate < 92 {
+            if self.translation_tbl != NO_TABLE {
+                if status & 0xf0 == 0x90 {
+                    if vel != 0 {
+                        self.flow_note_on(estk_, locate, vel);
+                    } else {
+                        self.flow_note_off(estk_, locate);
+                    }
+                } if status & 0xf0 == 0x80 {
+                    self.flow_note_off(estk_, locate);
+                }
+            } else if locate >= 4 && locate < 92 {
+                // 外部から Chord 情報が来ていない時
                 // 4->21 A0, 91->108 C8
-                mdx_.midi_out(status, locate + 17, vel, false);
+                estk_.midi_out_flow(status, locate + 17, vel);
             }
         } else {
             self.raw_ev
@@ -156,19 +166,19 @@ impl Flow {
         }
         self.next_msr = FULL; // process() は呼ばれないようになる
     }
-    fn flow_note_on(&mut self, estk: &mut ElapseStack, nt: u8, vel: u8) {
-        let rnote = self.detect_real_note(estk, nt as i16);
+    fn flow_note_on(&mut self, estk: &mut ElapseStack, locate: u8, vel: u8) {
+        let rnote = self.detect_real_note(estk, locate as i16);
         if let Some(idx) = self.same_note_index(rnote) {
-            self.gen_stock[idx].2 = nt; // locate 差し替え
+            self.gen_stock[idx].2 = locate; // locate 差し替え
         } else {
             estk.inc_key_map(rnote, vel, self.id.pid as u8);
             estk.midi_out_flow(0x90, rnote, vel);
             println!("MIDI OUT<< 0x90:{:x}:{:x}", rnote, vel);
-            self.gen_stock.push(GenStock(rnote, vel, nt));
+            self.gen_stock.push(GenStock(rnote, vel, locate));
         }
     }
-    fn flow_note_off(&mut self, estk: &mut ElapseStack, nt: u8) {
-        if let Some(idx) = self.same_locate_index(nt) {
+    fn flow_note_off(&mut self, estk: &mut ElapseStack, locate: u8) {
+        if let Some(idx) = self.same_locate_index(locate) {
             let rnote = self.gen_stock[idx].0;
             let snk = estk.dec_key_map(rnote);
             if snk == stack_elapse::SameKeyState::LAST {
