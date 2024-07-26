@@ -259,6 +259,7 @@ impl PhrLoopManager {
 
         if !new_loop {
             self.whole_tick = 0;
+            self.max_loop_msr = 0;
             self.loop_phrase = None;
         }
     }
