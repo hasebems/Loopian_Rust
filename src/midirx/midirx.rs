@@ -5,11 +5,11 @@
 //
 extern crate midir;
 
-use std::sync::mpsc;
-use std::sync::mpsc::TryRecvError;
 use crate::lpnlib::{ElpsMsg::*, *};
 use crate::setting::MIDI_DEVICE;
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
+use std::sync::mpsc;
+use std::sync::mpsc::TryRecvError;
 use std::sync::{Arc, Mutex};
 
 #[cfg(feature = "raspi")]
@@ -186,9 +186,9 @@ impl MidiRx {
                 return;
             }
             if msg.len() == 2 {
-                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0, 0,));
+                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0, 0));
             } else {
-                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2], 0,));
+                self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2], 0));
             }
         }
         #[cfg(feature = "raspi")]
@@ -266,7 +266,8 @@ impl MidiRx {
                     self.send_msg_to_elapse(ElpsMsg::MIDIRx(
                         self.midi_stream_status,
                         input_data,
-                        0, 0,
+                        0,
+                        0,
                     ));
                     self.midi_stream_status = INVALID;
                     self.midi_stream_data1 = INVALID;
@@ -284,7 +285,10 @@ impl MidiRx {
                                 input_data,
                                 self.keynote,
                             ));
-                            println!("Chord from ExtLoopian: root:{},ctbl:{}", dt1, input_data);
+                            println!(
+                                "Chord from ExtLoopian: root:{},ctbl:{},key:{}",
+                                dt1, input_data, self.keynote
+                            );
                         }
                         self.midi_stream_data1 = INVALID;
                     } else {

@@ -113,7 +113,7 @@ impl Flow {
                     } else {
                         self.flow_note_off(estk_, locate);
                     }
-                } if status & 0xf0 == 0x80 {
+                } else if status & 0xf0 == 0x80 {
                     self.flow_note_off(estk_, locate);
                 }
             } else if locate >= 4 && locate < 92 {
