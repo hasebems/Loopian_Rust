@@ -23,7 +23,7 @@ const BACK_WHITE1: Color32 = Color32::from_rgb(180, 180, 180); // DARKの明る�
 const BACK_WHITE2: Color32 = Color32::from_rgb(128, 128, 128); // DARKの薄暗いグレー
 const _BACK_MAZENTA: Color32 = Color32::from_rgb(180, 160, 180);
 const _BACK_GRAY: Color32 = Color32::from_rgb(48, 48, 48);
-const BACK_DARK_GRAY: Color32 = Color32::from_rgb(32, 32, 32);
+const BACK_DARK_GRAY: Color32 = Color32::from_rgb(64, 64, 64);
 const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
 
 const EI_FONT_SIZE: f32 = 16.0;
@@ -461,7 +461,7 @@ impl Graphic {
         const CURSOR_LOWER_MERGIN: f32 = 6.0;
         //        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
         const CURSOR_TXT_LENGTH: f32 = INPUTTXT_LETTER_WIDTH;
-        const CURSOR_THICKNESS: f32 = 4.0;
+        const CURSOR_THICKNESS: f32 = 8.0;
         const PROMPT_LETTERS: usize = 8; // "000: R1>"
 
         const INPUTTXT_UPPER_MARGIN: f32 = 0.0;
