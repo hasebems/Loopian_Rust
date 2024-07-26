@@ -2,8 +2,10 @@
 //
 // set.path(mine)
 // !l.240727.blk(setting) ← これをそのまま書く
-
 !blk(setting)
+clear
+graph.dark
+graph.ripple
 set.bpm(120)
 set.beat(6/8)
 set.key(G)
@@ -22,6 +24,7 @@ FLOW.{VIaeo/./IVaeo/.}
 sync.all
 
 !blk(l8)
+graph.light
 set.turnnote(0)
 L1
 @1=[ed,s,t,d^,x.].dyn(mf).para().dmp(off)
@@ -31,10 +34,14 @@ L2
 R1!.{VIm/IVm/VIIbm/V/I/IIb/VIb/III7@1}
 
 !blk(l8melo)
+R1
+[el..,si,l,t/d.,la,f../f,ma,ra,d,ra,d/t.,s,+s.,f/]+
+[m..,m,r,m/f,ma,ra,ra,d,ta/d..,la,ta,d/t,d,r,m,x.].dyn(mf)
+set.oct(1)
+
 [el^..,si,l,t/d^.,la,f../f^,ma,ra,d,ra,d/t.,s,+s^.,f/]+
 [m^..,m,r,m/f^,ma,ra,ra,d,ta/d^..,la,ta,d/t^,d,r^,m^^,x.].dyn(mf)
-set.oct(1)
-R2
 
+R2
 [vd^^,m,s,m^,s,d,m^^].dyn(mf)
 @1=[+vm^^,d,t,s,m,d,t^^].dyn(mf)
