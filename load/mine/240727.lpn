@@ -2,6 +2,7 @@
 //
 // set.path(mine)
 // !l.240727.blk(setting) ← これをそのまま書く
+
 !blk(setting)
 clear
 graph.dark
@@ -17,14 +18,17 @@ L12.{VIm/./IVm/.}
 set.oct(-1)
 p
 L2
-[ex,-ldms,-ldms,ex,-ldms,-ldms].dyn(mp).stacc(60)
+@c=-ldms
+[ex,c,c,x,c,c].dyn(mp).stacc(60)
 
 // ORBIT
-FLOW.{VIaeo/./IVaeo/.}
+FLOW.{VIm9/./IVm9/.}
 sync.all
 
+// 上の4小節パターンの最後の小節に合わせること
 !blk(l8)
 graph.light
+graph.voice
 set.turnnote(0)
 L1
 @1=[ed,s,t,d^,x.].dyn(mf).para().dmp(off)
@@ -45,3 +49,8 @@ set.oct(1)
 R2
 [vd^^,m,s,m^,s,d,m^^].dyn(mf)
 @1=[+vm^^,d,t,s,m,d,t^^].dyn(mf)
+
+set.bpm(130)
+set.bpm(150)
+set.bpm(170)
+fine
