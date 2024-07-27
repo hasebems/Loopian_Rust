@@ -20,10 +20,19 @@
     - `./autostart_loopian.sh` とタイプすると、Pianoteq8と同時に立ち上げる
     - 上記シェルスクリプト中では、 `loopian server` とオプションスイッチで `server` をつけている
 
+- 終了方法
+    - Loopian::ORBIT の Joystick を長押しし、コマンドモードにした後 `E` を選んで、再度ボタンを押す
+    - Raspi の内部に取り付けたタクトスイッチを押す（Server用終了ボタン）
+
 - ビルド方法
     - /home/pi/loopian/Loopian_Rust に移動
     - `git pull` でリポジトリから最新バージョンを落としてくる
     - `cargo build --release --features raspi`  ビルドを行う
+
+- 立ち上げ時の原因不明な不具合について
+    - Raspi を立ち上げ、最初に `loopian server` を立ち上げると、謎のMIDI Deviceが出現し、動作不良が起きる
+    - 上記を防ぐため、電源投入後一度 loopian を立ち上げ、終了させる。その後起動すれば正常動作する。
+
 
 ## MIDI仕様
 
@@ -45,7 +54,7 @@
 
 - PC情報が来た場合、/ptn フォルダ内の n.lpn が再生される
     - n.lpn の n は、PC受信の 0-15 の16種類
-- PC = 16 のときは、Loopian::App は終了する
+- PC = 16 のときは、Raspi で動作する Loopian::App は終了する
 - PC = 17 のときは、Loopian::App は、ターミナルによるコマンド入力になる
 
 ## Loopian::AppのMIDIプログラム

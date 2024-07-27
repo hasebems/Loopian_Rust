@@ -36,6 +36,7 @@
 - Input Part は4つ
     - L1, L2, R1, R2
     - Pedal 用隠しパートが一つ
+    - Flow 用隠しパートが一つ
 - MIDI
     - Note On/Off
     - Sustain CC#64
@@ -70,8 +71,8 @@
         - ! がついた場合、log には記述されない
         - !quit/!q : アプリ終了
         - !load/!l : ファイルロード
-        - !wait()    : loadを特定の拍まで止める。lpnファイル内にしか書けない
-        - !section() : loadの特定部分しか読まない。lpnファイル内にしか書けない(未実装)
+        - !msr()    : loadを特定の拍まで止める。lpnファイル内にしか書けない
+        - !blk() : loadの特定部分しか読まない。lpnファイル内にしか書けない
     - part(ALL,L1,L12など) の Command
         - [], {}, sync, clear, flow, endflow
     - ctl の Command
@@ -123,10 +124,7 @@
     - Loopian::ORBIT という専用デバイスを接続
     - Loopian::ORBIT は MIDI Note On/Off を Note Number 0-95 の範囲で出力する
     - ただし、1octaveあたり接点は16と見做すので、実際のノート番号にする際には、3/4 をかける必要がある
-- Loopian の任意のパートを、Loopian::ORBIT に接続することができる
-    - "flow" コマンドを入力すると、そのときの input part のコードに合わせた音に変換して、MIDI OUT を行う
-    - 演奏中であってもなくても、"endflow" で、MIDI Flowは終了する
-    - 演奏中かつ MIDI Flow が指定されているパートは、Part Indicator に Flow と表示される
+- Loopian の FLOW Part にコードを指定すると、Loopianを触った時に、そのコードの構成音しか出なくなる
 - 演奏効果について
     - 発音は16分音符単位にクオンタイズされる
     - コード指定が無ければ、12音のNoteがそのまま鳴る
@@ -271,9 +269,10 @@ NoteObj <|-- WaterRipple
 
 ### 7.Message の流れ
 
-- thread は以下の二つ
+- thread は以下の三つ
     - main() 内の eframe::run_native() : Main thread
     - stack_elapse::ElapseStack::periodic() : Elps thread
+    - MIDI Rx thread
 - 二つのスレッドは、それぞれ別の Message を受信できる
     - スレッド間でメッセージを送る Rust の機能 mspc::channel を使用する
     - mspc::channel は複数のスレッドから、一つのスレッドにメッセージを送れるが、今回は１対１の関係とする
@@ -536,15 +535,13 @@ NoteObj <|-- WaterRipple
 バグ情報、不具合の可能性（アサート情報）
 - stack_elapse.rs の process() 175行目付近のアサートにひっかかるとき
     - next_msr が更新されないと、再生済みにならないので、永久ループに入ってしまう
-- Variation Phrase 絡みでいまひとつな挙動
-    - [] で、Phrase を消すと、Variation も再生されなくなる。それでいい？
-    - @n;Cd というように、前と同じコードでも必ず ; 付きで記述する必要がある
 - { //} による composition loop を設定すると、loop後も1小節だけ、最後のコードが再生されてしまう
 
 もうやらないこと（忘れないように）
 - <d,r,m>*3 で3回繰り返し、みたいな記法はとても便利だが、octaveの指定がおかしくなりやすく、結局変なことになる
 
 次の対応、考えられる新機能
+- 違う音価の音符をタイで結べるようにする
 - Tempo/Beat を打ち込みたい（変拍子、rit打ち込み）
     - COND partを作るより、loadの仕方で対応した方が簡単かも
 - スタカートや音価の操作
