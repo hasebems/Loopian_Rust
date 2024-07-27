@@ -245,7 +245,6 @@ impl PhrLoopManager {
         self.new_loop(prm, estk, pbp);
     }
     fn new_loop(&mut self, prm: (i32, i32), estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        let mut new_loop = false;
         self.first_msr_num = prm.0;
 
         // Phrase の更新
@@ -253,15 +252,13 @@ impl PhrLoopManager {
         let analen = self.new_ana_stock[self.vari_reserve].evts.len();
         if phrlen != 0 && analen != 0 {
             self.gen_new_loop(prm, estk, pbp);
-            new_loop = true;
-        }
-        self.vari_reserve = 0;
-
-        if !new_loop {
-            self.whole_tick = 0;
-            self.max_loop_msr = 0;
+        } else {
+            // 1小節分の値を入れておき、次の小節で new_loop に入るようにする
+            self.whole_tick = prm.1;
+            self.max_loop_msr = 1;
             self.loop_phrase = None;
         }
+        self.vari_reserve = 0;
     }
     fn gen_new_loop(&mut self, prm: (i32, i32), estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新しいデータが来ていれば、新たに Loop Obj.を生成
