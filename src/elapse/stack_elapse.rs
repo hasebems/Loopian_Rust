@@ -150,8 +150,8 @@ impl ElapseStack {
     pub fn get_cmps(&self, part_num: usize) -> Option<Rc<RefCell<CompositionLoop>>> {
         self.part_vec[part_num].borrow().get_cmps()
     }
-    pub fn get_flow(&self, part_num: usize) -> Option<Rc<RefCell<Flow>>> {
-        self.part_vec[part_num].borrow().get_flow()
+    pub fn get_flow(&self) -> Option<Rc<RefCell<Flow>>> {
+        self.part_vec[FLOW_PART].borrow().get_flow()
     }
     pub fn tg(&self) -> &TickGen {
         &self.tg

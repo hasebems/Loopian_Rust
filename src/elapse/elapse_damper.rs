@@ -103,17 +103,18 @@ impl DamperPart {
         self.play_counter = 0;
 
         let mut chord_map = vec![false; beat_num];
+        if let Some(_fl) = estk.get_flow() {
+            chord_map = DamperPart::merge_chord_map(
+                crnt_,
+                estk,
+                FLOW_PART,
+                tick_for_onemsr,
+                tick_for_onebeat,
+                chord_map,
+            );
+        }
         for i in 0..MAX_KBD_PART {
-            if let Some(_fl) = estk.get_flow(i) {
-                chord_map = DamperPart::merge_chord_map(
-                    crnt_,
-                    estk,
-                    i,
-                    tick_for_onemsr,
-                    tick_for_onebeat,
-                    chord_map,
-                );
-            } else if let Some(phr) = estk.get_phr(i) {
+            if let Some(phr) = estk.get_phr(i) {
                 if phr.borrow().get_noped() {
                     // 一パートでも noped 指定があれば
                     chord_map = vec![false; beat_num];
