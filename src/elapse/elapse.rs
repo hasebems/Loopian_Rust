@@ -10,10 +10,10 @@ use super::tickgen::CrntMsrTick;
 pub const _PRI_NONE: u32 = 1000;
 pub const PRI_PART: u32 = 100;
 pub const PRI_CMPS_LOOP: u32 = 200;
+pub const PRI_FLOW: u32 = 250;
 pub const PRI_PHR_LOOP: u32 = 300;
 pub const PRI_NOTE: u32 = 400;
-pub const _PRI_DMPR: u32 = 500;
-pub const PRI_FLOW: u32 = 600;
+pub const PRI_DMPR: u32 = 500;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ElapseType {

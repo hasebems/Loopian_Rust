@@ -514,13 +514,15 @@ impl Elapse for CompositionLoop {
             return;
         }
 
-        //  現在の tick を 1tick 後ろにずらす
+        //  現在の tick を 1tick 後ろにずらす（Play直後以外）
         let mut cm_crnt = crnt_.clone();
-        if cm_crnt.tick == crnt_.tick_for_onemsr - 1 {
-            cm_crnt.msr += 1;
-            cm_crnt.tick = 0;
-        } else {
-            cm_crnt.tick += 1;
+        if cm_crnt.msr != 0 || cm_crnt.tick != 0 {
+            if cm_crnt.tick == crnt_.tick_for_onemsr - 1 {
+                cm_crnt.msr += 1;
+                cm_crnt.tick = 0;
+            } else {
+                cm_crnt.tick += 1;
+            }
         }
 
         //  経過 tick の算出

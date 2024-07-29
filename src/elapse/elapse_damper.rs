@@ -36,7 +36,7 @@ impl DamperPart {
         };
         Rc::new(RefCell::new(Self {
             id: new_id,
-            priority: PRI_PART,
+            priority: PRI_DMPR,
             during_play: false,
             next_msr: 0,
             next_tick: 0,
@@ -222,8 +222,8 @@ impl Elapse for DamperPart {
         self.during_play = false;
     }
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        // 再生 msr/tick に達したらコールされる
         if self.next_tick == 0 {
+            // Damper Event を生成
             let ntick = self.gen_events_in_msr(crnt_, estk);
             if ntick != NO_DATA {
                 self.next_msr = crnt_.msr;
@@ -236,6 +236,7 @@ impl Elapse for DamperPart {
 
         let elapsed_tick = crnt_.tick;
         if elapsed_tick >= self.next_tick {
+            // Damper Event を再生
             let next_tick = self.output_event(crnt_, estk, elapsed_tick);
             let (msr, tick) = self.gen_next_msr_tick(crnt_, next_tick);
             self.next_msr = msr;

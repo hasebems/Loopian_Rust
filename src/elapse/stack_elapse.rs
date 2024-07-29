@@ -236,23 +236,18 @@ impl ElapseStack {
         if self.during_play {
             let mut debcnt = 0;
             loop {
-                // 現measure/tick より前のイベントを持つ obj を拾い出し、リストに入れて返す
-                let playable = self.pick_out_playable(&crnt_);
-                if playable.len() == 0 {
-                    break;
-                } else {
-                    //println!("$$$deb:{},{},{},{:?}",self.limit_for_deb,crnt_.msr,crnt_.tick,self.crnt_time);
-                    assert!(
-                        debcnt < 100,
-                        "Last Elapse:{:?}, Tick:{:?}",
-                        playable.last().unwrap().borrow().id(),
-                        crnt_.tick
-                    );
+                // 現measure/tick より前のイベントを持つ obj を返す
+                if let Some(felps) = self.pick_up_first(&crnt_) {
+                    //let et = felps.borrow().id();
+                    //println!(
+                    //    "@@@<{:>04}> pid: {:?}, sid: {:?}, type: {:?}",
+                    //    crnt_.tick, et.pid, et.sid, et.elps_type
+                    //);
+                    felps.borrow_mut().process(&crnt_, self);
                     debcnt += 1;
-                }
-                // 再生 obj. をリスト順にコール（processの中で、self.elapse_vec がupdateされる可能性がある）
-                for elps in playable {
-                    elps.borrow_mut().process(&crnt_, self);
+                    assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
+                } else {
+                    break;
                 }
             }
             if self.limit_for_deb < debcnt {
@@ -522,7 +517,30 @@ impl ElapseStack {
     //*******************************************************************
     //      Pick out playable
     //*******************************************************************
-    fn pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
+    fn pick_up_first(&self, crnt_: &CrntMsrTick) -> Option<Rc<RefCell<dyn Elapse>>> {
+        let mut first: Option<Rc<RefCell<dyn Elapse>>> = None;
+        for elps in self.elapse_vec.iter() {
+            let (msr, tick) = elps.borrow().next();
+            if (msr == crnt_.msr && tick <= crnt_.tick) || msr < crnt_.msr {
+                // 現在のタイミングより前のイベントがあれば
+                if let Some(felps) = first.clone() {
+                    let (msrx, tickx) = felps.borrow().next();
+                    if (msr < msrx)
+                        || ((msr == msrx) && (tick < tickx))
+                        || ((msr == msrx)
+                            && (tick == tickx)
+                            && (felps.borrow().prio() > elps.borrow().prio()))
+                    {
+                        first = Some(elps.clone());
+                    }
+                } else {
+                    first = Some(elps.clone());
+                }
+            }
+        }
+        first
+    }
+    fn _pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
         let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
         for elps in self.elapse_vec.iter() {
             let (msr, tick) = elps.borrow().next();

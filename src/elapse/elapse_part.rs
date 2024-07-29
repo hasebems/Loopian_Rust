@@ -421,7 +421,6 @@ impl CmpsLoopManager {
                 self.new_data_stock.to_vec(),
                 self.whole_tick,
             );
-            cmplp.borrow_mut().process(crnt_, estk); // 起動後、初回のみ process を呼び、同タイミングの再生を行う
             self.loop_cmps = Some(Rc::clone(&cmplp));
             estk.add_elapse(cmplp);
         } else {
