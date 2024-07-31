@@ -516,20 +516,6 @@ impl Part {
             format!("{}---", self.id.sid + 4)
         }
     }
-    pub fn activate_flow(&mut self, estk: &mut ElapseStack) {
-        if self.flow.is_none() {
-            let fl = Flow::new(0, self.id.sid, self.during_play);
-            fl.borrow_mut().set_keynote(self.keynote);
-            self.flow = Some(Rc::clone(&fl));
-            estk.add_elapse(fl);
-        }
-    }
-    pub fn deactivate_flow(&mut self) {
-        if let Some(fl) = &self.flow {
-            fl.borrow_mut().deactivate();
-            self.flow = None;
-        }
-    }
     pub fn rcv_midi_in(
         &mut self,
         estk_: &mut ElapseStack,

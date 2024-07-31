@@ -205,10 +205,19 @@ impl ElapseStack {
         //  for GUI
         self.update_gui();
 
+        //  新tick計算
+        let mut msrtop = false;
+        let mut crnt_ = CrntMsrTick::default();
+        if self.during_play {
+            msrtop = self.tg.gen_tick(self.crnt_time);
+            crnt_ = self.tg.get_crnt_msr_tick();
+        };
+
         // 小節先頭ならば、beat/bpm のイベント調査
-        if self.during_play && self.tg.gen_tick(self.crnt_time) {
+        if msrtop {
             println!(
-                "<New measure! in stack_elapse> Max Debcnt: {}/{}",
+                "<New measure! in stack_elapse> Msr: {} Max Debcnt: {}/{}",
+                crnt_.msr,
                 self.limit_for_deb,
                 self.elapse_vec.len()
             );
@@ -223,12 +232,6 @@ impl ElapseStack {
             // for GUI(8indicator)
             self.update_gui_at_msrtop();
         }
-        //  新tick計算
-        let crnt_ = if self.during_play {
-            self.tg.get_crnt_msr_tick()
-        } else {
-            CrntMsrTick::default()
-        };
 
         //　MIDI Rx処理
         self.check_rcv_midi(&crnt_);
@@ -310,10 +313,6 @@ impl ElapseStack {
             self.panic();
         } else if msg == MSG_CTRL_RESUME {
             self.start(true);
-        } else if msg >= MSG_CTRL_FLOW && msg < MSG_CTRL_FLOW + 5 {
-            self.flow(vec![msg - MSG_CTRL_FLOW]);
-        } else if msg >= MSG_CTRL_ENDFLOW && msg < MSG_CTRL_ENDFLOW + 5 {
-            self.endflow(vec![msg - MSG_CTRL_ENDFLOW]);
         }
     }
     fn send_msg_to_ui(&self, msg: &str) {
@@ -419,19 +418,6 @@ impl ElapseStack {
             if *pt {
                 self.part_vec[i].borrow_mut().set_sync();
             }
-        }
-    }
-    fn flow(&mut self, msg: Vec<i16>) {
-        let ptnum = msg[0] as usize;
-        if ptnum < MAX_KBD_PART {
-            let pt = self.part_vec[ptnum].clone();
-            pt.borrow_mut().activate_flow(self);
-        }
-    }
-    fn endflow(&mut self, msg: Vec<i16>) {
-        let ptnum = msg[0] as usize;
-        if ptnum < MAX_KBD_PART {
-            self.part_vec[ptnum].borrow_mut().deactivate_flow();
         }
     }
     fn rit(&mut self, msg: [i16; 2]) {

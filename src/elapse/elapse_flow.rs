@@ -87,7 +87,7 @@ impl Flow {
         }))
     }
     /// Flow オブジェクトを消滅させ、MIDI IN による発音を終了
-    pub fn deactivate(&mut self) {
+    pub fn _deactivate(&mut self) {
         // 発音中の音をキャンセル
         self.destroy = true;
         self.during_play = false;

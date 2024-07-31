@@ -227,8 +227,8 @@ pub const MSG_CTRL_STOP: i16 = -15;
 //pub const MSG_CTRL_FERMATA: i16  = -14;
 pub const MSG_CTRL_PANIC: i16 = -13;
 pub const MSG_CTRL_RESUME: i16 = -12;
-pub const MSG_CTRL_FLOW: i16 = 100; // 100-104
-pub const MSG_CTRL_ENDFLOW: i16 = 110;
+pub const _MSG_CTRL_FLOW: i16 = 100; // 100-104
+pub const _MSG_CTRL_ENDFLOW: i16 = 110;
 //  Sync
 // 0-4 : Part0-4
 pub const MSG_SYNC_LFT: i16 = 5;
