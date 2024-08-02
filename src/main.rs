@@ -34,11 +34,11 @@ pub struct LoopianApp {
     input_locate: usize,   //  カーソルの位置
     visible_locate: usize, //  入力部に表示する最初の文字の位置
     input_text: String,
-    file_name_stock: String,
+    file_name_stock: String, // 前回ロードしたファイル名を保持
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history_cnt: usize,
-    start_msr: i32,
-    next_msr_tick: Option<CrntMsrTick>,
+    start_msr: i32,                     // 途中小節から始めた時の小節数
+    next_msr_tick: Option<CrntMsrTick>, //
     cmd: cmdparse::LoopianCmd,
     history: History,
     graph: Graphic,
@@ -203,6 +203,13 @@ impl LoopianApp {
             if (len >= 5 && &itxt[0..5] == "!load") || (len >= 2 && &itxt[0..2] == "!l") {
                 // Load File
                 self.load_file(&itxt[0..]);
+            } else if (len >= 6 && &itxt[0..6] == "!clear")
+                || (len >= 4 && &itxt[0..4] == "!clr")
+                || (len >= 2 && &itxt[0..2] == "!c")
+            {
+                // clear loaded file data
+                self.clear_loaded_data();
+                self.one_command(get_crnt_date_txt(), "clear".to_owned(), true);
             } else {
                 // Normal Input
                 self.one_command(get_crnt_date_txt(), itxt, true);
@@ -292,6 +299,11 @@ impl LoopianApp {
             "Loaded from designated file".to_string(),
         ));
         loaded.1
+    }
+    fn clear_loaded_data(&mut self) {
+        self.start_msr = 0;
+        self.file_name_stock = String::new();
+        self.next_msr_tick = None;
     }
     fn one_command(&mut self, time: String, itxt: String, verbose: bool) {
         // 通常のコマンド入力
