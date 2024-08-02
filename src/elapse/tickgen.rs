@@ -155,6 +155,17 @@ impl TickGen {
             tick_for_onemsr: self.tick_for_onemsr,
         }
     }
+    pub fn set_crnt_msr(&mut self, msr: i32) {
+        self.rit_state = false;
+        self.fermata_state = false;
+        self.origin_time = Instant::now();
+        self.crnt_time = Instant::now();
+        self.bpm_start_time = Instant::now();
+        self.bpm_start_tick = 0;
+        self.crnt_msr = msr;
+        self.beat_start_msr = msr;
+        self.crnt_tick_inmsr = 0;
+    }
     pub fn get_tick(&self) -> (i32, i32, i32, i32) {
         let tick_for_beat = DEFAULT_TICK_FOR_ONE_MEASURE / (self.beat.1 as i32); // 一拍のtick数
         (

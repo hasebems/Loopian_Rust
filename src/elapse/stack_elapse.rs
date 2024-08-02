@@ -221,7 +221,8 @@ impl ElapseStack {
                 self.limit_for_deb,
                 self.elapse_vec.len()
             );
-            //println!("  All Elapse Obj. Num: {:?}", self.elapse_vec.len());
+            #[cfg(feature = "verbose")]
+            println!("  All Elapse Obj. Num: {:?}", self.elapse_vec.len());
             self.limit_for_deb = 0;
             // change beat event
             if self.beat_stock != self.tg.get_beat() {
@@ -241,11 +242,14 @@ impl ElapseStack {
             loop {
                 // 現measure/tick より前のイベントを持つ obj を返す
                 if let Some(felps) = self.pick_up_first(&crnt_) {
-                    //let et = felps.borrow().id();
-                    //println!(
-                    //    "@@@<{:>04}> pid: {:?}, sid: {:?}, type: {:?}",
-                    //    crnt_.tick, et.pid, et.sid, et.elps_type
-                    //);
+                    #[cfg(feature = "verbose")]
+                    {
+                        let et = felps.borrow().id();
+                        println!(
+                            "@@@<{:>04}> pid: {:?}, sid: {:?}, type: {:?}",
+                            crnt_.tick, et.pid, et.sid, et.elps_type
+                        );
+                    }
                     felps.borrow_mut().process(&crnt_, self);
                     debcnt += 1;
                     assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
@@ -452,6 +456,8 @@ impl ElapseStack {
             self.part_vec
                 .iter_mut()
                 .for_each(|x| x.borrow_mut().set_turnnote(msg[1]));
+        } else if msg[0] == MSG_SET_CRNT_MSR {
+            self.tg.set_crnt_msr(msg[1] as i32);
         }
     }
     fn set_beat(&mut self, msg: [i16; 2]) {

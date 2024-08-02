@@ -92,7 +92,12 @@ impl LoopianCmd {
                     let beat = self.get_indicator(2).to_string();
                     let beat_ele: Vec<&str> = beat.split('/').collect();
                     let numerator = beat_ele[0].parse::<i32>().unwrap_or(0); // 拍数
-                    let denomirator = beat_ele[1].parse::<i32>().unwrap_or(0); // 分母
+                    let denomirator = if beat_ele.len() >= 2 {
+                        // 分母
+                        beat_ele[1].parse::<i32>().unwrap_or(1)
+                    } else {
+                        1
+                    };
                     let tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE * numerator / denomirator;
                     let tick = bnum * DEFAULT_TICK_FOR_QUARTER * 4 / denomirator; // 拍から算出したtick
                     return CrntMsrTick {
@@ -110,6 +115,10 @@ impl LoopianCmd {
     }
     pub fn send_quit(&self) {
         self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
+    }
+    pub fn set_measure(&mut self, msr: i16) {
+        self.sndr
+            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_CRNT_MSR, msr]));
     }
     pub fn read_from_ui_hndr(&mut self) -> u8 {
         // Play Thread からの、8indicator表示/PC時のFile Loadメッセージを受信する処理
@@ -342,6 +351,7 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 6 && &input_text[0..6] == "resume" {
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_RESUME));
+            self.during_play = true;
             "Resume.".to_string()
         } else if len >= 6 && &input_text[0..6] == "right1" {
             self.input_part = RIGHT1;

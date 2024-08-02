@@ -17,3 +17,4 @@ rppal = {version = "0.18.0", optional = true }
 
 [features]
 raspi = ["dep:rppal"]
+verbose = []

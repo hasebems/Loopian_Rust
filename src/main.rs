@@ -37,7 +37,6 @@ pub struct LoopianApp {
     file_name_stock: String, // 前回ロードしたファイル名を保持
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history_cnt: usize,
-    start_msr: i32,                     // 途中小節から始めた時の小節数
     next_msr_tick: Option<CrntMsrTick>, //
     cmd: cmdparse::LoopianCmd,
     history: History,
@@ -57,7 +56,6 @@ impl LoopianApp {
             file_name_stock: String::new(),
             scroll_lines: Vec::new(),
             history_cnt: 0,
-            start_msr: 0,
             next_msr_tick: None,
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui, true),
             history: History::new(),
@@ -228,12 +226,10 @@ impl LoopianApp {
             (ltr, num) // blk命令があるか調べ、あった場合は () 内の文字列取得
         };
 
-        self.start_msr = 0;
         let mut blk: Option<String> = None;
         let mut msr: Option<usize> = None;
         let fname;
         let fnx = split_by('.', itxt.to_string());
-        //println!("{:?}",fnx);
         let fn_ele_num = fnx.len();
         if fn_ele_num >= 3 {
             (blk, msr) = blk_exists(fnx[2].clone());
@@ -263,7 +259,7 @@ impl LoopianApp {
             let mut mt: CrntMsrTick = CrntMsrTick::default();
             if let Some(msr_num) = msr {
                 mt.msr = if msr_num > 0 { (msr_num as i32) - 1 } else { 0 };
-                self.start_msr = mt.msr;
+                self.cmd.set_measure(mt.msr as i16);
             }
             self.next_msr_tick = self.get_loaded_text(mt);
         } else {
@@ -279,11 +275,7 @@ impl LoopianApp {
         // from main loop
         if let Some(nmt) = self.next_msr_tick {
             let crnt: CrntMsrTick = self.cmd.get_msr_tick();
-            if nmt.msr != LAST
-                && nmt.msr > 0
-                && nmt.msr - 1 == crnt.msr + self.start_msr
-                && crnt.tick_for_onemsr - crnt.tick < 240
-            {
+            if nmt.msr != LAST && nmt.msr == crnt.msr && crnt.tick_for_onemsr - crnt.tick < 240 {
                 self.next_msr_tick = self.get_loaded_text(nmt);
             }
         }
@@ -301,7 +293,6 @@ impl LoopianApp {
         loaded.1
     }
     fn clear_loaded_data(&mut self) {
-        self.start_msr = 0;
         self.file_name_stock = String::new();
         self.next_msr_tick = None;
     }

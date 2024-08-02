@@ -244,7 +244,8 @@ pub const MSG2_RIT_FERMATA: i16 = 10000;
 pub const MSG_SET_BPM: i16 = 1;
 pub const MSG_SET_KEY: i16 = 2;
 pub const MSG_SET_TURN: i16 = 3;
-//  Set BEAT  : numerator, denomirator
+pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
+                                     //  Set BEAT  : numerator, denomirator
 
 //*******************************************************************
 //          UI Message from Elapse thread
