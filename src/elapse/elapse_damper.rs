@@ -211,11 +211,11 @@ impl Elapse for DamperPart {
         // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {
+    fn start(&mut self, msr: i32) {
         // User による start/play 時にコールされる
         self.during_play = true;
         self.start_flag = true;
-        self.next_msr = 0;
+        self.next_msr = msr;
         self.next_tick = 0;
     }
     fn stop(&mut self, _estk: &mut ElapseStack) {

@@ -536,31 +536,33 @@ impl Part {
     }
 }
 impl Elapse for Part {
+    /// id を得る
     fn id(&self) -> ElapseId {
         self.id
-    } // id を得る
+    }
+    /// priority を得る
     fn prio(&self) -> u32 {
         self.priority
-    } // priority を得る
+    }
+    /// 次に呼ばれる小節番号、Tick数を返す
     fn next(&self) -> (i32, i32) {
-        // 次に呼ばれる小節番号、Tick数を返す
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {
-        // User による start/play 時にコールされる
+    /// User による start/play 時にコールされる msr:開始小節番号
+    fn start(&mut self, msr: i32) {
         self.during_play = true;
         self.start_flag = true;
-        self.next_msr = 0;
+        self.next_msr = msr;
         self.next_tick = 0;
         self.cm.start();
         self.pm.start();
     }
+    /// User による stop 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {
-        // User による stop 時にコールされる
         self.during_play = false;
     }
+    /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        // 再生 msr/tick に達したらコールされる
         let pbp = PartBasicPrm {
             part_num: self.id.sid,
             keynote: self.keynote,
@@ -596,8 +598,8 @@ impl Elapse for Part {
         }
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
+    /// 自クラスが役割を終えた時に True を返す
     fn destroy_me(&self) -> bool {
-        // 自クラスが役割を終えた時に True を返す
         false
     }
 }

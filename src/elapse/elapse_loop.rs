@@ -262,7 +262,7 @@ impl Elapse for PhraseLoop {
     fn next(&self) -> (i32, i32) {
         (self.next_msr, self.next_tick)
     }
-    fn start(&mut self) {} // User による start/play 時にコールされる
+    fn start(&mut self, _msr: i32) {} // User による start/play 時にコールされる
     /// User による stop 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {
         self.set_destroy();
@@ -328,6 +328,7 @@ pub struct CompositionLoop {
     chord_name: String,
     root: i16,
     translation_tbl: i16,
+    just_after_start: bool,
     already_end: bool,
     no_loop: bool,
 
@@ -362,6 +363,7 @@ impl CompositionLoop {
             chord_name: "".to_string(),
             root: NO_ROOT,
             translation_tbl: NO_TABLE,
+            just_after_start: false,
             already_end: false,
             no_loop: false,
 
@@ -498,7 +500,9 @@ impl Elapse for CompositionLoop {
         (self.next_msr, self.next_tick)
     }
     /// User による start/play 時にコールされる
-    fn start(&mut self) {}
+    fn start(&mut self, _msr: i32) {
+        self.just_after_start = true;
+    }
     /// User による stop 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {
         self.set_destroy();
@@ -516,13 +520,15 @@ impl Elapse for CompositionLoop {
 
         //  現在の tick を 1tick 後ろにずらす（Play直後以外）
         let mut cm_crnt = crnt_.clone();
-        if cm_crnt.msr != 0 || cm_crnt.tick != 0 {
+        if !self.just_after_start {
             if cm_crnt.tick == crnt_.tick_for_onemsr - 1 {
                 cm_crnt.msr += 1;
                 cm_crnt.tick = 0;
             } else {
                 cm_crnt.tick += 1;
             }
+        } else {
+            self.just_after_start = false;
         }
 
         //  経過 tick の算出

@@ -46,8 +46,8 @@ pub trait Elapse {
     fn prio(&self) -> u32;
     /// 次に呼ばれる小節番号、Tick数を返す
     fn next(&self) -> (i32, i32);
-    /// User による start/play 時にコールされる
-    fn start(&mut self);
+    /// User による start/play 時にコールされる msr:開始小節番号
+    fn start(&mut self, msr: i32);
     /// User による stop 時にコールされる
     fn stop(&mut self, estk: &mut ElapseStack);
     /// 再生 msr/tick に達したらコールされる

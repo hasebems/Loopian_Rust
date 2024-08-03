@@ -143,7 +143,7 @@ impl Elapse for Note {
         (self.next_msr, self.next_tick)
     }
     /// User による start/play 時にコールされる
-    fn start(&mut self) {}
+    fn start(&mut self, _msr: i32) {}
     /// User による stop 時にコールされる
     fn stop(&mut self, estk: &mut ElapseStack) {
         if self.noteon_started {
@@ -248,7 +248,7 @@ impl Elapse for Damper {
         (self.next_msr, self.next_tick)
     }
     /// User による start/play 時にコールされる
-    fn start(&mut self) {}
+    fn start(&mut self, _msr: i32) {}
     /// User による stop 時にコールされる
     fn stop(&mut self, estk: &mut ElapseStack) {
         if self.damper_started {

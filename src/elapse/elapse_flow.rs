@@ -255,7 +255,7 @@ impl Elapse for Flow {
         (self.next_msr, self.next_tick)
     }
     /// User による start/play 時にコールされる
-    fn start(&mut self) {
+    fn start(&mut self, _msr: i32) {
         self.during_play = true;
     }
     /// User による stop 時にコールされる

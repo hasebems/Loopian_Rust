@@ -247,8 +247,8 @@ impl ElapseStack {
                         let et = felps.borrow().id();
                         let mt = felps.borrow().next();
                         println!(
-                            "@@@<{:>04}> pid: {:?}, sid: {:?}, type: {:?}, nmsr: {:?}, ntick: {:?}",
-                            crnt_.tick, et.pid, et.sid, et.elps_type, mt.0, mt.1
+                            "<{:>02}:{:>04}> pid: {:?}, sid: {:?}, type: {:?}, nmsr: {:?}, ntick: {:?}",
+                            crnt_.msr, crnt_.tick, et.pid, et.sid, et.elps_type, mt.0, mt.1
                         );
                     }
                     felps.borrow_mut().process(&crnt_, self);
@@ -382,11 +382,16 @@ impl ElapseStack {
         }
         self.during_play = true;
         self.tg.start(self.crnt_time, self.bpm_stock, resume);
+        let start_msr = if resume {
+            self.tg.get_crnt_msr_tick().msr
+        } else {
+            0
+        };
         for elps in self.elapse_vec.iter() {
-            elps.borrow_mut().start();
+            elps.borrow_mut().start(start_msr);
         }
         self.send_msg_to_rx(ElpsMsg::Ctrl(MSG_CTRL_START));
-        println!("<Start Playing! in stack_elapse>",);
+        println!("<Start Playing! in stack_elapse> M:{}", start_msr);
     }
     fn panic(&mut self) {
         self.midi_out(0xb0, 0x78, 0x00);
