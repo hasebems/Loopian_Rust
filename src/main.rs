@@ -257,9 +257,10 @@ impl LoopianApp {
             // load_lpn() でファイルを読み込み、
             // get_loaded_text() で一行ずつ Scroll Text に入れていく
             let mut mt: CrntMsrTick = CrntMsrTick::default();
-            if let Some(msr_num) = msr {
-                mt.msr = if msr_num > 0 { (msr_num as i32) - 1 } else { 0 };
-                self.cmd.set_measure(mt.msr as i16);
+            if let Some(msr_num) = msr {    // msr_num: 1origin
+                let msr0ori = if msr_num > 0 { (msr_num as i16) - 1 } else { 0 };
+                self.cmd.set_measure(msr0ori);
+                mt.msr = msr_num as i32;
             }
             self.next_msr_tick = self.get_loaded_text(mt);
         } else {
@@ -275,7 +276,11 @@ impl LoopianApp {
         // from main loop
         if let Some(nmt) = self.next_msr_tick {
             let crnt: CrntMsrTick = self.cmd.get_msr_tick();
-            if nmt.msr != LAST && nmt.msr == crnt.msr && crnt.tick_for_onemsr - crnt.tick < 240 {
+            if nmt.msr != LAST
+                && nmt.msr > 0
+                && nmt.msr - 1 == crnt.msr  // 一つ前の小節(両方とも1origin)
+                && crnt.tick_for_onemsr - crnt.tick < 240
+            {
                 self.next_msr_tick = self.get_loaded_text(nmt);
             }
         }
