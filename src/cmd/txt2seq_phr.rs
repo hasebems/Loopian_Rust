@@ -129,6 +129,7 @@ fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<bool>) {
     for a in ntatrb.iter() {
         if a.contains('A') {
             let beat = a.chars().nth(1).unwrap_or('0').to_digit(10).unwrap_or(0);
+            #[cfg(feature = "verbose")]
             println!("Auftakt Start Beat: {}", beat);
             if beat > 0 {
                 atrb[0] = true;
