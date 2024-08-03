@@ -149,8 +149,9 @@ impl TickGen {
         new_msr
     }
     pub fn get_crnt_msr_tick(&self) -> CrntMsrTick {
+        let msr = if self.crnt_msr < 0 { 0 } else { self.crnt_msr }; // 0以上の値にする
         CrntMsrTick {
-            msr: self.crnt_msr,
+            msr,
             tick: self.crnt_tick_inmsr,
             tick_for_onemsr: self.tick_for_onemsr,
         }
