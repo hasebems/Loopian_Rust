@@ -88,7 +88,8 @@ impl SeqDataStock {
         false
     }
     pub fn change_beat(&mut self, numerator: i16, denomirator: i16) {
-        //println!("beat: {}/{}",numerator, denomirator);
+        #[cfg(feature = "verbose")]
+        println!("beat: {}/{}", numerator, denomirator);
         self.tick_for_onemsr =
             DEFAULT_TICK_FOR_ONE_MEASURE * (numerator as i32) / (denomirator as i32);
         self.tick_for_onebeat = DEFAULT_TICK_FOR_QUARTER * 4 / (denomirator as i32);
@@ -166,6 +167,7 @@ impl SeqDataStock {
             if self.raw_additional.len() != 0 {
                 // last time
                 newraw = self.raw_additional.clone() + &raw[1..];
+                #[cfg(feature = "verbose")]
                 println!("Additional Phrase: {:?}", newraw);
                 self.raw_additional = String::from("");
             }
@@ -255,6 +257,7 @@ impl PhraseDataStock {
         self.cmpl_nt = cmpl.0.clone();
         self.cmpl_ex = cmpl.1.clone();
         self.atrb = cmpl.2.clone();
+        #[cfg(feature = "verbose")]
         println!(
             "complement_phrase: {:?} exp: {:?} atrb: {:?}",
             cmpl.0, cmpl.1, cmpl.2
@@ -287,12 +290,15 @@ impl PhraseDataStock {
 
         // 5.humanized data
         self.phr = beat_filter(&mut self.phr, bpm, tick_for_onemsr);
-        println!("final_phrase: {:?}", self.phr);
-        println!(
-            "whole_tick: {:?} do_loop: {:?}",
-            self.whole_tick, self.do_loop
-        );
-        println!("analyse: {:?}", self.ana);
+        #[cfg(feature = "verbose")]
+        {
+            println!("final_phrase: {:?}", self.phr);
+            println!(
+                "whole_tick: {:?} do_loop: {:?}",
+                self.whole_tick, self.do_loop
+            );
+            println!("analyse: {:?}", self.ana);
+        }
     }
 }
 
@@ -335,6 +341,7 @@ impl CompositionDataStock {
         // 2.complement data
         if let Some(cmpl) = complement_composition(input_text) {
             self.cmpl_cd = cmpl.clone();
+            #[cfg(feature = "verbose")]
             println!("complement_composition: {:?}", cmpl);
             true
         } else {
@@ -356,6 +363,7 @@ impl CompositionDataStock {
         self.chord = rcmb;
         self.do_loop = do_loop;
         self.whole_tick = whole_tick;
+        #[cfg(feature = "verbose")]
         println!(
             "final_composition: {:?} whole_tick: {:?}",
             self.chord, self.whole_tick

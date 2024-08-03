@@ -133,7 +133,6 @@ impl LoopianApp {
                 self.input_text.remove(self.input_locate);
                 self.update_visible_locate();
             }
-            //println!("Key>>{:?}",key);
         } else if key == &Key::ArrowLeft {
             if modifiers.shift {
                 self.input_locate = 0;
@@ -141,7 +140,6 @@ impl LoopianApp {
                 self.input_locate -= 1;
             }
             self.update_visible_locate();
-            //println!("Key>>{:?}",key);
         } else if key == &Key::ArrowRight {
             let maxlen = self.input_text.chars().count();
             if modifiers.shift {
@@ -153,7 +151,6 @@ impl LoopianApp {
             if self.input_locate > maxlen {
                 self.input_locate = maxlen;
             }
-            //println!("Key>>{:?}",key);
         } else if key == &Key::ArrowUp && self.input_locate == 0 {
             if let Some(txt) = self.history.arrow_up() {
                 self.input_text = txt.0;
@@ -257,7 +254,8 @@ impl LoopianApp {
             // load_lpn() でファイルを読み込み、
             // get_loaded_text() で一行ずつ Scroll Text に入れていく
             let mut mt: CrntMsrTick = CrntMsrTick::default();
-            if let Some(msr_num) = msr {    // msr_num: 1origin
+            if let Some(msr_num) = msr {
+                // msr_num: 1origin
                 let msr0ori = if msr_num > 0 { (msr_num as i16) - 1 } else { 0 };
                 self.cmd.set_measure(msr0ori);
                 mt.msr = msr_num as i32;
@@ -445,7 +443,7 @@ fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<String>) {
 }
 fn main() {
     let args: Vec<String> = env::args().collect();
-    println!("{:?}", args);
+    println!("Args: {:?}", args);
     if args.len() > 1 && args[1] == "server" {
         // CUI version
         cui_loop();

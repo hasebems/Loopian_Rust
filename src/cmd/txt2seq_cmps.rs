@@ -201,7 +201,6 @@ fn fill_omitted_chord_data(mut cmps: String) -> Vec<String> {
             cmps += "LPEND";
         }
     }
-    //println!("CHK-CHK-CHK::: {}",cmps);
 
     const NO_CHORD: &str = "X"; // 省略を X で補填
     let mut fill: String = "".to_string(); // cmps に補填して fill に入れる
@@ -414,7 +413,6 @@ fn convert_chord_to_num(mut chord: String) -> (i16, i16) {
     }
 
     //  search chord type from Table
-    //println!("*<Chord: {}, {}, {}>*", root, root_str, kind);
     let table = get_table_num(&kind) + if take_upper { UPPER } else { 0 };
 
     (root, table)

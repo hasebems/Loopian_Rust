@@ -293,7 +293,6 @@ impl Rit for RitLinear {
         let tick_from_rit_starts = self.calc_addup_tick_rit(crnt_time) + self.start_tick;
         if self.tick_for_onemsr * (self.rit_bar + 1) < tick_from_rit_starts {
             // reached last bar, and stop rit.
-            //println!("@@@@:{}",tick_from_rit_starts);
             self.rit_bar = 0;
             self.delta_bpm = 0;
             (tick_from_rit_starts, true)
@@ -469,11 +468,14 @@ impl Rit for RitSigmoid {
         let t1 = (self.se_tick as f32) / (bpm * 8.0);
         self.to_end =
             Duration::from_micros((2.0 * bpm / (bpm + self.end_bpm) * t1 * 1000000.0) as u64);
-        println!("end_bpm:::::{}", self.end_bpm);
-        println!("tick:::::{}", start_tick);
-        println!("se_tick:::::{}", self.se_tick);
-        println!("org_end:::::{}", t1);
-        println!("to_end:::::{:?}", self.to_end);
+        #[cfg(feature = "verbose")]
+        {
+            println!("end_bpm:::::{}", self.end_bpm);
+            println!("tick:::::{}", start_tick);
+            println!("se_tick:::::{}", self.se_tick);
+            println!("org_end:::::{}", t1);
+            println!("to_end:::::{:?}", self.to_end);
+        }
     }
     fn calc_tick_rit(&mut self, crnt_time: Instant) -> (i32, bool) {
         let bunshi = crnt_time - self.start_time;

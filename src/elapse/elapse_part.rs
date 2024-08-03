@@ -364,7 +364,6 @@ impl CmpsLoopManager {
         }
     }
     pub fn rcv_cmp(&mut self, msg: ChordData) {
-        //println!("Composition Msg: {:?}", msg);
         if msg.evts.len() == 0 && msg.whole_tick == 0 {
             self.new_data_stock = Vec::new();
         } else {

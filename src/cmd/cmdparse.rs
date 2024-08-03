@@ -820,6 +820,7 @@ impl LoopianCmd {
             } else if key >= 12 {
                 key -= 12;
             }
+            #[cfg(feature = "verbose")]
             println!("CHANGE KEY: {}, {}", key, oct);
             // phrase 再生成(新oct込み)
             if oct != 0 {

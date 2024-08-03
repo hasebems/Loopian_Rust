@@ -103,7 +103,7 @@ impl Flow {
         locate: u8,
         vel: u8,
     ) {
-        //println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
+        println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
         if !self.during_play {
             // ORBIT 自身の Pattern が鳴っていない時
             if self.translation_tbl != NO_TABLE {
