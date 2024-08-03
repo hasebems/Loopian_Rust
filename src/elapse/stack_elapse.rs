@@ -229,6 +229,7 @@ impl ElapseStack {
                 let tick_for_onemsr =
                     (DEFAULT_TICK_FOR_ONE_MEASURE / self.beat_stock.1) * self.beat_stock.0;
                 self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
+                crnt_ = self.tg.get_crnt_msr_tick(); //再設定
             }
             // for GUI(8indicator)
             self.update_gui_at_msrtop();
