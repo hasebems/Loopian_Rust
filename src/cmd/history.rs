@@ -124,6 +124,9 @@ impl History {
             false
         }
     }
+    /// ファイル内で !msr() を使ったデータにおいて、
+    /// 指定された小節数から、ロードされたデータの再生開始場所を調べ、
+    /// そこから次の !msr() までのデータを返す
     pub fn get_loaded_text(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
         let mut txt_this_time: Vec<String> = Vec::new();
         let mut idx: usize = 0;
@@ -145,7 +148,6 @@ impl History {
             let ctxt = &self.loaded_text[n];
             if ctxt.len() > 5 && ctxt[0..5] == *"!msr(" {
                 let msr = extract_number_from_parentheses(ctxt);
-                println!("YYY{:?}", txt_this_time);
                 return (
                     txt_this_time,
                     Some(CrntMsrTick {

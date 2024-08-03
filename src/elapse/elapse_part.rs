@@ -394,7 +394,7 @@ impl CmpsLoopManager {
     fn new_loop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成
         if self.new_data_stock.len() != 0 {
-            println!("New Composition Loop!");
+            println!("New Composition Loop! M:{:?},T:{:?}", crnt_.msr, crnt_.tick);
             self.first_msr_num = crnt_.msr; // 計測開始の更新
             self.whole_tick = self.whole_tick_stock as i32;
 

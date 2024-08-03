@@ -245,9 +245,10 @@ impl ElapseStack {
                     #[cfg(feature = "verbose")]
                     {
                         let et = felps.borrow().id();
+                        let mt = felps.borrow().next();
                         println!(
-                            "@@@<{:>04}> pid: {:?}, sid: {:?}, type: {:?}",
-                            crnt_.tick, et.pid, et.sid, et.elps_type
+                            "@@@<{:>04}> pid: {:?}, sid: {:?}, type: {:?}, nmsr: {:?}, ntick: {:?}",
+                            crnt_.tick, et.pid, et.sid, et.elps_type, mt.0, mt.1
                         );
                     }
                     felps.borrow_mut().process(&crnt_, self);
