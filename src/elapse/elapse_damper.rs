@@ -162,7 +162,6 @@ impl DamperPart {
         tick_for_onebeat: i32,
         beat_num: usize,
     ) -> (Vec<DmprEvt>, i32) {
-        //println!("@@@@ Damper Map:{:?}",chord_map);
         let mut keep: usize = beat_num;
         let mut dmpr_evt: Vec<DmprEvt> = Vec::new();
         let mut first_tick = NO_DATA;
@@ -196,7 +195,6 @@ impl DamperPart {
                 first_tick = tick as i32
             }
         }
-        //println!("@@@@ Damper Event:{:?}",dmpr_evt);
         (dmpr_evt, first_tick)
     }
 }
