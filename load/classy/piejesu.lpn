@@ -1,5 +1,5 @@
 // Pie Jesu
-//  Voice: HB Steinway D Classical
+//  Voice: NY Dreamy Reverb
 //
 // set.path(classy)
 graph.dark
@@ -7,7 +7,7 @@ graph.ripple
 clear
 set.key(Bb)
 set.beat(4/4)
-set.bpm(60)
+set.bpm(52)
 
 R1
 [em^,s%,m,r^,m^,s%,m,r^].dyn(p)
@@ -71,7 +71,7 @@ L1
 R2
 [-efi,s,m,r,qm,d/et..,d,hr].dyn(p)
 R1
-[qt,s.,fi/s..,fi].dyn(p)
+[qt,s.,fi/s..,fi%].dyn(p)
 L2
 [qr,d.,r/m,-s,hl].dyn(p)
 L1
@@ -89,13 +89,13 @@ L1
 
 !msr(18)
 R2
-[-et^,r%,t,l^,t^,r%,t,l^/t^,r%,t,l^,to//].dyn(p)
+[-et^,r%,t,l^,t^,r%,t,l^/t^,r%,t,l^,ht%//].dyn(p)
 R1
-[-qfi,s,efi..,m/qr,em,fi.hs//].dyn(p)
+[-qfi,s,efi..,m/qr,em,fi.hs%//].dyn(p)
 L2
-[et^,r%,t,l^,t^,r%,t,l^/t^,r%,t,l^,htr//].dyn(p)
+[et^,r%,t,l^,t^,r%,t,l^/t^,r%,t,l^,htr%//].dyn(p)
 L1
-[qr,m,er..,d/qt,ed,r,hs//].dyn(p)
+[qr,m,er..,d/qt,ed,r,hs%//].dyn(p)
 
 !msr(20)
 R2
@@ -139,11 +139,11 @@ L1
 
 !msr(28)
 R2
-[-et^,r,t,l^,t^,r,t,l^/t^,r,t^,l^,t^^,f,r^,m^^//].dyn(p)
+[-et^,r,t,l^,t^,r,t,l^/t^,r,t^,l^,t^^,f^^,r^^,m^^^//].dyn(p)
 R1
-[-er,f,r,m,r,f,r,m/r,f,r,m,r^,+l,f^,s^^//].dyn(p)
+[-er,f,r,m,r,f,r,m/r,f,r,m,r^,+l^,f^,s^^//].dyn(p)
 L2
-[ef,l,f,s,f,l,f,s/f,l,f,s,f,r,+t^,f^^//].dyn(p)
+[ef,l,f,s,f,l,f,s/f,l,f,s,f^,r^,+t^,f^^//].dyn(p)
 L1
 [so/so//].dyn(p)
 
@@ -191,13 +191,13 @@ L1
 [qs,l,s,l/hs,d].dyn(p)
 
 !msr(38)
-set.bpm(52)
+set.bpm(48)
 R2
-[-qs,l,s,l/s,l%,d%%.//].dyn(p)
+[-qs,l,s,l/s,l%,d%.//].dyn(p)
 R1
-[-qt,d,t,d/t,d%,m%%.//].dyn(p)
+[-qt,d,t,d/t,d%,m%.//].dyn(p)
 L2
-[es..,f,s..,f/s..,f%,hs%%//].dyn(p)
+[es..,f,s..,f/s..,f%,hs%//].dyn(p)
 L1
 [em,s%,m,r^,m^,s%,m,r^/m^,s%,m,r%,d%...//].dyn(p)
 
