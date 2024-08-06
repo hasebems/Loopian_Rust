@@ -393,8 +393,9 @@ fn break_up_nt_dur_vel(
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
     let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
 
-    let mut notes_vec: Vec<String> = split_by_by('=', '_', ntext5);
+    let mut notes_vec: Vec<String> = split_by('=', ntext5);
     if notes_vec.len() == 1 {
+        // 複数音の分離
         notes_vec = split_note(notes_vec[0].clone());
     }
 

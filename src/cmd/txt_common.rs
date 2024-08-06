@@ -35,6 +35,7 @@ pub fn split_by(splitter: char, txt: String) -> Vec<String> {
     splited.push((&txt[old_locate..txt.len()]).to_string());
     splited
 }
+#[allow(dead_code)]
 pub fn split_by_by(sp1: char, sp2: char, txt: String) -> Vec<String> {
     let mut splited: Vec<String> = Vec::new();
     let mut old_locate: usize = 0;
