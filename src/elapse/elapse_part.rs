@@ -560,6 +560,11 @@ impl Elapse for Part {
     fn stop(&mut self, _estk: &mut ElapseStack) {
         self.during_play = false;
     }
+    /// 再生データを消去
+    fn clear(&mut self, _estk: &mut ElapseStack) {
+        self.pm = PhrLoopManager::new();
+        self.cm = CmpsLoopManager::new();
+    }
     /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         let pbp = PartBasicPrm {

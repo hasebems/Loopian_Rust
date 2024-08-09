@@ -120,6 +120,10 @@ impl LoopianCmd {
         self.sndr
             .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_CRNT_MSR, msr]));
     }
+    pub fn send_clear(&self) {
+        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_CLEAR));
+        println!("*** All data has been erased at Elapse thread! ***");
+    }
     pub fn read_from_ui_hndr(&mut self) -> u8 {
         // Play Thread からの、8indicator表示/PC時のFile Loadメッセージを受信する処理
         loop {

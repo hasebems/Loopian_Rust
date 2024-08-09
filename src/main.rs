@@ -204,7 +204,7 @@ impl LoopianApp {
             {
                 // clear loaded file data
                 self.clear_loaded_data();
-                self.one_command(get_crnt_date_txt(), "clear".to_owned(), true);
+                self.cmd.send_clear();
             } else {
                 // Normal Input
                 self.one_command(get_crnt_date_txt(), itxt, true);

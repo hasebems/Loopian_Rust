@@ -267,6 +267,19 @@ impl Elapse for PhraseLoop {
     fn stop(&mut self, _estk: &mut ElapseStack) {
         self.set_destroy();
     }
+    /// 再生データを消去
+    fn clear(&mut self, _estk: &mut ElapseStack) {
+        self.phrase = Vec::new();
+        self.analys = Vec::new();
+        self.play_counter = 0;
+        self.next_tick_in_phrase = 0;
+        self.last_note = NO_NOTE as i16;
+        self.same_note_stuck = Vec::new();
+        self.same_note_msr = 0;
+        self.same_note_tick = 0;
+        self.next_msr = 0;
+        self.next_tick = 0;
+    }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     /// 自クラスが役割を終えた時に True を返す
     fn destroy_me(&self) -> bool {
@@ -506,6 +519,19 @@ impl Elapse for CompositionLoop {
     /// User による stop 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {
         self.set_destroy();
+    }
+    /// 再生データを消去
+    fn clear(&mut self, _estk: &mut ElapseStack) {
+        CompositionLoop::new(
+            self.id.sid,
+            self.id.pid,
+            self.keynote,
+            self.first_msr_num,
+            Vec::new(),
+            0,
+        );
+        self.next_msr = FULL;
+        self.destroy = true;
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     /// 自クラスが役割を終えた時に True を返す

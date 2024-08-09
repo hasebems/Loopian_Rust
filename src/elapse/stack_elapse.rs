@@ -319,6 +319,8 @@ impl ElapseStack {
             self.panic();
         } else if msg == MSG_CTRL_RESUME {
             self.start(true);
+        } else if msg == MSG_CTRL_CLEAR {
+            self.clear_elapse();
         }
     }
     fn send_msg_to_ui(&self, msg: &str) {
@@ -408,6 +410,12 @@ impl ElapseStack {
         }
         // destroy flag の立った elapse obj.を回収
         self.destroy_finished_elps();
+    }
+    fn clear_elapse(&mut self) {
+        let clear_vec = self.elapse_vec.to_vec();
+        for elps in clear_vec.iter() {
+            elps.borrow_mut().clear(self);
+        }
     }
     //fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}
     fn sync(&mut self, part: i16) {

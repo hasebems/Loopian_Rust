@@ -150,6 +150,13 @@ impl Elapse for Note {
             self.note_off(estk);
         }
     }
+    /// 再生データを消去
+    fn clear(&mut self, estk: &mut ElapseStack) {
+        if self.noteon_started {
+            self.note_off(estk);
+        }
+        self.destroy = true;
+    }
     /// 再生処理 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick)
@@ -254,6 +261,13 @@ impl Elapse for Damper {
         if self.damper_started {
             self.damper_off(estk);
         }
+    }
+    /// 再生データを消去
+    fn clear(&mut self, estk: &mut ElapseStack) {
+        if self.damper_started {
+            self.damper_off(estk);
+        }
+        self.destroy = true;
     }
     /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {

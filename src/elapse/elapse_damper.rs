@@ -220,6 +220,12 @@ impl Elapse for DamperPart {
         // User による stop 時にコールされる
         self.during_play = false;
     }
+    /// 再生データを消去
+    fn clear(&mut self, _estk: &mut ElapseStack) {
+        self.evt = Vec::new();
+        self.next_msr = 0;
+        self.next_tick = 0;
+    }
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         if self.next_tick == 0 {
             // Damper Event を生成
