@@ -14,11 +14,10 @@ L1
 {VIaeo/././IVaeo}
 p
 @1=[ql..,t]
-{VIaeo/././IVaeo:@1}
+{VIaeo/././IVaeo@1}
 
 //ベースパターン
 L2
-[el,+m,f,m,s,m,d.]
 [el^,+m,f,m,s,m%,d%.].dyn(mp)
 
 //L1の音量を落とす
