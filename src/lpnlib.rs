@@ -14,7 +14,7 @@ pub const END_OF_DATA: i32 = -1;
 pub const NO_DATA: i32 = -1;
 pub const FULL: i32 = 10000;
 pub const _ALL_PART: i16 = -1;
-pub const KEEP: i32 = 0;
+pub const _KEEP: i32 = 0;
 pub const LAST: i32 = 10000;
 
 pub const NO_ROOT: i16 = 0; // root = 1:Ib,2:I,3:I# ...
@@ -53,6 +53,8 @@ pub const REST: u8 = 254;
 pub const RPT_HEAD: u8 = 253; // Head of Repeat
 pub const NO_MIDI_VALUE: u8 = 128;
 pub const DEFAULT_TURNNOTE: i16 = 5;
+pub const VEL_UP: i32 = 10;
+pub const VEL_DOWN: i32 = -20;
 
 //*******************************************************************
 //          UI->ELPS Message
@@ -227,7 +229,7 @@ pub const MSG_CTRL_STOP: i16 = -15;
 //pub const MSG_CTRL_FERMATA: i16  = -14;
 pub const MSG_CTRL_PANIC: i16 = -13;
 pub const MSG_CTRL_RESUME: i16 = -12;
-pub const MSG_CTRL_CLEAR:  i16 = -11;
+pub const MSG_CTRL_CLEAR: i16 = -11;
 pub const _MSG_CTRL_FLOW: i16 = 100; // 100-104
 pub const _MSG_CTRL_ENDFLOW: i16 = 110;
 //  Sync

@@ -53,25 +53,19 @@ pub fn complement_phrase(
     return (ntvec, nevec, ntatrb);
 }
 fn divide_brackets(input_text: String) -> (String, String) {
-    let mut note_info: Vec<String> = Vec::new();
+    let mut ninfo = "".to_string();
+    let mut minfo = "".to_string();
 
-    // [] のセットを抜き出し、中身と、その後の文字列を note_info に入れる
+    // 中身と、その後の文字列を ninfo/minfo に入れる
     let mut isx: &str = &input_text;
     if let Some(n2) = isx.find(']') {
-        note_info.push(isx[1..n2].to_string());
+        ninfo = isx[1..n2].to_string();
         isx = &isx[n2 + 1..];
         if isx.len() != 0 {
-            note_info.push(isx.to_string());
+            minfo = isx.to_string();
         }
     }
-
-    let bracket_num = note_info.len();
-    if bracket_num == 1 {
-        note_info.push("".to_string());
-    } else if bracket_num == 0 {
-        return ("".to_string(), "".to_string());
-    }
-    return (note_info[0].clone(), note_info[1].clone());
+    return (ninfo, minfo);
 }
 fn divide_arrow_bracket(nt: String) -> String {
     let mut one_arrow_flg = false;
@@ -252,7 +246,7 @@ pub fn recombine_to_internal_format(
     let (exp_vel, _exp_others) = get_dyn_info(expvec.clone());
     let mut read_ptr = 0;
     let mut last_nt: i32 = 0;
-    let mut tick: i32 = 0;
+    let mut crnt_tick: i32 = 0;
     let mut msr: i32 = 1;
     let mut base_dur: i32 = DEFAULT_TICK_FOR_QUARTER;
     let mut rcmb = Vec::new();
@@ -262,26 +256,27 @@ pub fn recombine_to_internal_format(
     while read_ptr < max_read_ptr {
         let nt_origin = ntvec[read_ptr].clone();
         let (note_text, trns) = extract_trans_info(nt_origin);
+        let next_msr_tick = tick_for_onemsr * msr;
+        let rest_tick = next_msr_tick - crnt_tick;
 
-        let (notes, mes_end, dur_cnt, diff_vel, bdur, lnt) =
-            break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, imd);
+        let (notes, mes_end, ndur, diff_vel, bdur, lnt) =
+            break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, rest_tick, imd);
         base_dur = bdur;
         last_nt = lnt; // 次回の音程の上下判断のため
 
         assert!(notes.len() != 0);
         if notes[0] == RPT_HEAD {
             // 繰り返し指定があったことを示すイベント
-            let nt_data = PhrEvt::gen_repeat(tick as i16);
+            let nt_data = PhrEvt::gen_repeat(crnt_tick as i16);
             rcmb.push(nt_data);
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else {
             // NO_NOTE 含む（タイの時に使用）
-            let next_msr_tick = tick_for_onemsr * msr;
-            if tick < next_msr_tick {
+            if crnt_tick < next_msr_tick {
                 // duration
-                let mut note_dur = get_real_dur(base_dur, dur_cnt, next_msr_tick - tick);
-                if next_msr_tick - tick < note_dur {
-                    note_dur = next_msr_tick - tick; // 小節線を超えたら、音価をそこでリミット
+                let mut note_dur = ndur;
+                if next_msr_tick - crnt_tick < note_dur {
+                    note_dur = next_msr_tick - crnt_tick; // 小節線を超えたら、音価をそこでリミット
                 }
 
                 // velocity
@@ -293,12 +288,20 @@ pub fn recombine_to_internal_format(
                 }
 
                 // add to recombined data
-                rcmb = add_note(rcmb, tick, notes, note_dur, last_vel as i16, mes_top, trns);
-                tick += note_dur;
+                rcmb = add_note(
+                    rcmb,
+                    crnt_tick,
+                    notes,
+                    note_dur,
+                    last_vel as i16,
+                    mes_top,
+                    trns,
+                );
+                crnt_tick += note_dur;
             }
             if mes_end {
                 // 小節線があった場合
-                tick = next_msr_tick;
+                crnt_tick = next_msr_tick;
                 msr += 1;
                 mes_top = true;
             } else {
@@ -307,7 +310,7 @@ pub fn recombine_to_internal_format(
         }
         read_ptr += 1; // out from repeat
     }
-    (tick, do_loop, rcmb)
+    (crnt_tick, do_loop, rcmb)
 }
 fn judge_no_loop(ntvec: &Vec<String>) -> (usize, bool) {
     let mut max_read_ptr = ntvec.len();
@@ -349,14 +352,22 @@ fn extract_trans_info(origin: String) -> (String, i16) {
         (origin, TRNS_COM)
     }
 }
+/// カンマで区切られた単位の文字列を解析し、ノート番号、tick、velocity を確定する
 fn break_up_nt_dur_vel(
-    note_text: String,
-    base_note: i32,
-    bdur: i32,
-    last_nt: i32,
-    imd: InputMode,
+    note_text: String, // 分析対象のテキスト
+    base_note: i32,    // そのパートの基準音
+    bdur: i32,         // 現在の基準音価
+    last_nt: i32,      // 前回の音程
+    rest_tick: i32,    // 小節の残りtick
+    imd: InputMode,    // input mode
 ) -> (Vec<u8>, bool, i32, i32, i32, i32)
-//(notes, mes_end, dur_cnt, diff_vel, base_dur, last_nt)
+/*( notes,      // 発音ノート
+    mes_end,    // 小節が終わったか
+    dur_cnt,    // 音符のtick数
+    diff_vel,   // 音量情報
+    base_dur,   // 基準音価 -> bdur
+    last_nt     // 次回判定用の今回の音程 -> last_nt
+  )*/
 {
     let first_ltr = note_text.chars().nth(0).unwrap_or(' ');
     if first_ltr == '$' {
@@ -364,7 +375,7 @@ fn break_up_nt_dur_vel(
         return (vec![RPT_HEAD], false, 0, 0, bdur, last_nt);
     }
 
-    //  小節線のチェック
+    //  文字列の最後が小節線か
     let mut mes_end = false;
     let mut ntext1 = note_text.clone();
     if note_text.chars().last().unwrap_or(' ') == '|' {
@@ -373,23 +384,11 @@ fn break_up_nt_dur_vel(
         ntext1.pop();
     }
 
-    //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、duration/velocity の解析を終えたら文字列を再結合
-    let mut oct = "".to_string();
-    loop {
-        let c = ntext1.chars().nth(0).unwrap_or(' ');
-        if c == '+' {
-            oct.push('+');
-            ntext1.remove(0);
-        } else if c == '-' {
-            oct.push('-');
-            ntext1.remove(0);
-        } else {
-            break;
-        }
-    }
+    //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、解析を終えたら文字列を再結合
+    let oct = extract_top_pm(&mut ntext1.clone());
 
     //  duration 情報、 Velocity 情報の抽出
-    let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur);
+    let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur, rest_tick);
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
     let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
 
@@ -402,6 +401,7 @@ fn break_up_nt_dur_vel(
     let mut notes: Vec<u8> = Vec::new();
     let mut next_last_nt = last_nt;
     let notes_num = notes_vec.len();
+
     if notes_num == 0 {
         notes.push(NO_NOTE);
     } else if notes_num == 1 {
@@ -425,7 +425,25 @@ fn break_up_nt_dur_vel(
             notes.push(base_pitch);
         }
     }
+
     (notes, mes_end, dur_cnt, diff_vel, base_dur, next_last_nt)
+}
+/// 文字列の冒頭にあるプラスマイナスを抽出
+fn extract_top_pm(ntext: &mut String) -> String {
+    let mut oct = "".to_string();
+    loop {
+        let c = ntext.chars().nth(0).unwrap_or(' ');
+        if c == '+' {
+            oct.push('+');
+            ntext.remove(0);
+        } else if c == '-' {
+            oct.push('-');
+            ntext.remove(0);
+        } else {
+            break;
+        }
+    }
+    oct
 }
 fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
     let mut base_pitch = doremi;
@@ -435,11 +453,47 @@ fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
     }
     return base_pitch as u8;
 }
-fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
+/// 音価情報を生成
+fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32) {
+    // 階名指定が無く、小節冒頭のタイの場合の音価を判定
+    let (no_nt, ret) = detect_measure_top_tie(ntext1.clone(), bdur, rest_tick);
+    if no_nt {
+        return ret;
+    }
+
+    // 音価伸ばしを解析し、dur_cnt を確定
+    let (ntext1, dur_cnt) = extract_o_dot(ntext1.clone());
+
+    // タイを探して追加する tick を算出
+    let mut tie_dur: i32 = 0;
+    let mut ntext2 = ntext1.clone();
+    if let Some(num) = ntext1.find('_') {
+        ntext2 = ntext1[0..num].to_string();
+        let tie = ntext1[num + 1..].to_string();
+        let mut _ntt: String = "".to_string();
+        if tie.len() > 0 {
+            (_ntt, tie_dur) = decide_dur(tie, bdur);
+        }
+    }
+
+    //  基準音価を解析し、base_dur を確定
+    let mut nt: String = ntext2.clone();
+    let mut base_dur: i32 = bdur;
+    if ntext2.len() > 0 {
+        (nt, base_dur) = decide_dur(ntext2, bdur);
+    }
+    let tick = base_dur * dur_cnt + tie_dur;
+
+    if tie_dur != 0 {
+        base_dur = tie_dur
+    }
+    (nt, base_dur, tick)
+}
+fn detect_measure_top_tie(nt: String, bdur: i32, rest_tick: i32) -> (bool, (String, i32, i32)) {
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
     let first_ltr = nt.chars().nth(0).unwrap_or(' ');
     if first_ltr == 'o' {
-        return ("".to_string(), bdur, LAST);
+        return (true, ("".to_string(), bdur, rest_tick));
     } else if first_ltr == '.' {
         let mut dot_cnt = 0;
         for ltr in nt.chars() {
@@ -447,10 +501,19 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
                 dot_cnt += 1;
             }
         }
-        return ("".to_string(), bdur, dot_cnt);
+        return (true, ("".to_string(), bdur, bdur * dot_cnt));
+    } else if first_ltr == '_' {
+        let mut tie_dur: i32 = 0;
+        let tie = nt[1..].to_string();
+        let mut _ntt: String = "".to_string();
+        if tie.len() > 0 {
+            (_ntt, tie_dur) = decide_dur(tie, 0);
+        }
+        return (true, ("".to_string(), tie_dur, tie_dur));
     }
-
-    //  タイなどの音価を解析し、dur_cnt を確定
+    return (false, (nt, bdur, rest_tick));
+}
+fn extract_o_dot(nt: String) -> (String, i32) {
     let mut ntext = nt;
     let mut dur_cnt: i32 = 1;
     let txtlen = ntext.len();
@@ -474,17 +537,9 @@ fn gen_dur_info(nt: String, bdur: i32) -> (String, i32, i32) {
             }
         }
     }
-
-    //  基準音価を解析し、base_dur を確定
-    let mut base_dur = bdur;
-    let txtlen = ntext.len();
-    if txtlen > 0 {
-        (ntext, base_dur) = decide_dur(ntext, base_dur);
-    }
-
-    (ntext, base_dur, dur_cnt)
+    (ntext, dur_cnt)
 }
-fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
+fn decide_dur(ntext: String, mut base_dur: i32) -> (String, i32) {
     let mut triplet: i16 = 0;
     let mut idx = 1;
     let mut fst_ltr = ntext.chars().nth(0).unwrap_or(' ');
@@ -529,8 +584,8 @@ fn decide_dur(mut ntext: String, mut base_dur: i32) -> (String, i32) {
         base_dur = (base_dur * 2) / triplet as i32;
         idx = 2;
     }
-    ntext = ntext[idx..].to_string();
-    (ntext, base_dur)
+    let nt = ntext[idx..].to_string();
+    (nt, base_dur)
 }
 fn gen_diff_vel(nt: String) -> (String, i32) {
     let mut ntext = nt;
@@ -541,7 +596,7 @@ fn gen_diff_vel(nt: String) -> (String, i32) {
         ' '
     };
     while last_ltr == '^' {
-        diff_vel += 10;
+        diff_vel += VEL_UP;
         ntext.pop();
         last_ltr = if ntext.len() > 0 {
             ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
@@ -550,7 +605,7 @@ fn gen_diff_vel(nt: String) -> (String, i32) {
         };
     }
     while last_ltr == '%' {
-        diff_vel -= 20;
+        diff_vel += VEL_DOWN;
         ntext.pop();
         last_ltr = if ntext.len() > 0 {
             ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
@@ -559,15 +614,6 @@ fn gen_diff_vel(nt: String) -> (String, i32) {
         };
     }
     (ntext, diff_vel)
-}
-fn get_real_dur(base_dur: i32, dur_cnt: i32, rest_tick: i32) -> i32 {
-    if dur_cnt == LAST {
-        rest_tick
-    } else if base_dur == KEEP {
-        base_dur * dur_cnt
-    } else {
-        base_dur * dur_cnt
-    }
 }
 fn add_note(
     rcmb: Vec<PhrEvt>,
