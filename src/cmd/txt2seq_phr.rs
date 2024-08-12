@@ -385,7 +385,7 @@ fn break_up_nt_dur_vel(
     }
 
     //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、解析を終えたら文字列を再結合
-    let oct = extract_top_pm(&mut ntext1.clone());
+    let oct = extract_top_pm(&mut ntext1);
 
     //  duration 情報、 Velocity 情報の抽出
     let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur, rest_tick);
