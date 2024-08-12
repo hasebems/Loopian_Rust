@@ -527,6 +527,7 @@ NoteObj <|-- WaterRipple
 - load 時の、blk機能(6/5)
 - flow の仕様変更 : play 中でなくても、音は出る（クロマティック＆テンポ同期しない）(6/12)
 - !load.ファイル名、の後、ファイル名を覚えていて、!l のみでも再生可能とした。また !load.msr(n) で途中再生も可能とした (7/20)
+- _アンダーバーによるタイ記述方法導入(8/11)
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
