@@ -1,0 +1,43 @@
+//  Voice: NY Steinway D Blues
+//
+// set.path(mine)
+// !l.240710.blk(setting) ← これをそのまま書く
+
+!blk(setting)
+clear
+graph.dark
+graph.ripple
+set.beat(7/8)
+set.bpm(144)
+set.key(C)
+R2
+
+@c=+d+di+r++r
+[ec,c,c,c,c,c,c]
+p
+[ec^^^,c,c,c^,c%,c^,c%].dyn(p).stacc(60)
+
+L1
+[el^^,+m%,s%%,t^,s,+m^,-s%].dyn(mf).dmp(off)
+
+{VIaeo/./IIaeo/.}
+
+FLOW.{VIaeo/./IIaeo/.}
+sync.all
+
+// ORBIT
+R1
+[es^^,m,r,t^,l%,+m^,t%].dyn(mf).stacc(60)
+set.oct(2)
+
+@1=[el^^,s,r,d^,l%,+m^,d%].dyn(mf).stacc(60)
+{X/./@1/@1}
+
+[es^^,vm,ma,er,t^,l%,+m^,t%].dyn(mf).stacc(60)
+@1=[el^^,vs,fi,er,d^,l%,+m^,d%].dyn(mf).stacc(60)
+
+[es^^,vm,ma,er,t^,l%,+vm^,ma,t%].dyn(mf).stacc(60)
+@1=[el^^,vs,fi,er,d^,l%,+vm^,ma,d%].dyn(mf).stacc(60)
+
+fermata
+fine

@@ -1,0 +1,64 @@
+// 240622
+//  Voice: NY Steinway D Pop
+//
+// set.path(mine)
+// !l.240622.blk(setting) ← これをそのまま書く
+!blk(setting)
+clear
+graph.dark
+graph.voice
+set.beat(4/4)
+set.key(Gb)
+set.bpm(102)
+R1
+
+[emst^,mst,msl,mst%,x...].dyn(mp)
+{O}
+p
+@1=[erfl^,rfl,rfs,rfl%,x...].dyn(mp)
+{O/./O:@1/.}
+set.oct(-1)
+
+// Chordのタイミング注意！
+L1
+{IM9/./IIm7!/.}
+[q'd^,+es,ed%.../...,l%,qd^,s].dyn(mp)
+
+R2
+[q'm,t,es./.,q'l,qm,s].dyn(mf)
+{IM96/./IIm9!/.}
+
+@1=[q'f,r,el./.,q'd,ql,r].dyn(mf)
+{IM96/./IIm9:@1/IIm9}
+
+// !l.240622.blk(keyup)
+!blk(keyup)
+set.key(A)
+graph.light
+
+// ミレミ、ティラティ、ソミソ、ラソラ、みそ
+// ファミファ、レドレ、ラファラ、ドラド、られ
+[em^,r,m,t^,l,t,s^,m/s,l^,s,l,qm,s].dyn(mf)
+@1=[ef^,m,f,r^,d,r,l^,f/l,d^,l,d,ql,r].dyn(mf)
+
+// !l.240622.blk(keydown)
+!blk(keydown)
+set.bpm(96)
+set.key(Gb)
+graph.dark
+[q'm,t,es./.,q'l,qm,s].dyn(mf)
+@1=[q'f,r,el./.,q'd,ql,r].dyn(mf)
+
+R1.clear
+L2
+
+// 入力の瞬間は、ループの１小節後！
+// !l.240622.blk(canon)
+!blk(canon)
+[q'm,t,es./.,q'l,qm,s].dyn(mp)
+@1=[q'f,r,el./.,q'd,ql,r].dyn(mp)
+{IM96/./IIm9:@1/IIm9}
+
+L1.clear
+
+rit.b2/fermata
