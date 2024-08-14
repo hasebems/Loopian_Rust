@@ -365,6 +365,9 @@ impl LoopianCmd {
             "Changed current part to right2.".to_string()
         } else if len >= 4 && &input_text[0..4] == "rit." {
             self.set_rit(input_text)
+        } else if len >= 4 && &input_text[0..9] == "reconnect" {
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
+            "Send reconnect".to_string()
         } else {
             "what?".to_string()
         }

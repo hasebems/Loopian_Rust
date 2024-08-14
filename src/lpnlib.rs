@@ -229,7 +229,8 @@ pub const MSG_CTRL_STOP: i16 = -15;
 //pub const MSG_CTRL_FERMATA: i16  = -14;
 pub const MSG_CTRL_PANIC: i16 = -13;
 pub const MSG_CTRL_RESUME: i16 = -12;
-pub const MSG_CTRL_CLEAR: i16 = -11;
+pub const MSG_CTRL_CLEAR: i16 = -11;    // Elapse Objectの内容をクリア
+pub const MSG_CTRL_MIDI_RECONNECT: i16 = -10;
 pub const _MSG_CTRL_FLOW: i16 = 100; // 100-104
 pub const _MSG_CTRL_ENDFLOW: i16 = 110;
 //  Sync

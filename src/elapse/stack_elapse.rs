@@ -321,6 +321,8 @@ impl ElapseStack {
             self.start(true);
         } else if msg == MSG_CTRL_CLEAR {
             self.clear_elapse();
+        } else if msg == MSG_CTRL_MIDI_RECONNECT {
+            self.reconnect();
         }
     }
     fn send_msg_to_ui(&self, msg: &str) {
@@ -415,6 +417,16 @@ impl ElapseStack {
         let clear_vec = self.elapse_vec.to_vec();
         for elps in clear_vec.iter() {
             elps.borrow_mut().clear(self);
+        }
+    }
+    fn reconnect(&mut self) {
+        match MidiTx::connect() {
+            Err(e) => {
+                println!("{}", e);
+            }
+            Ok(_o) => {
+                self.send_msg_to_rx(Ctrl(MSG_CTRL_MIDI_RECONNECT));
+            }
         }
     }
     //fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}

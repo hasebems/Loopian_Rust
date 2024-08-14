@@ -68,21 +68,30 @@ impl MidiRx {
             #[cfg(feature = "raspi")]
             uart: None,
         };
-
+        if this.set_connect() {
+            Some(this)
+        } else {
+            None
+        }
+    }
+    fn set_connect(&mut self) -> bool {
+        if self.mdr_buf.is_some() {
+            self.mdr_buf = None;
+        }
         let mdr_buf = Arc::new(Mutex::new(MidiRxBuf::new()));
-        match this.connect(Arc::clone(&mdr_buf)) {
+        match self.connect(Arc::clone(&mdr_buf)) {
             Ok(()) => {
                 println!("MIDI receive Connection OK.");
-                this.mdr_buf = Some(mdr_buf);
-                return Some(this);
+                self.mdr_buf = Some(mdr_buf);
+                return true;
             }
             Err(err) => {
                 println!("{}", err);
-                return None;
+                return false;
             }
         };
     }
-    pub fn connect(&mut self, mdr_buf: Arc<Mutex<MidiRxBuf>>) -> Result<(), &str> {
+    fn connect(&mut self, mdr_buf: Arc<Mutex<MidiRxBuf>>) -> Result<(), &str> {
         let mut midi_in = MidiInput::new("midir reading input").unwrap();
         midi_in.ignore(Ignore::None);
         let in_ports = midi_in.ports();
@@ -139,7 +148,7 @@ impl MidiRx {
         }
         Ok(())
     }
-    pub fn send_msg_to_elapse(&self, msg: ElpsMsg) {
+    fn send_msg_to_elapse(&self, msg: ElpsMsg) {
         match self.tx_hndr.send(msg) {
             Err(e) => println!("Something happened on MPSC from MIDIRx! {}", e),
             _ => {}
@@ -158,6 +167,8 @@ impl MidiRx {
                             if let Ok(mut mb) = self.mdr_buf.as_ref().unwrap().lock() {
                                 mb.flush(); // MIDI In Buffer をクリア
                             }
+                        } else if m == MSG_CTRL_MIDI_RECONNECT {
+                            let _b = self.set_connect();
                         }
                     }
                     _ => (),
