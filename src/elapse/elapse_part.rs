@@ -580,7 +580,7 @@ impl Elapse for Part {
         } else if self.next_tick != 0 {
             // 小節最後のみ
             let cm_crnt = CrntMsrTick {
-                msr: crnt_.msr + 1,
+                msr: self.next_msr + 1,
                 tick: 0,
                 tick_for_onemsr: crnt_.tick_for_onemsr,
             };
