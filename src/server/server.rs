@@ -33,8 +33,7 @@ pub fn cui_loop() {
     #[cfg(feature = "raspi")]
     let pinq = get_rasp_pin(26);
     #[cfg(feature = "raspi")]
-    let pinr = get_rasp_pin(19);
-    //let _ = srv.cmd.set_and_responce("flow");
+    let pinr = get_rasp_pin(20);
     loop {
         if srv.cui_mode {
             // 標準入力から文字列を String で取得
