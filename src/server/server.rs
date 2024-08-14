@@ -34,7 +34,7 @@ pub fn cui_loop() {
     let pinq = get_rasp_pin(26);
     #[cfg(feature = "raspi")]
     let pinr = get_rasp_pin(19);
-    let _ = srv.cmd.set_and_responce("flow");
+    //let _ = srv.cmd.set_and_responce("flow");
     loop {
         if srv.cui_mode {
             // 標準入力から文字列を String で取得
@@ -68,7 +68,7 @@ pub fn cui_loop() {
                 if let Ok(ref pin) = pinr {
                     if pin.read() == Level::Low {
                         // reconnect
-                        self.cmd.send_reconnect();
+                        srv.cmd.send_reconnect();
                     }
                 }
             }
