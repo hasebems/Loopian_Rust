@@ -124,6 +124,10 @@ impl LoopianCmd {
         self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_CLEAR));
         println!("*** All data has been erased at Elapse thread! ***");
     }
+    pub fn send_reconnect(&self) {
+        self.sndr
+            .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
+    }
     pub fn read_from_ui_hndr(&mut self) -> u8 {
         // Play Thread からの、8indicator表示/PC時のFile Loadメッセージを受信する処理
         loop {
@@ -366,7 +370,8 @@ impl LoopianCmd {
         } else if len >= 4 && &input_text[0..4] == "rit." {
             self.set_rit(input_text)
         } else if len >= 4 && &input_text[0..9] == "reconnect" {
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
             "Send reconnect".to_string()
         } else {
             "what?".to_string()
