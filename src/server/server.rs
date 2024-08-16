@@ -17,6 +17,7 @@ pub struct LoopianServer {
     //input_text: String,
     cmd: cmdparse::LoopianCmd,
     cui_mode: bool,
+    reconnect_sw: bool,
 }
 impl LoopianServer {
     pub fn new() -> Self {
@@ -25,6 +26,7 @@ impl LoopianServer {
             //input_text: "".to_string(),
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui, false),
             cui_mode: false,
+            reconnect_sw: false,
         }
     }
 }
@@ -66,9 +68,13 @@ pub fn cui_loop() {
                     }
                 }
                 if let Ok(ref pin) = pinr {
-                    if pin.read() == Level::Low {
+                    let lvl = pin.read();
+                    if lvl == Level::Low && !self.reconnect_sw {
                         // reconnect
                         srv.cmd.send_reconnect();
+                        self.reconnect_sw = true;
+                    } else if lvl == Level::High {
+                        self.reconnect_sw = false;
                     }
                 }
             }
