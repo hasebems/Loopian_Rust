@@ -69,12 +69,12 @@ pub fn cui_loop() {
                 }
                 if let Ok(ref pin) = pinr {
                     let lvl = pin.read();
-                    if lvl == Level::Low && !self.reconnect_sw {
+                    if lvl == Level::Low && !srv.reconnect_sw {
                         // reconnect
                         srv.cmd.send_reconnect();
-                        self.reconnect_sw = true;
+                        srv.reconnect_sw = true;
                     } else if lvl == Level::High {
-                        self.reconnect_sw = false;
+                        srv.reconnect_sw = false;
                     }
                 }
             }
