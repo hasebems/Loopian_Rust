@@ -30,10 +30,11 @@ impl LoopianServer {
 }
 pub fn cui_loop() {
     let mut srv = LoopianServer::new();
+    // Raspberry Pi5 のピン配の初期設定
     #[cfg(feature = "raspi")]
-    let pinq = get_rasp_pin(26);
+    let pinq = get_rasp_pin(RASPI_PIN_FOR_QUIT);
     #[cfg(feature = "raspi")]
-    let pinr = get_rasp_pin(20);
+    let pinr = get_rasp_pin(RASPI_PIN_FOR_RECONNECT);
     loop {
         if srv.cui_mode {
             // 標準入力から文字列を String で取得

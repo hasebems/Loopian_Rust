@@ -21,6 +21,12 @@ pub const MIDI_DEVICE: &str = "Pico";
 //pub const MIDI_DEVICE: &str = "TouchMIDI32 MIDI OUT";     // for Mac
 //pub const MIDI_DEVICE: &str = "IACdriver InternalBus1"; // MAX によるチェック for Mac
 
+//Raspberry Pi5 pin
+#[cfg(feature = "raspi")]
+pub const RASPI_PIN_FOR_QUIT: u8 = 26;
+#[cfg(feature = "raspi")]
+pub const RASPI_PIN_FOR_RECONNECT: u8 = 16;
+
 // Font Data File Name with path
 pub fn add_myfont() -> FontDefinitions {
     let mut fonts = FontDefinitions::default();
