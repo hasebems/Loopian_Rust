@@ -17,7 +17,6 @@ pub struct LoopianServer {
     //input_text: String,
     cmd: cmdparse::LoopianCmd,
     cui_mode: bool,
-    reconnect_sw: bool,
 }
 impl LoopianServer {
     pub fn new() -> Self {
@@ -26,7 +25,6 @@ impl LoopianServer {
             //input_text: "".to_string(),
             cmd: cmdparse::LoopianCmd::new(txmsg, rxui, false),
             cui_mode: false,
-            reconnect_sw: false,
         }
     }
 }
@@ -37,6 +35,8 @@ pub fn cui_loop() {
     let pinq = get_rasp_pin(RASPI_PIN_FOR_QUIT);
     #[cfg(feature = "raspi")]
     let pinr = get_rasp_pin(RASPI_PIN_FOR_RECONNECT);
+    #[cfg(feature = "raspi")]
+    let mut reconnect_sw = false;
     loop {
         if srv.cui_mode {
             // 標準入力から文字列を String で取得
@@ -69,12 +69,12 @@ pub fn cui_loop() {
                 }
                 if let Ok(ref pin) = pinr {
                     let lvl = pin.read();
-                    if lvl == Level::Low && !srv.reconnect_sw {
+                    if lvl == Level::Low && !reconnect_sw {
                         // reconnect
                         srv.cmd.send_reconnect();
-                        srv.reconnect_sw = true;
+                        reconnect_sw = true;
                     } else if lvl == Level::High {
-                        srv.reconnect_sw = false;
+                        reconnect_sw = false;
                     }
                 }
             }

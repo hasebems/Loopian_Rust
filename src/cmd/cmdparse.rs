@@ -124,6 +124,7 @@ impl LoopianCmd {
         self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_CLEAR));
         println!("*** All data has been erased at Elapse thread! ***");
     }
+    #[cfg(feature = "raspi")]
     pub fn send_reconnect(&self) {
         self.sndr
             .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
