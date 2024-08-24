@@ -30,7 +30,7 @@ pub struct Note {
     next_msr: i32,
     next_tick: i32,
     part: u32,
-    deb_txt: String,
+    _deb_txt: String,
 }
 impl Note {
     pub fn new(
@@ -39,7 +39,7 @@ impl Note {
         _estk: &mut ElapseStack,
         ev: &PhrEvt,
         keynote: u8,
-        deb_txt: String,
+        _deb_txt: String,
         msr: i32,
         tick: i32,
         part: u32,
@@ -61,7 +61,7 @@ impl Note {
             next_msr: msr,
             next_tick: tick,
             part,
-            deb_txt,
+            _deb_txt,
         }))
     }
     fn note_on(&mut self, estk: &mut ElapseStack) -> bool {
@@ -74,9 +74,10 @@ impl Note {
             let vel = self.random_velocity(self.velocity);
             estk.inc_key_map(num, vel, self.part as u8);
             estk.midi_out(0x90, self.real_note, vel);
+            #[cfg(feature = "verbose")]
             println!(
                 "On: N{} V{} D{} Trns: {}, ",
-                num, vel, self.duration, self.deb_txt
+                num, vel, self.duration, self._deb_txt
             );
             true
         } else {
@@ -91,6 +92,7 @@ impl Note {
         let snk = estk.dec_key_map(self.real_note);
         if snk == stack_elapse::SameKeyState::LAST {
             estk.midi_out(0x90, self.real_note, 0);
+            #[cfg(feature = "verbose")]
             println!("Off: N{}, ", self.real_note);
         }
     }
@@ -198,7 +200,7 @@ impl Elapse for Note {
 pub struct Damper {
     id: ElapseId,
     priority: u32,
-    position: i32,
+    _position: i32,
     duration: i32,
     damper_started: bool,
     destroy: bool,
@@ -221,7 +223,7 @@ impl Damper {
                 elps_type: ElapseType::TpNote,
             },
             priority: PRI_NOTE,
-            position: ev.position as i32,
+            _position: ev.position as i32,
             duration: ev.dur as i32,
             damper_started: false,
             destroy: false,
@@ -231,13 +233,15 @@ impl Damper {
     }
     fn damper_on(&mut self, estk: &mut ElapseStack) {
         estk.midi_out(0xb0, 0x40, 127);
-        println!("Damper-On: {}", self.position);
+        #[cfg(feature = "verbose")]
+        println!("Damper-On: {}", self._position);
     }
     fn damper_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;
         self.next_msr = FULL;
         // midi damper off
         estk.midi_out(0xb0, 0x40, 0);
+        #[cfg(feature = "verbose")]
         println!("Damper-Off");
     }
 }
