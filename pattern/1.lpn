@@ -1,6 +1,7 @@
 clear
 set.bpm(72)
 set.key(Gb)
+set.beat(4/4)
 L1
 [ed^,+s,+r,m%,s%...].para().dyn(mp)
 {Imaj9/IVmaj9/IIm9/IVm9}

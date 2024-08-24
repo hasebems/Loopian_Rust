@@ -1,6 +1,7 @@
 clear
 set.key(Eb)
 set.bpm(132)
+set.beat(4/4)
 L1
 [el^^,m,d,+l^,m,d,+l^,m].dyn(mp)
 set.oct(1)

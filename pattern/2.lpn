@@ -1,6 +1,7 @@
 clear
 set.key(D)
 set.bpm(144)
+set.beat(4/4)
 L1
 [d^^,m,s^,m].para().dyn(mp).dmp(off)
 @2=[3ex.,+d^,qta^,s^,m].para().dyn(mf).dmp(off)
