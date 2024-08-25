@@ -578,27 +578,22 @@ impl Elapse for Part {
             self.pm.process(crnt_, estk, pbp);
             self.start_flag = false;
         } else if self.next_tick != 0 {
-            // 小節最後のみ
+            // 小節最後のtick
             let cm_crnt = CrntMsrTick {
                 msr: self.next_msr + 1,
                 tick: 0,
                 tick_for_onemsr: crnt_.tick_for_onemsr,
             };
             self.cm.process(&cm_crnt, estk, pbp);
+            // 次の小節の頭をセット
+            self.next_msr = self.next_msr + 1;
+            self.next_tick = 0;
         } else {
-            // 小節先頭のみ
+            // 小節先頭
             self.pm.process(crnt_, estk, pbp);
             self.sync_next_msr_flag = false;
-        }
-
-        // 次回 process を呼ぶタイミング
-        if self.next_tick == 0 {
-            // 小節最後の tick
+            // 小節最後の tick をセット
             self.next_tick = crnt_.tick_for_onemsr - 1;
-        } else {
-            // 小節最初の tick
-            self.next_msr = crnt_.msr + 1;
-            self.next_tick = 0;
         }
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
