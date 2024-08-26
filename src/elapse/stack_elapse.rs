@@ -206,34 +206,14 @@ impl ElapseStack {
         self.update_gui();
 
         //  新tick計算
-        let mut msrtop = false;
         let mut crnt_ = CrntMsrTick::default();
         if self.during_play {
-            msrtop = self.tg.gen_tick(self.crnt_time);
+            let msrtop = self.tg.gen_tick(self.crnt_time);
             crnt_ = self.tg.get_crnt_msr_tick();
-        };
-
-        // 小節先頭ならば、beat/bpm のイベント調査
-        if msrtop {
-            println!(
-                "<New measure! in stack_elapse> Msr: {} Max Debcnt: {}/{}",
-                crnt_.msr,
-                self.limit_for_deb,
-                self.elapse_vec.len()
-            );
-            #[cfg(feature = "verbose")]
-            println!("  All Elapse Obj. Num: {:?}", self.elapse_vec.len());
-            self.limit_for_deb = 0;
-            // change beat event
-            if self.beat_stock != self.tg.get_beat() {
-                let tick_for_onemsr =
-                    (DEFAULT_TICK_FOR_ONE_MEASURE / self.beat_stock.1) * self.beat_stock.0;
-                self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
-                crnt_ = self.tg.get_crnt_msr_tick(); //再設定
+            if msrtop {
+                self.measure_top(&mut crnt_);
             }
-            // for GUI(8indicator)
-            self.update_gui_at_msrtop();
-        }
+        };
 
         //　MIDI Rx処理
         self.check_rcv_midi(&crnt_);
@@ -269,6 +249,30 @@ impl ElapseStack {
 
         // play 中でなければ return
         return false;
+    }
+    fn measure_top(&mut self, crnt_: &mut CrntMsrTick) {
+        // デバッグ用表示
+        println!(
+            "<New measure! in stack_elapse> Msr: {} Max Debcnt: {}/{} Time: {:?}",
+            crnt_.msr,
+            self.limit_for_deb,
+            self.elapse_vec.len(),
+            self.tg.get_origin_time().elapsed()
+        );
+        #[cfg(feature = "verbose")]
+        println!("  All Elapse Obj. Num: {:?}", self.elapse_vec.len());
+
+        // 小節先頭ならば、beat/bpm のイベント調査
+        self.limit_for_deb = 0;
+        // change beat event
+        if self.beat_stock != self.tg.get_beat() {
+            let tick_for_onemsr =
+                (DEFAULT_TICK_FOR_ONE_MEASURE / self.beat_stock.1) * self.beat_stock.0;
+            self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
+            *crnt_ = self.tg.get_crnt_msr_tick(); //再設定
+        }
+        // for GUI(8indicator)
+        self.update_gui_at_msrtop();
     }
     //*******************************************************************
     //      handle message

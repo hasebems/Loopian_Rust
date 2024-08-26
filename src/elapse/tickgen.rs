@@ -111,23 +111,7 @@ impl TickGen {
         let former_msr = self.crnt_msr;
         self.crnt_time = crnt_time;
         if self.rit_state {
-            // rit.
-            let (addup_tick, rit_end) = self.ritgen.calc_tick_rit(crnt_time);
-            if rit_end {
-                // rit 終了
-                let addup_msr = addup_tick / self.tick_for_onemsr;
-                let real_tick = addup_tick % self.tick_for_onemsr;
-                self.rit_state = false;
-                self.crnt_msr = self.beat_start_msr + addup_msr;
-                self.crnt_tick_inmsr = real_tick;
-                self.beat_start_msr = self.crnt_msr;
-                self.bpm_start_time = crnt_time;
-                self.bpm_start_tick = real_tick;
-                self.bpm = self.bpm_stock;
-            } else {
-                self.crnt_msr += addup_tick / self.tick_for_onemsr;
-                self.crnt_tick_inmsr = addup_tick % self.tick_for_onemsr;
-            }
+            self.gen_rit();
         } else {
             // same bpm
             let tick_from_beat_starts = self.calc_crnt_tick();
@@ -195,6 +179,9 @@ impl TickGen {
     pub fn get_beat(&self) -> Beat {
         self.beat
     }
+    pub fn get_origin_time(&self) -> Instant {
+        self.origin_time
+    }
     pub fn start_rit(&mut self, start_time: Instant, ratio: i32, bar: i32, target_bpm: i16) {
         if ratio < 100 && !self.rit_state && !self.fermata_state {
             self.ritgen.set_rit(
@@ -217,6 +204,24 @@ impl TickGen {
         let elapsed_tick =
             ((DEFAULT_TICK_FOR_QUARTER as f32) * (self.bpm as f32) * diff.as_secs_f32()) / 60.0;
         elapsed_tick as i32 + self.bpm_start_tick
+    }
+    fn gen_rit(&mut self) {
+        let (addup_tick, rit_end) = self.ritgen.calc_tick_rit(self.crnt_time);
+        if rit_end {
+            // rit 終了
+            let addup_msr = addup_tick / self.tick_for_onemsr;
+            let real_tick = addup_tick % self.tick_for_onemsr;
+            self.rit_state = false;
+            self.crnt_msr = self.beat_start_msr + addup_msr;
+            self.crnt_tick_inmsr = real_tick;
+            self.beat_start_msr = self.crnt_msr;
+            self.bpm_start_time = self.crnt_time;
+            self.bpm_start_tick = real_tick;
+            self.bpm = self.bpm_stock;
+        } else {
+            self.crnt_msr += addup_tick / self.tick_for_onemsr;
+            self.crnt_tick_inmsr = addup_tick % self.tick_for_onemsr;
+        }
     }
 }
 
