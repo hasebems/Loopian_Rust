@@ -1,3 +1,5 @@
+## [You can watch my performances in movies here.](https://youtube.com/playlist?list=PLUerrAh-bsOWs2xvYudPrxicXUfWKq6BX&si=wxtJ2tmU8dMsnStj)
+
 # about loopian::APP
 
 `loopian::APP` is a text-based piano sound sequencer being developed for use in activities like Live Coding. It has the following features:

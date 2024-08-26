@@ -1,6 +1,7 @@
 /target/debug
 /target/doc
 /target/release/*/
+/target/*
 /log
 /log_good
 .DS_Store
