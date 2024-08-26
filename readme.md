@@ -1,16 +1,28 @@
-# Loopian と Loopian記法について
+# about loopian::APP
 
-## ◆about loopian::APP
+`loopian::APP` is a text-based piano sound sequencer being developed for use in activities like Live Coding. It has the following features:
+- Text is input line by line, allowing you to specify phrases, chords, or control the overall performance with commands.
+- To achieve a somewhat natural performance, the velocity, pitch during chord changes, and damper pedal usage are automatically calculated.
+- Phrases are specified using movable-do solfège.
 
-'loopian' is a sequencer for piano tones with text input that we are developing for use mostly in Live Coding.
+# How to get loopian::APP executable file
 
-## ◆loopian::APP とは
+The executable file for the Mac version of `loopian::APP` is located at `/target/release/loopian`. Currently, executable files for platforms other than Mac are not supported, so if needed, please set up a Rust environment and build the application yourself.
+
+
+# loopian::APP とは
 
 loopian::APP は、Live Coding などで使うために開発している、テキスト入力によるピアノ音色用シーケンサです。
 以下の特徴があります
 - テキストは1行単位で入力し、フレーズや和音を指定したり、演奏全体をコントロールするコマンドを指定
 - ある程度自然な演奏になるように、ベロシティや和音変換時の音程、ダンパーペダルを自動算出
 - フレーズは移動ドにて指定
+
+# loopian::APP の実行ファイル
+
+loopian::APP Mac版の実行ファイルは `/target/release/loopian` です。現在、Mac以外は実行ファイルは未対応ですので、必要に応じて自力でRust環境を作成し、ビルドしてください。
+
+# Loopian記法の説明
 
 ## ◆Loopianについて
 
