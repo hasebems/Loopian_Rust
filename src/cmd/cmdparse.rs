@@ -256,6 +256,7 @@ impl LoopianCmd {
                 for i in 0..MAX_KBD_PART {
                     self.clear_part(i);
                 }
+                self.send_clear();
                 "all data erased!".to_string()
             } else if self.recursive == true {
                 self.clear_part(self.input_part);
