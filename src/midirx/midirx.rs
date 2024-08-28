@@ -183,6 +183,7 @@ impl MidiRx {
         if let Some(msg_ext) = self.mdr_buf.as_ref().unwrap().lock().unwrap().take() {
             let msg = msg_ext.1;
             let length = msg.len();
+            #[cfg(feature = "verbose")]
             println!(
                 "MIDI Received >{}: {:x}-{:x}-{:x} (len = {})",
                 msg_ext.0,
