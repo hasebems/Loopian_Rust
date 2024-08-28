@@ -103,6 +103,7 @@ impl Flow {
         locate: u8,
         vel: u8,
     ) {
+        #[cfg(feature = "verbose")]
         println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
         if !self.during_play {
             // ORBIT 自身の Pattern が鳴っていない時
@@ -173,6 +174,7 @@ impl Flow {
         } else {
             estk.inc_key_map(rnote, vel, self.id.pid as u8);
             estk.midi_out_flow(0x90, rnote, vel);
+            #[cfg(feature = "verbose")]
             println!("MIDI OUT<< 0x90:{:x}:{:x}", rnote, vel);
             self.gen_stock.push(GenStock(rnote, vel, locate));
         }
@@ -184,6 +186,7 @@ impl Flow {
             if snk == stack_elapse::SameKeyState::LAST {
                 estk.midi_out_flow(0x90, rnote, 0); // test
             }
+            #[cfg(feature = "verbose")]
             println!("MIDI OUT<< 0x90:{:x}:0", rnote);
             self.gen_stock.remove(idx);
         }

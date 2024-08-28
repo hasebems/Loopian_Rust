@@ -488,11 +488,13 @@ impl CompositionLoop {
             // MIDI Out (keynoteも一緒に送る)
             _estk.midi_out_ext(0xa0, 0x7f, self.keynote);
             _estk.midi_out_ext(0xa0, cd.root as u8, cd.tbl as u8);
+            #[cfg(feature = "verbose")]
             println!(
                 "Flow Chord Data: {}, {}, {}",
                 self.chord_name, cd.root, cd.tbl
             );
         } else {
+            #[cfg(feature = "verbose")]
             println!("Chord Data: {}, {}, {}", self.chord_name, cd.root, cd.tbl);
         }
     }
