@@ -182,16 +182,18 @@ impl MidiRx {
     fn receive_midi_event(&mut self) {
         if let Some(msg_ext) = self.mdr_buf.as_ref().unwrap().lock().unwrap().take() {
             let msg = msg_ext.1;
-            let length = msg.len();
             #[cfg(feature = "verbose")]
-            println!(
-                "MIDI Received >{}: {:x}-{:x}-{:x} (len = {})",
-                msg_ext.0,
-                msg[0],
-                msg[1],
-                if length > 2 { msg[2] } else { 0 },
-                length
-            );
+            {
+                let length = msg.len();
+                println!(
+                    "MIDI Received >{}: {:x}-{:x}-{:x} (len = {})",
+                    msg_ext.0,
+                    msg[0],
+                    msg[1],
+                    if length > 2 { msg[2] } else { 0 },
+                    length
+                );
+            }
             // midi ch=12,13 のみ受信 (Loopian::ORBIT)
             let input_ch = msg[0] & 0x0f;
             if input_ch != 0x0b && input_ch != 0x0c {
