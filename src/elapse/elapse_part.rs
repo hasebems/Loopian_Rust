@@ -579,6 +579,8 @@ impl Elapse for Part {
             self.cm.process(crnt_, estk, pbp);
             self.pm.process(crnt_, estk, pbp);
             self.start_flag = false;
+            // 小節最後の tick をセット
+            self.next_tick = crnt_.tick_for_onemsr - 1;
         } else if self.next_tick != 0 {
             // 小節最後のtick
             let cm_crnt = CrntMsrTick {
