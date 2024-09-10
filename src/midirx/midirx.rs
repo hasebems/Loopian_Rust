@@ -160,11 +160,12 @@ impl MidiRx {
             }
         }
         if let Some(port) = in_port {
+            let port_name = &format!("loopian_rx{}", idx_num);
             self._conn_in[0] = Some(
                 midi_in
                     .connect(
                         port,
-                        "loopian_rx1",
+                        port_name,
                         move |stamp, message, _| {
                             let msg = message.iter().fold(Vec::new(), |mut s, i| {
                                 s.push(*i);
