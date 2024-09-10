@@ -11,7 +11,8 @@ use std::error::Error;
 
 pub struct MidiTx {
     connection_tx: Option<Box<MidiOutputConnection>>,
-    connection_tx_led: Option<Box<MidiOutputConnection>>,
+    connection_tx_led1: Option<Box<MidiOutputConnection>>,
+    connection_tx_led2: Option<Box<MidiOutputConnection>>,
     connection_ext_loopian: Option<Box<MidiOutputConnection>>,
 }
 
@@ -20,7 +21,8 @@ impl MidiTx {
         // Port が二つとも見つからなければ、コネクトできなければエラー
         let mut me = MidiTx {
             connection_tx: None,
-            connection_tx_led: None,
+            connection_tx_led1: None,
+            connection_tx_led2: None,
             connection_ext_loopian: None,
         };
 
@@ -53,14 +55,27 @@ impl MidiTx {
                     }
                 }
             } else if drv_name.find(MIDI_DEVICE).is_some() {
-                match driver.connect(p, "loopian_tx2") {
-                    Ok(c) => {
-                        me.connection_tx_led = Some(Box::new(c));
-                        an_least_one = true;
-                        println!("{}: {} <as LED>", i, drv_name);
+                if me.connection_tx_led1.is_none() {
+                    match driver.connect(p, "loopian_tx2") {
+                        Ok(c) => {
+                            me.connection_tx_led1 = Some(Box::new(c));
+                            an_least_one = true;
+                            println!("{}: {} <as LED1>", i, drv_name);
+                        }
+                        Err(_e) => {
+                            println!("Connection Failed! for No.{}", i);
+                        }
                     }
-                    Err(_e) => {
-                        println!("Connection Failed! for No.{}", i);
+                } else {
+                    match driver.connect(p, "loopian_tx2") {
+                        Ok(c) => {
+                            me.connection_tx_led2 = Some(Box::new(c));
+                            an_least_one = true;
+                            println!("{}: {} <as LED2>", i, drv_name);
+                        }
+                        Err(_e) => {
+                            println!("Connection Failed! for No.{}", i);
+                        }
                     }
                 }
             } else if drv_name.find(MIDI_EXT_OUT).is_some() {
@@ -97,10 +112,13 @@ impl MidiTx {
         }
     }
     pub fn midi_out_for_led(&mut self, status: u8, dt1: u8, dt2: u8) {
-        if let Some(cnctl) = self.connection_tx_led.as_mut() {
-            let midi_cmnd = status & 0xf0;
-            if midi_cmnd == 0x90 || midi_cmnd == 0x80 {
-                let status_with_ch = midi_cmnd | 0x0f; // ch.16
+        let midi_cmnd = status & 0xf0;
+        if midi_cmnd == 0x90 || midi_cmnd == 0x80 {
+            let status_with_ch = midi_cmnd | 0x0f; // ch.16
+            if let Some(cnctl) = self.connection_tx_led1.as_mut() {
+                let _ = cnctl.send(&[status_with_ch, dt1, dt2]);
+            }
+            if let Some(cnctl) = self.connection_tx_led2.as_mut() {
                 let _ = cnctl.send(&[status_with_ch, dt1, dt2]);
             }
         }

@@ -39,6 +39,7 @@ pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + 1;
 pub const MAX_PHRASE: usize = 10; // normal + vari(1-9)
 pub const FLOW_PART: usize = MAX_KBD_PART;
 pub const DAMPER_PEDAL_PART: usize = MAX_KBD_PART + 1;
+pub const NONE_NUM: usize = 255;
 
 //*******************************************************************
 //          default value
