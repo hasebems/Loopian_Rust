@@ -127,7 +127,7 @@ impl MidiRx {
                 }
                 Err(_e) => {
                     self.uart = None;
-                    return Err("UART MIDI connection failed.");
+                    println!("UART MIDI connection failed.");
                 }
             }
         }
