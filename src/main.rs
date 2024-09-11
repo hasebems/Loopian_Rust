@@ -7,7 +7,7 @@ mod cmd;
 mod elapse;
 mod graphic;
 mod lpnlib;
-mod midirx;
+mod midi;
 mod server;
 mod setting;
 mod test;

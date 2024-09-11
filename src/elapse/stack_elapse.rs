@@ -17,10 +17,10 @@ use super::elapse_damper::DamperPart;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{CompositionLoop, PhraseLoop};
 use super::elapse_part::Part;
-use super::miditx::MidiTx;
 use super::tickgen::{CrntMsrTick, TickGen};
 use crate::lpnlib::{ElpsMsg::*, *};
-use crate::midirx::midirx::MidiRx;
+use crate::midi::miditx::MidiTx;
+use crate::midi::midirx::MidiRx;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SameKeyState {
