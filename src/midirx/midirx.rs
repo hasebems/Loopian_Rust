@@ -161,7 +161,7 @@ impl MidiRx {
         }
         if let Some(port) = in_port {
             let port_name = &format!("loopian_rx{}", idx_num);
-            self._conn_in[0] = Some(
+            self._conn_in[idx_num] = Some(
                 midi_in
                     .connect(
                         port,
@@ -222,7 +222,8 @@ impl MidiRx {
                     {
                         let length = msg.len();
                         println!(
-                            "MIDI Received >{}: {:x}-{:x}-{:x} (len = {})",
+                            "MIDI{} Received >{}: {:x}-{:x}-{:x} (len = {})",
+                            i+1,
                             msg_ext.0,
                             msg[0],
                             msg[1],
