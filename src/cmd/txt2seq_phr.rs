@@ -392,38 +392,32 @@ fn break_up_nt_dur_vel(
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
     let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
 
-    let mut notes_vec: Vec<String> = split_by('=', ntext5);
-    if notes_vec.len() == 1 {
-        // 複数音の分離
-        notes_vec = split_note(notes_vec[0].clone());
-    }
+    // 複数音を分離してベクトル化
+    let notes_vec = split_notes(ntext5.clone());
 
+    // 音名への変換
     let mut notes: Vec<u8> = Vec::new();
     let mut next_last_nt = last_nt;
-    let notes_num = notes_vec.len();
-
-    if notes_num == 0 {
-        notes.push(NO_NOTE);
-    } else if notes_num == 1 {
+    for (i, nt) in notes_vec.iter().enumerate() {
         let mut doremi: i32 = 0;
         if imd == InputMode::Fixed {
-            doremi = convert_doremi_fixed(notes_vec[0].to_string());
+            doremi = convert_doremi_fixed(nt.to_string());
         } else if imd == InputMode::Closer {
-            doremi = convert_doremi_closer(notes_vec[0].to_string(), last_nt);
+            if i == 0 {
+                doremi = convert_doremi_closer(nt.to_string(), next_last_nt);
+            } else {
+                doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
+            }
         }
         if doremi < NO_MIDI_VALUE as i32 {
-            // special meaning
             next_last_nt = doremi;
         }
-        let base_pitch = add_base_and_doremi(base_note, doremi);
-        notes.push(base_pitch);
-    } else {
-        for nt in notes_vec.iter() {
-            // 同時発音
-            let doremi = convert_doremi_fixed(nt.to_string());
-            let base_pitch = add_base_and_doremi(base_note, doremi);
-            notes.push(base_pitch);
-        }
+        notes.push(add_base_and_doremi(base_note, doremi));
+    }
+
+    // 何も音名が入らなかった時
+    if notes.len() == 0 {
+        notes.push(NO_NOTE);
     }
 
     (notes, mes_end, dur_cnt, diff_vel, base_dur, next_last_nt)
@@ -669,17 +663,38 @@ fn add_note(
 //*******************************************************************
 //          convert_doremi
 //*******************************************************************
+/// 最も近い上側の音を選択
+fn convert_doremi_upper_closer(doremi: String, last_nt: i32) -> i32 {
+    if doremi.len() == 0 {
+        return NO_NOTE as i32;
+    }
+    let last_doremi = get_pure_doremi(last_nt);
+
+    let mut oct_pitch = 0;
+    let mut pure_doremi = String::from("");
+    for (i, ltr) in doremi.chars().enumerate() {
+        if ltr == 'x' {
+            return REST as i32;
+        } else if ltr == '+' {
+            oct_pitch += 12;
+        } else {
+            pure_doremi = doremi[i..].to_string();
+            break;
+        }
+    }
+
+    let mut base_note = doremi_to_notenum(pure_doremi);
+    if last_doremi > base_note {
+        base_note += 12;
+    }
+    last_nt - last_doremi + base_note + oct_pitch //return
+}
+/// 最も近い音を選択
 fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
     if doremi.len() == 0 {
         return NO_NOTE as i32;
     }
-    let mut last_doremi = last_nt;
-    while last_doremi >= 12 {
-        last_doremi -= 12;
-    }
-    while last_doremi < 0 {
-        last_doremi += 12;
-    }
+    let last_doremi = get_pure_doremi(last_nt);
 
     let mut oct_pitch = 0;
     let mut pure_doremi = String::from("");
@@ -696,18 +711,7 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
         }
     }
 
-    let mut base_note = 0;
-    if pure_doremi.len() != 0 {
-        base_note = doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
-        pure_doremi.remove(0);
-    } else {
-        return NO_NOTE as i32;
-    }
-
-    if pure_doremi.len() != 0 {
-        base_note = doremi_semi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_note);
-    }
-
+    let base_note = doremi_to_notenum(pure_doremi);
     let mut diff = base_note - last_doremi;
     if diff <= -6 {
         diff += 12;
@@ -716,6 +720,7 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
     }
     last_nt + diff + oct_pitch // return
 }
+/// 絶対音高による指定
 fn convert_doremi_fixed(doremi: String) -> i32 {
     if doremi.len() == 0 {
         return NO_NOTE as i32;
@@ -735,20 +740,22 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
         }
     }
     if pure_doremi.len() != 0 {
+        // d,r,m,f,s,l,t
         base_pitch = doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_pitch);
     } else {
         return NO_NOTE as i32;
     }
 
     if pure_doremi.len() > 1 {
+        // i,a
         base_pitch = doremi_semi_number(pure_doremi.chars().nth(1).unwrap_or(' '), base_pitch);
     }
     base_pitch
 }
-pub fn split_note(txt: String) -> Vec<String> {
+pub fn split_notes(txt: String) -> Vec<String> {
     let mut splitted: Vec<String> = Vec::new();
     let mut first_locate: usize = 0;
-    let mut pm_flg = false;
+    let mut plus_flg = false;
     let mut semi_flg = false;
     let mut set_vec = |i: usize| {
         if first_locate < i {
@@ -758,10 +765,10 @@ pub fn split_note(txt: String) -> Vec<String> {
     };
     for (i, ltr) in txt.chars().enumerate() {
         if ltr == '+' || ltr == '-' {
-            if !pm_flg {
+            if !plus_flg {
                 set_vec(i);
             }
-            pm_flg = true;
+            plus_flg = true;
             semi_flg = false;
         } else if ltr == 'd'
             || ltr == 'r'
@@ -773,13 +780,13 @@ pub fn split_note(txt: String) -> Vec<String> {
         {
             if semi_flg {
                 set_vec(i);
-            } else if !pm_flg {
+            } else if !plus_flg {
                 set_vec(i);
             }
-            pm_flg = false;
+            plus_flg = false;
             semi_flg = false;
         } else if ltr == 'i' || ltr == 'a' {
-            pm_flg = false;
+            plus_flg = false;
             semi_flg = true;
         } else if ltr == 'x' {
             return vec!["x".to_string()];

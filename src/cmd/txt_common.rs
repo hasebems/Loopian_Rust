@@ -48,6 +48,20 @@ pub fn split_by_by(sp1: char, sp2: char, txt: String) -> Vec<String> {
     splited.push((&txt[old_locate..txt.len()]).to_string());
     splited
 }
+pub fn doremi_to_notenum(doremi: String) -> i32 {
+    let mut base_note = 0;
+    if doremi.len() != 0 {
+        // d,r,m,f,s,l,t
+        base_note = doremi_number(doremi.chars().nth(0).unwrap_or(' '), base_note);
+        if doremi.len() != 1 {
+            // i,a
+            base_note = doremi_semi_number(doremi.chars().nth(1).unwrap_or(' '), base_note);
+        }
+    } else {
+        base_note = NO_NOTE as i32;
+    }
+    base_note
+}
 pub fn doremi_number(ltr: char, mut base_note: i32) -> i32 {
     match ltr {
         'd' => base_note += 0,
@@ -68,6 +82,16 @@ pub fn doremi_semi_number(ltr: char, mut base_note: i32) -> i32 {
         _ => (),
     }
     base_note
+}
+pub fn get_pure_doremi(org_nt: i32) -> i32 {
+    let mut pure_doremi = org_nt;
+    while pure_doremi >= 12 {
+        pure_doremi -= 12;
+    }
+    while pure_doremi < 0 {
+        pure_doremi += 12;
+    }
+    pure_doremi
 }
 //*******************************************************************
 //          extract_xxx_from_parentheses
