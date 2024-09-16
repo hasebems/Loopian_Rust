@@ -152,7 +152,7 @@ impl MidiRx {
                     "{}: {} <as Flow{}>",
                     i,
                     midi_in.port_name(p).unwrap(),
-                    idx_num+1 // 1ori
+                    idx_num + 1 // 1ori
                 );
                 in_port = in_ports.get(i);
                 ret_num = i;
@@ -223,7 +223,7 @@ impl MidiRx {
                         let length = msg.len();
                         println!(
                             "MIDI{} Received >{}: {:x}-{:x}-{:x} (len = {})",
-                            i+1,
+                            i + 1,
                             msg_ext.0,
                             msg[0],
                             msg[1],
