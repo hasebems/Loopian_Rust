@@ -683,7 +683,7 @@ fn convert_doremi_upper_closer(doremi: String, last_nt: i32) -> i32 {
         }
     }
 
-    let mut base_note = doremi_to_notenum(pure_doremi);
+    let mut base_note = doremi_to_notenum(pure_doremi, 0);
     if last_doremi > base_note {
         base_note += 12;
     }
@@ -711,7 +711,7 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
         }
     }
 
-    let base_note = doremi_to_notenum(pure_doremi);
+    let base_note = doremi_to_notenum(pure_doremi, 0);
     let mut diff = base_note - last_doremi;
     if diff <= -6 {
         diff += 12;
@@ -725,32 +725,21 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
     if doremi.len() == 0 {
         return NO_NOTE as i32;
     }
-    let mut base_pitch: i32 = 0;
+    let mut base_note: i32 = 0;
     let mut pure_doremi = String::from("");
     for (i, ltr) in doremi.chars().enumerate() {
         if ltr == 'x' {
             return REST as i32;
         } else if ltr == '+' {
-            base_pitch += 12;
+            base_note += 12;
         } else if ltr == '-' {
-            base_pitch -= 12;
+            base_note -= 12;
         } else {
             pure_doremi = doremi[i..].to_string();
             break;
         }
     }
-    if pure_doremi.len() != 0 {
-        // d,r,m,f,s,l,t
-        base_pitch = doremi_number(pure_doremi.chars().nth(0).unwrap_or(' '), base_pitch);
-    } else {
-        return NO_NOTE as i32;
-    }
-
-    if pure_doremi.len() > 1 {
-        // i,a
-        base_pitch = doremi_semi_number(pure_doremi.chars().nth(1).unwrap_or(' '), base_pitch);
-    }
-    base_pitch
+    doremi_to_notenum(pure_doremi, base_note)
 }
 pub fn split_notes(txt: String) -> Vec<String> {
     let mut splitted: Vec<String> = Vec::new();

@@ -48,8 +48,7 @@ pub fn split_by_by(sp1: char, sp2: char, txt: String) -> Vec<String> {
     splited.push((&txt[old_locate..txt.len()]).to_string());
     splited
 }
-pub fn doremi_to_notenum(doremi: String) -> i32 {
-    let mut base_note = 0;
+pub fn doremi_to_notenum(doremi: String, mut base_note: i32) -> i32 {
     if doremi.len() != 0 {
         // d,r,m,f,s,l,t
         base_note = doremi_number(doremi.chars().nth(0).unwrap_or(' '), base_note);
@@ -62,7 +61,7 @@ pub fn doremi_to_notenum(doremi: String) -> i32 {
     }
     base_note
 }
-pub fn doremi_number(ltr: char, mut base_note: i32) -> i32 {
+fn doremi_number(ltr: char, mut base_note: i32) -> i32 {
     match ltr {
         'd' => base_note += 0,
         'r' => base_note += 2,
@@ -75,7 +74,7 @@ pub fn doremi_number(ltr: char, mut base_note: i32) -> i32 {
     }
     base_note
 }
-pub fn doremi_semi_number(ltr: char, mut base_note: i32) -> i32 {
+fn doremi_semi_number(ltr: char, mut base_note: i32) -> i32 {
     match ltr {
         'i' => base_note += 1,
         'a' => base_note -= 1,
