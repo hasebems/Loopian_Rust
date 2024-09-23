@@ -41,6 +41,7 @@ pub struct ElapseId {
 
 pub trait Elapse {
     /// id を得る
+    #[allow(dead_code)]
     fn id(&self) -> ElapseId;
     /// priority を得る
     fn prio(&self) -> u32;
@@ -55,6 +56,7 @@ pub trait Elapse {
     /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack);
     /// 特定 elapse に message を送る
+    #[allow(dead_code)]
     fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8);
     /// 自クラスが役割を終えた時に True を返す
     fn destroy_me(&self) -> bool;
