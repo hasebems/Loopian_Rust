@@ -279,10 +279,11 @@ pub struct NoteUi {
     pub part: i16,
 }
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub enum UiMsg {
-    _UpdateUi,
-    _PartUi,
-    _NoteUi,
+    UpdateUi,
+    PartUi,
+    NoteUi,
 }
 //*******************************************************************
 //          Command Definition
