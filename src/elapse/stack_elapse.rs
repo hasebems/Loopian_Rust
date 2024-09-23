@@ -75,52 +75,48 @@ fn gen_midirx_thread() -> (Receiver<ElpsMsg>, Sender<ElpsMsg>) {
     (rxmsg, txctrl)
 }
 impl ElapseStack {
-    pub fn new(ui_hndr: mpsc::Sender<String>) -> Option<Self> {
-        match MidiTx::connect() {
-            Ok(c) => {
-                let mut part_vec = Vec::new();
-                let mut elapse_vec = Vec::new();
+    pub fn new(ui_hndr: mpsc::Sender<String>) -> Self {
+        let (c, e) = MidiTx::connect();
+        if let Some(err) = e {
+            println!("{}", err);
+        }
+        let mut part_vec = Vec::new();
+        let mut elapse_vec = Vec::new();
 
-                // Keyboard Part
-                for i in 0..MAX_KBD_PART {
-                    // 同じ Part を part_vec, elapse_vec 両方に繋げる
-                    let pt = Part::new(i as u32, None);
-                    part_vec.push(Rc::clone(&pt));
-                    elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
-                }
-                // Flow Part
-                let flow = Flow::new(0, FLOW_PART as u32, false);
-                elapse_vec.push(flow.clone() as Rc<RefCell<dyn Elapse>>);
-                let pt = Part::new(FLOW_PART as u32, Some(flow));
-                part_vec.push(Rc::clone(&pt));
-                elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
-                // Damper Part
-                let damper_part = DamperPart::new(DAMPER_PEDAL_PART as u32);
-                elapse_vec.push(Rc::clone(&damper_part) as Rc<RefCell<dyn Elapse>>);
+        // Keyboard Part
+        for i in 0..MAX_KBD_PART {
+            // 同じ Part を part_vec, elapse_vec 両方に繋げる
+            let pt = Part::new(i as u32, None);
+            part_vec.push(Rc::clone(&pt));
+            elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
+        }
+        // Flow Part
+        let flow = Flow::new(0, FLOW_PART as u32, false);
+        elapse_vec.push(flow.clone() as Rc<RefCell<dyn Elapse>>);
+        let pt = Part::new(FLOW_PART as u32, Some(flow));
+        part_vec.push(Rc::clone(&pt));
+        elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
+        // Damper Part
+        let damper_part = DamperPart::new(DAMPER_PEDAL_PART as u32);
+        elapse_vec.push(Rc::clone(&damper_part) as Rc<RefCell<dyn Elapse>>);
 
-                let (rx_hndr, tx_ctrl) = gen_midirx_thread();
-                Some(Self {
-                    ui_hndr,
-                    rx_hndr,
-                    tx_ctrl,
-                    mdx: c,
-                    crnt_time: Instant::now(),
-                    bpm_stock: DEFAULT_BPM,
-                    beat_stock: Beat(4, 4),
-                    during_play: false,
-                    display_time: Instant::now(),
-                    tg: TickGen::new(0),
-                    part_vec: part_vec.clone(),
-                    _damper_part: damper_part,
-                    elapse_vec,
-                    key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
-                    limit_for_deb: 0,
-                })
-            }
-            Err(e) => {
-                println!("{}", e);
-                None
-            }
+        let (rx_hndr, tx_ctrl) = gen_midirx_thread();
+        Self {
+            ui_hndr,
+            rx_hndr,
+            tx_ctrl,
+            mdx: c,
+            crnt_time: Instant::now(),
+            bpm_stock: DEFAULT_BPM,
+            beat_stock: Beat(4, 4),
+            during_play: false,
+            display_time: Instant::now(),
+            tg: TickGen::new(0),
+            part_vec: part_vec.clone(),
+            _damper_part: damper_part,
+            elapse_vec,
+            key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
+            limit_for_deb: 0,
         }
     }
     pub fn add_elapse(&mut self, elps: Rc<RefCell<dyn Elapse>>) {
@@ -424,13 +420,11 @@ impl ElapseStack {
         }
     }
     fn reconnect(&mut self) {
-        match MidiTx::connect() {
-            Err(e) => {
-                println!("{}", e);
-            }
-            Ok(_o) => {
-                self.send_msg_to_rx(Ctrl(MSG_CTRL_MIDI_RECONNECT));
-            }
+        let (_c, e) = MidiTx::connect();
+        if let Some(err) = e {
+            println!("{}", err);
+        } else {
+            self.send_msg_to_rx(Ctrl(MSG_CTRL_MIDI_RECONNECT));
         }
     }
     //fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}

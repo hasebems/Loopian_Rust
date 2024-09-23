@@ -429,14 +429,12 @@ fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<String>) {
     //  create new thread & channel
     let (txmsg, rxmsg) = mpsc::channel();
     let (txui, rxui) = mpsc::channel();
-    thread::spawn(move || match ElapseStack::new(txui) {
-        Some(mut est) => loop {
+    thread::spawn(move || {
+        let mut est = ElapseStack::new(txui);
+        loop {
             if est.periodic(rxmsg.try_recv()) {
                 break;
             }
-        },
-        None => {
-            println!("Elps thread does't work")
         }
     });
     (txmsg, rxui)

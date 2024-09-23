@@ -7,9 +7,9 @@ extern crate midir;
 
 use crate::setting::*;
 use midir::{MidiOutput, /*MidiOutputPort,*/ MidiOutputConnection};
-use std::error::Error;
 
 pub struct MidiTx {
+    tx_available: bool,
     connection_tx: Option<Box<MidiOutputConnection>>,
     connection_tx_led1: Option<Box<MidiOutputConnection>>,
     connection_tx_led2: Option<Box<MidiOutputConnection>>,
@@ -17,9 +17,10 @@ pub struct MidiTx {
 }
 
 impl MidiTx {
-    pub fn connect() -> Result<Self, Box<dyn Error>> {
-        // Port が二つとも見つからなければ、コネクトできなければエラー
-        let mut me = MidiTx {
+    // Port が二つとも見つからなければ、コネクトできなければエラーメッセージを返す
+    pub fn connect() -> (Self, Option<String>) {
+        let mut this = MidiTx {
+            tx_available: false,
             connection_tx: None,
             connection_tx_led1: None,
             connection_tx_led2: None,
@@ -27,26 +28,46 @@ impl MidiTx {
         };
 
         // Get an output port (read from console if multiple are available)
-        let driver = MidiOutput::new("Loopian_tx")?;
-        let out_ports = driver.ports();
-        if out_ports.is_empty() {
-            return Err("no output port found".into());
+        let out_ports;
+        match MidiOutput::new("Loopian_tx") {
+            Ok(driver) => {
+                out_ports = driver.ports();
+                if out_ports.is_empty() {
+                    return (this, Some("no output port found".into()));
+                }
+            }
+            Err(_e) => {
+                return (this, Some("Midi out initialize failed".into()));
+            }
         }
 
         // 全outputを表示
         for (i, p) in out_ports.iter().enumerate() {
-            let driver = MidiOutput::new("Loopian_tx")?;
-            let drv_name = driver.port_name(p).unwrap();
-            println!("[MIDI Output] No.{}: {}", i, drv_name);
+            match MidiOutput::new("Loopian_tx") {
+                Ok(driver) => {
+                    let drv_name = driver.port_name(p).unwrap();
+                    println!("[MIDI Output] No.{}: {}", i, drv_name);
+                }
+                Err(_e) => continue,
+            }
         }
+
         let mut an_least_one = false;
         for (i, p) in out_ports.iter().enumerate() {
-            let driver = MidiOutput::new("Loopian_tx")?;
-            let drv_name = driver.port_name(p).unwrap();
+            let driver;
+            let drv_name;
+            match MidiOutput::new("Loopian_tx") {
+                Ok(o) => {
+                    driver = o;
+                    drv_name = driver.port_name(p).unwrap();
+                    //println!("[MIDI Output] No.{}: {}", i, drv_name);
+                }
+                Err(_e) => continue,
+            }
             if drv_name.find(MIDI_OUT).is_some() {
                 match driver.connect(p, "loopian_tx1") {
                     Ok(c) => {
-                        me.connection_tx = Some(Box::new(c));
+                        this.connection_tx = Some(Box::new(c));
                         an_least_one = true;
                         println!("{}: {} <as Piano>", i, drv_name);
                     }
@@ -55,10 +76,10 @@ impl MidiTx {
                     }
                 }
             } else if drv_name.find(MIDI_DEVICE).is_some() {
-                if me.connection_tx_led1.is_none() {
+                if this.connection_tx_led1.is_none() {
                     match driver.connect(p, "loopian_tx2") {
                         Ok(c) => {
-                            me.connection_tx_led1 = Some(Box::new(c));
+                            this.connection_tx_led1 = Some(Box::new(c));
                             an_least_one = true;
                             println!("{}: {} <as LED1>", i, drv_name);
                         }
@@ -69,7 +90,7 @@ impl MidiTx {
                 } else {
                     match driver.connect(p, "loopian_tx2") {
                         Ok(c) => {
-                            me.connection_tx_led2 = Some(Box::new(c));
+                            this.connection_tx_led2 = Some(Box::new(c));
                             an_least_one = true;
                             println!("{}: {} <as LED2>", i, drv_name);
                         }
@@ -81,7 +102,7 @@ impl MidiTx {
             } else if drv_name.find(MIDI_EXT_OUT).is_some() {
                 match driver.connect(p, "loopian_tx3") {
                     Ok(c) => {
-                        me.connection_ext_loopian = Some(Box::new(c));
+                        this.connection_ext_loopian = Some(Box::new(c));
                         an_least_one = true;
                         println!("{}: {} <as Ext>", i, drv_name);
                     }
@@ -93,12 +114,17 @@ impl MidiTx {
                 println!("[no connect]: {}", drv_name);
             }
         }
-        if !an_least_one {
-            return Err("port not connected!".into());
+        if an_least_one {
+            this.tx_available = true;
+            (this, None)
+        } else {
+            (this, Some("port not connected!".into()))
         }
-        Ok(me)
     }
     pub fn midi_out(&mut self, status: u8, dt1: u8, dt2: u8, to_led: bool) {
+        if !self.tx_available {
+            return;
+        }
         if let Some(cnct) = self.connection_tx.as_mut() {
             let status_with_ch = status & 0xf0; // ch.1
             let _ = cnct.send(&[status_with_ch, dt1, dt2]);
@@ -112,6 +138,9 @@ impl MidiTx {
         }
     }
     pub fn midi_out_for_led(&mut self, status: u8, dt1: u8, dt2: u8) {
+        if !self.tx_available {
+            return;
+        }
         let midi_cmnd = status & 0xf0;
         if midi_cmnd == 0x90 || midi_cmnd == 0x80 {
             let status_with_ch = midi_cmnd | 0x0f; // ch.16
@@ -124,6 +153,9 @@ impl MidiTx {
         }
     }
     pub fn midi_out_only_for_another(&mut self, status: u8, dt1: u8, dt2: u8) {
+        if !self.tx_available {
+            return;
+        }
         if let Some(cnct) = self.connection_ext_loopian.as_mut() {
             let status_with_ch = (status & 0xf0) + 10; // ch.11
             let _ = cnct.send(&[status_with_ch, dt1, dt2]);
