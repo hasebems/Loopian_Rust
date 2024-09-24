@@ -13,7 +13,7 @@
 - Loopian System
     - Loopian::APP : 本アプリケーション
     - Loopian::ORBIT : PCに接続する専用ハードウェア
-    - Loopian::script : スクリプト言語、及び記述されたテキスト
+    - Loopian::script : Loopian記法、スクリプト言語、及び記述されたテキスト
     - Loopian::inst : 将来作られる楽器の音源
 - Loopian::ORBIT を使ってリアルタイム演奏が可能
     - 一つの Part を、リアルタイム用に指定
@@ -46,27 +46,19 @@
 
 ### 2.Command入力
 
-- Command 体系
-
-|Object|Command|Function|説明|
-|-|-|-|-|
-|||||
-|||||
-|||||
-
 - 全般的なコマンド体系
     - Object.Command.Fn() の形に統一
+        - 各要素はピリオドで繋ぐ
     - Object 種類
-        - APP: 本アプリ全体、すべての Object の親
-        - ALL, L1, L12 などのパート
-        - ctl, set, graph のコマンド大分類
-    - APP は概念的な Object なので、記載しない
-    - ctl は省略可能
+        - APP系: 本アプリ全体
+        - Control系、Set系は Object はない
+        - ALL, L1, L12 : パートの Object
+        - graph: 画面を表す Object
+    - APP は概念的な Object なので記載しない
     - Part Object は、入力パートと同じなら省略可能
         - `L1.[d,r,m]`  => L1>`[d,r,m]`
-    - Fn は必要に応じていくつでも後ろに追加できる
-    - Fn は、引数がなくても () をつける必要がある
-    - Command は引数を持たなければ () は必要ない
+    - Fn() は必要に応じていくつでも後ろに追加できる
+    - Fn() は、引数がなくても () をつける必要がある
     - APP の Command は、先頭に ! をつける
         - ! がついた場合、log には記述されない
         - !quit/!q : アプリ終了
@@ -74,27 +66,53 @@
         - !msr()    : loadを特定の拍まで止める。lpnファイル内にしか書けない
         - !blk() : loadの特定部分しか読まない。lpnファイル内にしか書けない
     - part(ALL,L1,L12など) の Command
-        - [], {}, sync, clear, flow, endflow
-    - ctl の Command
-        - play/p, fermata, fine, stop, sync, resume, rit, clear
+        - [], {}, sync, clear
+    - Control系の Command
+        - play/p, fermata, fine, stop, resume, rit, clear
+    - Set系は、set.Fn() という形式になる
     - graph の Command
         - light, dark
     - 特殊なもの
         - @c= , @n= 
 
-<!--
-- Command には以下の4種類がある
-    1. Phrase Command（ [] で入力）
-    1. Composition Command（{}で入力）
-    1. Realtime Control Command (play/stop/fine/rit./left(right,L1,R1..)/sync/[end]flow)
-    1. Setting Command (set [bpm/beat/oct/key/input/samenote])
--->
+
+- コマンド一覧
+
+|Object|Command|Function|説明|
+|-|-|-|-|
+|[APP系]|!quit/!q||アプリ終了|
+|↑|!load/!l||ファイルロード|
+|↑|!clear/!c||データクリア|
+|[Control系]|play/p/resume||開始、再開|
+|↑|stop/fine||中止、終了|
+|↑|fermata||小節頭で停止|
+|↑|rit/rit.poco/rit.molto|bar(...)|小節数|
+|↑|↑|bpm(.../fermata)|rit終了時のBPM|
+|[Set系]|set|bpm(...)|テンポ|
+|↑|↑|beat(...)|拍子|
+|↑|↑|key(...)|調|
+|↑|↑|oct(...)|オクターブ|
+|↑|↑|path(...)|ファイルのPath|
+|↑|↑|input(...)|入力モード|
+|*L1/L2/R1/R2*|[...]||Phrase|
+|↑|↑|dyn(...)|Velocity|
+|↑|↑|dmp(...)|Damper|
+|↑|↑|stacc(...)|Staccato|
+|↑|↑|rpt(...)|Repeat|
+|↑|↑|trans()/para()|変換方法|
+|↑|{...}||Composition|
+|↑|sync|||
+|↑|clear|||
+|FLOW|{...}|||
+|graph|light/dark|||
+|↑|ripple/voice|||
+|||||
+
 
 - Phrase Command の考え方
     - ノート番号と音価を指示する
     - また、表情指示(Music Expression)を、さらに関数を追加して記述できる
     - exp.engine により、簡易な表情指示からベロシティ、微妙なタイミング、dulation、ペダル情報を自動生成
-    - &n で phrase の [] をマクロとして格納できる（パートを超えて使用可能）(未実装)
     - @n で phrase + Music Expression を Variation として格納できる（パート内でのみ使用可能）
 - Composition Command の考え方
     - Composition では和音・スケール（ノート変換子）を指示する
@@ -102,8 +120,6 @@
     - Composition も、各パートごとに設定できる
     - @n の変数を指定することで、特定の箇所で特定の phrase 再生ができる
 - Phrase も、Composition も、それぞれ独自の周期で loop する
-- "flow"指定で、Phrase 再生をやめ、MIDI In からの情報を変換して、MIDI OUT する
-    "endflow" で Phrase 再生を再開
 - 音符変調関数
     - rpt(n) : repeat
     - 一つの音を複数に分割
@@ -222,14 +238,14 @@ NoteObj <|-- WaterRipple
 - 入力文字一覧
     - 全体区切り: [],{},@
     - 複数音符を跨ぐ、あるいは区切る指定子: /,|,*,<>:
-    - 一音符内の指定子: (0:>)(1:',",v,e,q,h,3,5,`)(2:-,+)(3:d,r,m,f,s,l,t,x,c)(3':i,a)(4:^,%)(5:.,~,o)
+    - 一音符内の指定子: (0:>)(1:',",w,v,e,q,h,3,5,`)(2:-,+)(3:d,r,m,f,s,l,t,x,c)(3':i,a)(4:^,%)(5:.,~,o)
         - 3と3'を合わせたものは、連続して音符を書くことで同時発音を表現できる
         - 1と2は順序が逆でも動作する
     - ーノート変換子内の指定子: (1:@[n]:)(2:I,V)(3:#,b)(4:[table name])(5:!)(6:.)
         - !は、para/common時に、上下の音と等距離なら上側を採用することを表す
     - 関数表記: .fn()
-- まだ使われていない文字: w,r,y,u,p,j,k,z,b,n,?,;,\,&,$,
-- 同じ意味に使う文字 : 小節(/,|)、タイ(.,~)
+- まだ使われていない文字: g,y,u,p,j,k,z,b,n,?,;,\,&,$,
+- 同じ意味に使う文字 : 小節(/,|)、タイ(.,~,_)
 
 
 ### 5.Phrase 入力から再生までの変換の流れ
@@ -483,8 +499,6 @@ NoteObj <|-- WaterRipple
 - [] でフレーズを消したのに、get_phr() では、データが残っているような値が返る
     - Damper Pedal の処理で get_phr() を使っていて、起動後は何もデータが無いと、Some(x) で None が返るのに、何かのフレーズを消した後だと、None は返らない。-> 返るように修正 9/24 済
 - flow で MIDI を鳴らす時、Phrase が None でも、Chord が送られていれば Pedal は送られる仕様に変更 9/24 済
--->
-
 - 文法の変更
     - [][mf] => [].dyn(mf) 10/21 済
     - [][noped] => [].dmp(off)  10/21 済
@@ -500,6 +514,8 @@ NoteObj <|-- WaterRipple
 - clear 機能追加 11/18 済
 - light mode 追加 12/3 済
 - 入力文字数の制限をなくす 12/29 済
+-->
+
 - c=xx による cluster memory 機能 1/3 済
 - >x で parallel、<xxx> で、その区間 parallel 1/3 済
 - 同時複数音入力の時、コード指定で重複して音がなるのを回避 1/3 済
@@ -536,6 +552,8 @@ NoteObj <|-- WaterRipple
         - [trlm] は、最初のt=B2とすると、B2,D3,A3,E4 となる
     - [A,B1B2B3,C] とあった場合、B1は、Aとの距離で±が決定され、Cは、B3との距離で±が決定される
         - [d,fdm,m] と書かれた時、d=C3とすると、C3->F3,C4,E4->E4 となる
+- MIDI Txのポートが見つからなくても、アプリが起動するようにする(9/23)
+- rit. の記述方法変更(9/24)
 
 
 パス

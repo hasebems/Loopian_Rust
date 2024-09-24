@@ -5,7 +5,7 @@
 # Loopian Alpha-version written in Rust
 
 
-<img src="doc/window.png" width="80%">
+<img src="window.png" width="80%">
 
 ## about loopian
 
@@ -32,7 +32,7 @@ loopian は、Live Coding などで使うために開発している、テキス
     - 1 part あたり、一つの phrase と一つの composition が個別の周期で loop する
 
 
-<img src="doc/part_spec.jpg" width="70%">
+<img src="part_spec.jpg" width="70%">
 
 
 ## 起動と終了
@@ -42,7 +42,15 @@ loopian は、Live Coding などで使うために開発している、テキス
 ```
 ./target/release/loopian_rust
 ```
-起動アプリ名は loopian_rust
+起動アプリ名
+`loopian`
+
+Option Switch
+- `--server` : サーバとして立ち上げる
+
+Compile Switch
+- `--features raspi` : Raspberry Pi5 上で動作
+- `--features verbose` : printlnデバッグ
 
 ### 入力
 
@@ -50,7 +58,7 @@ loopian は、Live Coding などで使うために開発している、テキス
     
 - 000: は入力したコマンド history の現在の順番を表している
 - L1> は Left 1 の入力状態であることを示す
-- このプロンプトの後に、コマンドやフレーズを書き込み、Return で入力する
+- このプロンプトの後に、コマンドやフレーズを入力し、Return で確定する
 - カーソル（上下）による過去入力のヒストリー呼び出しが可能
     - Loopian では、space の入力は `.`（ピリオド）に変換される
 
@@ -83,13 +91,13 @@ loopian は、Live Coding などで使うために開発している、テキス
 * `rit` : テンポをだんだん遅くして、次の小節の頭で元のテンポ
     - `rit.poco` : 遅さが弱い
     - `rit.molto` : 遅さが強い 
-    - `rit./fermata`  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
-    - `rit.molto/fermata`
-    - `rit./120`   : rit.の次の小節をテンポ120で開始
-    - `rit.b2` : 2小節rit.をつける
-        - `rit.poco.b2`
-        - `rit.poco.b2/100`
-        - bN の N は任意の数値
+    - `rit.bpm(fermata)`  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
+    - `rit.molto.bpm(fermata)`
+    - `rit.bpm(120)`   : rit.の次の小節をテンポ120で開始
+    - `rit.bar(2)` : 2小節rit.をつける
+        - `rit.poco.bar(2)`
+        - `rit.poco.bar(2).bpm(100)`
+        - bar(N) の N は任意の数値
 * `sync` : 次の小節の頭で、そのパートの Phrase, Composition を同期させる
     - `sync.right` : 右手パート(right1/2)
     - `sync.left`  : 左手パート(left1/2)
@@ -146,7 +154,7 @@ Phrase 追加
     - `h`二分音符 (例:`[hd,rr/m,f]`)
     - `q`四分音符 (例:`[qd,r,hm/qf,s,l,t]`)
     - `e`:八分音符 (例: `[em,r,d,r,qm,r]`)
-    - `v`:十六分音符 (例: `[em,vr,d,et,vd,r,em,vr,d,t,d,r,d])
+    - `v`:十六分音符 (例: `[em,vr,d,et,vd,r,em,vr,d,t,d,r,d]`)
     - `w`:三十二分音符
     - `[3ed,r,m]` : 'の前に3を書くと、一拍三連の音価になる
         - 同様に、5連符が可能
@@ -188,15 +196,15 @@ Phrase 追加
 * コード記述方法
     - `X` : original phrase(no pedal)
     - `O` : original phrase(pedal)
-    - `I` : `d=m=s` (Iの和音)
+    - `I` : `dms` (Iの和音)
         - ローマ数字: `I,II,III,IV,V, VI,VII`
-    - `I#` : `di=mi=si` (数字の後に # を付けると半音高いコードになる。b は半音)
-    - `V` : `s=t=r` (Ⅴの和音)
-    - `VIm` : `l=d=m` (m: minor)
-    - `IVM7` : `f=l=d=m` (M7: major7th)
-    - `IIIm7-5` : `m=s=ta=r` (m7-5: minor7th -5th)
-    - `diatonic` : `d=r=m=f=s=l=t` (Diatonic Scale)
-    - `lydian` : `d=r=m=fi=s=l=t` (Lydian Scale)
+    - `I#` : `dimisi` (数字の後に # を付けると半音高いコードになる。b は半音)
+    - `V` : `str` (Ⅴの和音)
+    - `VIm` : `ldm` (m: minor)
+    - `IVM7` : `fldm` (M7: major7th)
+    - `IIIm7-5` : `mstar` (m7-5: minor7th -5th)
+    - `diatonic` : `drmfslt` (Diatonic Scale)
+    - `lydian` : `drmfislt` (Lydian Scale)
     - `Iion` : Iを主音としたイオニアン(Ionian)
     - `!` をコードの最後に追加すると、当てはまる音が等距離の場合、上側を採用する（通常は下側を採用）
     - コードやスケールが判断不能の場合、エラーとなり主音しか出ない
@@ -214,7 +222,7 @@ Phrase 追加
         - 省略した場合、今設定されているオクターブがそのまま適用される
 - `set.oct(+1)` : 現状から１オクターブ上げる
     - `oct(0)` : 0は、現状の値を無視し、初期値に戻す
-- `set.input(fixed)` : 階名を入力したときのオクターブ決定法（和音入力の場合はfixedのみ）
+- `set.input(fixed)` : 階名を入力したときのオクターブ決定法
     - `fixed` は、入力する階名の位置は固定
     - `closer` は、指示がない限り、前回に近い音程 (default)
 - `set.samenote(modeling)` : 同音連打の動き方
@@ -295,7 +303,7 @@ Phrase 追加
 * Phrase の cluster memory 機能
     - 一拍分の音符を、Phraseに使うために事前に登録することができる
     - `@c=dms` : ドミソの和音を同時に発音する
-    - `['c,x,x,c,c,x,x,c]` : 前に設定した和音を c のタイミングで発音する
+    - `[ec,x,x,c,c,x,x,c]` : 前に設定した和音を c のタイミングで発音する
 
 
 * 複数 Phrase 追加入力機能
