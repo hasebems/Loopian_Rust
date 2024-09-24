@@ -1,5 +1,4 @@
 // bach fugue No.1  '1 "50
-// m26.b3 rit.b2/fine
 clear
 graph.voice
 graph.dark
@@ -106,4 +105,4 @@ L2
 [l,m,f,s,l,t,d,l,ht/do//].dyn(p)
 
 !msr(27)
-rit.b2
+rit.bar(2)

@@ -148,7 +148,7 @@ L1
 [so/so//].dyn(p)
 
 !msr(29)
-rit.poco.b2
+rit.poco.bar(2)
 
 !msr(30)
 R2
@@ -202,4 +202,4 @@ L1
 [em,s%,m,r^,m^,s%,m,r^/m^,s%,m,r%,d%...//].dyn(p)
 
 !msr(39)
-rit.b2
+rit.bar(2)

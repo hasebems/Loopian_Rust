@@ -63,5 +63,5 @@ L2
 R1
 []
 
-rit./fermata
+rit.bpm(fermata)
 fine

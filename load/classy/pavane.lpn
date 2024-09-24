@@ -393,7 +393,7 @@ L2
 [efi,si^,si^,fi%,fla,fil^,fil^,fla%].dyn(p)
 
 !msr(67)
-rit.poco.b2
+rit.poco.bar(2)
 L1
 [qf,x,m,x].dyn(mp)
 L2

@@ -1,5 +1,4 @@
 // bach fugue No.16 
-// m34.b1 rit.
 clear
 graph.dark
 graph.voice
@@ -99,4 +98,4 @@ L1
 [l,s,f,m,r,d^,t^,l^/r^,t,m^^,-m^,hl^//].dyn(mp)
 
 !msr(34)
-rit.b2
+rit.bar(2)

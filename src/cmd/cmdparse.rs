@@ -667,54 +667,48 @@ impl LoopianCmd {
         self.dtstk.change_oct(0, true, part_num);
     }
     fn set_rit(&self, input_text: &str) -> String {
-        let mut strength_txt: String;
         let mut aft_rit: i16 = MSG2_RIT_ATMP;
-        if input_text.chars().any(|x| x == '/') {
-            let rit_txt_raw = &input_text[4..];
-            let rit_txt = split_by('/', rit_txt_raw.to_string());
-            let nxt_msr_txt = &rit_txt[1];
-            if nxt_msr_txt == "fermata" {
-                aft_rit = MSG2_RIT_FERMATA;
-            } else {
-                match nxt_msr_txt.parse::<i16>() {
-                    Ok(tmp) => aft_rit = tmp,
-                    Err(e) => {
-                        println!("{:?}", e);
-                        "Number is wrong.".to_string();
+        let mut strength_value: i16 = MSG_RIT_NRM;
+        let mut bar_num: i16 = 0;
+        let mut rit_txt = split_by('.', input_text[4..].to_string());
+
+        while rit_txt.len() > 0 {
+            if rit_txt[0].chars().any(|x| x == '(') {
+                if let Some((cmd, prm)) = separate_cmnd_and_str(&rit_txt[0]) {
+                    if cmd == "bar" {
+                        bar_num = prm.parse::<i16>().unwrap_or(0);
+                        if bar_num >= 1 {
+                            // 入力値は、内部値より1大きい
+                            bar_num -= 1;
+                        }
+                    } else if cmd == "bpm" {
+                        if prm == "fermata" {
+                            aft_rit = MSG2_RIT_FERMATA;
+                        } else {
+                            if let Ok(tmp) = prm.parse::<i16>() {
+                                aft_rit = tmp;
+                            } else {
+                                return "Number is wrong.".to_string();
+                            }
+                        }
                     }
                 }
+            } else {
+                if rit_txt[0] == "molto" {
+                    strength_value = MSG_RIT_MLT;
+                } else if rit_txt[0] == "poco" {
+                    strength_value = MSG_RIT_POCO;
+                }
             }
-            strength_txt = rit_txt[0].clone();
-        } else {
-            strength_txt = input_text[4..].to_string();
+            rit_txt.remove(0);
         }
 
-        let mut bar = 0;
-        if strength_txt.chars().any(|x| x == 'b') {
-            let str_bar = split_by('b', strength_txt.to_string());
-            strength_txt = str_bar[0].clone();
-            if str_bar[0].len() != 0 {
-                strength_txt.pop(); // '.' を削除する
-            }
-            bar = str_bar[1].parse().unwrap_or(0);
-            if bar >= 1 {
-                // 入力値は、内部値より1大きい
-                bar -= 1;
-            }
-        }
-
-        let mut strength_value: i16 = MSG_RIT_NRM;
-        if strength_txt == "poco" {
-            strength_value = MSG_RIT_POCO;
-        } else if strength_txt == "molto" {
-            strength_value = MSG_RIT_MLT;
-        }
         println!(
             "Rit,strength:{}, bar:{}, after:{}",
-            strength_value, bar, aft_rit
+            strength_value, bar_num, aft_rit
         );
         self.sndr
-            .send_msg_to_elapse(ElpsMsg::Rit([strength_value + bar * 10, aft_rit]));
+            .send_msg_to_elapse(ElpsMsg::Rit([strength_value + bar_num * 10, aft_rit]));
 
         "rit. has started!".to_string()
     }

@@ -53,4 +53,4 @@ set.oct(1)
 [x,s,f,m/r,d.,r/x,s,f,m/r,d,er,d,r,m/qx,+d,t,s/m,d..].dyn(ff)
 [x,s,f,m/r,d.,r/x,s,f,m/r,d,er,d,r,m/qx,+d,t,el,s/m,r,qd.,et,s].dyn(ff)
 
-rit./fermata
+rit.bpm(fermata)

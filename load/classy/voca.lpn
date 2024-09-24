@@ -46,7 +46,7 @@ L1
 [qx.,r,-s].dyn(p)
 
 !auto(6)
-rit.poco.b2
+rit.poco.bar(2)
 R1
 [e-m-ld,-m-ld,-fdr,-f-tar,-m-lm,-m-lm,-m-sir,-m-sir%].dyn(p)
 L2
@@ -367,7 +367,7 @@ L1
 [+vf,m,f,s^,l^,ta^,l,s,ef%,vs,f,ma,m^,f^,m].dyn(mp)
 
 !auto(37)
-rit.poco.b3
+rit.poco.bar(3)
 R2
 [lo/.//].dyn(p)
 R1

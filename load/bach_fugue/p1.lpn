@@ -108,7 +108,7 @@ R1
 [--vd,+d,f,l,d^,f^,d^,l,d,l,f,l,f,r,f%,r%].dyn(p)
 
 !msr(34)
-rit.b2
+rit.bar(2)
 [--vd,+t,++s,t,r^,f^,r^,t,r,t,s,t,-r,f%,m%,r%/--d-dms+d%%o//].dyn(p)
 
 !msr(37)
