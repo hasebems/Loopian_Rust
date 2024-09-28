@@ -1,12 +1,12 @@
 [package]
 name = "loopian"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-eframe = "0.26.2"
+eframe = "0.29.0"
 device_query = "1.1.0"
 midir = "0.10.0"
 rand = "0.8.5"

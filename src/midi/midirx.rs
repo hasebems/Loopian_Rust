@@ -5,8 +5,8 @@
 //
 extern crate midir;
 
-use crate::lpnlib::{ElpsMsg::*, *};
 use crate::file::settings::Settings;
+use crate::lpnlib::{ElpsMsg::*, *};
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;

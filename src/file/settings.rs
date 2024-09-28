@@ -31,7 +31,7 @@ impl Settings {
         let fs: String = fs::read_to_string(Self::SETTINGS_FILE).unwrap();
         let sts: Result<Settings, toml::de::Error> = toml::from_str(&fs);
         match sts {
-            Ok(s) => s,//println!("{:#?}", s),
+            Ok(s) => s,
             Err(e) => panic!("Filed to parse TOML: {}", e),
         }
     }

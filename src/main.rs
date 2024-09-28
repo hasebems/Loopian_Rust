@@ -22,10 +22,10 @@ use std::time::Duration;
 
 use cmd::cmdparse;
 use cmd::txt_common::*;
-use file::history::History;
-use file::settings::Settings;
 use elapse::stack_elapse::ElapseStack;
 use elapse::tickgen::CrntMsrTick;
+use file::history::History;
+use file::settings::Settings;
 use graphic::graphic::{Graphic, TextAttribute};
 use lpnlib::*;
 use server::server::cui_loop;
@@ -365,13 +365,13 @@ impl LoopianApp {
         // Configuration for CentralPanel
         let back_color = self.graph.back_color();
         let my_frame = egui::containers::Frame {
-            inner_margin: egui::style::Margin {
+            inner_margin: egui::Margin {
                 left: 0.,
                 right: 0.,
                 top: 0.,
                 bottom: 0.,
             },
-            outer_margin: egui::style::Margin {
+            outer_margin: egui::Margin {
                 left: 0.,
                 right: 0.,
                 top: 0.,
@@ -384,7 +384,9 @@ impl LoopianApp {
                 se: 0.0,
             },
             shadow: eframe::epaint::Shadow {
-                extrusion: 0.0,
+                offset: Vec2::ZERO,
+                blur: 0.0,
+                spread: 0.0,
                 color: back_color,
             },
             fill: back_color,
@@ -481,14 +483,13 @@ fn main() {
         let winsz = &Settings::load_settings().window_size;
         let sz_default = [winsz.window_x_default, winsz.window_y_default];
         let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default()
-                .with_inner_size(sz_default),
+            viewport: egui::ViewportBuilder::default().with_inner_size(sz_default),
             ..eframe::NativeOptions::default()
         };
         let _ = eframe::run_native(
             "Loopian",
             options,
-            Box::new(|cc| Box::new(LoopianApp::new(cc))),
+            Box::new(|cc| Ok(Box::new(LoopianApp::new(cc)))),
         );
     }
 }

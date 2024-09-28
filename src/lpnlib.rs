@@ -25,7 +25,6 @@ pub const NOTHING: i16 = -1;
 pub const MAX_INDICATOR: usize = 8;
 pub const MAX_PATTERN_NUM: u8 = 16; // Max Pattern Number
 
-
 //*******************************************************************
 //          part count
 //*******************************************************************
