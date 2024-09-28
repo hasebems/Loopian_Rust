@@ -9,7 +9,7 @@ use super::waterripple::WaterRipple;
 use crate::cmd::cmdparse::LoopianCmd;
 use crate::cmd::txt_common::*;
 use crate::lpnlib::*;
-use crate::setting::*;
+use crate::file::settings::Settings;
 use eframe::{egui, egui::*};
 use rand::{rngs, thread_rng, Rng};
 use std::time::Instant;
@@ -64,10 +64,11 @@ struct Resize {
 }
 impl Graphic {
     pub fn new() -> Graphic {
+        let winsz = &Settings::load_settings().window_size;
         Self {
             full_size: Pos2 {
-                x: WINDOW_X_DEFAULT,
-                y: WINDOW_Y_DEFAULT,
+                x: winsz.window_x_default,
+                y: winsz.window_y_default,
             },
             nobj: Vec::new(),
             start_time: Instant::now(),

@@ -6,7 +6,7 @@
 extern crate midir;
 
 use crate::lpnlib::{ElpsMsg::*, *};
-use crate::setting::MIDI_DEVICE;
+use crate::file::settings::Settings;
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
@@ -147,7 +147,8 @@ impl MidiRx {
         let mut ret_num = NONE_NUM;
         for (i, p) in in_ports.iter().enumerate() {
             let drv_name = midi_in.port_name(p).unwrap();
-            if drv_name.find(MIDI_DEVICE).is_some() && i != num_to_avoid {
+            let dev_name = &Settings::load_settings().midi.midi_device;
+            if drv_name.find(dev_name).is_some() && i != num_to_avoid {
                 println!(
                     "{}: {} <as Flow{}>",
                     i,

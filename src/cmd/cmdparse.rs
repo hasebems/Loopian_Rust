@@ -11,7 +11,6 @@ use super::seq_stock::*;
 use super::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
-use crate::setting::*;
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査

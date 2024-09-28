@@ -5,7 +5,7 @@
 //
 extern crate midir;
 
-use crate::setting::*;
+use crate::file::settings::Settings;
 use midir::{MidiOutput, /*MidiOutputPort,*/ MidiOutputConnection};
 
 pub struct MidiTx {
@@ -52,6 +52,9 @@ impl MidiTx {
             }
         }
 
+        let midi_out = &Settings::load_settings().midi.midi_out;
+        let midi_ext_out = &Settings::load_settings().midi.midi_ext_out;
+        let midi_device = &Settings::load_settings().midi.midi_device;
         let mut an_least_one = false;
         for (i, p) in out_ports.iter().enumerate() {
             let driver;
@@ -64,7 +67,7 @@ impl MidiTx {
                 }
                 Err(_e) => continue,
             }
-            if drv_name.find(MIDI_OUT).is_some() {
+            if drv_name.find(midi_out).is_some() {
                 match driver.connect(p, "loopian_tx1") {
                     Ok(c) => {
                         this.connection_tx = Some(Box::new(c));
@@ -75,7 +78,7 @@ impl MidiTx {
                         println!("Connection Failed! for No.{}", i);
                     }
                 }
-            } else if drv_name.find(MIDI_DEVICE).is_some() {
+            } else if drv_name.find(midi_device).is_some() {
                 if this.connection_tx_led1.is_none() {
                     match driver.connect(p, "loopian_tx2") {
                         Ok(c) => {
@@ -99,7 +102,7 @@ impl MidiTx {
                         }
                     }
                 }
-            } else if drv_name.find(MIDI_EXT_OUT).is_some() {
+            } else if drv_name.find(midi_ext_out).is_some() {
                 match driver.connect(p, "loopian_tx3") {
                     Ok(c) => {
                         this.connection_ext_loopian = Some(Box::new(c));

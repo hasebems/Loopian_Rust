@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-use super::txt_common::*;
+use crate::cmd::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 

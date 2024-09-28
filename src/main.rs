@@ -5,11 +5,11 @@
 //
 mod cmd;
 mod elapse;
+mod file;
 mod graphic;
 mod lpnlib;
 mod midi;
 mod server;
-mod setting;
 mod test;
 
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
@@ -21,14 +21,14 @@ use std::thread;
 use std::time::Duration;
 
 use cmd::cmdparse;
-use cmd::history::History;
 use cmd::txt_common::*;
+use file::history::History;
+use file::settings::Settings;
 use elapse::stack_elapse::ElapseStack;
 use elapse::tickgen::CrntMsrTick;
 use graphic::graphic::{Graphic, TextAttribute};
 use lpnlib::*;
 use server::server::cui_loop;
-use setting::*;
 
 pub struct LoopianApp {
     input_locate: usize,   //  カーソルの位置
@@ -63,7 +63,7 @@ impl LoopianApp {
         }
     }
     fn init_font(cc: &eframe::CreationContext<'_>) {
-        let mut fonts = setting::add_myfont();
+        let mut fonts = Self::add_myfont();
 
         // Put my font first (highest priority) for proportional text:
         fonts
@@ -81,6 +81,37 @@ impl LoopianApp {
 
         // Tell egui to use these fonts:
         cc.egui_ctx.set_fonts(fonts);
+    }
+    /// Font Data File Name with path
+    pub fn add_myfont() -> FontDefinitions {
+        let mut fonts = FontDefinitions::default();
+
+        // Install my own font (maybe supporting non-latin characters).
+        #[cfg(not(feature = "raspi"))]
+        fonts.font_data.insert(
+            "profont".to_owned(),
+            FontData::from_static(include_bytes!("../assets/newyork.ttf")), // for Mac
+        );
+        #[cfg(feature = "raspi")]
+        fonts.font_data.insert(
+            "profont".to_owned(),
+            FontData::from_static(include_bytes!(
+                "/home/pi/loopian/Loopian_Rust/assets/NewYork.ttf"
+            )), // for linux
+        );
+        #[cfg(not(feature = "raspi"))]
+        fonts.font_data.insert(
+            "monofont".to_owned(),
+            FontData::from_static(include_bytes!("../assets/courier.ttc")), // for Mac
+        );
+        #[cfg(feature = "raspi")]
+        fonts.font_data.insert(
+            "monofont".to_owned(),
+            FontData::from_static(include_bytes!(
+                "/home/pi/loopian/Loopian_Rust/assets/Courier.ttc"
+            )), // for linux
+        );
+        fonts
     }
     fn app_end(&mut self, save: bool) {
         if save {
@@ -447,9 +478,11 @@ fn main() {
         cui_loop();
     } else {
         // GUI version
+        let winsz = &Settings::load_settings().window_size;
+        let sz_default = [winsz.window_x_default, winsz.window_y_default];
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
-                .with_inner_size([WINDOW_X_DEFAULT, WINDOW_Y_DEFAULT]),
+                .with_inner_size(sz_default),
             ..eframe::NativeOptions::default()
         };
         let _ = eframe::run_native(

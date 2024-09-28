@@ -1,5 +1,4 @@
 pub mod cmdparse;
-pub mod history;
 pub mod send_msg;
 pub mod seq_stock;
 pub mod txt2seq_ana;

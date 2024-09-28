@@ -11,7 +11,13 @@ use std::io;
 
 use crate::cmd::cmdparse;
 use crate::gen_elapse_thread;
-use crate::setting::*;
+use crate::lpnlib::*;
+
+//Raspberry Pi5 pin
+#[cfg(feature = "raspi")]
+pub const RASPI_PIN_FOR_QUIT: u8 = 26;
+#[cfg(feature = "raspi")]
+pub const RASPI_PIN_FOR_RECONNECT: u8 = 16;
 
 pub struct LoopianServer {
     //input_text: String,
