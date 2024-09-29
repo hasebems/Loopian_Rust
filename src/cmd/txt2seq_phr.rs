@@ -623,10 +623,11 @@ fn add_note(
         if *note == REST {
             continue;
         } else if *note == NO_NOTE {
-            if mes_top {
+            let l = return_rcmb.len();
+            if mes_top && l > 0 {
                 // 小節先頭にタイがあった場合、前の音の音価を増やす
                 // 前回の入力が '=' による和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
-                let mut search_idx = return_rcmb.len() - 1;
+                let mut search_idx = l - 1;
                 let last_tick = return_rcmb[search_idx].tick;
                 loop {
                     if return_rcmb[search_idx].tick == last_tick {
