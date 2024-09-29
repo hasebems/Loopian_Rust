@@ -128,13 +128,14 @@ impl PhrLoopManager {
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.loop_phrase.clone() // 重いclone()?
     }
-    pub fn gen_msrcnt(&self, crnt_msr: i32) -> String {
+    pub fn gen_msrcnt(&self, crnt_msr: i32) -> Option<(i32, i32)> {
         if let Some(phr) = &self.loop_phrase {
             let denomirator = self.max_loop_msr;
             let numerator = crnt_msr - phr.borrow().first_msr_num() + 1; // 1origin
-            format!("{}/{}", numerator, denomirator)
+                                                                         //format!("{}/{}", numerator, denomirator)
+            Some((numerator, denomirator))
         } else {
-            String::from("---")
+            None
         }
     }
     pub fn set_turnnote(&mut self, tn: i16) {
@@ -505,16 +506,31 @@ impl Part {
         self.cm.state_reserve = true;
         self.sync_next_msr_flag = true;
     }
-    pub fn gen_part_indicator(&self, crnt_: &CrntMsrTick) -> String {
+    pub fn gen_part_indicator(&self, crnt_: &CrntMsrTick) -> PartUi {
+        let mut exist = true;
+        let mut flow = false;
+        let mut chord_name = "".to_string();
+        let mut msr_in_loop = 0;
+        let mut all_msrs = 0;
         if self.pm.whole_tick != 0 {
-            let msrcnt = self.pm.gen_msrcnt(crnt_.msr);
-            let chord_name = self.cm.gen_chord_name();
-            format!("{}{} {}", self.id.sid + 4, msrcnt, chord_name)
+            if let Some(a) = self.pm.gen_msrcnt(crnt_.msr) {
+                (msr_in_loop, all_msrs) = a;
+            } else {
+                exist = false;
+            }
+            chord_name = self.cm.gen_chord_name();
         } else if self.flow.is_some() && self.during_play {
-            let chord_name = self.cm.gen_chord_name();
-            format!("{}Flow {}", self.id.sid + 4, chord_name)
+            chord_name = self.cm.gen_chord_name().to_string();
+            flow = true;
         } else {
-            format!("{}---", self.id.sid + 4)
+            exist = false;
+        }
+        PartUi {
+            exist,
+            msr_in_loop,
+            all_msrs,
+            flow,
+            chord_name,
         }
     }
     pub fn rcv_midi_in(

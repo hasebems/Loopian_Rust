@@ -3,13 +3,11 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use std::fs;
-use std::sync::{mpsc, mpsc::*};
+use std::sync::mpsc;
 
 use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
-use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 
 //  LoopianCmd の責務
@@ -17,97 +15,31 @@ use crate::lpnlib::*;
 //  2. 解析に送る/elapseに送る
 //  3. eguiに返事を返す
 pub struct LoopianCmd {
-    has_gui: bool,
-    indicator: Vec<String>,
     indicator_key_stock: String,
-    ui_hndr: mpsc::Receiver<String>,
     input_part: usize,
     during_play: bool,
     recursive: bool,
     dtstk: SeqDataStock,
-    graphic_ev: Vec<String>,
     sndr: MessageSender,
     path: Option<String>,
 }
 impl LoopianCmd {
-    pub fn new(
-        msg_hndr: mpsc::Sender<ElpsMsg>,
-        ui_hndr: mpsc::Receiver<String>,
-        has_gui: bool,
-    ) -> Self {
-        let mut indicator = vec![String::from("---"); MAX_INDICATOR];
-        indicator[0] = "C".to_string();
-        indicator[1] = DEFAULT_BPM.to_string();
-        indicator[3] = "1 : 1 : 000".to_string();
+    pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>) -> Self {
         Self {
-            has_gui,
-            indicator,
             indicator_key_stock: "C".to_string(),
-            ui_hndr,
             input_part: RIGHT1,
             during_play: false,
             recursive: false,
             dtstk: SeqDataStock::new(),
-            graphic_ev: Vec::new(),
             sndr: MessageSender::new(msg_hndr),
             path: None,
         }
     }
-    pub fn move_ev_from_gev(&mut self) -> Option<String> {
-        if self.graphic_ev.len() > 0 && self.has_gui {
-            let gev = self.graphic_ev[0].clone();
-            self.graphic_ev.remove(0);
-            return Some(gev);
-        } else {
-            None
-        }
+    pub fn get_indicator_key_stock(&self) -> String {
+        self.indicator_key_stock.clone()
     }
     pub fn get_input_part(&self) -> usize {
         self.input_part
-    }
-    pub fn get_part_txt(&self) -> &str {
-        match self.input_part {
-            LEFT1 => "L1",
-            LEFT2 => "L2",
-            RIGHT1 => "R1",
-            RIGHT2 => "R2",
-            _ => "__",
-        }
-    }
-    pub fn get_indicator(&self, num: usize) -> &str {
-        &self.indicator[num]
-    }
-    pub fn get_msr_tick(&self) -> CrntMsrTick {
-        let mb = self.get_indicator(3).to_string();
-        if let Some(first) = mb.chars().nth(0) {
-            if first == '>' {
-                // 再生中
-                let mut mbx = mb[1..].to_string();
-                mbx.retain(|c| !c.is_whitespace());
-                let mbvec: Vec<&str> = mbx.split(':').collect();
-                if mbvec.len() >= 2 {
-                    let msr = mbvec[0].parse::<i32>().unwrap_or(0); // 小節番号
-                    let bnum = mbvec[1].parse::<i32>().unwrap_or(0); // 拍
-                    let beat = self.get_indicator(2).to_string();
-                    let beat_ele: Vec<&str> = beat.split('/').collect();
-                    let numerator = beat_ele[0].parse::<i32>().unwrap_or(0); // 拍数
-                    let denomirator = if beat_ele.len() >= 2 {
-                        // 分母
-                        beat_ele[1].parse::<i32>().unwrap_or(1)
-                    } else {
-                        1
-                    };
-                    let tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE * numerator / denomirator;
-                    let tick = bnum * DEFAULT_TICK_FOR_QUARTER * 4 / denomirator; // 拍から算出したtick
-                    return CrntMsrTick {
-                        msr,
-                        tick,
-                        tick_for_onemsr,
-                    };
-                }
-            }
-        }
-        CrntMsrTick::default()
     }
     pub fn get_path(&self) -> Option<String> {
         self.path.clone()
@@ -127,79 +59,6 @@ impl LoopianCmd {
     pub fn send_reconnect(&self) {
         self.sndr
             .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
-    }
-    pub fn read_from_ui_hndr(&mut self) -> u8 {
-        // Play Thread からの、8indicator表示/PC時のFile Loadメッセージを受信する処理
-        loop {
-            match self.ui_hndr.try_recv() {
-                Ok(mut uitxt) => {
-                    if let Some(letter) = uitxt.chars().nth(0) {
-                        let len = uitxt.chars().count();
-                        if let Some(ind_num) = letter.to_digit(10) {
-                            // 数字だったら
-                            if len >= 2 {
-                                let txt = uitxt.split_off(1);
-                                if ind_num == 0 && txt == "_" {
-                                    self.indicator[0] = self.indicator_key_stock.clone();
-                                } else if (ind_num as usize) < MAX_INDICATOR {
-                                    self.indicator[ind_num as usize] = txt;
-                                } else if ind_num == 9 && self.has_gui {
-                                    // ElapseStack からの発音 Note Number/Velocity
-                                    self.graphic_ev.push(txt);
-                                }
-                            }
-                        } else if letter == '@' {
-                            // MIDI Program Change
-                            return self.get_pcmsg_from_midi(&uitxt[1..]);
-                        }
-                    }
-                }
-                Err(TryRecvError::Disconnected) => break, // Wrong!
-                Err(TryRecvError::Empty) => break,
-            }
-        }
-        127
-    }
-    fn get_pcmsg_from_midi(&mut self, msg: &str) -> u8 {
-        // MIDI PC Message (1-128)
-        println!("Get Command!: {:?}", msg);
-        let len = msg.len();
-        if len > 3 && &msg[0..3] == "ptn" {
-            let pc_num: u8 = msg[3..].parse().unwrap_or(MAX_PATTERN_NUM);
-            if pc_num < MAX_PATTERN_NUM {
-                let fname = format!("{}.lpn", &msg[3..]);
-                let command_stk = self.load_lpn_when_pc(fname);
-                for cmd in command_stk.iter() {
-                    let _answer = self.set_and_responce(cmd);
-                }
-            }
-            return pc_num;
-        }
-        127
-    }
-    fn load_lpn_when_pc(&mut self, fname: String) -> Vec<String> {
-        let mut command: Vec<String> = Vec::new();
-        let path = "pattern/".to_owned() + &fname;
-        println!("Pattern File: {}", path);
-        match fs::read_to_string(path) {
-            Ok(content) => {
-                for line in content.lines() {
-                    let mut comment = false;
-                    if line.len() > 1 {
-                        // コメントでないか、過去の 2023.. が書かれてないか
-                        let notxt = line[0..2].to_string();
-                        if notxt == "//" || notxt == "20" {
-                            comment = true;
-                        }
-                    }
-                    if line.len() > 0 && !comment {
-                        command.push(line.to_string());
-                    }
-                }
-            }
-            Err(_err) => println!("Can't open a file"),
-        };
-        command
     }
     //*************************************************************************
     pub fn set_and_responce(&mut self, input_text: &str) -> Option<CmndRtn> {

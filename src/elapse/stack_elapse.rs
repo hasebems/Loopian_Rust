@@ -37,7 +37,7 @@ pub enum SameKeyState {
 //  2. Timing/Tempo の生成とtick管理
 //  3. MIDI Out の生成と管理
 pub struct ElapseStack {
-    ui_hndr: mpsc::Sender<String>,
+    ui_hndr: mpsc::Sender<UiMsg>,
     rx_hndr: mpsc::Receiver<ElpsMsg>,
     tx_ctrl: mpsc::Sender<ElpsMsg>,
     mdx: MidiTx,
@@ -75,7 +75,7 @@ fn gen_midirx_thread() -> (Receiver<ElpsMsg>, Sender<ElpsMsg>) {
     (rxmsg, txctrl)
 }
 impl ElapseStack {
-    pub fn new(ui_hndr: mpsc::Sender<String>) -> Self {
+    pub fn new(ui_hndr: mpsc::Sender<UiMsg>) -> Self {
         let (c, e) = MidiTx::connect();
         if let Some(err) = e {
             println!("{}", err);
@@ -154,8 +154,7 @@ impl ElapseStack {
     }
     pub fn inc_key_map(&mut self, key_num: u8, vel: u8, pt: u8) {
         self.key_map[(key_num - MIN_NOTE_NUMBER) as usize] += 1;
-        let key_disp = format!("9{}/{}/{}", key_num, vel, pt);
-        self.send_msg_to_ui(&key_disp);
+        self.send_msg_to_ui(UiMsg::NoteUi(NoteUiEv { key_num, vel, pt }));
     }
     pub fn dec_key_map(&mut self, key_num: u8) -> SameKeyState {
         let idx = (key_num - MIN_NOTE_NUMBER) as usize;
@@ -325,8 +324,8 @@ impl ElapseStack {
             self.reconnect();
         }
     }
-    fn send_msg_to_ui(&self, msg: &str) {
-        match self.ui_hndr.send(msg.to_string()) {
+    fn send_msg_to_ui(&self, msg: UiMsg) {
+        match self.ui_hndr.send(msg) {
             Err(e) => println!("Something happened on MPSC for UI! {}", e),
             _ => {}
         }
@@ -373,8 +372,7 @@ impl ElapseStack {
                     .rcv_midi_in(self, crnt_, sts & 0xf0, nt, vel);
             } else if (sts & 0xf0) == 0xc0 {
                 // PCN は Pattern 切り替えに使用する
-                let key_disp = format!("@ptn{}", nt);
-                self.send_msg_to_ui(&key_disp);
+                self.send_msg_to_ui(UiMsg::ChangePtn(nt));
             }
         }
     }
@@ -611,12 +609,10 @@ impl ElapseStack {
     //*******************************************************************
     fn update_gui_at_msrtop(&mut self) {
         // key
-        let key_disp = "0_".to_string();
-        self.send_msg_to_ui(&key_disp);
+        self.send_msg_to_ui(UiMsg::NewMeasure);
         // beat
         let beat = self.tg.get_beat();
-        let beat_disp = format!("2{}/{}", beat.0, beat.1);
-        self.send_msg_to_ui(&beat_disp);
+        self.send_msg_to_ui(UiMsg::Beat(beat.0, beat.1));
     }
     fn update_gui(&mut self) {
         if self.crnt_time - self.display_time > Duration::from_millis(50) {
@@ -627,19 +623,16 @@ impl ElapseStack {
             } else {
                 self.bpm_stock
             };
-            let bpm_disp = format!("1{}", bpm_num);
-            self.send_msg_to_ui(&bpm_disp);
+            self.send_msg_to_ui(UiMsg::BpmUi(bpm_num));
             // tick
             let (m, b, t, _c) = self.tg.get_tick();
-            let play = if self.during_play { ">" } else { "" };
-            let tick_disp = format!("3{} {} : {} : {:>03}", play.to_string(), m, b, t);
-            self.send_msg_to_ui(&tick_disp);
+            self.send_msg_to_ui(UiMsg::TickUi(self.during_play, m, b, t));
             // part
-            self.part_vec.iter().for_each(|x| {
-                let crnt_ = self.tg.get_crnt_msr_tick();
-                let part_ind = x.borrow().gen_part_indicator(&crnt_);
-                self.send_msg_to_ui(&part_ind);
-            });
+            let crnt_ = self.tg.get_crnt_msr_tick();
+            for i in 0..MAX_KBD_PART {
+                let part_ui = self.part_vec[i].borrow().gen_part_indicator(&crnt_);
+                self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ use std::io;
 
 use crate::cmd::cmdparse;
 use crate::gen_elapse_thread;
+use crate::graphic::guiev::GuiEv;
 use crate::lpnlib::*;
 
 //Raspberry Pi5 pin
@@ -21,6 +22,7 @@ pub const RASPI_PIN_FOR_RECONNECT: u8 = 16;
 
 pub struct LoopianServer {
     //input_text: String,
+    guiev: GuiEv,
     cmd: cmdparse::LoopianCmd,
     cui_mode: bool,
 }
@@ -29,7 +31,8 @@ impl LoopianServer {
         let (txmsg, rxui) = gen_elapse_thread();
         Self {
             //input_text: "".to_string(),
-            cmd: cmdparse::LoopianCmd::new(txmsg, rxui, false),
+            guiev: GuiEv::new(rxui, false),
+            cmd: cmdparse::LoopianCmd::new(txmsg),
             cui_mode: false,
         }
     }
@@ -59,7 +62,7 @@ pub fn cui_loop() {
             }
         } else {
             //  Read imformation from StackElapse/Gpio
-            let rtn = srv.cmd.read_from_ui_hndr();
+            let rtn = srv.guiev.read_from_ui_hndr(&mut srv.cmd);
             if rtn == MAX_PATTERN_NUM {
                 break; // 終了
             } else if rtn == MAX_PATTERN_NUM + 1 {

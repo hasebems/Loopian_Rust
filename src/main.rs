@@ -27,6 +27,7 @@ use elapse::tickgen::CrntMsrTick;
 use file::history::History;
 use file::settings::Settings;
 use graphic::graphic::{Graphic, TextAttribute};
+use graphic::guiev::GuiEv;
 use lpnlib::*;
 use server::server::cui_loop;
 
@@ -41,6 +42,7 @@ pub struct LoopianApp {
     cmd: cmdparse::LoopianCmd,
     history: History,
     graph: Graphic,
+    guiev: GuiEv,
 }
 impl LoopianApp {
     //*******************************************************************
@@ -57,9 +59,10 @@ impl LoopianApp {
             scroll_lines: Vec::new(),
             history_cnt: 0,
             next_msr_tick: None,
-            cmd: cmdparse::LoopianCmd::new(txmsg, rxui, true),
+            cmd: cmdparse::LoopianCmd::new(txmsg),
             history: History::new(),
             graph: Graphic::new(),
+            guiev: GuiEv::new(rxui, true),
         }
     }
     fn init_font(cc: &eframe::CreationContext<'_>) {
@@ -304,7 +307,7 @@ impl LoopianApp {
     fn auto_load_command(&mut self) {
         // from main loop
         if let Some(nmt) = self.next_msr_tick {
-            let crnt: CrntMsrTick = self.cmd.get_msr_tick();
+            let crnt: CrntMsrTick = self.guiev.get_msr_tick();
             if nmt.msr != LAST
                 && nmt.msr > 0
                 && nmt.msr - 1 == crnt.msr  // 一つ前の小節(両方とも1origin)
@@ -357,11 +360,6 @@ impl LoopianApp {
     //      Central Panel
     //*******************************************************************
     fn draw_central_panel(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
-        let mut ntev: Vec<String> = Vec::new();
-        while let Some(kmsg) = self.cmd.move_ev_from_gev() {
-            ntev.push(kmsg);
-        }
-
         // Configuration for CentralPanel
         let back_color = self.graph.back_color();
         let my_frame = egui::containers::Frame {
@@ -401,11 +399,12 @@ impl LoopianApp {
                     &visible_text.to_string(),
                     &self.scroll_lines,
                     self.history_cnt,
-                    &self.cmd,
+                    self.cmd.get_input_part(),
+                    &self.guiev,
                 ),
                 frame,
-                ntev,
             );
+            self.guiev.clear_graphic_ev();
         });
     }
 }
@@ -446,7 +445,7 @@ impl eframe::App for LoopianApp {
         });
 
         //  Read imformation from StackElapse
-        self.cmd.read_from_ui_hndr();
+        self.guiev.read_from_ui_hndr(&mut self.cmd);
 
         //  Auto Load Function
         self.auto_load_command();
@@ -458,7 +457,8 @@ impl eframe::App for LoopianApp {
 //*******************************************************************
 //      Main
 //*******************************************************************
-fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<String>) {
+/// GUI/CUI 両方から呼ばれる
+fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<UiMsg>) {
     //  create new thread & channel
     let (txmsg, rxmsg) = mpsc::channel();
     let (txui, rxui) = mpsc::channel();

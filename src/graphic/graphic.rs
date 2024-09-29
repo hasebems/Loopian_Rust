@@ -3,11 +3,10 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use super::guiev::GuiEv;
 use super::noteobj::NoteObj;
 use super::voice::Voice4;
 use super::waterripple::WaterRipple;
-use crate::cmd::cmdparse::LoopianCmd;
-use crate::cmd::txt_common::*;
 use crate::file::settings::Settings;
 use crate::lpnlib::*;
 use eframe::{egui, egui::*};
@@ -87,6 +86,9 @@ impl Graphic {
     pub fn set_noteptn(&mut self, ptn: GraphNote) {
         self.note = ptn;
     }
+    //*******************************************************************
+    //      Update Screen
+    //*******************************************************************
     pub fn update(
         &mut self,
         ui: &mut Ui,
@@ -95,10 +97,10 @@ impl Graphic {
             &String,                               // input text
             &Vec<(TextAttribute, String, String)>, // scroll text(TextAttribute::Common/Answer, time, text)
             usize,                                 // selected scroll text line
-            &LoopianCmd,                           // eight indicator
+            usize,                                 // input part
+            &GuiEv,                                // eight indicator
         ),
         _frame: &mut eframe::Frame,
-        ntev: Vec<String>,
     ) {
         // window size を得る
         let new_x = ui.available_size().x;
@@ -119,13 +121,14 @@ impl Graphic {
         self.frame_counter = (time.as_millis() as i32) / FPS;
 
         //  Note Object の描画
-        for ev in ntev.iter() {
-            let nt_vel = split_by('/', ev.clone());
-            let nt: i32 = nt_vel[0].parse().unwrap_or(0);
-            let vel: i32 = nt_vel[1].parse().unwrap_or(0);
-            let pt: i32 = nt_vel[2].parse().unwrap_or(0);
-            let rnd: f32 = self.rndm.gen();
-            self.push_note_obj(nt, vel, pt, rnd);
+        if let Some(gev) = infs.5.get_graphic_ev() {
+            for ev in gev {
+                let nt: i32 = ev.key_num as i32;
+                let vel: i32 = ev.vel as i32;
+                let pt: i32 = ev.pt as i32;
+                let rnd: f32 = self.rndm.gen();
+                self.push_note_obj(nt, vel, pt, rnd);
+            }
         }
         let nlen = self.nobj.len();
         let mut rls = vec![true; nlen];
@@ -146,7 +149,7 @@ impl Graphic {
         self.update_title(ui);
 
         // Eight Indicator 描画
-        self.update_eight_indicator(ui, infs.4, &rs);
+        self.update_eight_indicator(ui, infs.4, infs.5, &rs);
 
         // Scroll Text 描画
         self.update_scroll_text(ui, infs.2, infs.3, &rs);
@@ -220,9 +223,6 @@ impl Graphic {
             ))),
         }
     }
-    //*******************************************************************
-    //      Update Screen
-    //*******************************************************************
     fn update_title(&self, ui: &mut egui::Ui) {
         ui.put(
             Rect {
@@ -243,8 +243,13 @@ impl Graphic {
             ),
         );
     }
-    //*******************************************************************
-    fn update_eight_indicator(&mut self, ui: &mut egui::Ui, cmd: &LoopianCmd, rs: &Resize) {
+    fn update_eight_indicator(
+        &mut self,
+        ui: &mut egui::Ui,
+        input_part: usize,
+        guiev: &GuiEv,
+        rs: &Resize,
+    ) {
         const SPACE1_NEXT: f32 = 50.0;
         const BLOCK_LENGTH: f32 = 200.0;
         const BLOCK_HEIGHT: f32 = 30.0;
@@ -260,7 +265,6 @@ impl Graphic {
             min_left = center - interval * 1.5;
         }
 
-        let input_part = cmd.get_input_part();
         let mut back_color;
         for i in 0..MAX_INDICATOR / 2 {
             for j in 0..2 {
@@ -285,7 +289,7 @@ impl Graphic {
                     8.0,        //  curve
                     back_color, //  color
                 );
-                let tx = self.text_for_eight_indicator(i + j * 4, cmd);
+                let tx = self.text_for_eight_indicator(i + j * 4, guiev);
                 let ltrcnt = tx.chars().count();
                 for k in 0..ltrcnt {
                     ui.put(
@@ -315,17 +319,17 @@ impl Graphic {
             }
         }
     }
-    fn text_for_eight_indicator(&mut self, num: usize, cmd: &LoopianCmd) -> String {
+    fn text_for_eight_indicator(&mut self, num: usize, guiev: &GuiEv) -> String {
         let indi_txt;
         match num {
-            0 => indi_txt = "key: ".to_string() + cmd.get_indicator(0),
-            1 => indi_txt = "bpm: ".to_string() + cmd.get_indicator(1),
-            2 => indi_txt = "beat:".to_string() + cmd.get_indicator(2),
-            4 => indi_txt = "L1:".to_string() + cmd.get_indicator(4),
-            5 => indi_txt = "L2:".to_string() + cmd.get_indicator(5),
-            6 => indi_txt = "R1:".to_string() + cmd.get_indicator(6),
-            7 => indi_txt = "R2:".to_string() + cmd.get_indicator(7),
-            3 => indi_txt = cmd.get_indicator(3).to_string(),
+            0 => indi_txt = "key: ".to_string() + guiev.get_indicator(0),
+            1 => indi_txt = "bpm: ".to_string() + guiev.get_indicator(1),
+            2 => indi_txt = "beat:".to_string() + guiev.get_indicator(2),
+            4 => indi_txt = "L1:".to_string() + guiev.get_indicator(4),
+            5 => indi_txt = "L2:".to_string() + guiev.get_indicator(5),
+            6 => indi_txt = "R1:".to_string() + guiev.get_indicator(6),
+            7 => indi_txt = "R2:".to_string() + guiev.get_indicator(7),
+            3 => indi_txt = guiev.get_indicator(3).to_string(),
             _ => indi_txt = "".to_string(),
         }
         indi_txt
@@ -454,7 +458,8 @@ impl Graphic {
             &String,                               // input text
             &Vec<(TextAttribute, String, String)>, // scroll text
             usize,                                 // selected scroll text line
-            &LoopianCmd,                           // eight indicator
+            usize,                                 // input part
+            &GuiEv,                                // eight indicator
         ),
         rs: &Resize,
     ) {
@@ -518,7 +523,7 @@ impl Graphic {
         if hcnt >= 1000 {
             hcnt %= 1000;
         }
-        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + infs.4.get_part_txt() + ">");
+        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + infs.5.get_part_txt(infs.4) + ">");
 
         // Prompt Text
         ui.put(

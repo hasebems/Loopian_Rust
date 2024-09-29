@@ -256,35 +256,29 @@ pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
 //*******************************************************************
 //          UI Message from Elapse thread
 //*******************************************************************
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct UpdateUi {
-    pub running: bool, // Elapse task thinks im running
-    pub bpm: i16,
-    pub msr: i16,
-    pub beat: i16,
-    pub tick_in_beat: i16,
-    pub pt: [PartUi; MAX_KBD_PART],
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NoteUiEv {
+    pub key_num: u8,
+    pub vel: u8,
+    pub pt: u8,
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PartUi {
     pub exist: bool,
-    pub msr_in_loop: i16,
-    pub all_msrs: i16,
+    pub msr_in_loop: i32,
+    pub all_msrs: i32,
     pub flow: bool,
     pub chord_name: String,
 }
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct NoteUi {
-    pub note_num: i16,
-    pub velocity: i16,
-    pub part: i16,
-}
-#[derive(Clone, Debug)]
-#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum UiMsg {
-    UpdateUi,
-    PartUi,
-    NoteUi,
+    NewMeasure,
+    BpmUi(i16),
+    Beat(i32, i32),
+    TickUi(bool, i32, i32, i32), //running, tick_in_beat, beat, msr
+    PartUi(usize, PartUi),       // part_num
+    NoteUi(NoteUiEv),
+    ChangePtn(u8),
 }
 //*******************************************************************
 //          Command Definition
