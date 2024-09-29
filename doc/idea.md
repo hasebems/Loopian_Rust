@@ -554,7 +554,8 @@ NoteObj <|-- WaterRipple
         - [d,fdm,m] と書かれた時、d=C3とすると、C3->F3,C4,E4->E4 となる
 - MIDI Txのポートが見つからなくても、アプリが起動するようにする(9/23)
 - rit. の記述方法変更(9/24)
-
+- MIDI 設定を settings.toml に書ける機能追加(9/28)
+- 表示のmessageをstringでなくて、ちゃんとしたmessageで。(9/29)
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -569,7 +570,6 @@ NoteObj <|-- WaterRipple
 - <d,r,m>*3 で3回繰り返し、みたいな記法はとても便利だが、octaveの指定がおかしくなりやすく、結局変なことになる
 
 次の対応、考えられる新機能
-- 表示のmessageをstringでなくて、ちゃんとしたmessageで。
 - Tempo/Beat を打ち込みたい（変拍子、rit打ち込み）
     - COND partを作るより、loadの仕方で対応した方が簡単かも
 - スタカートや音価の操作
