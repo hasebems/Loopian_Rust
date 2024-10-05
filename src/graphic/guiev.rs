@@ -15,6 +15,10 @@ pub struct GuiEv {
     has_gui: bool,
     indicator: Vec<String>,
     graphic_ev: Vec<NoteUiEv>,
+    crnt_msr: CrntMsrTick,
+    numerator: i32,
+    denomirator: i32,
+    during_play: bool,
 }
 impl GuiEv {
     pub fn new(ui_hndr: mpsc::Receiver<UiMsg>, has_gui: bool) -> Self {
@@ -26,6 +30,10 @@ impl GuiEv {
             has_gui,
             indicator,
             graphic_ev: Vec::new(),
+            crnt_msr: CrntMsrTick::default(),
+            numerator: 4,
+            denomirator: 4,
+            during_play: false,
         }
     }
     pub fn get_part_txt(&self, input_part: usize) -> &str {
@@ -51,36 +59,11 @@ impl GuiEv {
         self.graphic_ev.clear();
     }
     pub fn get_msr_tick(&self) -> CrntMsrTick {
-        let mb = self.get_indicator(3).to_string();
-        if let Some(first) = mb.chars().nth(0) {
-            if first == '>' {
-                // 再生中
-                let mut mbx = mb[1..].to_string();
-                mbx.retain(|c| !c.is_whitespace());
-                let mbvec: Vec<&str> = mbx.split(':').collect();
-                if mbvec.len() >= 2 {
-                    let msr = mbvec[0].parse::<i32>().unwrap_or(0); // 小節番号
-                    let bnum = mbvec[1].parse::<i32>().unwrap_or(0); // 拍
-                    let beat = self.get_indicator(2).to_string();
-                    let beat_ele: Vec<&str> = beat.split('/').collect();
-                    let numerator = beat_ele[0].parse::<i32>().unwrap_or(0); // 拍数
-                    let denomirator = if beat_ele.len() >= 2 {
-                        // 分母
-                        beat_ele[1].parse::<i32>().unwrap_or(1)
-                    } else {
-                        1
-                    };
-                    let tick_for_onemsr = DEFAULT_TICK_FOR_ONE_MEASURE * numerator / denomirator;
-                    let tick = bnum * DEFAULT_TICK_FOR_QUARTER * 4 / denomirator; // 拍から算出したtick
-                    return CrntMsrTick {
-                        msr,
-                        tick,
-                        tick_for_onemsr,
-                    };
-                }
-            }
+        if self.during_play {
+            self.crnt_msr
+        } else {
+            CrntMsrTick::default()
         }
-        CrntMsrTick::default()
     }
     /// Play Thread からの、8indicator表示/PC時のFile Loadメッセージを受信する処理
     pub fn read_from_ui_hndr(&mut self, cmd: &mut LoopianCmd) -> u8 {
@@ -107,10 +90,16 @@ impl GuiEv {
             }
             UiMsg::Beat(nume, denomi) => {
                 self.indicator[2] = format!("{}/{}", nume, denomi);
+                self.numerator = nume;
+                self.denomirator = denomi;
             }
             UiMsg::TickUi(during_play, m, b, t) => {
                 let p = if during_play { ">" } else { "" };
                 self.indicator[3] = format!("{} {} : {} : {:>03}", p.to_string(), m, b, t);
+                self.during_play = during_play;
+                self.crnt_msr.msr = m;
+                let base_tick = DEFAULT_TICK_FOR_ONE_MEASURE/self.denomirator;
+                self.crnt_msr.tick = b * base_tick + t;
             }
             UiMsg::PartUi(pnum, pui) => {
                 if pui.exist {
