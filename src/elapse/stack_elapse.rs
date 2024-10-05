@@ -49,6 +49,7 @@ pub struct ElapseStack {
     during_play: bool,
     display_time: Instant,
     tg: TickGen,
+    flac: u64,
     part_vec: Vec<Rc<RefCell<Part>>>, // Part Instance が繋がれた Vec
     _damper_part: Rc<RefCell<DamperPart>>,
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
@@ -112,6 +113,7 @@ impl ElapseStack {
             during_play: false,
             display_time: Instant::now(),
             tg: TickGen::new(0),
+            flac: 0,
             part_vec: part_vec.clone(),
             _damper_part: damper_part,
             elapse_vec,
@@ -614,8 +616,10 @@ impl ElapseStack {
         let beat = self.tg.get_beat();
         self.send_msg_to_ui(UiMsg::Beat(beat.0, beat.1));
     }
+    /// 50-60msec に一度、表示更新のイベントを Main Thread に送る
     fn update_gui(&mut self) {
-        if self.crnt_time - self.display_time > Duration::from_millis(50) {
+        let diff = self.crnt_time - self.display_time;
+        if diff > Duration::from_millis(50 + self.flac) {// 表示が周期的にならないように、間隔をバラす
             self.display_time = self.crnt_time;
             // bpm
             let bpm_num = if self.during_play {
@@ -633,6 +637,7 @@ impl ElapseStack {
                 let part_ui = self.part_vec[i].borrow().gen_part_indicator(&crnt_);
                 self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
             }
+            self.flac = (t%10) as u64;
         }
     }
 }
