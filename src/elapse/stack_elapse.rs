@@ -619,7 +619,8 @@ impl ElapseStack {
     /// 50-60msec に一度、表示更新のイベントを Main Thread に送る
     fn update_gui(&mut self) {
         let diff = self.crnt_time - self.display_time;
-        if diff > Duration::from_millis(50 + self.flac) {// 表示が周期的にならないように、間隔をバラす
+        if diff > Duration::from_millis(50 + self.flac) {
+            // 表示が周期的にならないように、間隔をバラす
             self.display_time = self.crnt_time;
             // bpm
             let bpm_num = if self.during_play {
@@ -637,7 +638,7 @@ impl ElapseStack {
                 let part_ui = self.part_vec[i].borrow().gen_part_indicator(&crnt_);
                 self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
             }
-            self.flac = (t%10) as u64;
+            self.flac = (t % 10) as u64;
         }
     }
 }

@@ -98,7 +98,7 @@ impl GuiEv {
                 self.indicator[3] = format!("{} {} : {} : {:>03}", p.to_string(), m, b, t);
                 self.during_play = during_play;
                 self.crnt_msr.msr = m;
-                let base_tick = DEFAULT_TICK_FOR_ONE_MEASURE/self.denomirator;
+                let base_tick = DEFAULT_TICK_FOR_ONE_MEASURE / self.denomirator;
                 self.crnt_msr.tick = b * base_tick + t;
             }
             UiMsg::PartUi(pnum, pui) => {
