@@ -1,3 +1,4 @@
+pub mod cmd_set;
 pub mod cmdparse;
 pub mod send_msg;
 pub mod seq_stock;

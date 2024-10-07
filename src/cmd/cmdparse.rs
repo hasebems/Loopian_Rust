@@ -15,34 +15,40 @@ use crate::lpnlib::*;
 //  2. 解析に送る/elapseに送る
 //  3. eguiに返事を返す
 pub struct LoopianCmd {
-    indicator_key_stock: String,
-    input_part: usize,
     during_play: bool,
     recursive: bool,
-    dtstk: SeqDataStock,
-    sndr: MessageSender,
+    indicator_key_stock: String,
+    input_part: usize,
     path: Option<String>,
+    pub dtstk: SeqDataStock,
+    pub sndr: MessageSender,
 }
 impl LoopianCmd {
     pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>) -> Self {
         Self {
-            indicator_key_stock: "C".to_string(),
-            input_part: RIGHT1,
             during_play: false,
             recursive: false,
+            indicator_key_stock: "C".to_string(),
+            input_part: RIGHT1,
+            path: None,
             dtstk: SeqDataStock::new(),
             sndr: MessageSender::new(msg_hndr),
-            path: None,
         }
     }
     pub fn get_indicator_key_stock(&self) -> String {
         self.indicator_key_stock.clone()
+    }
+    pub fn indicator_key_stock(&mut self, kstk: String) {
+        self.indicator_key_stock = kstk;
     }
     pub fn get_input_part(&self) -> usize {
         self.input_part
     }
     pub fn get_path(&self) -> Option<String> {
         self.path.clone()
+    }
+    pub fn path(&mut self, path: String) {
+        self.path = Some(path);
     }
     pub fn send_quit(&self) {
         self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
@@ -98,7 +104,9 @@ impl LoopianCmd {
         } else if first_letter == "F" {
             Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else if first_letter == "A" {
-            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_capital_a(input_text), NO_MSG))
+        } else if first_letter == "C" {
+            Some(CmndRtn(self.letter_capital_c(input_text), NO_MSG))
         } else {
             Some(CmndRtn("what?".to_string(), NO_MSG))
         }
@@ -278,6 +286,26 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
+    fn letter_capital_a(&mut self, input_text: &str) -> String {
+        let len = input_text.chars().count();
+        if len >= 4 && &input_text[0..4] == "ARP(" {
+            // Arpeggio
+            
+            "Set Arpeggio!".to_string()
+        } else {
+            self.letter_part(input_text)
+        }
+    }
+    fn letter_capital_c(&mut self, input_text: &str) -> String {
+        let len = input_text.chars().count();
+        if len >= 4 && &input_text[0..4] == "CLS(" {
+            // Cluster
+
+            "Set Cluster!".to_string()
+        } else {
+            "what?".to_string()
+        }
+    }    
     fn letter_at(&mut self, input_text: &str) -> String {
         if let Some(ltr) = input_text.chars().nth(1) {
             let itxt = input_text.trim();
@@ -569,180 +597,5 @@ impl LoopianCmd {
             .send_msg_to_elapse(ElpsMsg::Rit([strength_value + bar_num * 10, aft_rit]));
 
         "rit. has started!".to_string()
-    }
-    //*************************************************************************
-    fn parse_set_command(&mut self, input_text: &str) -> String {
-        if let Some((cmd, prm)) = separate_cmnd_and_str(&input_text[4..]) {
-            if cmd == "key" {
-                if self.change_key(prm) {
-                    "Key has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else if cmd == "oct" {
-                if self.change_oct(prm) {
-                    "Octave has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else if cmd == "bpm" {
-                match prm.parse::<i16>() {
-                    Ok(msg) => {
-                        self.dtstk.change_bpm(msg);
-                        self.sndr
-                            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_BPM, msg]));
-                        self.sndr
-                            .send_all_vari_and_phrase(self.input_part, &self.dtstk);
-                        "BPM has changed!".to_string()
-                    }
-                    Err(e) => {
-                        println!("{:?}", e);
-                        "Number is wrong.".to_string()
-                    }
-                }
-            } else if cmd == "beat" {
-                let numvec = split_by('/', prm.to_string());
-                if numvec.len() < 2 {
-                    "Number is wrong.".to_string()
-                } else {
-                    match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
-                        (Ok(numerator), Ok(denomirator)) => {
-                            self.dtstk.change_beat(numerator, denomirator);
-                            self.sndr
-                                .send_msg_to_elapse(ElpsMsg::SetBeat([numerator, denomirator]));
-                            self.sndr
-                                .send_all_vari_and_phrase(self.input_part, &self.dtstk);
-                            "Beat has changed!".to_string()
-                        }
-                        _ => "Number is wrong.".to_string(),
-                    }
-                }
-            } else if cmd == "input" {
-                if self.change_input_mode(prm) {
-                    "Input mode has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else if cmd == "samenote" {
-                "what?".to_string()
-            } else if cmd == "turnnote" {
-                if self.change_turnnote(prm) {
-                    "Turn note has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else if cmd == "path" {
-                if self.change_path(prm) {
-                    "Path has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else {
-                "what?".to_string()
-            }
-        } else {
-            "what?".to_string()
-        }
-    }
-    fn change_key(&mut self, key_text: &str) -> bool {
-        let mut key = END_OF_DATA;
-        let length = key_text.len();
-        match key_text.chars().nth(0) {
-            Some('C') => key = 0,
-            Some('D') => key = 2,
-            Some('E') => key = 4,
-            Some('F') => key = 5,
-            Some('G') => key = 7,
-            Some('A') => key = 9,
-            Some('B') => key = 11,
-            Some(_) => (),
-            None => (),
-        }
-        if key != END_OF_DATA {
-            let mut oct = 0;
-            if length >= 2 {
-                let mut num_txt = "".to_string();
-                if let Some(ltr2) = key_text.chars().nth(1) {
-                    match ltr2 {
-                        '#' => {
-                            key += 1;
-                            num_txt = key_text[2..].to_string();
-                        }
-                        'b' => {
-                            key -= 1;
-                            num_txt = key_text[2..].to_string();
-                        }
-                        _ => {
-                            num_txt = key_text[1..].to_string();
-                        }
-                    }
-                }
-                if let Ok(oct_num) = num_txt.parse::<i32>() {
-                    oct = oct_num;
-                }
-            }
-            if key < 0 {
-                key += 12;
-            } else if key >= 12 {
-                key -= 12;
-            }
-            #[cfg(feature = "verbose")]
-            println!("CHANGE KEY: {}, {}", key, oct);
-            // phrase 再生成(新oct込み)
-            if oct != 0 {
-                if self.dtstk.change_oct(oct, false, self.input_part) {
-                    self.sndr
-                        .send_all_vari_and_phrase(self.input_part, &self.dtstk);
-                }
-            }
-            // elapse に key を送る
-            self.sndr
-                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_KEY, key as i16]));
-            self.indicator_key_stock = key_text.to_string();
-            true
-        } else {
-            false
-        }
-    }
-    fn change_oct(&mut self, oct_txt: &str) -> bool {
-        let mut oct = FULL;
-        if let Ok(oct_num) = oct_txt.parse::<i32>() {
-            oct = oct_num;
-        }
-        if oct != FULL {
-            if self.dtstk.change_oct(oct, true, self.input_part) {
-                self.sndr
-                    .send_all_vari_and_phrase(self.input_part, &self.dtstk);
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
-    fn change_input_mode(&mut self, imd: &str) -> bool {
-        if imd == "fixed" {
-            self.dtstk.change_input_mode(InputMode::Fixed);
-            true
-        } else if imd == "closer" {
-            self.dtstk.change_input_mode(InputMode::Closer);
-            true
-        } else {
-            false
-        }
-    }
-    fn change_turnnote(&mut self, ntnum: &str) -> bool {
-        if let Ok(turn_note) = ntnum.parse::<i16>() {
-            self.sndr
-                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_TURN, turn_note]));
-            true
-        } else {
-            false
-        }
-    }
-    fn change_path(&mut self, path: &str) -> bool {
-        self.path = Some(path.to_string());
-        true
     }
 }
