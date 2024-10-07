@@ -256,10 +256,11 @@ pub fn recombine_to_internal_format(
     while read_ptr < max_read_ptr {
         let nt_origin = ntvec[read_ptr].clone();
         let (note_text, trns) = extract_trans_info(nt_origin);
-        let next_msr_tick = tick_for_onemsr * msr;
-        let rest_tick = next_msr_tick - crnt_tick;
+        let whole_msr_tick = tick_for_onemsr * msr;
+        let rest_tick = whole_msr_tick - crnt_tick;
 
-        let (notes, mes_end, ndur, diff_vel, bdur, lnt) =
+        // Note 処理
+        let (notes, mes_end, note_dur, diff_vel, bdur, lnt) =
             break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, rest_tick, imd);
         base_dur = bdur;
         last_nt = lnt; // 次回の音程の上下判断のため
@@ -272,28 +273,14 @@ pub fn recombine_to_internal_format(
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else {
             // NO_NOTE 含む（タイの時に使用）
-            if crnt_tick < next_msr_tick {
-                // duration
-                let mut note_dur = ndur;
-                if next_msr_tick - crnt_tick < note_dur {
-                    note_dur = next_msr_tick - crnt_tick; // 小節線を超えたら、音価をそこでリミット
-                }
-
-                // velocity
-                let mut last_vel: i32 = exp_vel + diff_vel;
-                if last_vel > 127 {
-                    last_vel = 127;
-                } else if last_vel < 1 {
-                    last_vel = 1;
-                }
-
+            if crnt_tick < whole_msr_tick {
                 // add to recombined data
                 rcmb = add_note(
                     rcmb,
                     crnt_tick,
                     notes,
-                    note_dur,
-                    last_vel as i16,
+                    get_note_dur(note_dur, whole_msr_tick, crnt_tick),
+                    velo_limits(exp_vel + diff_vel, 1),
                     mes_top,
                     trns,
                 );
@@ -301,7 +288,7 @@ pub fn recombine_to_internal_format(
             }
             if mes_end {
                 // 小節線があった場合
-                crnt_tick = next_msr_tick;
+                crnt_tick = whole_msr_tick;
                 msr += 1;
                 mes_top = true;
             } else {
@@ -390,12 +377,12 @@ fn break_up_nt_dur_vel(
     //  duration 情報、 Velocity 情報の抽出
     let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur, rest_tick);
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
-    let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
 
     // 複数音を分離してベクトル化
+    let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
     let notes_vec = split_notes(ntext5.clone());
 
-    // 音名への変換
+    // 階名への変換
     let mut notes: Vec<u8> = Vec::new();
     let mut next_last_nt = last_nt;
     for (i, nt) in notes_vec.iter().enumerate() {
@@ -626,7 +613,7 @@ fn add_note(
             let l = return_rcmb.len();
             if mes_top && l > 0 {
                 // 小節先頭にタイがあった場合、前の音の音価を増やす
-                // 前回の入力が '=' による和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
+                // 前回の入力が和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
                 let mut search_idx = l - 1;
                 let last_tick = return_rcmb[search_idx].tick;
                 loop {
@@ -653,12 +640,17 @@ fn add_note(
                 vel: last_vel,
                 trns,
             };
-            //: Vec<i16> =
-            //    vec![TYPE_NOTE, tick as i16, note_dur as i16, *note as i16, last_vel];
             return_rcmb.push(nt_data);
         }
     }
     return_rcmb
+}
+fn get_note_dur(ndur: i32, whole_msr_tick: i32, crnt_tick: i32) -> i32 {
+    let mut note_dur = ndur;
+    if whole_msr_tick - crnt_tick < note_dur {
+        note_dur = whole_msr_tick - crnt_tick; // 小節線を超えたら、音価をそこでリミット
+    }
+    note_dur
 }
 
 //*******************************************************************

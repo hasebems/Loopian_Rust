@@ -275,12 +275,7 @@ pub fn beat_filter(rcmb: &Vec<PhrEvt>, bpm: i16, tick_for_onemsr: i32) -> Vec<Ph
             } else {
                 vel -= base_bpm / 4;
             }
-            if vel > 127 {
-                vel = 127;
-            } else if vel < MIN_AVILABLE_VELO {
-                vel = MIN_AVILABLE_VELO;
-            }
-            dt.vel = vel;
+            dt.vel = velo_limits(vel as i32, MIN_AVILABLE_VELO as i32);
         }
     } else if tick_for_onemsr == TICK_3_4 as i32 {
         for dt in all_dt.iter_mut() {
