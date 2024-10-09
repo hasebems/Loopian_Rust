@@ -104,9 +104,7 @@ impl LoopianCmd {
         } else if first_letter == "F" {
             Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else if first_letter == "A" {
-            Some(CmndRtn(self.letter_capital_a(input_text), NO_MSG))
-        } else if first_letter == "C" {
-            Some(CmndRtn(self.letter_capital_c(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else {
             Some(CmndRtn("what?".to_string(), NO_MSG))
         }
@@ -286,26 +284,6 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn letter_capital_a(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len >= 4 && &input_text[0..4] == "ARP(" {
-            // Arpeggio
-            
-            "Set Arpeggio!".to_string()
-        } else {
-            self.letter_part(input_text)
-        }
-    }
-    fn letter_capital_c(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len >= 4 && &input_text[0..4] == "CLS(" {
-            // Cluster
-
-            "Set Cluster!".to_string()
-        } else {
-            "what?".to_string()
-        }
-    }    
     fn letter_at(&mut self, input_text: &str) -> String {
         if let Some(ltr) = input_text.chars().nth(1) {
             let itxt = input_text.trim();

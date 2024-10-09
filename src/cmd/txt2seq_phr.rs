@@ -3,6 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use super::txt2seq_dp::*;
 use super::txt_common::*;
 use crate::lpnlib::*;
 
@@ -164,7 +165,7 @@ fn fill_omitted_note_data(mut nf: String) -> String {
             doremi_end_flag = true;
         } else if ltr == '|' || ltr == '/' {
             fill += &doremi;
-            fill += "|,";
+            fill += ",|,";
             doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
             doremi_end_flag = true;
         } else {
@@ -228,7 +229,7 @@ fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
     nnv.extend(nv.clone()); //  repeat前
     for _ in 0..num {
         nnv.push("$RPT".to_string());
-        nnv.extend(nv.clone());
+        nnv.extend(nv.clone()); // 繰り返しの中身
     }
     nnv
 }
@@ -252,29 +253,41 @@ pub fn recombine_to_internal_format(
     let mut rcmb = Vec::new();
     let mut mes_top: bool = false;
     let (max_read_ptr, do_loop) = judge_no_loop(ntvec);
+    let mut whole_msr_tick = tick_for_onemsr;
 
     while read_ptr < max_read_ptr {
         let nt_origin = ntvec[read_ptr].clone();
+        if nt_origin == "|" {
+            // 小節線
+            crnt_tick = whole_msr_tick; // 小節頭
+            msr += 1;
+            whole_msr_tick = tick_for_onemsr * msr; // 次の小節頭
+            mes_top = true;
+            read_ptr += 1; // out from repeat
+            continue;
+        }
+
+        // イベント抽出
         let (note_text, trns) = extract_trans_info(nt_origin);
-        let whole_msr_tick = tick_for_onemsr * msr;
         let rest_tick = whole_msr_tick - crnt_tick;
-
-        // Note 処理
-        let (notes, mes_end, note_dur, diff_vel, bdur, lnt) =
-            break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, rest_tick, imd);
-        base_dur = bdur;
-        last_nt = lnt; // 次回の音程の上下判断のため
-
-        assert!(notes.len() != 0);
-        if notes[0] == RPT_HEAD {
-            // 繰り返し指定があったことを示すイベント
+        if note_text == "$RPT" {
+            // complement時に入れた、繰り返しを表す特殊マーク$
             let nt_data = PhrEvt::gen_repeat(crnt_tick as i16);
             rcmb.push(nt_data);
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
+        } else if let Some((ca_ev, bdur)) = treat_dp(note_text.clone(), base_dur, rest_tick) {
+            // Dynamic Pattern
+            rcmb.push(ca_ev);
+            base_dur = bdur;
         } else {
-            // NO_NOTE 含む（タイの時に使用）
+            // Note 処理
+            let (notes, note_dur, diff_vel, bdur, lnt) =
+                break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, rest_tick, imd);
+            last_nt = lnt; // 次回の音程の上下判断のため
+            base_dur = bdur;
+
             if crnt_tick < whole_msr_tick {
-                // add to recombined data
+                // add to recombined data (NO_NOTE 含む(タイの時に使用))
                 rcmb = add_note(
                     rcmb,
                     crnt_tick,
@@ -286,15 +299,8 @@ pub fn recombine_to_internal_format(
                 );
                 crnt_tick += note_dur;
             }
-            if mes_end {
-                // 小節線があった場合
-                crnt_tick = whole_msr_tick;
-                msr += 1;
-                mes_top = true;
-            } else {
-                mes_top = false;
-            }
         }
+        mes_top = false;
         read_ptr += 1; // out from repeat
     }
     (crnt_tick, do_loop, rcmb)
@@ -347,31 +353,16 @@ fn break_up_nt_dur_vel(
     last_nt: i32,      // 前回の音程
     rest_tick: i32,    // 小節の残りtick
     imd: InputMode,    // input mode
-) -> (Vec<u8>, bool, i32, i32, i32, i32)
+) -> (Vec<u8>, i32, i32, i32, i32)
 /*( notes,      // 発音ノート
-    mes_end,    // 小節が終わったか
     dur_cnt,    // 音符のtick数
     diff_vel,   // 音量情報
     base_dur,   // 基準音価 -> bdur
     last_nt     // 次回判定用の今回の音程 -> last_nt
   )*/
 {
-    let first_ltr = note_text.chars().nth(0).unwrap_or(' ');
-    if first_ltr == '$' {
-        // complement時に入れた特殊マーク$
-        return (vec![RPT_HEAD], false, 0, 0, bdur, last_nt);
-    }
-
-    //  文字列の最後が小節線か
-    let mut mes_end = false;
-    let mut ntext1 = note_text.clone();
-    if note_text.chars().last().unwrap_or(' ') == '|' {
-        // 小節最後のイベント
-        mes_end = true;
-        ntext1.pop();
-    }
-
     //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、解析を終えたら文字列を再結合
+    let mut ntext1 = note_text;
     let oct = extract_top_pm(&mut ntext1);
 
     //  duration 情報、 Velocity 情報の抽出
@@ -407,7 +398,7 @@ fn break_up_nt_dur_vel(
         notes.push(NO_NOTE);
     }
 
-    (notes, mes_end, dur_cnt, diff_vel, base_dur, next_last_nt)
+    (notes, dur_cnt, diff_vel, base_dur, next_last_nt)
 }
 /// 文字列の冒頭にあるプラスマイナスを抽出
 fn extract_top_pm(ntext: &mut String) -> String {
@@ -435,7 +426,7 @@ fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
     return base_pitch as u8;
 }
 /// 音価情報を生成
-fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32) {
+pub fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32) {
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
     let (no_nt, ret) = detect_measure_top_tie(ntext1.clone(), bdur, rest_tick);
     if no_nt {
@@ -568,7 +559,7 @@ fn decide_dur(ntext: String, mut base_dur: i32) -> (String, i32) {
     let nt = ntext[idx..].to_string();
     (nt, base_dur)
 }
-fn gen_diff_vel(nt: String) -> (String, i32) {
+pub fn gen_diff_vel(nt: String) -> (String, i32) {
     let mut ntext = nt;
     let mut diff_vel = 0;
     let mut last_ltr = if ntext.len() > 0 {

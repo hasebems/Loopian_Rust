@@ -67,13 +67,21 @@ pub const VEL_DOWN: i32 = -20;
 pub const TYPE_NONE: i16 = 0; // 共用
 pub const _TYPE_ID: i16 = 1000; // for TYPE
 pub const TYPE_NOTE: i16 = 1001; // for index TYPE
-pub const TYPE_INFO: i16 = 1020; // タイミングを持つ演奏以外の情報
+pub const _TYPE_CLS: i16 = 1010;
+pub const _TYPE_ARPUP: i16 = 1020;
+pub const _TYPE_ARPDW: i16 = 1021;
+pub const _TYPE_ARPUD: i16 = 1022;
+pub const _TYPE_ARPDU: i16 = 1023;
+pub const TYPE_INFO: i16 = 1090; // タイミングを持つ演奏以外の情報
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PhrEvt {
     pub mtype: i16, // message type
     pub tick: i16,
-    pub dur: i16,  // duration
-    pub note: i16, // note number / TYPE_INFO > RPT_HEAD
+    pub dur: i16, // duration
+    pub note: i16,
+    // TYPE_NOTE: note number
+    // TYPE_CLS:  0-999: lowest note
+    // TYPE_INFO: RPT_HEAD
     pub vel: i16,  // velocity
     pub trns: i16, // translation
 }
@@ -109,9 +117,9 @@ impl PhrData {
 //-------------------------------------------------------------------
 // MSG_CMP
 /// for mtype
-pub const TYPE_CHORD: i16 = 1002;
-pub const TYPE_VARI: i16 = 1004;
-pub const TYPE_CONTROL: i16 = 1007;
+pub const TYPE_CHORD: i16 = 1100;
+pub const TYPE_VARI: i16 = 1101;
+pub const TYPE_CONTROL: i16 = 1102;
 /// for tbl
 pub const UPPER: i16 = 1000;
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
@@ -139,9 +147,9 @@ impl ChordData {
 //-------------------------------------------------------------------
 // MSG_ANA
 /// for mtype
-pub const TYPE_BEAT: i16 = 1006; // for message TYPE
-pub const TYPE_EXP: i16 = 1010; // for message TYPE
-pub const _TYPE_DUR: i16 = 1012; // for message TYPE
+pub const TYPE_BEAT: i16 = 1200; // for message TYPE
+pub const TYPE_EXP: i16 = 1210; // for message TYPE
+pub const _TYPE_DUR: i16 = 1211; // for message TYPE
 /// mtype: TYPE_EXP のとき
 /// atype
 pub const NOPED: i16 = 10; // TYPE_BEAT の Note情報より先に置く
