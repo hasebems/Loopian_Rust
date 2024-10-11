@@ -67,11 +67,8 @@ pub const VEL_DOWN: i32 = -20;
 pub const TYPE_NONE: i16 = 0; // 共用
 pub const _TYPE_ID: i16 = 1000; // for TYPE
 pub const TYPE_NOTE: i16 = 1001; // for index TYPE
-pub const _TYPE_CLS: i16 = 1010;
-pub const _TYPE_ARPUP: i16 = 1020;
-pub const _TYPE_ARPDW: i16 = 1021;
-pub const _TYPE_ARPUD: i16 = 1022;
-pub const _TYPE_ARPDU: i16 = 1023;
+pub const TYPE_CLS: i16 = 1010;
+pub const TYPE_ARP: i16 = 1020;
 pub const TYPE_INFO: i16 = 1090; // タイミングを持つ演奏以外の情報
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PhrEvt {
@@ -80,10 +77,14 @@ pub struct PhrEvt {
     pub dur: i16, // duration
     pub note: i16,
     // TYPE_NOTE: note number
-    // TYPE_CLS:  0-999: lowest note
+    // TYPE_CLS/ARP:  0-999: lowest note
     // TYPE_INFO: RPT_HEAD
     pub vel: i16,  // velocity
     pub trns: i16, // translation
+    // TYPE_CLS: number of notes: 2-5
+    // TYPE_ARP: u/d/xu/xd(0-3) figure of arpeggio 
+    pub each_dur: i16, // each duration for special purpose
+                       // TYPE_CLS/ARP: each note's duration
 }
 impl PhrEvt {
     pub fn gen_repeat(tick: i16) -> Self {
@@ -94,6 +95,7 @@ impl PhrEvt {
             note: RPT_HEAD as i16,
             vel: 0,
             trns: TRNS_NONE,
+            each_dur: 0,
         }
     }
 }

@@ -31,7 +31,7 @@ pub fn complement_phrase(
     let nttmp = divide_arrow_bracket(nt);
     let nt2 = nttmp.replace('c', cluster_word);
 
-    // 5. ,| 重複による休符指示の補填、音符のVector化
+    // 5. ,| 重複による休符指示の補填、()内の ',' を '_' に変換。音符のVector化
     let nt3 = fill_omitted_note_data(nt2);
     let mut ntvec = split_by(',', nt3);
 
@@ -157,24 +157,33 @@ fn fill_omitted_note_data(mut nf: String) -> String {
     let mut fill: String = "".to_string();
     let mut doremi = "x".to_string();
     let mut doremi_end_flag = true;
+    let mut in_parentheses = false;
     for ltr in nf.chars() {
         if ltr == ',' {
-            fill += &doremi;
-            fill += ",";
-            doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
-            doremi_end_flag = true;
+            if in_parentheses {
+                doremi.push('@'); // ()内の','を、@ に変換
+            } else {
+                fill += &doremi;
+                fill += ",";
+                doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
+                doremi_end_flag = true;
+            }
         } else if ltr == '|' || ltr == '/' {
             fill += &doremi;
             fill += ",|,";
             doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
             doremi_end_flag = true;
+        } else if doremi_end_flag {
+            doremi = (ltr).to_string();
+            doremi_end_flag = false;
+        } else if ltr == '(' {
+            in_parentheses = true;
+            doremi.push(ltr);
+        } else if ltr == ')' {
+            in_parentheses = false;
+            doremi.push(ltr);
         } else {
-            if doremi_end_flag {
-                doremi = (ltr).to_string();
-                doremi_end_flag = false;
-            } else {
-                doremi.push(ltr);
-            }
+            doremi.push(ltr);
         }
     }
     if doremi != "" {
@@ -275,10 +284,15 @@ pub fn recombine_to_internal_format(
             let nt_data = PhrEvt::gen_repeat(crnt_tick as i16);
             rcmb.push(nt_data);
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
-        } else if let Some((ca_ev, bdur)) = treat_dp(note_text.clone(), base_dur, rest_tick) {
+        } else if available_for_dp(&note_text) {
             // Dynamic Pattern
-            rcmb.push(ca_ev);
+            let (ca_ev, bdur) = treat_dp(note_text.clone(), base_dur, crnt_tick, rest_tick);
             base_dur = bdur;
+            if crnt_tick < whole_msr_tick {
+                println!("{:?}", ca_ev);
+                rcmb.push(ca_ev);
+                crnt_tick += bdur;
+            }
         } else {
             // Note 処理
             let (notes, note_dur, diff_vel, bdur, lnt) =
@@ -426,7 +440,7 @@ fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
     return base_pitch as u8;
 }
 /// 音価情報を生成
-pub fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32) {
+fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32) {
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
     let (no_nt, ret) = detect_measure_top_tie(ntext1.clone(), bdur, rest_tick);
     if no_nt {
@@ -511,7 +525,7 @@ fn extract_o_dot(nt: String) -> (String, i32) {
     }
     (ntext, dur_cnt)
 }
-fn decide_dur(ntext: String, mut base_dur: i32) -> (String, i32) {
+pub fn decide_dur(ntext: String, mut base_dur: i32) -> (String, i32) {
     let mut triplet: i16 = 0;
     let mut idx = 1;
     let mut fst_ltr = ntext.chars().nth(0).unwrap_or(' ');
@@ -630,6 +644,7 @@ fn add_note(
                 note: *note as i16,
                 vel: last_vel,
                 trns,
+                each_dur: 0,
             };
             return_rcmb.push(nt_data);
         }
