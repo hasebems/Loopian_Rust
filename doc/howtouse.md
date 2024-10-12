@@ -265,11 +265,12 @@ Phrase 追加
         - `asMin()` or `as(VI)` : parallel 指定の時、Phrase を VI のスケールとみなし、VI からの差分で並行移動する
 
 
-* 動的なパターン(Dynamic Pattern)の指示
+* 動的パターン(Dynamic Pattern)の指示
 
     - Dynamic Pattern は、Phrase の中で実際の音程を指示せず、和音やアルペジオ演奏を自動生成する
-    - 同時に鳴る複数の音は `Cls()` 、アルペジオは `Arp()` で表現する。(`C(), A()` と省略可能)
-        - [hCls(),hArp()] のように、Phrase の中に記載
+    - 同時に鳴る複数の音(Cluster)は `Cls()` 、アルペジオ(Arpeggio)は `Arp()` と記述する
+        - `C(), A()` と小文字を省略可能
+        - [hCls(),hArp()] のように、Phrase の中に記載し、前に Pattern 全体の音価を示す
     - `Cls(a,b,c)` とあった場合、各パラメータは以下の意味になる
         - a: 音価を表す。h,q,e,v,w およびその付点を選ぶことができる(default:q)
         - b: 和音の音数(2-5)(default:4)
@@ -279,6 +280,7 @@ Phrase 追加
         - b: u は上昇音形、dは下降、uxはクロス上昇、dxはクロス下降
         - c: 最低音の位置(-6 - 7)(default:0)
     - Phrase と同じ関数を後ろに追加することが可能
+    - 基本的には小節をまたがない
 
 
 ## ファイルのロード、セーブ

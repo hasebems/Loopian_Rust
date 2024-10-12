@@ -82,7 +82,7 @@ pub struct PhrEvt {
     pub vel: i16,  // velocity
     pub trns: i16, // translation
     // TYPE_CLS: number of notes: 2-5
-    // TYPE_ARP: u/d/xu/xd(0-3) figure of arpeggio 
+    // TYPE_ARP: u/d/xu/xd(0-3) figure of arpeggio
     pub each_dur: i16, // each duration for special purpose
                        // TYPE_CLS/ARP: each note's duration
 }

@@ -8,6 +8,7 @@ use std::rc::Rc;
 
 use super::elapse::*;
 use super::elapse_note::Note;
+use super::elapse_pattern::DynamicPattern;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
@@ -134,7 +135,8 @@ impl PhraseLoop {
             next_tick = phr[trace].tick as i32;
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                if self.phrase[trace].mtype == TYPE_NOTE {
+                let tp = self.phrase[trace].mtype;
+                if tp == TYPE_NOTE {
                     if self.same_note_msr != msr || self.same_note_tick != tick {
                         // 設定されているタイミングが少しでも違えば、同タイミング重複音検出をクリア
                         self.same_note_stuck = Vec::new();
@@ -142,6 +144,18 @@ impl PhraseLoop {
                         self.same_note_tick = tick;
                     }
                     self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
+                } else if tp == TYPE_CLS {
+                    let ptn: Rc<RefCell<dyn Elapse>> = DynamicPattern::new(
+                        crnt_.msr as u32, //  read pointer
+                        self.id.sid,      //  loop.sid -> note.pid
+                        self.id.pid,      //  part
+                        self.keynote,
+                        msr,
+                        self.phrase[trace].clone(),
+                        self.analys.to_vec(),
+                    );
+                    estk.add_elapse(Rc::clone(&ptn));
+                } else if tp == TYPE_ARP {
                 }
             } else {
                 break;

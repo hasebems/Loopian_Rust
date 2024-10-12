@@ -286,10 +286,10 @@ pub fn recombine_to_internal_format(
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else if available_for_dp(&note_text) {
             // Dynamic Pattern
-            let (ca_ev, bdur) = treat_dp(note_text.clone(), base_dur, crnt_tick, rest_tick);
+            let (ca_ev, bdur) =
+                treat_dp(note_text.clone(), base_dur, crnt_tick, rest_tick, exp_vel);
             base_dur = bdur;
             if crnt_tick < whole_msr_tick {
-                println!("{:?}", ca_ev);
                 rcmb.push(ca_ev);
                 crnt_tick += bdur;
             }

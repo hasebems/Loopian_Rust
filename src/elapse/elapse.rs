@@ -12,6 +12,7 @@ pub const PRI_PART: u32 = 100;
 pub const PRI_CMPS_LOOP: u32 = 200;
 pub const PRI_FLOW: u32 = 250;
 pub const PRI_PHR_LOOP: u32 = 300;
+pub const PRI_DYNPTN: u32 = 350;
 pub const PRI_NOTE: u32 = 400;
 pub const PRI_DMPR: u32 = 500;
 
@@ -22,6 +23,7 @@ pub enum ElapseType {
     TpDamperPart,
     TpPhraseLoop,
     TpCompositionLoop,
+    TpDynamicPattern,
     TpNote,
     TpFlow,
     _TpDamper,

@@ -19,7 +19,13 @@ pub fn available_for_dp(text: &String) -> bool {
     }
 }
 /// Note のときの fn break_up_nt_dur_vel() と同様の処理
-pub fn treat_dp(text: String, base_dur: i32, crnt_tick: i32, rest_tick: i32) -> (PhrEvt, i32) {
+pub fn treat_dp(
+    text: String,   // Dynamic Pattern のテキスト
+    base_dur: i32,  // 前の duration
+    crnt_tick: i32, // 小節内の現在 tick
+    rest_tick: i32, // 小節内の残り tick
+    exp_vel: i32,   // dynなどを反省した velocity
+) -> (PhrEvt, i32) {
     // Cluster or Arpeggio?
     let mut case_arp = true;
     if text.contains("C") {
@@ -41,7 +47,7 @@ pub fn treat_dp(text: String, base_dur: i32, crnt_tick: i32, rest_tick: i32) -> 
     ev.each_dur = dp_pattern[3];
     ev.note = dp_pattern[1];
     ev.trns = dp_pattern[2];
-    ev.vel = diff_vel as i16;
+    ev.vel = velo_limits(exp_vel + diff_vel, 1);
     ev.dur = duration as i16;
 
     (ev, bdur)
@@ -51,8 +57,10 @@ fn gen_dp_pattern(nt: &String, case_arp: bool) -> Vec<i16> {
     let param = split_by('@', params.to_string());
     let pnum = param.len();
     let mut mtype = TYPE_CLS;
-    if case_arp { mtype = TYPE_ARP;}
- 
+    if case_arp {
+        mtype = TYPE_ARP;
+    }
+
     let mut note = 0;
     let mut trns = 4;
     let mut each_dur = DEFAULT_TICK_FOR_QUARTER as i16;
