@@ -33,8 +33,7 @@ pub struct DynamicPattern {
     keynote: u8,
     play_counter: usize,
     last_note: i16,
-    noped: bool,
-    para_root_base: i16,
+    para: bool,
     staccato_rate: i32,
 
     // for super's member
@@ -54,20 +53,15 @@ impl DynamicPattern {
         ptn: PhrEvt,
         ana: Vec<AnaEvt>,
     ) -> Rc<RefCell<Self>> {
-        // generate pedal
-        let noped = ana
-            .clone()
-            .iter()
-            .any(|x| x.mtype == TYPE_EXP && x.atype == NOPED);
         // generate para_note_base
-        let mut para_root_base = 0;
+        let mut para = false;
         ana.iter().for_each(|x| {
-            if x.mtype == TYPE_EXP && x.atype == PARA_ROOT {
-                para_root_base = x.note;
+            if x.mtype == TYPE_EXP && x.atype == TRNS_PARA {
+                para = true;
             }
         });
         // generate staccato rate
-        let mut staccato_rate = 100;
+        let mut staccato_rate = 90;
         ana.iter().for_each(|x| {
             if x.mtype == TYPE_EXP && x.atype == ARTIC {
                 staccato_rate = x.cnt as i32;
@@ -92,8 +86,7 @@ impl DynamicPattern {
             keynote,
             play_counter: 0,
             last_note: NO_NOTE as i16,
-            noped,
-            para_root_base,
+            para,
             staccato_rate,
 
             // for super's member
@@ -103,9 +96,6 @@ impl DynamicPattern {
             next_msr: msr,
             next_tick: 0,
         }))
-    }
-    pub fn get_noped(&self) -> bool {
-        self.noped
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
         if self.arp_available {
@@ -126,19 +116,56 @@ impl DynamicPattern {
     }
     fn play_cluster(&mut self, estk: &mut ElapseStack) {
         if let Some(cmps) = estk.get_cmps(self.part as usize) {
+            // 和音情報を読み込む
             let (rt, ctbl) = cmps.borrow().get_chord();
             let root: i16 = ROOT2NTNUM[rt as usize];
             let (tbl, _take_upper) = txt2seq_cmps::get_table(ctbl as usize);
-            for i in tbl {
-                let note = *i + root + self.keynote as i16;
-                self.gen_note_ev(estk, note);
+
+            // 最低ノートとpara設定から、各ノートのオクターブを算出
+            let mut ntlist: Vec<i16> = Vec::new();
+            for nt in tbl {
+                let mut note = *nt + DEFAULT_NOTE_NUMBER as i16;
+                if self.para {
+                    while note < self.ptn_min_nt as i16 {
+                        //展開
+                        note += 12;
+                    }
+                    //並行移動
+                    note += root;
+                } else {
+                    //並行移動
+                    note += root;
+                    while note < self.ptn_min_nt as i16 {
+                        //最低音以下の音をオクターブアップ
+                        note += 12;
+                    }
+                    while (self.ptn_min_nt as i16) <= (note - 12) {
+                        //最低音のすぐ上に降ろす
+                        note -= 12;
+                    }
+                }
+                ntlist.push(note);
+            }
+
+            // 低い順に並べ、同時発音数を決定する
+            ntlist.sort();
+            //println!("Cluster::{:?}/{}", ntlist, self.keynote);
+            let maxnt = if self.ptn_max_vce as usize > ntlist.len() {
+                ntlist.len()
+            } else {
+                self.ptn_max_vce as usize
+            };
+
+            // Cluster発音
+            for i in 0..maxnt {
+                self.gen_note_ev(estk, ntlist[i]);
             }
         }
     }
     fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16) {
         let mut crnt_ev = PhrEvt::default();
         crnt_ev.dur = self.ptn_each_dur as i16;
-        crnt_ev.note = note + DEFAULT_NOTE_NUMBER as i16;
+        crnt_ev.note = note;
         crnt_ev.vel = self.ptn_vel as i16;
 
         //  Generate Note Struct

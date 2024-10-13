@@ -21,6 +21,7 @@ pub fn available_for_dp(text: &String) -> bool {
 /// Note のときの fn break_up_nt_dur_vel() と同様の処理
 pub fn treat_dp(
     text: String,   // Dynamic Pattern のテキスト
+    base_note: i32, // octave などのセッティング
     base_dur: i32,  // 前の duration
     crnt_tick: i32, // 小節内の現在 tick
     rest_tick: i32, // 小節内の残り tick
@@ -45,7 +46,7 @@ pub fn treat_dp(
     ev.mtype = dp_pattern[0];
     ev.tick = crnt_tick as i16;
     ev.each_dur = dp_pattern[3];
-    ev.note = dp_pattern[1];
+    ev.note = dp_pattern[1] + base_note as i16;
     ev.trns = dp_pattern[2];
     ev.vel = velo_limits(exp_vel + diff_vel, 1);
     ev.dur = duration as i16;

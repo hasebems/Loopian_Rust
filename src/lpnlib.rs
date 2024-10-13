@@ -77,7 +77,7 @@ pub struct PhrEvt {
     pub dur: i16, // duration
     pub note: i16,
     // TYPE_NOTE: note number
-    // TYPE_CLS/ARP:  0-999: lowest note
+    // TYPE_CLS/ARP:  -7..0..7: lowest note
     // TYPE_INFO: RPT_HEAD
     pub vel: i16,  // velocity
     pub trns: i16, // translation

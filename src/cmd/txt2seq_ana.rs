@@ -201,6 +201,13 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
         last_cnt = crnt_cnt;
         last_note = crnt_note;
     }
+    if para {
+        // Note情報がない場合、Dynamic Pattern 用にpara指定メッセージを作成
+        let mut ae = AnaEvt::new();
+        ae.mtype = TYPE_EXP; // 上では TYPE_BEAT （音符単位）に TRNS_PARA が付く
+        ae.atype = TRNS_PARA;
+        all_dt.push(ae);
+    }
     all_dt
 }
 //*******************************************************************
