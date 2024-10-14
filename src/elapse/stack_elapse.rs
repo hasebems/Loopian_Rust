@@ -623,12 +623,7 @@ impl ElapseStack {
             // 表示が周期的にならないように、間隔をバラす
             self.display_time = self.crnt_time;
             // bpm
-            let bpm_num = if self.during_play {
-                self.tg.get_real_bpm()
-            } else {
-                self.bpm_stock
-            };
-            self.send_msg_to_ui(UiMsg::BpmUi(bpm_num));
+            self.send_msg_to_ui(UiMsg::BpmUi(self.get_bpm()));
             // tick
             let (m, b, t, _c) = self.tg.get_tick();
             self.send_msg_to_ui(UiMsg::TickUi(self.during_play, m, b, t));
@@ -639,6 +634,13 @@ impl ElapseStack {
                 self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
             }
             self.flac = (t % 10) as u64;
+        }
+    }
+    pub fn get_bpm(&self) -> i16 {
+        if self.during_play {
+            self.tg.get_real_bpm()
+        } else {
+            self.bpm_stock
         }
     }
 }

@@ -254,57 +254,58 @@ pub fn crispy_tick(exp_others: &Vec<String>) -> Vec<AnaEvt> {
 //*******************************************************************
 //          beat_filter
 //*******************************************************************
+const EFFECT: i16 = 20; // bigger(1..100), stronger
+const MIN_BPM: i16 = 60;
+const MIN_AVILABLE_VELO: i16 = 30;
+const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
 pub fn beat_filter(rcmb: &Vec<PhrEvt>, bpm: i16, tick_for_onemsr: i32) -> Vec<PhrEvt> {
-    const EFFECT: i16 = 20; // bigger(1..100), stronger
-    const MIN_BPM: i16 = 60;
-    const MIN_AVILABLE_VELO: i16 = 30;
-    const TICK_4_4: f32 = (DEFAULT_TICK_FOR_QUARTER * 4) as f32;
-    const TICK_3_4: f32 = (DEFAULT_TICK_FOR_QUARTER * 3) as f32;
-    const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
     if bpm < MIN_BPM {
         return rcmb.clone();
     }
 
     // 純粋な四拍子、三拍子のみ対応
-    let base_bpm: i16 = (bpm - MIN_BPM) * EFFECT / 100;
     let mut all_dt = rcmb.clone();
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in all_dt.iter_mut() {
             if dt.mtype != TYPE_NOTE {
                 continue;
             }
-            let tm: f32 = (dt.tick as f32 % TICK_4_4) / TICK_1BT;
-            let mut vel = dt.vel;
-            if tm == 0.0 {
-                vel += base_bpm;
-            } else if tm == 2.0 {
-                vel += base_bpm / 4;
-            } else {
-                vel -= base_bpm / 4;
-            }
-            dt.vel = velo_limits(vel as i32, MIN_AVILABLE_VELO as i32);
+            dt.vel = calc_vel_for4(dt.vel, dt.tick as f32, bpm);
         }
     } else if tick_for_onemsr == TICK_3_4 as i32 {
         for dt in all_dt.iter_mut() {
             if dt.mtype != TYPE_NOTE {
                 continue;
             }
-            let tm: f32 = (dt.tick as f32 % TICK_3_4) / TICK_1BT;
-            let mut vel = dt.vel;
-            if tm == 0.0 {
-                vel += base_bpm;
-            } else if tm == 1.0 {
-                vel += base_bpm / 4;
-            } else {
-                vel -= base_bpm / 4;
-            }
-            if vel > 127 {
-                vel = 127;
-            } else if vel < MIN_AVILABLE_VELO {
-                vel = MIN_AVILABLE_VELO;
-            }
-            dt.vel = vel;
+            dt.vel = calc_vel_for3(dt.vel, dt.tick as f32, bpm);
         }
     }
     all_dt
+}
+pub fn calc_vel_for4(input_vel: i16, tick: f32, bpm: i16) -> i16 {
+    let base_bpm = (bpm - MIN_BPM) * EFFECT / 100;
+    let tm: f32 = (tick % TICK_4_4) / TICK_1BT;
+    let mut vel = input_vel;
+    if tm == 0.0 {
+        vel += base_bpm;
+    } else if tm == 2.0 {
+        vel += base_bpm / 4;
+    } else {
+        vel -= base_bpm / 4;
+    }
+    velo_limits(vel as i32, MIN_AVILABLE_VELO as i32)   
+}
+pub fn calc_vel_for3(input_vel: i16, tick: f32, bpm: i16) -> i16 {
+    const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
+    let base_bpm = (bpm - MIN_BPM) * EFFECT / 100;
+    let tm: f32 = (tick % TICK_3_4) / TICK_1BT;
+    let mut vel = input_vel;
+    if tm == 0.0 {
+        vel += base_bpm;
+    } else if tm == 1.0 {
+        vel += base_bpm / 4;
+    } else {
+        vel -= base_bpm / 4;
+    }
+    velo_limits(vel as i32, MIN_AVILABLE_VELO as i32)   
 }

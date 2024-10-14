@@ -12,6 +12,7 @@ use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_cmps;
+use crate::cmd::txt2seq_ana;
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -98,11 +99,22 @@ impl DynamicPattern {
         }))
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
+        let mut root: i16 = 0;
+        let mut tblptr: &[i16] = &[];
+        if let Some(cmps) = estk.get_cmps(self.part as usize) {
+            // 和音情報を読み込む
+            let (rt, tbl) = cmps.borrow().get_chord();
+            root = ROOT2NTNUM[rt as usize];
+            let (ctbl, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
+            tblptr = ctbl;
+        }
+        let vel = self.calc_dynamic_vel(crnt_.tick_for_onemsr, estk.get_bpm());
+
         if self.arp_available {
             // Arpeggio
         } else {
             // Cluster
-            self.play_cluster(estk);
+            self.play_cluster(estk, root, tblptr, vel);
         }
         self.play_counter += 1;
 
@@ -114,59 +126,62 @@ impl DynamicPattern {
             next_tick
         }
     }
-    fn play_cluster(&mut self, estk: &mut ElapseStack) {
-        if let Some(cmps) = estk.get_cmps(self.part as usize) {
-            // 和音情報を読み込む
-            let (rt, ctbl) = cmps.borrow().get_chord();
-            let root: i16 = ROOT2NTNUM[rt as usize];
-            let (tbl, _take_upper) = txt2seq_cmps::get_table(ctbl as usize);
-
-            // 最低ノートとpara設定から、各ノートのオクターブを算出
-            let mut ntlist: Vec<i16> = Vec::new();
-            for nt in tbl {
-                let mut note = *nt + DEFAULT_NOTE_NUMBER as i16;
-                if self.para {
-                    while note < self.ptn_min_nt as i16 {
-                        //展開
-                        note += 12;
-                    }
-                    //並行移動
-                    note += root;
-                } else {
-                    //並行移動
-                    note += root;
-                    while note < self.ptn_min_nt as i16 {
-                        //最低音以下の音をオクターブアップ
-                        note += 12;
-                    }
-                    while (self.ptn_min_nt as i16) <= (note - 12) {
-                        //最低音のすぐ上に降ろす
-                        note -= 12;
-                    }
-                }
-                ntlist.push(note);
-            }
-
-            // 低い順に並べ、同時発音数を決定する
-            ntlist.sort();
-            //println!("Cluster::{:?}/{}", ntlist, self.keynote);
-            let maxnt = if self.ptn_max_vce as usize > ntlist.len() {
-                ntlist.len()
-            } else {
-                self.ptn_max_vce as usize
-            };
-
-            // Cluster発音
-            for i in 0..maxnt {
-                self.gen_note_ev(estk, ntlist[i]);
-            }
+    fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16) -> i16 {
+        let mut vel: i16 = self.ptn_vel as i16;
+        if tick_for_onemsr == TICK_4_4 as i32 {
+            vel = txt2seq_ana::calc_vel_for4(self.ptn_vel as i16, self.next_tick as f32, bpm);
+        } else if tick_for_onemsr == TICK_3_4 as i32 {
+            vel = txt2seq_ana::calc_vel_for3(self.ptn_vel as i16, self.next_tick as f32, bpm);
         }
+        vel
     }
-    fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16) {
+    fn play_cluster(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
+        // 最低ノートとpara設定から、各ノートのオクターブを算出
+        let mut ntlist: Vec<i16> = Vec::new();
+        for nt in tblptr {
+            let mut note = *nt + DEFAULT_NOTE_NUMBER as i16;
+            if self.para {
+                while note < self.ptn_min_nt as i16 {
+                    //展開
+                    note += 12;
+                }
+                //並行移動
+                note += root;
+            } else {
+                //並行移動
+                note += root;
+                while note < self.ptn_min_nt as i16 {
+                    //最低音以下の音をオクターブアップ
+                    note += 12;
+                }
+                while (self.ptn_min_nt as i16) <= (note - 12) {
+                    //最低音のすぐ上に降ろす
+                    note -= 12;
+                }
+            }
+            ntlist.push(note);
+        }
+
+        // 低い順に並べ、同時発音数を決定する
+        ntlist.sort();
+        //println!("Cluster::{:?}/{}", ntlist, self.keynote);
+        let maxnt = if self.ptn_max_vce as usize > ntlist.len() {
+            ntlist.len()
+        } else {
+            self.ptn_max_vce as usize
+        };
+
+        // Cluster発音
+        for i in 0..maxnt {
+            self.gen_note_ev(estk, ntlist[i], vel);
+        }
+
+    }
+    fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16, vel: i16) {
         let mut crnt_ev = PhrEvt::default();
         crnt_ev.dur = self.ptn_each_dur as i16;
         crnt_ev.note = note;
-        crnt_ev.vel = self.ptn_vel as i16;
+        crnt_ev.vel = vel;
 
         //  Generate Note Struct
         if self.staccato_rate != 100 {

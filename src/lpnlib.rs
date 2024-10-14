@@ -9,6 +9,8 @@ pub struct Beat(pub i32, pub i32); // 分子/分母
 
 pub const DEFAULT_TICK_FOR_QUARTER: i32 = 480;
 pub const DEFAULT_TICK_FOR_ONE_MEASURE: i32 = 1920; // 480 * 4
+pub const TICK_4_4: f32 = (DEFAULT_TICK_FOR_QUARTER * 4) as f32;
+pub const TICK_3_4: f32 = (DEFAULT_TICK_FOR_QUARTER * 3) as f32;
 
 pub const END_OF_DATA: i32 = -1;
 pub const NO_DATA: i32 = -1;
