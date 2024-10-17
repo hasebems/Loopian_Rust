@@ -449,6 +449,9 @@ fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32)
 
     // 音価伸ばしを解析し、dur_cnt を確定
     let (ntext1, dur_cnt) = extract_o_dot(ntext1.clone());
+    if dur_cnt == LAST {
+        return (ntext1, bdur, rest_tick);
+    }
 
     // タイを探して追加する tick を算出
     let mut tie_dur: i32 = 0;
