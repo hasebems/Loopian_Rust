@@ -40,6 +40,8 @@ impl MessageSender {
                         ElpsMsg::Ana(_a0, _a1, av) => {
                             if av.evts.len() > 0 {
                                 self.send_msg_to_elapse(amsg);
+                            } else {
+                                self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16, vari as i16));
                             }
                         }
                         _ => {}
