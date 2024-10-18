@@ -514,6 +514,10 @@ impl ElapseStack {
             .rcv_ana_msg(evts, vari_num as usize);
     }
     fn del_phrase(&mut self, part_num: i16, vari_num: i16) {
+        println!(
+            "Deleted Phrase Message! Part: {}, variation: {}",
+            part_num, vari_num
+        );
         self.part_vec[part_num as usize]
             .borrow_mut()
             .rcv_phr_msg(PhrData::empty(), vari_num as usize);
@@ -522,11 +526,16 @@ impl ElapseStack {
             .rcv_ana_msg(AnaData::empty(), vari_num as usize);
     }
     fn del_composition(&mut self, part_num: i16) {
+        println!("Deleted Composition Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
             .rcv_cmps_msg(ChordData::empty());
     }
     fn del_ana(&mut self, part_num: i16, vari_num: i16) {
+        println!(
+            "Deleted Analysis Message! Part: {}, variation: {}",
+            part_num, vari_num
+        );
         self.part_vec[part_num as usize]
             .borrow_mut()
             .rcv_ana_msg(AnaData::empty(), vari_num as usize);
