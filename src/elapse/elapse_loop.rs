@@ -144,7 +144,7 @@ impl PhraseLoop {
                         self.same_note_tick = tick;
                     }
                     self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
-                } else if tp == TYPE_CLS {
+                } else if tp == TYPE_CLS || tp == TYPE_ARP {
                     let ptn: Rc<RefCell<dyn Elapse>> = DynamicPattern::new(
                         crnt_.msr as u32, //  read pointer
                         self.id.sid,      //  loop.sid -> note.pid
@@ -155,7 +155,6 @@ impl PhraseLoop {
                         self.analys.to_vec(),
                     );
                     estk.add_elapse(Rc::clone(&ptn));
-                } else if tp == TYPE_ARP {
                 }
             } else {
                 break;

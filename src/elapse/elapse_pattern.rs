@@ -28,6 +28,9 @@ pub struct DynamicPattern {
     ptn_vel: i32,
     ptn_each_dur: i32,
     ptn_max_vce: i32,
+    ptn_arp_type: i32,
+    next_index: usize, // for arp
+    oct_up: i16,        // for arp
     analys: Vec<AnaEvt>,
 
     part: u32,
@@ -68,6 +71,9 @@ impl DynamicPattern {
                 staccato_rate = x.cnt as i32;
             }
         });
+        let arp_available = ptn.mtype == TYPE_ARP;
+        
+        println!("New DP: para:{}",para);
         // new Dynamic Pattern
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -75,13 +81,16 @@ impl DynamicPattern {
                 sid,
                 elps_type: ElapseType::TpDynamicPattern,
             },
-            arp_available: false,
+            arp_available,
             priority: PRI_DYNPTN,
             ptn_tick: ptn.tick as i32,
             ptn_min_nt: ptn.note as i32,
             ptn_vel: ptn.vel as i32,
             ptn_each_dur: ptn.each_dur as i32,
             ptn_max_vce: ptn.trns as i32,
+            ptn_arp_type: ptn.trns as i32,
+            next_index: 0,
+            oct_up: 0,
             analys: ana,
             part,
             keynote,
@@ -112,6 +121,7 @@ impl DynamicPattern {
 
         if self.arp_available {
             // Arpeggio
+            self.play_arpeggio(estk, root, tblptr, vel);
         } else {
             // Cluster
             self.play_cluster(estk, root, tblptr, vel);
@@ -176,6 +186,43 @@ impl DynamicPattern {
             self.gen_note_ev(estk, ntlist[i], vel);
         }
 
+    }
+    fn play_arpeggio(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
+        let max_tbl_num = tblptr.len();
+        let inc_index = |x, oct| -> (usize, i16) {
+            if x == max_tbl_num - 1 {(0, oct+1)}
+            else {(x+1, oct)}
+        };
+        //let dec_index = |x| {
+        //    if x == 0 {max_tbl_num}
+        //    else {x-1}
+        //};
+        let mut pre_add_nt = DEFAULT_NOTE_NUMBER as i16;
+        let mut post_add_nt = 0;
+        if self.para {
+            post_add_nt = root;
+        } else {
+            pre_add_nt += root - 12;
+        }
+
+        let mut note: i16;
+        if self.play_counter == 0 {
+            let mut index = 0;
+            loop {
+                note = tblptr[index] + pre_add_nt + self.oct_up*12;
+                (index, self.oct_up) = inc_index(index, self.oct_up.clone());
+                if note >= (self.ptn_min_nt as i16) {
+                    self.next_index = index;
+                    break;
+                }
+            }
+            note += post_add_nt;
+        } else {
+            note = tblptr[self.next_index] + pre_add_nt + self.oct_up*12;
+            (self.next_index, self.oct_up) = inc_index(self.next_index, self.oct_up.clone());
+            note += post_add_nt;
+        }
+        self.gen_note_ev(estk, note, vel);
     }
     fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16, vel: i16) {
         let mut crnt_ev = PhrEvt::default();
