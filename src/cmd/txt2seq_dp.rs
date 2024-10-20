@@ -33,9 +33,12 @@ pub fn treat_dp(
         case_arp = false;
     }
 
+    // タイを探して追加する tick を算出
+    let (tie_dur, ntext2) = decide_tie_dur(text.clone());
+
     //  duration 情報、 Velocity 情報の抽出
-    let (ntext3, bdur) = decide_dur(text.clone(), base_dur);
-    let mut duration = bdur;
+    let (ntext3, bdur) = decide_dur(ntext2, base_dur);
+    let mut duration = bdur + tie_dur;
     if text == ntext3 {
         duration = rest_tick; // dur情報がない場合、小節残り全体とする
     }
@@ -77,6 +80,9 @@ fn gen_dp_pattern(nt: &String, case_arp: bool) -> Vec<i16> {
     }
     if pnum > 2 {
         note = param[2].parse::<i16>().unwrap_or(0);
+        if case_arp && ((trns % 2) == 1) {
+            note += 12; // - note;
+        }
     }
 
     vec![mtype, note, trns, each_dur]

@@ -175,6 +175,7 @@ Elapse <|-- Loop
 Loop <|-- PhraseLoop
 Loop <|-- CompositionLoop
 Elapse <|-- Note
+Elapse <|-- DynamicPattern
 Elapse <|-- Damper
 Elapse <|-- Flow
 ElapseStack *-- Part
@@ -555,7 +556,9 @@ NoteObj <|-- WaterRipple
 - MIDI Txのポートが見つからなくても、アプリが起動するようにする(9/23)
 - rit. の記述方法変更(9/24)
 - MIDI 設定を settings.toml に書ける機能追加(9/28)
-- 表示のmessageをstringでなくて、ちゃんとしたmessageで。(9/29)
+- 表示の内部message formatをstringでなくて、ちゃんとしたenumで。(9/29)
+- dynamic pattern 機能
+    - Cls(), Arp() で、和音演奏、アルペジオ演奏を自動生成
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -570,6 +573,11 @@ NoteObj <|-- WaterRipple
 - <d,r,m>*3 で3回繰り返し、みたいな記法はとても便利だが、octaveの指定がおかしくなりやすく、結局変なことになる
 
 次の対応、考えられる新機能
+- @msr()=[]で小節指定できる機能追加
+- ファイルからの小節ロード(!msr)をコマンド化
+    - 倍数ロードも可（8小節周期の7小節目）
+    - @によるマクロ指定と合わせて使用
+- 過去の特定のコマンド区間だけを save できる機能    
 - Tempo/Beat を打ち込みたい（変拍子、rit打ち込み）
     - COND partを作るより、loadの仕方で対応した方が簡単かも
 - スタカートや音価の操作

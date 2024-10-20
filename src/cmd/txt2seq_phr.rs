@@ -286,8 +286,14 @@ pub fn recombine_to_internal_format(
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else if available_for_dp(&note_text) {
             // Dynamic Pattern
-            let (ca_ev, bdur) =
-                treat_dp(note_text.clone(), base_note, base_dur, crnt_tick, rest_tick, exp_vel);
+            let (ca_ev, bdur) = treat_dp(
+                note_text.clone(),
+                base_note,
+                base_dur,
+                crnt_tick,
+                rest_tick,
+                exp_vel,
+            );
             base_dur = bdur;
             if crnt_tick < whole_msr_tick {
                 rcmb.push(ca_ev);
@@ -454,16 +460,7 @@ fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32)
     }
 
     // タイを探して追加する tick を算出
-    let mut tie_dur: i32 = 0;
-    let mut ntext2 = ntext1.clone();
-    if let Some(num) = ntext1.find('_') {
-        ntext2 = ntext1[0..num].to_string();
-        let tie = ntext1[num + 1..].to_string();
-        let mut _ntt: String = "".to_string();
-        if tie.len() > 0 {
-            (_ntt, tie_dur) = decide_dur(tie, bdur);
-        }
-    }
+    let (tie_dur, ntext2) = decide_tie_dur(ntext1);
 
     //  基準音価を解析し、base_dur を確定
     let mut nt: String = ntext2.clone();
@@ -527,6 +524,19 @@ fn extract_o_dot(nt: String) -> (String, i32) {
         }
     }
     (ntext, dur_cnt)
+}
+pub fn decide_tie_dur(ntext1: String) -> (i32, String) {
+    let mut tie_dur: i32 = 0;
+    let mut ntext2 = ntext1.clone();
+    if let Some(num) = ntext1.find('_') {
+        ntext2 = ntext1[0..num].to_string();
+        let tie = ntext1[num + 1..].to_string();
+        if tie.len() > 0 {
+            let _ntt: String;
+            (_ntt, tie_dur) = decide_dur(tie, 0);
+        }
+    }
+    (tie_dur, ntext2)
 }
 pub fn decide_dur(ntext: String, mut base_dur: i32) -> (String, i32) {
     let mut triplet: i16 = 0;

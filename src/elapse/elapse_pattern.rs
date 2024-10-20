@@ -11,8 +11,8 @@ use super::elapse_note::Note;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use crate::cmd::txt2seq_cmps;
 use crate::cmd::txt2seq_ana;
+use crate::cmd::txt2seq_cmps;
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -24,13 +24,14 @@ pub struct DynamicPattern {
 
     arp_available: bool,
     ptn_tick: i32,
-    ptn_min_nt: i32,
+    ptn_min_nt: i16,
     ptn_vel: i32,
     ptn_each_dur: i32,
     ptn_max_vce: i32,
     ptn_arp_type: i32,
-    next_index: usize, // for arp
+    next_index: usize,  // for arp
     oct_up: i16,        // for arp
+    note_close_to: i16, // for arp
     analys: Vec<AnaEvt>,
 
     part: u32,
@@ -72,8 +73,8 @@ impl DynamicPattern {
             }
         });
         let arp_available = ptn.mtype == TYPE_ARP;
-        
-        println!("New DP: para:{}",para);
+
+        println!("New DP: para:{}", para);
         // new Dynamic Pattern
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -84,13 +85,14 @@ impl DynamicPattern {
             arp_available,
             priority: PRI_DYNPTN,
             ptn_tick: ptn.tick as i32,
-            ptn_min_nt: ptn.note as i32,
+            ptn_min_nt: ptn.note,
             ptn_vel: ptn.vel as i32,
             ptn_each_dur: ptn.each_dur as i32,
             ptn_max_vce: ptn.trns as i32,
             ptn_arp_type: ptn.trns as i32,
             next_index: 0,
             oct_up: 0,
+            note_close_to: ptn.note,
             analys: ana,
             part,
             keynote,
@@ -108,14 +110,16 @@ impl DynamicPattern {
         }))
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
-        let mut root: i16 = 0;
-        let mut tblptr: &[i16] = &[];
+        let root: i16;
+        let tblptr: &[i16];
         if let Some(cmps) = estk.get_cmps(self.part as usize) {
             // 和音情報を読み込む
             let (rt, tbl) = cmps.borrow().get_chord();
             root = ROOT2NTNUM[rt as usize];
             let (ctbl, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
             tblptr = ctbl;
+        } else {
+            return END_OF_DATA;
         }
         let vel = self.calc_dynamic_vel(crnt_.tick_for_onemsr, estk.get_bpm());
 
@@ -151,7 +155,7 @@ impl DynamicPattern {
         for nt in tblptr {
             let mut note = *nt + DEFAULT_NOTE_NUMBER as i16;
             if self.para {
-                while note < self.ptn_min_nt as i16 {
+                while note < self.ptn_min_nt {
                     //展開
                     note += 12;
                 }
@@ -160,11 +164,11 @@ impl DynamicPattern {
             } else {
                 //並行移動
                 note += root;
-                while note < self.ptn_min_nt as i16 {
+                while note < self.ptn_min_nt {
                     //最低音以下の音をオクターブアップ
                     note += 12;
                 }
-                while (self.ptn_min_nt as i16) <= (note - 12) {
+                while self.ptn_min_nt <= (note - 12) {
                     //最低音のすぐ上に降ろす
                     note -= 12;
                 }
@@ -185,41 +189,72 @@ impl DynamicPattern {
         for i in 0..maxnt {
             self.gen_note_ev(estk, ntlist[i], vel);
         }
-
     }
     fn play_arpeggio(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
         let max_tbl_num = tblptr.len();
-        let inc_index = |x, oct| -> (usize, i16) {
-            if x == max_tbl_num - 1 {(0, oct+1)}
-            else {(x+1, oct)}
+        let incdec_idx = |inc: bool, mut x, mut oct| -> (usize, i16) {
+            if inc {
+                x += 1;
+                if x == max_tbl_num {
+                    x = 0;
+                    oct += 1;
+                }
+            } else {
+                if x == 0 {
+                    x = max_tbl_num - 1;
+                    oct -= 1;
+                } else {
+                    x -= 1;
+                }
+            }
+            (x, oct)
         };
-        //let dec_index = |x| {
-        //    if x == 0 {max_tbl_num}
-        //    else {x-1}
-        //};
+
+        let up = self.ptn_arp_type % 2 == 0;
         let mut pre_add_nt = DEFAULT_NOTE_NUMBER as i16;
         let mut post_add_nt = 0;
         if self.para {
             post_add_nt = root;
+            if !up {
+                pre_add_nt += 12;
+            }
         } else {
-            pre_add_nt += root - 12;
+            if up {
+                pre_add_nt += root - 12;
+            } else {
+                pre_add_nt += root + 12;
+            }
         }
 
         let mut note: i16;
         if self.play_counter == 0 {
+            // アルペジオの最初の音を決める
             let mut index = 0;
+            let mut oct_up: i16 = 0;
+            let mut old_inc: Option<bool> = None;
             loop {
-                note = tblptr[index] + pre_add_nt + self.oct_up*12;
-                (index, self.oct_up) = inc_index(index, self.oct_up.clone());
-                if note >= (self.ptn_min_nt as i16) {
+                note = tblptr[index] + pre_add_nt + oct_up * 12;
+                if note == self.note_close_to {
                     self.next_index = index;
+                    self.oct_up = oct_up;
                     break;
                 }
+                let inc = note < self.note_close_to;
+                if old_inc.is_none() {
+                    old_inc = Some(inc);
+                } else if let Some(oinc) = old_inc {
+                    if oinc != inc {
+                        self.next_index = index;
+                        self.oct_up = oct_up;
+                        break;
+                    }
+                }
+                (index, oct_up) = incdec_idx(inc, index, oct_up);
             }
             note += post_add_nt;
         } else {
-            note = tblptr[self.next_index] + pre_add_nt + self.oct_up*12;
-            (self.next_index, self.oct_up) = inc_index(self.next_index, self.oct_up.clone());
+            (self.next_index, self.oct_up) = incdec_idx(up, self.next_index, self.oct_up.clone());
+            note = tblptr[self.next_index] + pre_add_nt + self.oct_up * 12;
             note += post_add_nt;
         }
         self.gen_note_ev(estk, note, vel);
