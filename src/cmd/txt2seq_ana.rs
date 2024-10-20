@@ -293,7 +293,7 @@ pub fn calc_vel_for4(input_vel: i16, tick: f32, bpm: i16) -> i16 {
     } else {
         vel -= base_bpm / 4;
     }
-    velo_limits(vel as i32, MIN_AVILABLE_VELO as i32)   
+    velo_limits(vel as i32, MIN_AVILABLE_VELO as i32)
 }
 pub fn calc_vel_for3(input_vel: i16, tick: f32, bpm: i16) -> i16 {
     const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
@@ -307,5 +307,5 @@ pub fn calc_vel_for3(input_vel: i16, tick: f32, bpm: i16) -> i16 {
     } else {
         vel -= base_bpm / 4;
     }
-    velo_limits(vel as i32, MIN_AVILABLE_VELO as i32)   
+    velo_limits(vel as i32, MIN_AVILABLE_VELO as i32)
 }
