@@ -296,8 +296,8 @@ pub fn recombine_to_internal_format(
             );
             base_dur = bdur;
             if crnt_tick < whole_msr_tick {
+                crnt_tick += ca_ev.dur as i32;
                 rcmb.push(ca_ev);
-                crnt_tick += bdur;
             }
         } else {
             // Note 処理
