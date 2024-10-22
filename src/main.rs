@@ -239,6 +239,11 @@ impl LoopianApp {
                 // clear loaded file data
                 self.clear_loaded_data();
                 self.cmd.send_clear();
+                self.scroll_lines.push((
+                    TextAttribute::Answer,
+                    "".to_string(),
+                    "All data cleared!".to_string(),
+                ));
             } else {
                 // Normal Input
                 self.one_command(get_crnt_date_txt(), itxt, true);
