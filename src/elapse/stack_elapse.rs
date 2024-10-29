@@ -302,12 +302,12 @@ impl ElapseStack {
             Rit(m) => self.rit(m),
             Set(m) => self.setting_cmnd(m),
             SetBeat(m) => self.set_beat(m),
-            Phr(m0, m1, mv) => self.phrase(m0, m1, mv),
+            Phr(m0, mv) => self.phrase(m0, mv),
             Cmp(m0, mv) => self.composition(m0, mv),
-            Ana(m0, m1, mv) => self.ana(m0, m1, mv),
-            PhrX(m0, m1) => self.del_phrase(m0, m1),
+            Ana(m0, mv) => self.ana(m0, mv),
+            PhrX(m) => self.del_phrase(m),
             CmpX(m) => self.del_composition(m),
-            AnaX(m0, m1) => self.del_ana(m0, m1),
+            AnaX(m) => self.del_ana(m),
             _ => (),
         }
     }
@@ -489,14 +489,11 @@ impl ElapseStack {
         self.beat_stock = Beat(msg[0] as i32, msg[1] as i32);
         self.sync(MSG_SYNC_ALL);
     }
-    fn phrase(&mut self, part_num: i16, vari_num: i16, evts: PhrData) {
-        println!(
-            "Received Phrase Message! Part: {}, variation: {}",
-            part_num, vari_num
-        );
+    fn phrase(&mut self, part_num: i16, evts: PhrData) {
+        println!("Received Phrase Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
-            .rcv_phr_msg(evts, vari_num as usize);
+            .rcv_phr_msg(evts);
     }
     fn composition(&mut self, part_num: i16, evts: ChordData) {
         println!("Received Composition Message! Part: {}", part_num);
@@ -504,26 +501,20 @@ impl ElapseStack {
             .borrow_mut()
             .rcv_cmps_msg(evts);
     }
-    fn ana(&mut self, part_num: i16, vari_num: i16, evts: AnaData) {
-        println!(
-            "Received Analysis Message! Part: {}, variation: {}",
-            part_num, vari_num
-        );
+    fn ana(&mut self, part_num: i16, evts: AnaData) {
+        println!("Received Analysis Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
-            .rcv_ana_msg(evts, vari_num as usize);
+            .rcv_ana_msg(evts);
     }
-    fn del_phrase(&mut self, part_num: i16, vari_num: i16) {
-        println!(
-            "Deleted Phrase Message! Part: {}, variation: {}",
-            part_num, vari_num
-        );
+    fn del_phrase(&mut self, part_num: i16) {
+        println!("Deleted Phrase Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
-            .rcv_phr_msg(PhrData::empty(), vari_num as usize);
+            .rcv_phr_msg(PhrData::empty());
         self.part_vec[part_num as usize]
             .borrow_mut()
-            .rcv_ana_msg(AnaData::empty(), vari_num as usize);
+            .rcv_ana_msg(AnaData::empty());
     }
     fn del_composition(&mut self, part_num: i16) {
         println!("Deleted Composition Message! Part: {}", part_num);
@@ -531,14 +522,11 @@ impl ElapseStack {
             .borrow_mut()
             .rcv_cmps_msg(ChordData::empty());
     }
-    fn del_ana(&mut self, part_num: i16, vari_num: i16) {
-        println!(
-            "Deleted Analysis Message! Part: {}, variation: {}",
-            part_num, vari_num
-        );
+    fn del_ana(&mut self, part_num: i16) {
+        println!("Deleted Analysis Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
-            .rcv_ana_msg(AnaData::empty(), vari_num as usize);
+            .rcv_ana_msg(AnaData::empty());
     }
     //*******************************************************************
     //      Pick out playable

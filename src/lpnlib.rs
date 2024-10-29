@@ -104,17 +104,27 @@ impl PhrEvt {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PhrData {
     pub whole_tick: i16,
-    pub auftakt: i16, // 0:no auftakt, 1-:beat begin auftakt
     pub do_loop: bool,
     pub evts: Vec<PhrEvt>,
+    // how to start
+    pub variation: i16, // 0: normal, 1..9:variation
+    pub measure: i16, // NOTHING: no effect, 1..:measure number
+    pub auftakt: i16, // 0:no auftakt, 1..:auftakt(beat number)
+    pub realtime: bool,
+    //         |  normal | variation | measure |
+    // auftakt |    o    |     o     |    o    |
+    // realtime|    o    |     x     |    x    |
 }
 impl PhrData {
     pub fn empty() -> Self {
         Self {
             whole_tick: 0,
-            auftakt: 0,
             do_loop: true,
             evts: Vec::new(),
+            variation: 0,
+            auftakt: 0,
+            measure: NOTHING,
+            realtime: false,
         }
     }
 }
@@ -138,6 +148,8 @@ pub struct ChordData {
     pub whole_tick: i16,
     pub do_loop: bool,
     pub evts: Vec<ChordEvt>,
+    // how to start
+    pub measure: i16, // NOTHING: no effect, 1..:measure number
 }
 impl ChordData {
     pub fn empty() -> Self {
@@ -145,6 +157,7 @@ impl ChordData {
             whole_tick: 0,
             do_loop: true,
             evts: Vec::new(),
+            measure: NOTHING,
         }
     }
 }
@@ -191,11 +204,13 @@ impl AnaEvt {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct AnaData {
     pub evts: Vec<AnaEvt>,
+    pub variation: i16, // 0: normal, 1..9:variation
 }
 impl AnaData {
     pub fn empty() -> Self {
         Self {
             evts: vec![AnaEvt::new()],
+            variation: 0,
         }
     }
 }
@@ -228,12 +243,12 @@ pub enum ElpsMsg {
     //    SetBpm([i16; 3]),
     SetBeat([i16; 2]),
     //    SetKey([i16; 3]),
-    Phr(i16, i16, PhrData), //  Phr : part, vari, (whole_tick,evts)
+    Phr(i16, PhrData),      //  Phr : part, (whole_tick,evts)
     Cmp(i16, ChordData),    //  Cmp : part, (whole_tick,evts)
-    Ana(i16, i16, AnaData), //  Ana : part, vari, (evts)
-    PhrX(i16, i16),         //  PhrX : part, vari
+    Ana(i16, AnaData),      //  Ana : part, (evts)
+    PhrX(i16),              //  PhrX : part
     CmpX(i16),              //  CmpX : part
-    AnaX(i16, i16),         //  AnaX : part, vari
+    AnaX(i16),              //  AnaX : part
     MIDIRx(u8, u8, u8, u8), //  status, dt1, dt2, extra
 }
 //  Ctrl

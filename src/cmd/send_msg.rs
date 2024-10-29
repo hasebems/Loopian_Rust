@@ -32,26 +32,26 @@ impl MessageSender {
             .get_final(part as i16, vari as i16);
         let msg = pdt.clone();
         match pdt {
-            ElpsMsg::Phr(_m0, _m1, mv) => {
+            ElpsMsg::Phr(_m0, mv) => {
                 if mv.evts.len() > 0 {
                     self.send_msg_to_elapse(msg);
                     let amsg = ana.clone();
                     match ana {
-                        ElpsMsg::Ana(_a0, _a1, av) => {
+                        ElpsMsg::Ana(_a0, av) => {
                             if av.evts.len() > 0 {
                                 self.send_msg_to_elapse(amsg);
                             } else {
-                                self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16, vari as i16));
+                                self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16));
                             }
                         }
                         _ => {}
                     }
                 } else {
-                    self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16, vari as i16));
+                    self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16));
                     match ana {
-                        ElpsMsg::Ana(_a0, _a1, av) => {
+                        ElpsMsg::Ana(_a0, av) => {
                             if av.evts.len() == 0 {
-                                self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16, vari as i16));
+                                self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16));
                             }
                             println!("Part {} Phrase: No Data!", part);
                         }

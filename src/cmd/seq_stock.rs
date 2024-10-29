@@ -231,19 +231,21 @@ impl PhraseDataStock {
         (
             ElpsMsg::Phr(
                 part,
-                vari,
                 PhrData {
                     whole_tick: self.whole_tick as i16,
-                    auftakt: if self.atrb[0] { 1 } else { 0 },
                     do_loop,
                     evts: self.phr.clone(),
+                    variation: vari,
+                    auftakt: if self.atrb[0] { 1 } else { 0 },
+                    measure: NOTHING,
+                    realtime: false,
                 },
             ),
             ElpsMsg::Ana(
                 part,
-                vari,
                 AnaData {
                     evts: self.ana.clone(),
+                    variation: vari,
                 },
             ),
         )
@@ -331,6 +333,7 @@ impl CompositionDataStock {
                 whole_tick: self.whole_tick as i16,
                 do_loop: self.do_loop,
                 evts: self.chord.clone(),
+                measure: NOTHING,
             },
         )
     }
