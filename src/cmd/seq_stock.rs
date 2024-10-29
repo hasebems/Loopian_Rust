@@ -30,7 +30,7 @@ impl SeqDataStock {
         for i in 0..MAX_KBD_PART {
             let mut vari = Vec::new();
             let base_note = Self::default_base_note(i);
-            for _ in 0..MAX_PHRASE {
+            for _ in 0..MAX_VARIATION {
                 vari.push(PhraseDataStock::new(base_note));
             }
             pd.push(vari);

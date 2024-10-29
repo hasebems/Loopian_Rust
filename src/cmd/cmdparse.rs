@@ -520,7 +520,7 @@ impl LoopianCmd {
         }
     }
     fn clear_part(&mut self, part_num: usize) {
-        for j in 0..MAX_PHRASE {
+        for j in 0..MAX_VARIATION {
             let empty_phr = "[]";
             self.set_phrase(part_num, j, empty_phr);
         }

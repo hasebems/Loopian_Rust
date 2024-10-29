@@ -22,7 +22,7 @@ impl MessageSender {
         }
     }
     pub fn send_all_vari_and_phrase(&self, part: usize, gdt: &SeqDataStock) {
-        for i in 0..MAX_PHRASE {
+        for i in 0..MAX_VARIATION {
             self.send_phrase_to_elapse(part, i, gdt);
         }
     }
