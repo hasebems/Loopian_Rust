@@ -46,7 +46,7 @@ set.oct(1)
 
 //メロディ複音
 R1
-[qx,msit,ml+d,t+d+m/+d+m+t,ti+d+si..].dyn(mp)
+[qx,msit,-mld,tdm/dmt,-tidsi..].dyn(mp)
 
 //R2を大きくする
 R2
