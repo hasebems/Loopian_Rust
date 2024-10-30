@@ -222,32 +222,24 @@ impl PhraseDataStock {
             whole_tick: 0,
         }
     }
-    pub fn get_final(&self, part: i16, vari: i16) -> (ElpsMsg, ElpsMsg) {
+    pub fn get_final(&self, part: i16, vari: i16) -> ElpsMsg {
         let do_loop = if vari == 0 && self.do_loop {
             true
         } else {
             false
         };
-        (
-            ElpsMsg::Phr(
-                part,
-                PhrData {
-                    whole_tick: self.whole_tick as i16,
-                    do_loop,
-                    evts: self.phr.clone(),
-                    variation: vari,
-                    auftakt: if self.atrb[0] { 1 } else { 0 },
-                    measure: NOTHING,
-                    realtime: false,
-                },
-            ),
-            ElpsMsg::Ana(
-                part,
-                AnaData {
-                    evts: self.ana.clone(),
-                    variation: vari,
-                },
-            ),
+        ElpsMsg::Phr(
+            part,
+            PhrData {
+                whole_tick: self.whole_tick as i16,
+                do_loop,
+                evts: self.phr.clone(),
+                ana: self.ana.clone(),
+                variation: vari,
+                auftakt: if self.atrb[0] { 1 } else { 0 },
+                measure: NOTHING,
+                realtime: false,
+            },
         )
     }
     pub fn set_raw(&mut self, input_text: String, cluster_word: &str) -> bool {

@@ -29,26 +29,22 @@ struct PhrLoopManager {
     whole_tick: i32,
     loop_id: u32,                 // loop sid
     new_data_stock: Vec<PhrData>, // 0:normal, 1-9:variation
-    new_ana_stock: Vec<AnaData>,
-//    msr_data_stock: Vec<PhrData>,
-//    msr_ana_stock: Vec<AnaData>,
+    msr_data_stock: Vec<PhrData>,
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
-    vari_reserve: usize, // 0:no rsv, 1-9: rsv
+    vari_reserve: usize,          // 0:no rsv, 1-9: rsv
     state_reserve: bool,
     turnnote: i16,
 }
 impl PhrLoopManager {
     pub fn new() -> Self {
-        let (pstock, astock) = PhrLoopManager::gen_empty_stock();
+        let pstock = PhrLoopManager::gen_empty_stock();
         Self {
             first_msr_num: 0,
             max_loop_msr: 0,
             whole_tick: 0,
             loop_id: 0,
             new_data_stock: pstock,
-            new_ana_stock: astock,
-//            msr_ana_stock: Vec::new(),
-//            msr_data_stock: Vec::new(),
+            msr_data_stock: Vec::new(),
             loop_phrase: None,
             vari_reserve: 0,
             state_reserve: false,
@@ -100,28 +96,19 @@ impl PhrLoopManager {
         }
     }
     pub fn rcv_phr(&mut self, msg: PhrData) {
-        let vari_num = msg.variation as usize;
-        if vari_num < MAX_VARIATION {
-            if msg.evts.len() == 0 && msg.whole_tick == 0 {
-                self.new_data_stock[vari_num] = PhrData::empty();
-            } else {
-                self.new_data_stock[vari_num] = msg;
-            }
-            if vari_num == 0 {
-                self.state_reserve = true;
-            }
-        }
-    }
-    pub fn rcv_ana(&mut self, msg: AnaData) {
-        let vari_num = msg.variation as usize;
-        if vari_num < MAX_VARIATION {
-            if msg.evts.len() == 0 {
-                self.new_ana_stock[vari_num] = AnaData::empty();
-            } else {
-                self.new_ana_stock[vari_num] = msg;
-            }
-            if vari_num == 0 {
-                self.state_reserve = true;
+        if msg.measure != NOTHING {
+            self.msr_data_stock.push(msg);
+        } else {
+            let vari_num = msg.variation as usize;
+            if vari_num < MAX_VARIATION {
+                if msg.evts.len() == 0 && msg.whole_tick == 0 { // clear
+                    self.new_data_stock[vari_num] = PhrData::empty();
+                } else {
+                    self.new_data_stock[vari_num] = msg;
+                }
+                if vari_num == 0 {
+                    self.state_reserve = true;
+                }
             }
         }
     }
@@ -144,16 +131,12 @@ impl PhrLoopManager {
     pub fn reserve_vari(&mut self, vari_num: usize) {
         self.vari_reserve = vari_num; // 1-9
     }
-    fn gen_empty_stock() -> (Vec<PhrData>, Vec<AnaData>) {
+    fn gen_empty_stock() -> Vec<PhrData> {
         let mut pstock: Vec<PhrData> = Vec::new();
         for _ in 0..MAX_VARIATION {
             pstock.push(PhrData::empty());
         }
-        let mut astock: Vec<AnaData> = Vec::new();
-        for _ in 0..MAX_VARIATION {
-            astock.push(AnaData::empty());
-        }
-        (pstock, astock)
+        pstock
     }
     fn clear_phr_prm(&mut self) {
         self.first_msr_num = 0;
@@ -250,8 +233,7 @@ impl PhrLoopManager {
 
         // Phrase の更新
         let phrlen = self.new_data_stock[self.vari_reserve].evts.len();
-        let analen = self.new_ana_stock[self.vari_reserve].evts.len();
-        if phrlen != 0 && analen != 0 {
+        if phrlen != 0 {
             self.gen_new_loop(prm, estk, pbp);
         } else {
             // 1小節分の値を入れておき、次の小節で new_loop に入るようにする
@@ -282,7 +264,7 @@ impl PhrLoopManager {
             pbp.keynote,
             prm.0,
             self.new_data_stock[self.vari_reserve].evts.to_vec(),
-            self.new_ana_stock[self.vari_reserve].evts.to_vec(),
+            self.new_data_stock[self.vari_reserve].ana.to_vec(),
             self.whole_tick,
             self.turnnote,
         );
@@ -482,9 +464,6 @@ impl Part {
     }
     pub fn rcv_cmps_msg(&mut self, msg: ChordData) {
         self.cm.rcv_cmp(msg);
-    }
-    pub fn rcv_ana_msg(&mut self, msg: AnaData) {
-        self.pm.rcv_ana(msg);
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.pm.get_phr()

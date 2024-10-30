@@ -27,40 +27,10 @@ impl MessageSender {
         }
     }
     pub fn send_phrase_to_elapse(&self, part: usize, vari: usize, gdt: &SeqDataStock) {
-        let (pdt, ana) = gdt
+        let pdt = gdt
             .get_pdstk(part, vari)
             .get_final(part as i16, vari as i16);
-        let msg = pdt.clone();
-        match pdt {
-            ElpsMsg::Phr(_m0, mv) => {
-                if mv.evts.len() > 0 {
-                    self.send_msg_to_elapse(msg);
-                    let amsg = ana.clone();
-                    match ana {
-                        ElpsMsg::Ana(_a0, av) => {
-                            if av.evts.len() > 0 {
-                                self.send_msg_to_elapse(amsg);
-                            } else {
-                                self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16));
-                            }
-                        }
-                        _ => {}
-                    }
-                } else {
-                    self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16));
-                    match ana {
-                        ElpsMsg::Ana(_a0, av) => {
-                            if av.evts.len() == 0 {
-                                self.send_msg_to_elapse(ElpsMsg::AnaX(part as i16));
-                            }
-                            println!("Part {} Phrase: No Data!", part);
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            _ => {}
-        }
+        self.send_msg_to_elapse(pdt);
     }
     pub fn send_composition_to_elapse(&self, part: usize, gdt: &SeqDataStock) {
         let cdt = gdt.get_cdstk(part).get_final(part as i16);
