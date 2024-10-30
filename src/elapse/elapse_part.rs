@@ -96,19 +96,24 @@ impl PhrLoopManager {
         }
     }
     pub fn rcv_phr(&mut self, msg: PhrData) {
-        if msg.measure != NOTHING {
-            self.msr_data_stock.push(msg);
-        } else {
-            let vari_num = msg.variation as usize;
-            if vari_num < MAX_VARIATION {
+        match msg.start {
+            HowToStart::Normal => {
                 if msg.evts.len() == 0 && msg.whole_tick == 0 { // clear
-                    self.new_data_stock[vari_num] = PhrData::empty();
+                    self.new_data_stock[0] = PhrData::empty();
                 } else {
-                    self.new_data_stock[vari_num] = msg;
+                    self.new_data_stock[0] = msg;
                 }
-                if vari_num == 0 {
-                    self.state_reserve = true;
+                self.state_reserve = true;
+            }
+            HowToStart::Variation(v) => {
+                if msg.evts.len() == 0 && msg.whole_tick == 0 { // clear
+                    self.new_data_stock[v as usize] = PhrData::empty();
+                } else {
+                    self.new_data_stock[v as usize] = msg;
                 }
+            }
+            HowToStart::Measure(_msr) => {
+                self.msr_data_stock.push(msg);
             }
         }
     }

@@ -235,9 +235,8 @@ impl PhraseDataStock {
                 do_loop,
                 evts: self.phr.clone(),
                 ana: self.ana.clone(),
-                variation: vari,
+                start: HowToStart::Variation(vari),
                 auftakt: if self.atrb[0] { 1 } else { 0 },
-                measure: NOTHING,
                 realtime: false,
             },
         )
