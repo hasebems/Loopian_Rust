@@ -228,6 +228,11 @@ impl PhraseDataStock {
         } else {
             false
         };
+        let start = if vari == 0 {
+            HowToStart::Normal
+        } else {
+            HowToStart::Variation(vari as usize)
+        };
         ElpsMsg::Phr(
             part,
             PhrData {
@@ -235,7 +240,7 @@ impl PhraseDataStock {
                 do_loop,
                 evts: self.phr.clone(),
                 ana: self.ana.clone(),
-                start: HowToStart::Variation(vari),
+                start,
                 auftakt: if self.atrb[0] { 1 } else { 0 },
                 realtime: false,
             },
@@ -262,6 +267,7 @@ impl PhraseDataStock {
             //  clear
             self.phr = Vec::new();
             self.ana = Vec::new();
+            self.whole_tick = 0;
             println!("no_phrase...");
             return;
         }

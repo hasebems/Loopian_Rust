@@ -28,8 +28,8 @@ struct PhrLoopManager {
     max_loop_msr: i32, // from whole_tick
     whole_tick: i32,
     loop_id: u32,                 // loop sid
-    new_data_stock: Vec<PhrData>, // 0:normal, 1-9:variation
-    msr_data_stock: Vec<PhrData>,
+    new_data_stock: Vec<PhrData>, // 0: Normal
+    active_phr: usize,            // 0: Normal
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
     vari_reserve: usize,          // 0:no rsv, 1-9: rsv
     state_reserve: bool,
@@ -37,14 +37,13 @@ struct PhrLoopManager {
 }
 impl PhrLoopManager {
     pub fn new() -> Self {
-        let pstock = PhrLoopManager::gen_empty_stock();
         Self {
             first_msr_num: 0,
             max_loop_msr: 0,
             whole_tick: 0,
             loop_id: 0,
-            new_data_stock: pstock,
-            msr_data_stock: Vec::new(),
+            new_data_stock: vec![PhrData::empty()],
+            active_phr: 0,
             loop_phrase: None,
             vari_reserve: 0,
             state_reserve: false,
@@ -55,12 +54,19 @@ impl PhrLoopManager {
         self.clear_phr_prm();
         self.state_reserve = true;
     }
+    /// Phrase Loop の処理 (Phrase Loop の生成、更新)
+    /// 小節先頭でコールされる
     pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // auftakt は別枠
         if self.proc_auftakt(crnt_, estk, pbp) {
             //return;
-        } else if self.vari_reserve != 0 {
-            // variation 指定があった場合
+        } else if let Some(i) = self.exist_msr_phr(crnt_) {
+            // Measure 指定があった場合
+            self.active_phr = i;
+            self.proc_replace_loop(crnt_, estk, pbp);
+        } else if let Some(i) = self.exist_vari_phr(self.vari_reserve) {
+            // Variation 指定があった場合
+            self.active_phr = i;
             let sr = self.state_reserve; // イベントがあれば保持
             self.proc_replace_loop(crnt_, estk, pbp);
             self.state_reserve = sr;
@@ -68,15 +74,19 @@ impl PhrLoopManager {
             // User による Phrase 入力があった場合
             if crnt_.msr == 0 {
                 // 今回 start したとき
+                self.active_phr = 0;
                 self.proc_new_loop_by_evt(crnt_, estk, pbp);
             } else if self.max_loop_msr == 0 {
                 // データのない状態から、今回初めて指定された時
+                self.active_phr = 0;
                 self.proc_new_loop_by_evt(crnt_, estk, pbp);
             } else if self.check_last_msr(crnt_) {
                 // 前小節にて Loop Obj が終了した時
+                self.active_phr = 0;
                 self.proc_new_loop_by_evt(crnt_, estk, pbp);
             } else if self.max_loop_msr != 0 && pbp.sync_flag {
                 // sync コマンドによる強制リセット
+                self.active_phr = 0;
                 self.proc_replace_loop(crnt_, estk, pbp);
             } else {
                 // 現在の Loop Obj が終了していない時
@@ -85,7 +95,8 @@ impl PhrLoopManager {
         } else if self.new_data_stock[0].do_loop {
             // 何も外部からのトリガーがなく、loop 指定の場合
             if self.check_last_msr(crnt_) {
-                // 今の Loop が終わったので、同じ Loop.Obj を生成する
+                // 今の Loop が終わったので、新しい Loop.Obj を生成する
+                self.active_phr = 0;
                 self.proc_new_loop_repeatedly(crnt_, estk, pbp);
             } else {
                 // 通常の Loop 中
@@ -96,24 +107,36 @@ impl PhrLoopManager {
         }
     }
     pub fn rcv_phr(&mut self, msg: PhrData) {
-        match msg.start {
-            HowToStart::Normal => {
-                if msg.evts.len() == 0 && msg.whole_tick == 0 { // clear
-                    self.new_data_stock[0] = PhrData::empty();
-                } else {
+        if msg.evts.len() == 0 && msg.whole_tick == 0 {
+            // clear phrase
+            let mut num = 0;
+            for (i, phr) in self.new_data_stock.iter().enumerate() {
+                if phr.start == msg.start {
+                    num = i;
+                    break;
+                }
+            }
+            if num != 0 {
+                self.new_data_stock.remove(num);
+                if num == self.active_phr {
+                    self.active_phr = 0;
+                } else if num < self.active_phr {
+                    self.active_phr -= 1;
+                }
+            } else {
+                self.new_data_stock[0] = PhrData::empty();
+            }
+        } else {
+            match msg.start {
+                HowToStart::Normal => {
                     self.new_data_stock[0] = msg;
-                }
-                self.state_reserve = true;
-            }
-            HowToStart::Variation(v) => {
-                if msg.evts.len() == 0 && msg.whole_tick == 0 { // clear
-                    self.new_data_stock[v as usize] = PhrData::empty();
-                } else {
-                    self.new_data_stock[v as usize] = msg;
-                }
-            }
-            HowToStart::Measure(_msr) => {
-                self.msr_data_stock.push(msg);
+                    self.state_reserve = true;
+                },
+                //HowToStart::Variation(v) =>
+                //HowToStart::Measure(_msr) =>
+                _ => {
+                    self.new_data_stock.push(msg);
+                },
             }
         }
     }
@@ -134,14 +157,25 @@ impl PhrLoopManager {
         self.turnnote = tn;
     }
     pub fn reserve_vari(&mut self, vari_num: usize) {
-        self.vari_reserve = vari_num; // 1-9
-    }
-    fn gen_empty_stock() -> Vec<PhrData> {
-        let mut pstock: Vec<PhrData> = Vec::new();
-        for _ in 0..MAX_VARIATION {
-            pstock.push(PhrData::empty());
+        if vari_num != 0 {
+            self.vari_reserve = vari_num; // 1-9
         }
-        pstock
+    }
+    fn exist_msr_phr(&self, crnt_: &CrntMsrTick) -> Option<usize> {
+        for (i, phr) in self.new_data_stock.iter().enumerate() {
+            if phr.start == HowToStart::Measure(crnt_.msr as usize) {
+                return Some(i);
+            }
+        }
+        None
+    }
+    fn exist_vari_phr(&self, vari_num: usize) -> Option<usize> {
+        for (i, phr) in self.new_data_stock.iter().enumerate() {
+            if phr.start == HowToStart::Variation(vari_num) {
+                return Some(i);
+            }
+        }
+        None
     }
     fn clear_phr_prm(&mut self) {
         self.first_msr_num = 0;
@@ -158,7 +192,7 @@ impl PhrLoopManager {
         estk: &mut ElapseStack,
         pbp: PartBasicPrm,
     ) -> bool {
-        let phr = &self.new_data_stock[self.vari_reserve];
+        let phr = &self.new_data_stock[self.active_phr];
         if phr.auftakt == 0 {
             return false;
         } // auftakt phrase でなければすぐに return
@@ -237,7 +271,7 @@ impl PhrLoopManager {
         self.first_msr_num = prm.0;
 
         // Phrase の更新
-        let phrlen = self.new_data_stock[self.vari_reserve].evts.len();
+        let phrlen = self.new_data_stock[self.active_phr].evts.len();
         if phrlen != 0 {
             self.gen_new_loop(prm, estk, pbp);
         } else {
@@ -250,7 +284,7 @@ impl PhrLoopManager {
     }
     fn gen_new_loop(&mut self, prm: (i32, i32), estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新しいデータが来ていれば、新たに Loop Obj.を生成
-        self.whole_tick = self.new_data_stock[self.vari_reserve].whole_tick as i32;
+        self.whole_tick = self.new_data_stock[self.active_phr].whole_tick as i32;
         if self.whole_tick == 0 {
             self.state_reserve = true; // 次小節冒頭で呼ばれるように
             self.loop_phrase = None;
@@ -268,8 +302,8 @@ impl PhrLoopManager {
             pbp.part_num,
             pbp.keynote,
             prm.0,
-            self.new_data_stock[self.vari_reserve].evts.to_vec(),
-            self.new_data_stock[self.vari_reserve].ana.to_vec(),
+            self.new_data_stock[self.active_phr].evts.to_vec(),
+            self.new_data_stock[self.active_phr].ana.to_vec(),
             self.whole_tick,
             self.turnnote,
         );

@@ -146,8 +146,8 @@ impl AnaEvt {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HowToStart {
     Normal,
-    Variation(i16), // 1..9:variation
-    Measure(i16),   // 1..:measure number
+    Variation(usize), // 1..9:variation
+    Measure(usize),   // 1..:measure number
 }
 impl Default for HowToStart {
     fn default() -> Self {
