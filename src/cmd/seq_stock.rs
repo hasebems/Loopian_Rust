@@ -242,7 +242,6 @@ impl PhraseDataStock {
                 ana: self.ana.clone(),
                 start,
                 auftakt: if self.atrb[0] { 1 } else { 0 },
-                realtime: false,
             },
         )
     }

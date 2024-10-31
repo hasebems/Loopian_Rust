@@ -170,6 +170,31 @@ impl PhraseLoop {
         self.play_counter = trace;
         next_tick
     }
+    pub fn set_forward(&mut self, crnt_: &CrntMsrTick, elapsed_msr: i32) {
+        let elapsed_tick = elapsed_msr * crnt_.tick_for_onemsr;
+        let mut next_tick: i32;
+        let mut trace: usize = self.play_counter;
+        let phr = self.phrase.to_vec();
+        let max_ev = self.phrase.len();
+        loop {
+            if max_ev <= trace {
+                next_tick = END_OF_DATA; // means sequence finished
+                break;
+            }
+            next_tick = phr[trace].tick as i32;
+            if next_tick >= elapsed_tick {
+                break;
+            }
+            trace += 1;
+        }
+        self.play_counter = trace;
+        self.next_tick_in_phrase = next_tick;
+        let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
+        self.next_msr = msr;
+        self.next_tick = tick;
+        #[cfg(feature = "verbose")]
+        println!("### Forwarded to: {}, {}", self.next_msr, self.next_tick);
+    }
     fn note_event(
         &mut self,
         estk: &mut ElapseStack,

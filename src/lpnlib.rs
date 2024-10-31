@@ -162,10 +162,6 @@ pub struct PhrData {
     pub ana: Vec<AnaEvt>,
     pub start: HowToStart,
     pub auftakt: i16, // 0:no auftakt, 1..:auftakt(beat number)
-    pub realtime: bool,
-    //         |  normal | variation | measure |
-    // auftakt |    o    |     o     |    o    |
-    // realtime|    o    |     x     |    x    |
 }
 impl PhrData {
     pub fn empty() -> Self {
@@ -176,7 +172,6 @@ impl PhrData {
             ana: Vec::new(),
             start: HowToStart::Normal,
             auftakt: 0,
-            realtime: false,
         }
     }
 }
