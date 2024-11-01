@@ -39,7 +39,7 @@ pub const MAX_LEFT_PART: usize = 2;
 pub const MAX_RIGHT_PART: usize = 2;
 pub const MAX_KBD_PART: usize = MAX_LEFT_PART + MAX_RIGHT_PART;
 pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + 1;
-pub const MAX_VARIATION: usize = 10; // normal + vari(1-9)
+pub const MAX_VARIATION: usize = 10; // normal + vari(1-9) + 1(for measure)
 pub const FLOW_PART: usize = MAX_KBD_PART;
 pub const DAMPER_PEDAL_PART: usize = MAX_KBD_PART + 1;
 pub const NONE_NUM: usize = 255;
@@ -144,14 +144,14 @@ impl AnaEvt {
 //-------------------------------------------------------------------
 // Phrase DATA
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum HowToStart {
+pub enum PhraseAs {
     Normal,
     Variation(usize), // 1..9:variation
     Measure(usize),   // 1..:measure number
 }
-impl Default for HowToStart {
+impl Default for PhraseAs {
     fn default() -> Self {
-        HowToStart::Normal
+        PhraseAs::Normal
     }
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
@@ -160,7 +160,7 @@ pub struct PhrData {
     pub do_loop: bool,
     pub evts: Vec<PhrEvt>,
     pub ana: Vec<AnaEvt>,
-    pub start: HowToStart,
+    pub vari: PhraseAs,
     pub auftakt: i16, // 0:no auftakt, 1..:auftakt(beat number)
 }
 impl PhrData {
@@ -170,7 +170,7 @@ impl PhrData {
             do_loop: true,
             evts: Vec::new(),
             ana: Vec::new(),
-            start: HowToStart::Normal,
+            vari: PhraseAs::Normal,
             auftakt: 0,
         }
     }
@@ -238,6 +238,7 @@ pub enum ElpsMsg {
     SetBeat([i16; 2]),
     //    SetKey([i16; 3]),
     Phr(i16, PhrData),      //  Phr : part, (whole_tick,evts)
+    PhrX(i16),              //  PhrX : part
     Cmp(i16, ChordData),    //  Cmp : part, (whole_tick,evts)
     CmpX(i16),              //  CmpX : part
     MIDIRx(u8, u8, u8, u8), //  status, dt1, dt2, extra
