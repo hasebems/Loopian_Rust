@@ -285,37 +285,54 @@ impl LoopianCmd {
         }
     }
     fn letter_at(&mut self, input_text: &str) -> String {
-        if let Some(ltr) = input_text.chars().nth(1) {
-            let itxt = input_text.trim();
-            if let Some(vari) = ltr.to_digit(10) {
-                if let Some(ltr2) = itxt.chars().nth(2) {
-                    if ltr2 == '=' {
-                        // @n=
-                        let brachet_text = &itxt[3..];
-                        if let Some(addtional) =
-                            self.set_phrase(self.input_part, vari as usize, brachet_text)
-                        {
-                            if addtional {
-                                return "Keep Phrase as being unified phrase!".to_string();
-                            } else {
-                                return "Set Phrase!".to_string();
-                            }
+        let split_txt = split_by('=', input_text.to_string());
+        if split_txt.len() == 2 {
+            let len = split_txt[0].chars().count();
+            if len >= 4 && &input_text[0..4] == "@msr" {
+                let msr = extract_number_from_parentheses(&split_txt[0]);
+                if let Some(additional) =
+                    self.set_phrase(self.input_part, PhraseAs::Measure(msr), &split_txt[1])
+                {
+                    if additional {
+                        "Keep Phrase as being unified phrase!".to_string()
+                    } else {
+                        "Set Phrase!".to_string()
+                    }
+                } else {
+                    "what?".to_string()
+                }
+            } else if len == 2 {
+                let ltr = split_txt[0].chars().nth(1).unwrap_or('x');
+                let vari = ltr.to_digit(10).unwrap_or(0);
+                if ltr == 'c' {
+                    self.dtstk.set_cluster_memory(split_txt[1].to_string());
+                    return "Set a cluster memory!".to_string();
+                } else if vari > 0 {
+                    if let Some(additional) = self.set_phrase(
+                        self.input_part,
+                        PhraseAs::Variation(vari as usize),
+                        &split_txt[1],
+                    ) {
+                        if additional {
+                            "Keep Phrase as being unified phrase!".to_string()
+                        } else {
+                            "Set Phrase!".to_string()
                         }
+                    } else {
+                        "what?".to_string()
                     }
+                } else {
+                    "what?".to_string()
                 }
-            } else if ltr == 'c' {
-                if let Some(ltr2) = itxt.chars().nth(2) {
-                    if ltr2 == '=' {
-                        self.dtstk.set_cluster_memory(input_text[3..].to_string());
-                        return "Set a cluster memory!".to_string();
-                    }
-                }
+            } else {
+                "what?".to_string()
             }
+        } else {
+            "what?".to_string()
         }
-        "what?".to_string()
     }
     fn letter_bracket(&mut self, input_text: &str) -> String {
-        if let Some(addtional) = self.set_phrase(self.input_part, 0, input_text) {
+        if let Some(addtional) = self.set_phrase(self.input_part, PhraseAs::Normal, input_text) {
             if addtional {
                 "Keep Phrase as being unified phrase!".to_string()
             } else {
@@ -503,10 +520,10 @@ impl LoopianCmd {
         }*/
         rtn_str
     }
-    fn set_phrase(&mut self, part_num: usize, vari: usize, input_text: &str) -> Option<bool> {
-        if let Some(additional) = self
-            .dtstk
-            .set_raw_phrase(part_num, vari, input_text.to_string())
+    fn set_phrase(&mut self, part_num: usize, vari: PhraseAs, input_text: &str) -> Option<bool> {
+        if let Some(additional) =
+            self.dtstk
+                .set_raw_phrase(part_num, vari.clone(), input_text.to_string())
         {
             if additional {
                 // additional なので、elapse にはまだ送らない
@@ -520,10 +537,9 @@ impl LoopianCmd {
         }
     }
     fn clear_part(&mut self, part_num: usize) {
-        for j in 0..MAX_VARIATION {
-            let empty_phr = "[]";
-            self.set_phrase(part_num, j, empty_phr);
-        }
+        // Phrase を消去
+        self.sndr.clear_phrase_to_elapse(part_num);
+
         let empty_cmp = "{}".to_string();
         if self.dtstk.set_raw_composition(part_num, empty_cmp) {
             self.sndr.send_composition_to_elapse(part_num, &self.dtstk);

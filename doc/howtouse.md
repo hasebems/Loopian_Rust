@@ -335,7 +335,7 @@ Phrase 追加
 
 
 * Phrase の Variation 機能
-    - Variation 機能とは、一つのパートに複数の Phrase を入力し、それらの再生順を Composition で指定できる機能である
+    - Variation 機能とは、一つのパートに複数の Phrase を入力し、それらの再生順を Composition で指定したり、特定の小節で再生することができる機能である
         - これにより Loop 内で、定期的に異なる Phrase を再生することができる
     - `@n=[..]` : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
     - 追加された Variation Phrase は、Composition で以下のように指定する
@@ -343,7 +343,9 @@ Phrase 追加
         - chord指定せずに直接 `@n` のみを書いた場合、Chord は何も書かなかった時と同じ扱いになる 
         - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
         - Phrase より Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
-        - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
+    - 特定の小節で再生するとき `@msr(M)=[..]` と表記し、M の部分に小節の条件を記述する
+        - M が数字のとき、その小節番号になったら再生される
+    - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
 
 
 ## Loopian::ORBIT での演奏

@@ -112,7 +112,7 @@ impl PhrLoopManager {
             // clear phrase
             let mut num = 0;
             for (i, phr) in self.new_data_stock.iter().enumerate() {
-                if phr.start == msg.start {
+                if phr.vari == msg.vari {
                     num = i;
                     break;
                 }
@@ -120,6 +120,8 @@ impl PhrLoopManager {
             if num != 0 {
                 self.new_data_stock.remove(num);
                 if num == self.active_phr {
+                    // 今再生している Phrase が削除された
+                    //self.del_loop_phrase(); // これを有効にすると即時消音
                     self.active_phr = 0;
                 } else if num < self.active_phr {
                     self.active_phr -= 1;
@@ -128,18 +130,26 @@ impl PhrLoopManager {
                 self.new_data_stock[0] = PhrData::empty();
             }
         } else {
-            match msg.start {
-                HowToStart::Normal => {
+            match msg.vari {
+                PhraseAs::Normal => {
                     self.new_data_stock[0] = msg;
                     self.state_reserve = true;
-                },
-                //HowToStart::Variation(v) =>
-                //HowToStart::Measure(_msr) =>
-                _ => {
+                }
+                PhraseAs::Variation(_v) => {
                     self.new_data_stock.push(msg);
-                },
+                }
+                PhraseAs::Measure(msr) => {
+                    let mut msg_modified = msg.clone();
+                    msg_modified.vari = PhraseAs::Measure(msr-1); // 0origin
+                    self.new_data_stock.push(msg_modified);
+                }
             }
         }
+    }
+    pub fn del_phr(&mut self) {
+        self.del_loop_phrase();
+        self.new_data_stock = vec![PhrData::empty()];
+        self.state_reserve = true;
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.loop_phrase.clone() // 重いclone()?
@@ -162,9 +172,14 @@ impl PhrLoopManager {
             self.vari_reserve = vari_num; // 1-9
         }
     }
+    fn del_loop_phrase(&mut self) {
+        if let Some(phr) = self.loop_phrase.as_mut() {
+            phr.borrow_mut().set_destroy();
+        }
+    }
     fn exist_msr_phr(&self, crnt_: &CrntMsrTick) -> Option<usize> {
         for (i, phr) in self.new_data_stock.iter().enumerate() {
-            if phr.start == HowToStart::Measure(crnt_.msr as usize) {
+            if phr.vari == PhraseAs::Measure(crnt_.msr as usize) {
                 return Some(i);
             }
         }
@@ -172,7 +187,7 @@ impl PhrLoopManager {
     }
     fn exist_vari_phr(&self, vari_num: usize) -> Option<usize> {
         for (i, phr) in self.new_data_stock.iter().enumerate() {
-            if phr.start == HowToStart::Variation(vari_num) {
+            if phr.vari == PhraseAs::Variation(vari_num) {
                 return Some(i);
             }
         }
@@ -265,9 +280,7 @@ impl PhrLoopManager {
         pbp: PartBasicPrm,
     ) {
         self.state_reserve = false;
-        if let Some(phr) = self.loop_phrase.as_mut() {
-            phr.borrow_mut().set_destroy();
-        }
+        self.del_loop_phrase();
         let prm = (crnt_.msr, crnt_.tick_for_onemsr);
         self.new_loop(prm, estk, pbp);
     }
@@ -278,14 +291,16 @@ impl PhrLoopManager {
         pbp: PartBasicPrm,
     ) {
         self.state_reserve = false;
-        if let Some(phr) = self.loop_phrase.as_mut() {
-            phr.borrow_mut().set_destroy();
-        }
+        self.del_loop_phrase();
 
         // その時の beat 情報で、whole_tick を loop_measure に換算
         self.whole_tick = self.new_data_stock[self.active_phr].whole_tick as i32;
         let tick_for_onemsr = crnt_.tick_for_onemsr;
-        let plus_one = if self.whole_tick % tick_for_onemsr == 0 { 0 } else { 1 };
+        let plus_one = if self.whole_tick % tick_for_onemsr == 0 {
+            0
+        } else {
+            1
+        };
         self.max_loop_msr = self.whole_tick / tick_for_onemsr + plus_one;
 
         // Phrase の新規生成
@@ -546,6 +561,9 @@ impl Part {
     }
     pub fn rcv_phr_msg(&mut self, msg: PhrData) {
         self.pm.rcv_phr(msg);
+    }
+    pub fn del_phr(&mut self) {
+        self.pm.del_phr();
     }
     pub fn rcv_cmps_msg(&mut self, msg: ChordData) {
         self.cm.rcv_cmp(msg);

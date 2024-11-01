@@ -30,7 +30,7 @@ impl SeqDataStock {
         for i in 0..MAX_KBD_PART {
             let mut vari = Vec::new();
             let base_note = Self::default_base_note(i);
-            for _ in 0..MAX_VARIATION {
+            for _ in 0..(MAX_VARIATION + 1) {
                 vari.push(PhraseDataStock::new(base_note));
             }
             pd.push(vari);
@@ -46,8 +46,13 @@ impl SeqDataStock {
             bpm: DEFAULT_BPM,
         }
     }
-    pub fn get_pdstk(&self, part: usize, vari: usize) -> &PhraseDataStock {
-        &self.pdt[part][vari]
+    pub fn get_pdstk(&self, part: usize, vari: PhraseAs) -> &PhraseDataStock {
+        let num = match vari {
+            PhraseAs::Normal => 0,
+            PhraseAs::Variation(v) => v,
+            PhraseAs::Measure(_m) => MAX_VARIATION,
+        };
+        &self.pdt[part][num]
     }
     pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {
         &self.cdt[part]
@@ -58,7 +63,7 @@ impl SeqDataStock {
     pub fn set_raw_phrase(
         &mut self,
         part: usize,
-        vari: usize,
+        vari: PhraseAs,
         mut input_text: String,
     ) -> Option<bool> {
         if let Some(rs) = self.check_if_additional_phrase(input_text.clone()) {
@@ -67,12 +72,13 @@ impl SeqDataStock {
             return Some(true); // additional なら true
         }
         if part < MAX_KBD_PART {
-            if self.pdt[part][vari].set_raw(input_text, &self.cluster_memory) {
-                self.pdt[part][vari].set_recombined(
-                    self.input_mode,
-                    self.bpm,
-                    self.tick_for_onemsr,
-                );
+            let num = match vari {
+                PhraseAs::Normal => 0,
+                PhraseAs::Variation(v) => v,
+                PhraseAs::Measure(_m) => MAX_VARIATION,
+            };
+            if self.pdt[part][num].set_raw(input_text, &self.cluster_memory) {
+                self.pdt[part][num].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
                 return Some(false);
             }
         }
@@ -222,16 +228,11 @@ impl PhraseDataStock {
             whole_tick: 0,
         }
     }
-    pub fn get_final(&self, part: i16, vari: i16) -> ElpsMsg {
-        let do_loop = if vari == 0 && self.do_loop {
+    pub fn get_final(&self, part: i16, vari: PhraseAs) -> ElpsMsg {
+        let do_loop = if vari == PhraseAs::Normal && self.do_loop {
             true
         } else {
             false
-        };
-        let start = if vari == 0 {
-            HowToStart::Normal
-        } else {
-            HowToStart::Variation(vari as usize)
         };
         ElpsMsg::Phr(
             part,
@@ -240,7 +241,7 @@ impl PhraseDataStock {
                 do_loop,
                 evts: self.phr.clone(),
                 ana: self.ana.clone(),
-                start,
+                vari,
                 auftakt: if self.atrb[0] { 1 } else { 0 },
             },
         )

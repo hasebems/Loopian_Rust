@@ -23,14 +23,22 @@ impl MessageSender {
     }
     pub fn send_all_vari_and_phrase(&self, part: usize, gdt: &SeqDataStock) {
         for i in 0..MAX_VARIATION {
-            self.send_phrase_to_elapse(part, i, gdt);
+            let vari = if i == 0 {
+                PhraseAs::Normal
+            } else {
+                PhraseAs::Variation(i)
+            };
+            self.send_phrase_to_elapse(part, vari, gdt);
         }
     }
-    pub fn send_phrase_to_elapse(&self, part: usize, vari: usize, gdt: &SeqDataStock) {
+    pub fn send_phrase_to_elapse(&self, part: usize, vari: PhraseAs, gdt: &SeqDataStock) {
         let pdt = gdt
-            .get_pdstk(part, vari)
-            .get_final(part as i16, vari as i16);
+            .get_pdstk(part, vari.clone())
+            .get_final(part as i16, vari);
         self.send_msg_to_elapse(pdt);
+    }
+    pub fn clear_phrase_to_elapse(&self, part: usize) {
+        self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16));
     }
     pub fn send_composition_to_elapse(&self, part: usize, gdt: &SeqDataStock) {
         let cdt = gdt.get_cdstk(part).get_final(part as i16);

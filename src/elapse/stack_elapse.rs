@@ -304,7 +304,7 @@ impl ElapseStack {
             SetBeat(m) => self.set_beat(m),
             Phr(m0, mv) => self.phrase(m0, mv),
             Cmp(m0, mv) => self.composition(m0, mv),
-            //PhrX(m) => self.del_phrase(m),
+            PhrX(m) => self.del_phrase(m),
             CmpX(m) => self.del_composition(m),
             _ => (),
         }
@@ -502,9 +502,7 @@ impl ElapseStack {
     #[allow(dead_code)]
     fn del_phrase(&mut self, part_num: i16) {
         println!("Deleted Phrase Message! Part: {}", part_num);
-        self.part_vec[part_num as usize]
-            .borrow_mut()
-            .rcv_phr_msg(PhrData::empty());
+        self.part_vec[part_num as usize].borrow_mut().del_phr();
     }
     fn del_composition(&mut self, part_num: i16) {
         println!("Deleted Composition Message! Part: {}", part_num);

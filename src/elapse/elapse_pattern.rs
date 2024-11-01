@@ -74,7 +74,9 @@ impl DynamicPattern {
         });
         let arp_available = ptn.mtype == TYPE_ARP;
 
+        #[cfg(feature = "verbose")]
         println!("New DP: para:{}", para);
+
         // new Dynamic Pattern
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -119,6 +121,8 @@ impl DynamicPattern {
             let (ctbl, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
             tblptr = ctbl;
         } else {
+            #[cfg(feature = "verbose")]
+            println!("DynamicPattern: No Chord Data!!");
             return END_OF_DATA;
         }
         let vel = self.calc_dynamic_vel(crnt_.tick_for_onemsr, estk.get_bpm());
