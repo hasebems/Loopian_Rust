@@ -7,15 +7,15 @@
 use rppal::gpio::{Gpio, InputPin, Level};
 #[cfg(feature = "raspi")]
 use std::error::Error;
-use std::io;
 use std::fs;
+use std::io;
 use std::sync::{mpsc, mpsc::*};
 
 //use crate::cmd::cmdparse;
 use crate::gen_elapse_thread;
 //use crate::graphic::guiev::GuiEv;
-use crate::lpnlib::*;
 use crate::file::input_txt::InputText;
+use crate::lpnlib::*;
 
 //Raspberry Pi5 pin
 #[cfg(feature = "raspi")]
@@ -40,15 +40,13 @@ impl LoopianServer {
     fn read_from_midi(&mut self) -> u8 {
         loop {
             match self.ui_hndr.try_recv() {
-                Ok(msg) => {
-                    match msg {
-                        UiMsg::ChangePtn(ptn) => {
-                            self.get_pcmsg_from_midi(ptn);
-                            return ptn;
-                        }
-                        _ => {}
+                Ok(msg) => match msg {
+                    UiMsg::ChangePtn(ptn) => {
+                        self.get_pcmsg_from_midi(ptn);
+                        return ptn;
                     }
-                }
+                    _ => {}
+                },
                 Err(TryRecvError::Disconnected) => break, // Wrong!
                 Err(TryRecvError::Empty) => break,
             }

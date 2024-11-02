@@ -31,7 +31,7 @@ struct PhrLoopManager {
     new_data_stock: Vec<PhrData>, // 0: Normal
     active_phr: usize,            // 0: Normal
     loop_phrase: Option<Rc<RefCell<PhraseLoop>>>,
-    vari_reserve: usize,          // 0:no rsv, 1-9: rsv
+    vari_reserve: usize, // 0:no rsv, 1-9: rsv
     state_reserve: bool,
     turnnote: i16,
 }
@@ -140,7 +140,7 @@ impl PhrLoopManager {
                 }
                 PhraseAs::Measure(msr) => {
                     let mut msg_modified = msg.clone();
-                    msg_modified.vari = PhraseAs::Measure(msr-1); // 0origin
+                    msg_modified.vari = PhraseAs::Measure(msr - 1); // 0origin
                     self.new_data_stock.push(msg_modified);
                 }
             }

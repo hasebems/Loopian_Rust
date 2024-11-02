@@ -3,17 +3,17 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use std::sync::mpsc;
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use eframe::egui::*;
+use std::sync::mpsc;
 
 use super::history::History;
-use crate::elapse::tickgen::CrntMsrTick;
-use crate::lpnlib::*;
-use crate::graphic::guiev::GuiEv;
-use crate::graphic::graphic::Graphic;
 use crate::cmd::cmdparse::*;
 use crate::cmd::txt_common::*;
+use crate::elapse::tickgen::CrntMsrTick;
+use crate::graphic::graphic::Graphic;
+use crate::graphic::guiev::GuiEv;
+use crate::lpnlib::*;
 
 //*******************************************************************
 //      Input Text
@@ -28,9 +28,6 @@ pub struct InputText {
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history: History,
     cmd: LoopianCmd,
-
-    //graph: Graph,
-    //guiev: GuiEv,
 }
 impl InputText {
     const CURSOR_MAX_VISIBLE_LOCATE: usize = 65;
@@ -46,9 +43,6 @@ impl InputText {
             scroll_lines: vec![],
             history: History::new(),
             cmd: LoopianCmd::new(msg_hndr),
-
-            //graph: Graph::new(),
-            //guiev: GuiEv::new(),
         }
     }
     pub fn get_history_cnt(&self) -> usize {

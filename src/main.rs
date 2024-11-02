@@ -12,29 +12,23 @@ mod midi;
 mod server;
 mod test;
 
-//use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use eframe::{egui, egui::*};
 use std::env;
 use std::sync::mpsc;
+use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 
 use elapse::stack_elapse::ElapseStack;
-use file::settings::Settings;
 use file::input_txt::InputText;
+use file::settings::Settings;
 use graphic::graphic::Graphic;
 use graphic::guiev::GuiEv;
 use lpnlib::*;
 use server::server::cui_loop;
 
 pub struct LoopianApp {
-    //input_locate: usize,   //  カーソルの位置
-    //visible_locate: usize, //  入力部に表示する最初の文字の位置
-    //input_text: String,
-    //file_name_stock: String, // 前回ロードしたファイル名を保持
-    //scroll_lines: Vec<(TextAttribute, String, String)>,
-    //next_msr_tick: Option<CrntMsrTick>, //
     ui_hndr: mpsc::Receiver<UiMsg>,
     itxt: InputText,
     graph: Graphic,
@@ -48,12 +42,6 @@ impl LoopianApp {
         let (txmsg, rxui) = gen_elapse_thread();
         Self::init_font(cc);
         Self {
-            //input_locate: 0,
-            //visible_locate: 0,
-            //input_text: String::new(),
-            //file_name_stock: String::new(),
-            //scroll_lines: Vec::new(),
-            //next_msr_tick: None,
             itxt: InputText::new(txmsg),
             ui_hndr: rxui,
             graph: Graphic::new(),
@@ -146,7 +134,6 @@ impl LoopianApp {
             stroke: egui::Stroke::new(0.0, back_color),
         };
         CentralPanel::default().frame(my_frame).show(ctx, |ui| {
-            //let visible_text = &self.input_text[self.visible_locate..];
             self.graph.update(
                 ui,
                 (
@@ -163,12 +150,15 @@ impl LoopianApp {
         });
     }
     pub fn read_from_ui_hndr(&mut self) {
-        match self.ui_hndr.try_recv() {
-            Ok(msg) => {
-                let key = self.itxt.get_indicator_key_stock();
-                self.guiev.set_indicator(msg, key);
+        loop {
+            match self.ui_hndr.try_recv() {
+                Ok(msg) => {
+                    let key = self.itxt.get_indicator_key_stock();
+                    self.guiev.set_indicator(msg, key);
+                }
+                Err(TryRecvError::Disconnected) => break, // Wrong!
+                Err(TryRecvError::Empty) => break,
             }
-            _ => ()
         }
     }
 }
