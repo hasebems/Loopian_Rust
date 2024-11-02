@@ -167,7 +167,7 @@ impl LoopianApp {
 //*******************************************************************
 impl eframe::App for LoopianApp {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        self.itxt.gen_log();
+        self.itxt.gen_log(0, "".to_string());
         println!("That's all. Thank you!");
     }
     fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {

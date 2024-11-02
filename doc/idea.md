@@ -570,7 +570,8 @@ NoteObj <|-- WaterRipple
     - リアルタイムの場合、まずそれが可能なデータかチェック
         - variation には使えない
         - 小節数が新しい方が同じか多い
-
+- 過去の特定のコマンド区間だけを save できる機能(11/2)
+- !rd(n) でファイル内の !rd(n): 以降を、Input Window に呼び出す(11/2)
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -585,7 +586,7 @@ NoteObj <|-- WaterRipple
 - <d,r,m>*3 で3回繰り返し、みたいな記法はとても便利だが、octaveの指定がおかしくなりやすく、結局変なことになる
 
 次の対応、考えられる新機能
-- 過去の特定のコマンド区間だけを save できる機能    
+- nannou 導入
 - Tempo/Beat を打ち込みたい（変拍子、rit打ち込み）
     - COND partを作るより、loadの仕方で対応した方が簡単かも
 - スタカートや音価の操作
@@ -594,15 +595,6 @@ NoteObj <|-- WaterRipple
     - テンポが設定された過去からの時間で割り算するのではなく、もっと短い時間で tick 計算する
     - 上記のやり方で rit. をより動的に変化させられる
     - 外部 F8 同期も可能にする
-- [d^,r,m,f^,s,l] => [d,r,m,f,s,l].dyn(X.idx%3==0?X^) (多分やらない)
-    - 各音のiteratorは X で表現される
-    - X.idx は順番の数値、X.beat は拍数
-- &2=[...] : 音符列のみを格納できる変数 (多分やらない)
-    - &2.dyn(mp) : 音符の[]と同等に使用できる
-    - <&2+&3> : 二つの音符列を時系列に足し合わせる
-    - <&2.rpt(5)+&3> : 音符変調関数を使用可能
-    - &n の音符列は、複数パートを跨いで使用可能
-- @2=@2.dyn(pp) : 再代入可能
 - >d で parallel, >>d で変換しない、<xxx> で、その区間 parallel、<<xxx>> で、その区間変換しない
 - @0=[] は fermata の時に再生する特別な variation とする
 

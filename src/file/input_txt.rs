@@ -48,8 +48,8 @@ impl InputText {
     pub fn get_history_cnt(&self) -> usize {
         self.history_cnt
     }
-    pub fn gen_log(&mut self) {
-        self.history.gen_log();
+    pub fn gen_log(&mut self, num: usize, fname: String) {
+        self.history.gen_log(num, fname);
     }
     pub fn get_input_part(&self) -> usize {
         self.cmd.get_input_part()
@@ -161,32 +161,57 @@ impl InputText {
         self.input_locate = 0;
         self.visible_locate = 0;
         let len = itxt.chars().count();
-        if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
+        let chr = itxt.chars().nth(0).unwrap_or(' ');
+        if chr != '!' {
+            // Normal Input
+            let msg = self.one_command(get_crnt_date_txt(), itxt, true);
+            self.set_graphic_msg(msg, graph);
+        } else if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
             // The end of the App
             self.cmd.send_quit();
-            self.gen_log();
+            self.gen_log(0, "".to_string());
             println!("That's all. Thank you!");
             std::process::exit(0);
-        } else {
-            if (len >= 5 && &itxt[0..5] == "!load") || (len >= 2 && &itxt[0..2] == "!l") {
-                // Load File
-                self.load_file(&itxt[0..], graph);
-            } else if (len >= 6 && &itxt[0..6] == "!clear")
-                || (len >= 4 && &itxt[0..4] == "!clr")
-                || (len >= 2 && &itxt[0..2] == "!c")
-            {
-                // clear loaded file data
-                self.clear_loaded_data();
-                self.cmd.send_clear();
-                self.scroll_lines.push((
-                    TextAttribute::Answer,
-                    "".to_string(),
-                    "All data cleared!".to_string(),
-                ));
+        } else if (len >= 2 && &itxt[0..2] == "!l") || (len >= 5 && &itxt[0..5] == "!load") {
+            // Load File
+            self.load_file(&itxt[0..], graph);
+        } else if (len >= 6 && &itxt[0..6] == "!clear")
+            || (len >= 4 && &itxt[0..4] == "!clr")
+            || (len >= 2 && &itxt[0..2] == "!c")
+        {
+            // clear loaded file data
+            self.clear_loaded_data();
+            self.cmd.send_clear();
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "All data cleared!".to_string(),
+            ));
+        } else if (len >= 2 && &itxt[0..2] == "!s") || (len >= 5 && &itxt[0..5] == "!save") {
+            let itxts = split_by('.', itxt);
+            let fname = if itxts.len() >= 2 {
+                itxts[1].clone()
             } else {
-                // Normal Input
-                let msg = self.one_command(get_crnt_date_txt(), itxt, true);
-                self.set_graphic_msg(msg, graph);
+                "".to_string()
+            };
+            let num = extract_number_from_parentheses(&itxts[0]);
+            self.gen_log(num, fname);
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "log saved!".to_string(),
+            ));
+        } else if (len >= 2 && &itxt[0..2] == "!r")
+            || (len >= 3 && &itxt[0..3] == "!rd")
+            || (len >= 5 && &itxt[0..5] == "!read")
+        {
+            let num = extract_number_from_parentheses(itxt.as_str());
+            if let Some(cmd) = self.history.read_line_from_lpn(
+                self.file_name_stock.clone(),
+                self.cmd.get_path().as_deref(),
+                num,
+            ) {
+                self.input_text = cmd;
             }
         }
     }

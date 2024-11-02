@@ -31,12 +31,17 @@ impl History {
             loaded_text: Vec::new(),
         }
     }
-    pub fn gen_log(&mut self) {
+    /// ログファイルを生成する (num: 何行目からのログを出力するか)
+    pub fn gen_log(&mut self, num: usize, fname: String) {
         // フォルダ作成
         self.make_folder(Self::LOG_FOLDER);
 
         // 時間をファイル名に使う
-        let file = Local::now().format("%Y-%m-%d_%H-%M-%S.lpn").to_string();
+        let file = if fname.len() == 0 {
+            Local::now().format("%Y-%m-%d_%H-%M-%S.lpn").to_string()
+        } else {
+            fname + ".lpn"
+        };
         let mut path_str = String::from(Self::LOG_FOLDER);
         path_str += "/";
         path_str += &file;
@@ -45,7 +50,10 @@ impl History {
         // log収集
         let mut whole_txt: String = String::new();
         let mut txt_exist = false;
-        for line in self.input_lines.iter() {
+        for (i, line) in self.input_lines.iter().enumerate() {
+            if i < num {
+                continue;
+            }
             if line.0.len() > 0 && line.1 != "quit" {
                 //whole_txt += &line.0.to_string(); // 日付時刻の挿入
                 whole_txt += &line.1.to_string();
@@ -96,6 +104,10 @@ impl History {
                             // コメントでないか、過去の 2023.. が書かれてないか、loadではないか
                             lodable = false;
                         }
+                        if line.len() >= 4 && &line[0..4] == "!rd(" {
+                            // 読み飛ばす
+                            continue;
+                        }
                         if enable_blk && line.chars().nth(0).unwrap_or('_') == '!' {
                             // blk指定があるか
                             if line.len() > 5 && line[0..5] == *"!blk(" {
@@ -123,6 +135,34 @@ impl History {
         } else {
             false
         }
+    }
+    pub fn read_line_from_lpn(
+        &self,
+        fname: String,
+        path: Option<&str>,
+        num: usize,
+    ) -> Option<String> {
+        let mut real_path = Self::LOAD_FOLDER.to_string();
+        if let Some(lp) = path {
+            real_path = real_path + "/" + &lp;
+        }
+        match fs::read_to_string(real_path + "/" + &fname + ".lpn") {
+            Ok(content) => {
+                for line in content.lines() {
+                    if line.len() >= 4 && &line[0..4] == "!rd(" {
+                        let rd_line = split_by(':', line.to_string());
+                        if rd_line.len() == 2 {
+                            let rd_num = extract_number_from_parentheses(&rd_line[0]);
+                            if rd_num == num {
+                                return Some(rd_line[1].clone());
+                            }
+                        }
+                    }
+                }
+            }
+            Err(_err) => println!("Can't open a file"),
+        };
+        None
     }
     /// ファイル内で !msr() を使ったデータにおいて、
     /// 指定された小節数から、ロードされたデータの再生開始場所を調べ、
