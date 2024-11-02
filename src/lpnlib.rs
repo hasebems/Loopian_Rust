@@ -275,6 +275,11 @@ pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
 //*******************************************************************
 //          UI Message from Elapse thread
 //*******************************************************************
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum TextAttribute {
+    Common,
+    Answer,
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NoteUiEv {
     pub key_num: u8,

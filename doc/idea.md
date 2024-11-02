@@ -73,7 +73,7 @@
     - graph の Command
         - light, dark
     - 特殊なもの
-        - @c= , @n= 
+        - @c=[] , @n=[] , @msr()=[]{}
 
 
 - コマンド一覧
@@ -557,8 +557,20 @@ NoteObj <|-- WaterRipple
 - rit. の記述方法変更(9/24)
 - MIDI 設定を settings.toml に書ける機能追加(9/28)
 - 表示の内部message formatをstringでなくて、ちゃんとしたenumで。(9/29)
-- dynamic pattern 機能
+- dynamic pattern 機能(10/21)
     - Cls(), Arp() で、和音演奏、アルペジオ演奏を自動生成
+- 次のループからではなく、次の小節からフレーズが差し変わる動作に変更(11/1)
+    - 新しい Phrase が前の Phrase より長さが長いときに差し変わる（とりあえずの仕様）
+- @msr()=[]で小節指定できる機能追加(11/1)
+    - Phr, Ana のElapseへの送り方を、一つのメッセージにする
+    - part, vari の引数に加え mes を追加
+    - この時、vari は無効
+- Phrase を入力したとき、次のループからではなく、リアルタイムで変わる機能(11/1)
+    - 常に入力した次の小節先頭から変わる仕様とした
+    - リアルタイムの場合、まずそれが可能なデータかチェック
+        - variation には使えない
+        - 小節数が新しい方が同じか多い
+
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -573,10 +585,6 @@ NoteObj <|-- WaterRipple
 - <d,r,m>*3 で3回繰り返し、みたいな記法はとても便利だが、octaveの指定がおかしくなりやすく、結局変なことになる
 
 次の対応、考えられる新機能
-- @msr()=[]で小節指定できる機能追加
-- ファイルからの小節ロード(!msr)をコマンド化
-    - 倍数ロードも可（8小節周期の7小節目）
-    - @によるマクロ指定と合わせて使用
 - 過去の特定のコマンド区間だけを save できる機能    
 - Tempo/Beat を打ち込みたい（変拍子、rit打ち込み）
     - COND partを作るより、loadの仕方で対応した方が簡単かも
@@ -586,17 +594,6 @@ NoteObj <|-- WaterRipple
     - テンポが設定された過去からの時間で割り算するのではなく、もっと短い時間で tick 計算する
     - 上記のやり方で rit. をより動的に変化させられる
     - 外部 F8 同期も可能にする
-- Phrase を入力したとき、次のループからではなく、リアルタイムで変わる機能
-    - リアルタイムか、次のループ先頭かを選べる
-        - [RT:xxxx] RTをつけたらリアルタイムに変わる
-    - リアルタイムの場合、まずそれが可能なデータかチェック
-        - variation には使えない
-        - 小節数が同じ
-        - 変えられる側も変える側も中身が空でない
-    <実装方法>
-        - PhraseLoop new は、Part がメッセージ受信時に行う
-        - new された loop は、今の msr, tick まで早送りし、そこから再生
-        - それまでの Loop はすぐに解放
 - [d^,r,m,f^,s,l] => [d,r,m,f,s,l].dyn(X.idx%3==0?X^) (多分やらない)
     - 各音のiteratorは X で表現される
     - X.idx は順番の数値、X.beat は拍数
@@ -621,6 +618,7 @@ NoteObj <|-- WaterRipple
 ## build & 起動
 - ラズパイの場合、 cargo xxx --features raspi
 - サーバ機能で立ち上げる場合、 cargo xxx server
+- verbose で立ち上げる、 cargo xxx --features verbose
 - ただし、pianoteq8と同時に立ち上げる shell script:
     - ./autostart_loopian.sh
 

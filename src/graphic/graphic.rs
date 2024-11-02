@@ -36,11 +36,6 @@ const INPUT_TXT_Y_SZ: f32 = 40.0; //
 const INPUTTXT_FONT_SIZE: f32 = 28.0; // org: 20.0
 const INPUTTXT_LETTER_WIDTH: f32 = 16.73; // org: 11.95 (0.5975*fontsz)
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum TextAttribute {
-    Common,
-    Answer,
-}
 pub struct Graphic {
     full_size: Pos2,
     nobj: Vec<Box<dyn NoteObj>>,
