@@ -166,9 +166,11 @@ cargo doc で自動生成
 
 ```mermaid
 classDiagram
-LoopianApp *-- LoopianCmd
+LoopianApp *-- InputText
 LoopianApp *-- ElapseStack
 LoopianApp *-- Graphic
+InputText *-- LoopianCmd
+InputText *-- History
 Elapse <|-- Part
 Elapse <|-- DamperPart
 Elapse <|-- Loop
@@ -180,6 +182,7 @@ Elapse <|-- Damper
 Elapse <|-- Flow
 ElapseStack *-- Part
 ElapseStack *-- DamperPart
+ElapseStack *-- MidiTx
 ElapseStack o-- Elapse
 LoopianCmd *-- SeqDataStock
 LoopianCmd *-- MessageSender
@@ -193,6 +196,8 @@ CmpsLoopManager o-- CompositionLoop
 Graphic o-- NoteObj
 NoteObj <|-- WaterRipple
 ```
+- MidiRx は、gen_midirx_thread() 内で生成される
+- LoopianServer は、cui_loop() 内で生成される
 
 ### 3.Elapse Object
 
