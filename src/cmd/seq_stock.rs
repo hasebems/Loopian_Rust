@@ -14,6 +14,7 @@ use crate::lpnlib::*;
 //*******************************************************************
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
+#[derive(Debug)]
 pub struct SeqDataStock {
     pdt: Vec<Vec<PhraseDataStock>>,
     cdt: [CompositionDataStock; MAX_COMPOSITION_PART],
@@ -203,6 +204,7 @@ impl SeqDataStock {
 //*******************************************************************
 //          Phrase Data Stock Struct
 //*******************************************************************
+#[derive(Debug)]
 pub struct PhraseDataStock {
     base_note: i32,
     raw: String,
@@ -227,6 +229,14 @@ impl PhraseDataStock {
             do_loop: true,
             whole_tick: 0,
         }
+    }
+    pub fn _get_cmpl_nt(&self) -> &Vec<String> {
+        // for test
+        &self.cmpl_nt
+    }
+    pub fn _get_phr(&self) -> &Vec<PhrEvt> {
+        // for test
+        &self.phr
     }
     pub fn get_final(&self, part: i16, vari: PhraseAs) -> ElpsMsg {
         let do_loop = if vari == PhraseAs::Normal && self.do_loop {
@@ -264,11 +274,11 @@ impl PhraseDataStock {
     }
     pub fn set_recombined(&mut self, input_mode: InputMode, bpm: i16, tick_for_onemsr: i32) {
         if self.cmpl_nt == [""] {
+            println!("no_phrase...");
             //  clear
             self.phr = Vec::new();
             self.ana = Vec::new();
             self.whole_tick = 0;
-            println!("no_phrase...");
             return;
         }
 
@@ -304,6 +314,7 @@ impl PhraseDataStock {
 //*******************************************************************
 //          Composition Data Stock Struct
 //*******************************************************************
+#[derive(Debug)]
 pub struct CompositionDataStock {
     raw: String,
     cmpl_cd: Vec<String>,

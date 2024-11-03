@@ -109,16 +109,22 @@ impl PhrLoopManager {
     }
     pub fn rcv_phr(&mut self, msg: PhrData) {
         if msg.evts.len() == 0 && msg.whole_tick == 0 {
-            // clear phrase
-            let mut num = 0;
+            // phrase = [] の時の処理
+            let mut num = MAX_VARIATION;
             for (i, phr) in self.new_data_stock.iter().enumerate() {
                 if phr.vari == msg.vari {
+                    // i,num は Variation の番号そのものではないことに注意(ただし0:Normal)
                     num = i;
                     break;
                 }
             }
-            if num != 0 {
-                self.new_data_stock.remove(num);
+            if num != MAX_VARIATION {
+                if num == 0 {
+                    // 0 の場合は、空の Phrase を入れ、new_data_stock の要素数を0にしない
+                    self.new_data_stock = vec![PhrData::empty()];
+                } else {
+                    self.new_data_stock.remove(num);
+                }
                 if num == self.active_phr {
                     // 今再生している Phrase が削除された
                     //self.del_loop_phrase(); // これを有効にすると即時消音
@@ -126,8 +132,6 @@ impl PhrLoopManager {
                 } else if num < self.active_phr {
                     self.active_phr -= 1;
                 }
-            } else {
-                self.new_data_stock[0] = PhrData::empty();
             }
         } else {
             match msg.vari {
