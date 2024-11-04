@@ -15,7 +15,6 @@ use crate::elapse::tickgen::CrntMsrTick;
 //use crate::graphic::graphic::Graphic;
 //use crate::graphic::guiev::GuiEv;
 use crate::lpnlib::*;
-use crate::Model;
 
 //*******************************************************************
 //      Input Text
@@ -88,14 +87,14 @@ impl InputText {
                 ..
             } => {
                 self.key_pressed(&key, graphmsg);
-                println!("Key pressed: {:?}", key);
+                //println!("Key pressed: {:?}", key);
             }
             Event::WindowEvent {
                 simple: Some(WindowEvent::KeyReleased(key)),
                 ..
             } => {
                 self.key_released(&key);
-                println!("Key released: {:?}", key);
+                //println!("Key released: {:?}", key);
             }
             _ => {}
         }
@@ -133,7 +132,7 @@ impl InputText {
                     self.input_locate -= 1;
                 }
                 self.update_visible_locate();
-                println!("Cursor: {}", self.input_locate);
+                //println!("Cursor: {}", self.input_locate);
             }
             &Key::Right => {
                 let maxlen = self.input_text.chars().count();
@@ -146,7 +145,7 @@ impl InputText {
                 if self.input_locate > maxlen {
                     self.input_locate = maxlen;
                 }
-                println!("Cursor: {}", self.input_locate);
+                //println!("Cursor: {}", self.input_locate);
             }
             &Key::Up => {
                 if self.input_locate == 0 {
