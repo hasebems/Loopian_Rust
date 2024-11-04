@@ -6,7 +6,7 @@
 mod cmd;
 mod elapse;
 mod file;
-//mod graphic;
+mod graphic;
 mod lpnlib;
 mod midi;
 mod server;
@@ -14,7 +14,7 @@ mod test;
 
 use std::env;
 use std::sync::mpsc;
-//use std::sync::mpsc::TryRecvError;
+use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::fs::File;
@@ -25,6 +25,9 @@ use elapse::stack_elapse::ElapseStack;
 use file::input_txt::InputText;
 use lpnlib::*;
 use server::server::cui_loop;
+use graphic::guiev::GuiEv;
+use graphic::waterripple::WaterRipple;
+use graphic::noteobj::NoteObj;
 
 //*******************************************************************
 //      Main
@@ -44,8 +47,8 @@ fn main() {
 //*******************************************************************
 //      Model
 //*******************************************************************
-#[derive(Default, Debug)]
-struct Resize {
+#[derive(Default, Debug, Clone)]
+pub struct Resize {
     full_size_x: f32,
     full_size_y: f32,
     eight_indic_top: f32,
@@ -59,11 +62,13 @@ pub struct Model {
     ui_hndr: mpsc::Receiver<UiMsg>,
     itxt: InputText,
     //graph: Graphic,
-    //guiev: GuiEv,
+    guiev: GuiEv,
     font_nrm: nannou::text::Font,
     font_italic: nannou::text::Font,
     font_newyork: nannou::text::Font,
     rs: Resize,
+    nobj: Vec<Box<dyn NoteObj>>,
+    tm: f32,
 }
 fn model(app: &App) -> Model {
     let (txmsg, rxui) = gen_elapse_thread();
@@ -81,14 +86,16 @@ fn model(app: &App) -> Model {
     win.set_inner_size_pixels(2800, 1800);
 
     Model {
-        itxt: InputText::new(txmsg),
         ui_hndr: rxui,
+        itxt: InputText::new(txmsg),
         //graph: Graphic::new(),
-        //guiev: GuiEv::new(true),
+        guiev: GuiEv::new(true),
         font_nrm,
         font_italic,
         font_newyork,
         rs: Resize::default(),
+        nobj: Vec::new(),
+        tm: 0.0,
     }
 }
 /// GUI/CUI 両方から呼ばれる
@@ -121,20 +128,48 @@ fn load_font(app: &App, font_path: &str) -> nannou::text::Font {
 }
 
 //*******************************************************************
-//      View & Event
+//      Update & Event
 //*******************************************************************
 fn update(app: &App, model: &mut Model, _update: Update) {
     model.rs = resize(app);
+    model.tm = app.time;
+
+    //  Read imformation from StackElapse
+    read_from_ui_hndr(model);
+
+    // Note Object の更新
+    if let Some(gev) = model.guiev.get_graphic_ev() {
+        for ev in gev {
+            let nt: i32 = ev.key_num as i32;
+            let vel: i32 = ev.vel as i32;
+            let pt: i32 = ev.pt as i32;
+            push_note_obj(model, nt, vel, pt, model.tm);
+        }
+        model.guiev.clear_graphic_ev();
+    }
+    let nlen = model.nobj.len();
+    let mut rls = vec![true; nlen];
+    for (i, obj) in model.nobj.iter_mut().enumerate() {
+        rls[i] = if !obj.update_model(model.tm, model.rs.clone()) {
+            false
+        } else {
+            true
+        };
+    }
+    for i in 0..nlen {
+        if !rls[i] {
+            model.nobj.remove(i);
+            break;
+        }
+    }
+
 }
-
-const INPUT_TXT_X_SZ: f32 = 1240.0; // fsz(20) 940.0
-const INPUT_TXT_Y_SZ: f32 = 40.0; //
-
 fn resize(app: &App) -> Resize {
     const EIGHT_INDIC_TOP: f32 = 40.0; // eight indicator
-    const SCROLL_TXT_TOP: f32 = 200.0; // scroll text
+    const SCROLL_TXT_TOP: f32 = 80.0; // scroll text
     const INPUT_TXT_LOWER_MERGIN: f32 = 80.0; // input text
     const MIN_LEFT_MERGIN: f32 = 140.0;
+    const MIN_RIGHT_MERGIN: f32 = 140.0;
 
     let win = app.main_window();
     let win_rect = win.rect();
@@ -145,47 +180,50 @@ fn resize(app: &App) -> Resize {
     Resize {
         full_size_x: win_width,
         full_size_y: win_height,
-        eight_indic_top: EIGHT_INDIC_TOP,
-        eight_indic_left: MIN_LEFT_MERGIN,
-        scroll_txt_top: SCROLL_TXT_TOP,
+        eight_indic_top: win_height / 2.0 - EIGHT_INDIC_TOP,
+        eight_indic_left: win_width / 2.0 - MIN_RIGHT_MERGIN,
+        scroll_txt_top: win_height / 2.0 - SCROLL_TXT_TOP,
         scroll_txt_left: st_left_mergin,
         input_txt_top: - win_height / 2.0 + INPUT_TXT_LOWER_MERGIN,
         input_txt_left: 0.0,
     }
 }
-
-struct Settings {
-    resolution: u32,
-    scale: f32,
-    rotation: f32,
-    color: Srgb<u8>,
-    position: Vec2,
+fn read_from_ui_hndr(model: &mut Model) {
+    loop {
+        match model.ui_hndr.try_recv() {
+            Ok(msg) => {
+                let key = model.itxt.get_indicator_key_stock();
+                model.guiev.set_indicator(msg, key);
+            }
+            Err(TryRecvError::Disconnected) => break, // Wrong!
+            Err(TryRecvError::Empty) => break,
+        }
+    }
+}
+fn push_note_obj(model: &mut Model, nt: i32, vel: i32, _pt: i32, tm: f32) {
+    model.nobj.push(Box::new(WaterRipple::new(
+        nt as f32,
+        vel as f32,
+        tm,
+    )));
 }
 fn event(_app: &App, model: &mut Model, event: Event) {
     let mut graphmsg: Vec<i16> = Vec::new();
     model.itxt.window_event(event, &mut graphmsg);
 }
+
+//*******************************************************************
+//      View
+//*******************************************************************
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
     draw.background().color(BLACK);
     let tm = app.time;
 
-    let settings = Settings {
-        resolution: 10,
-        scale: 200.0,
-        rotation: 0.0,
-        color: GRAY,
-        position: vec2(0.0, 0.0),
-    };
-    let rotation_radians = deg_to_rad(settings.rotation);
-    draw.ellipse()
-        .resolution(settings.resolution as f32)
-        .xy(settings.position)
-        .color(settings.color)
-        .rotate(-rotation_radians)
-        .radius(settings.scale);
+    //  Note Object の描画
+    view_mine(model, draw.clone(), tm);
 
-    // タイトルを描画
+    // draw title
     draw.text("Loopian")
         .font(model.font_newyork.clone()) // 事前にロードしたフォントを使用
         .font_size(32)
@@ -196,6 +234,9 @@ fn view(app: &App, model: &Model, frame: Frame) {
             42.0 - model.rs.full_size_y / 2.0 ,
         );
 
+    // eight indicator
+    eight_indicator(model, draw.clone());
+
     // scroll text
     scroll_text(model, draw.clone());
 
@@ -204,7 +245,19 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
     draw.to_frame(app, &frame).unwrap();
 }
+fn view_mine(model: &Model, draw: Draw, tm: f32) {
+    //  Note Object の描画
+    for (i, obj) in model.nobj.iter().enumerate() {
+        obj.disp(draw.clone(), tm, model.rs.clone());
+    }
+}
+
+//*******************************************************************
+//      Display Text
+//*******************************************************************
 fn input_text(model: &Model, draw: Draw, tm: f32) {
+    const INPUT_TXT_X_SZ: f32 = 1240.0;
+    const INPUT_TXT_Y_SZ: f32 = 40.0;
     const LETTER_SZ_X: f32 = 16.0;
     const CURSOR_THICKNESS: f32 = 5.0;
     //const LETTER_MARGIN_X: f32 = 5.0;
@@ -215,7 +268,7 @@ fn input_text(model: &Model, draw: Draw, tm: f32) {
     let input_locate_x: f32 = model.rs.input_txt_left;  // 入力スペースの中心座標
     let input_locate_y: f32 = model.rs.input_txt_top; // 入力スペースの中心座標
     let input_start_x: f32 = input_locate_x - INPUT_TXT_X_SZ / 2.0 + 120.0;
-    let cursor_y: f32 = input_locate_y - INPUT_TXT_Y_SZ / 2.0;
+    let cursor_y: f32 = input_locate_y - INPUT_TXT_Y_SZ / 2.0 + 2.0;
     let cursor_locate: f32 = model.itxt.get_cursor_locate() as f32;
 
     // Input Space
@@ -238,9 +291,8 @@ fn input_text(model: &Model, draw: Draw, tm: f32) {
     }
 
     // プロンプトの描画
-    let part_name: [&str; 5] = ["L1","L2","R1","R2","__",];
     let hcnt = model.itxt.get_history_cnt();
-    let prompt_txt: &str = &(format!("{:03}:", hcnt) + part_name[model.itxt.get_input_part()] + ">");
+    let prompt_txt: &str = &(format!("{:03}:", hcnt) + model.guiev.get_part_txt(model.itxt.get_input_part()) + ">");
     for (i, c) in prompt_txt.chars().enumerate() {
         draw.text(&c.to_string())
             .font(model.font_nrm.clone()) // 事前にロードしたフォントを使用
@@ -278,7 +330,7 @@ fn scroll_text(model: &Model, draw: Draw) {
     const SCRTXT_FONT_WIDTH: f32 = 12.0;
 
     const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
-    const SCRTXT_HEIGHT_LIMIT: f32 = 340.0;
+    const SCRTXT_HEIGHT_LIMIT: f32 = 200.0;
 
     // generating max_line_in_window, and updating self.top_scroll_line
     let scroll_lines = model.itxt.get_scroll_lines();
@@ -360,4 +412,98 @@ fn scroll_text(model: &Model, draw: Draw) {
                 );
         }
     }
+}
+fn eight_indicator(model: &Model, draw: Draw) {
+    let msr = model.guiev.get_indicator(3);
+    draw.text(msr)
+        .font(model.font_nrm.clone())
+        .font_size(40)
+        .color(WHITE)
+        .left_justify()
+        .x_y(
+            model.rs.eight_indic_left,
+            model.rs.eight_indic_top,
+        )
+        .w_h(400.0, 40.0);
+
+    let bpm = model.guiev.get_indicator(1);
+    draw.text("bpm:")
+        .font(model.font_nrm.clone())
+        .font_size(28)
+        .color(MAGENTA)
+        .left_justify()
+        .x_y(
+            model.rs.eight_indic_left + 40.0,
+            model.rs.eight_indic_top - 70.0,
+        )
+        .w_h(400.0, 40.0);
+    draw.text(bpm)
+        .font(model.font_nrm.clone())
+        .font_size(28)
+        .color(WHITE)
+        .left_justify()
+        .x_y(
+            model.rs.eight_indic_left + 170.0,
+            model.rs.eight_indic_top - 70.0,
+        )
+        .w_h(400.0, 40.0);
+
+    let meter = model.guiev.get_indicator(2);
+    draw.text("meter:")
+        .font(model.font_nrm.clone())
+        .font_size(28)
+        .color(MAGENTA)
+        .left_justify()
+        .x_y(
+            model.rs.eight_indic_left + 40.0,
+            model.rs.eight_indic_top - 110.0,
+        )
+        .w_h(400.0, 40.0);
+    draw.text(meter)
+        .font(model.font_nrm.clone())
+        .font_size(28)
+        .color(WHITE)
+        .left_justify()
+        .x_y(
+            model.rs.eight_indic_left + 170.0,
+            model.rs.eight_indic_top - 110.0,
+        )
+        .w_h(400.0, 40.0);
+
+    let key = model.guiev.get_indicator(0);
+    draw.text("key:")
+        .font(model.font_nrm.clone())
+        .font_size(28)
+        .color(MAGENTA)
+        .left_justify()
+        .x_y(
+            model.rs.eight_indic_left + 40.0,
+            model.rs.eight_indic_top - 150.0,
+        )
+        .w_h(400.0, 40.0);
+    draw.text(key)
+        .font(model.font_nrm.clone())
+        .font_size(28)
+        .color(WHITE)
+        .left_justify()
+        .x_y(
+            model.rs.eight_indic_left + 170.0,
+            model.rs.eight_indic_top - 150.0,
+        )
+        .w_h(400.0, 40.0);
+
+    for i in 0..4 {
+        let pt = model.guiev.get_indicator(i+4);
+        draw.text(&(model.guiev.get_part_txt(i).to_string() + pt))
+            .font(model.font_nrm.clone())
+            .font_size(20)
+            .color(WHITE)
+            .left_justify()
+            .x_y(
+                model.rs.eight_indic_left + 40.0,
+                model.rs.eight_indic_top - 190.0 - (i as f32) * 30.0,
+            )
+            .w_h(400.0, 30.0);
+    }
+
 }

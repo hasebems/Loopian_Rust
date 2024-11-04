@@ -3,13 +3,19 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use eframe::egui::*;
+use nannou::prelude::*;
+//use eframe::egui::*;
+
+use crate::Resize;
 
 pub trait NoteObj {
+    fn update_model(&mut self, crnt_time: f32, rs: Resize) -> bool; //  false: 消去可能
     fn disp(
         &self,
-        crnt_time: i32, //  const FPS(50msec) のカウンター
-        ui: &mut Ui,    //  egui における Ui
-        fsz: Pos2,
-    ) -> bool; //  false: 消去可能
+        draw: Draw,
+        crnt_time: f32, //  const FPS(50msec) のカウンター
+        rs: Resize,     //  ウィンドウサイズ
+        //ui: &mut Ui,    //  egui における Ui
+        //fsz: Pos2,
+    );
 }
