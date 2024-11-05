@@ -4,16 +4,14 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
-//use eframe::egui::*;
-use std::sync::mpsc;
 use nannou::prelude::*;
+use std::sync::mpsc;
 
 use super::history::History;
 use crate::cmd::cmdparse::*;
 use crate::cmd::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
-//use crate::graphic::graphic::Graphic;
-//use crate::graphic::guiev::GuiEv;
+use crate::graphic::guiev::GuiEv;
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -132,7 +130,6 @@ impl InputText {
                     self.input_locate -= 1;
                 }
                 self.update_visible_locate();
-                //println!("Cursor: {}", self.input_locate);
             }
             &Key::Right => {
                 let maxlen = self.input_text.chars().count();
@@ -145,7 +142,6 @@ impl InputText {
                 if self.input_locate > maxlen {
                     self.input_locate = maxlen;
                 }
-                //println!("Cursor: {}", self.input_locate);
             }
             &Key::Up => {
                 if self.input_locate == 0 {
@@ -178,8 +174,10 @@ impl InputText {
     fn key_released(&mut self, key: &Key) {
         if key == &Key::LShift || key == &Key::RShift {
             self.shift_pressed = false;
-        } else /*if key == &Key::LControl*/ {
-            // カーソルKeyに使うと Ctrl Released が反応しないため 
+        } else
+        /*if key == &Key::LControl*/
+        {
+            // カーソルKeyに使うと Ctrl Released が反応しないため
             self.ctrl_pressed = false;
         }
     }
@@ -337,7 +335,7 @@ impl InputText {
             ));
         }
     }
-    /*pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<i16>) {
+    pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<i16>) {
         // from main loop
         if let Some(nmt) = self.next_msr_tick {
             let crnt: CrntMsrTick = guiev.get_msr_tick();
@@ -349,7 +347,7 @@ impl InputText {
                 self.next_msr_tick = self.get_loaded_text(nmt, graphmsg);
             }
         }
-    }*/
+    }
     fn get_loaded_text(&mut self, mt: CrntMsrTick, graphmsg: &mut Vec<i16>) -> Option<CrntMsrTick> {
         let loaded = self.history.get_loaded_text(mt);
         for onecmd in loaded.0.iter() {

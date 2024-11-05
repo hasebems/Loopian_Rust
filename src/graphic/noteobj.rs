@@ -4,7 +4,6 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use nannou::prelude::*;
-//use eframe::egui::*;
 
 use crate::Resize;
 
@@ -15,7 +14,5 @@ pub trait NoteObj {
         draw: Draw,
         crnt_time: f32, //  const FPS(50msec) のカウンター
         rs: Resize,     //  ウィンドウサイズ
-        //ui: &mut Ui,    //  egui における Ui
-        //fsz: Pos2,
     );
 }

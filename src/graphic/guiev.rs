@@ -88,7 +88,7 @@ impl GuiEv {
                     let loop_msr = "FLOW".to_string();
                     self.indicator[4 + pnum] = format!(" {} {}", loop_msr, pui.chord_name);
                 } else {
-                    self.indicator[4 + pnum] = " ---".to_string();
+                    self.indicator[4 + pnum] = "  ---".to_string();
                 }
             }
             UiMsg::NoteUi(note_ev) => {

@@ -12,22 +12,22 @@ mod midi;
 mod server;
 mod test;
 
+use nannou::prelude::*;
 use std::env;
+use std::fs::File;
+use std::io::Read;
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
-use std::fs::File;
-use std::io::Read;
-use nannou::prelude::*;
 
 use elapse::stack_elapse::ElapseStack;
 use file::input_txt::InputText;
+use graphic::guiev::GuiEv;
+use graphic::noteobj::NoteObj;
+use graphic::waterripple::WaterRipple;
 use lpnlib::*;
 use server::server::cui_loop;
-use graphic::guiev::GuiEv;
-use graphic::waterripple::WaterRipple;
-use graphic::noteobj::NoteObj;
 
 //*******************************************************************
 //      Main
@@ -61,14 +61,17 @@ pub struct Resize {
 pub struct Model {
     ui_hndr: mpsc::Receiver<UiMsg>,
     itxt: InputText,
-    //graph: Graphic,
     guiev: GuiEv,
+    crnt_time: f32,
+
     font_nrm: nannou::text::Font,
     font_italic: nannou::text::Font,
     font_newyork: nannou::text::Font,
     rs: Resize,
     nobj: Vec<Box<dyn NoteObj>>,
-    tm: f32,
+    graphmsg: Vec<i16>,
+    gmode: GraphMode,
+    gptn: GraphPattern,
 }
 fn model(app: &App) -> Model {
     let (txmsg, rxui) = gen_elapse_thread();
@@ -90,12 +93,16 @@ fn model(app: &App) -> Model {
         itxt: InputText::new(txmsg),
         //graph: Graphic::new(),
         guiev: GuiEv::new(true),
+        crnt_time: 0.0,
+
         font_nrm,
         font_italic,
         font_newyork,
         rs: Resize::default(),
         nobj: Vec::new(),
-        tm: 0.0,
+        graphmsg: Vec::new(),
+        gmode: GraphMode::Dark,
+        gptn: GraphPattern::Ripple,
     }
 }
 /// GUI/CUI 両方から呼ばれる
@@ -132,10 +139,28 @@ fn load_font(app: &App, font_path: &str) -> nannou::text::Font {
 //*******************************************************************
 fn update(app: &App, model: &mut Model, _update: Update) {
     model.rs = resize(app);
-    model.tm = app.time;
+    model.crnt_time = app.time;
 
     //  Read imformation from StackElapse
     read_from_ui_hndr(model);
+
+    // Auto Load
+    model
+        .itxt
+        .auto_load_command(&model.guiev, &mut model.graphmsg);
+
+    // 画面モードの設定
+    if model.graphmsg.len() > 0 {
+        let msg = model.graphmsg[0];
+        match msg {
+            LIGHT_MODE => model.gmode = GraphMode::Light,
+            DARK_MODE => model.gmode = GraphMode::Dark,
+            RIPPLE_PATTERN => model.gptn = GraphPattern::Ripple,
+            VOICE_PATTERN => model.gptn = GraphPattern::Voice,
+            _ => (),
+        }
+        model.graphmsg.remove(0);
+    }
 
     // Note Object の更新
     if let Some(gev) = model.guiev.get_graphic_ev() {
@@ -143,14 +168,14 @@ fn update(app: &App, model: &mut Model, _update: Update) {
             let nt: i32 = ev.key_num as i32;
             let vel: i32 = ev.vel as i32;
             let pt: i32 = ev.pt as i32;
-            push_note_obj(model, nt, vel, pt, model.tm);
+            push_note_obj(model, nt, vel, pt, model.crnt_time);
         }
         model.guiev.clear_graphic_ev();
     }
     let nlen = model.nobj.len();
     let mut rls = vec![true; nlen];
     for (i, obj) in model.nobj.iter_mut().enumerate() {
-        rls[i] = if !obj.update_model(model.tm, model.rs.clone()) {
+        rls[i] = if !obj.update_model(model.crnt_time, model.rs.clone()) {
             false
         } else {
             true
@@ -162,7 +187,6 @@ fn update(app: &App, model: &mut Model, _update: Update) {
             break;
         }
     }
-
 }
 fn resize(app: &App) -> Resize {
     const EIGHT_INDIC_TOP: f32 = 40.0; // eight indicator
@@ -175,7 +199,7 @@ fn resize(app: &App) -> Resize {
     let win_rect = win.rect();
     let win_width = win_rect.w();
     let win_height = win_rect.h();
-    let st_left_mergin = - win_width / 2.0 + MIN_LEFT_MERGIN;
+    let st_left_mergin = -win_width / 2.0 + MIN_LEFT_MERGIN;
 
     Resize {
         full_size_x: win_width,
@@ -184,7 +208,7 @@ fn resize(app: &App) -> Resize {
         eight_indic_left: win_width / 2.0 - MIN_RIGHT_MERGIN,
         scroll_txt_top: win_height / 2.0 - SCROLL_TXT_TOP,
         scroll_txt_left: st_left_mergin,
-        input_txt_top: - win_height / 2.0 + INPUT_TXT_LOWER_MERGIN,
+        input_txt_top: -win_height / 2.0 + INPUT_TXT_LOWER_MERGIN,
         input_txt_left: 0.0,
     }
 }
@@ -205,11 +229,11 @@ fn push_note_obj(model: &mut Model, nt: i32, vel: i32, _pt: i32, tm: f32) {
         nt as f32,
         vel as f32,
         tm,
+        model.gmode,
     )));
 }
 fn event(_app: &App, model: &mut Model, event: Event) {
-    let mut graphmsg: Vec<i16> = Vec::new();
-    model.itxt.window_event(event, &mut graphmsg);
+    model.itxt.window_event(event, &mut model.graphmsg);
 }
 
 //*******************************************************************
@@ -217,8 +241,10 @@ fn event(_app: &App, model: &mut Model, event: Event) {
 //*******************************************************************
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
-    draw.background().color(BLACK);
     let tm = app.time;
+
+    // 画面全体の背景色
+    draw.background().color(get_color(model.gmode));
 
     //  Note Object の描画
     view_mine(model, draw.clone(), tm);
@@ -229,10 +255,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
         .font_size(32)
         .color(WHITE)
         .center_justify()
-        .x_y(
-            0.0,
-            42.0 - model.rs.full_size_y / 2.0 ,
-        );
+        .x_y(0.0, 42.0 - model.rs.full_size_y / 2.0);
 
     // eight indicator
     eight_indicator(model, draw.clone());
@@ -247,8 +270,14 @@ fn view(app: &App, model: &Model, frame: Frame) {
 }
 fn view_mine(model: &Model, draw: Draw, tm: f32) {
     //  Note Object の描画
-    for (i, obj) in model.nobj.iter().enumerate() {
+    for obj in model.nobj.iter() {
         obj.disp(draw.clone(), tm, model.rs.clone());
+    }
+}
+fn get_color(gmode: GraphMode) -> Srgb<u8> {
+    match gmode {
+        GraphMode::Dark => srgb::<u8>(0, 0, 0),
+        GraphMode::Light => srgb::<u8>(255, 255, 255),
     }
 }
 
@@ -260,12 +289,11 @@ fn input_text(model: &Model, draw: Draw, tm: f32) {
     const INPUT_TXT_Y_SZ: f32 = 40.0;
     const LETTER_SZ_X: f32 = 16.0;
     const CURSOR_THICKNESS: f32 = 5.0;
-    //const LETTER_MARGIN_X: f32 = 5.0;
     const LETTER_MARGIN_Y: f32 = 3.0;
     const PROMPT_LTR_NUM: f32 = 7.0;
 
     let input_bg_color: Srgb<u8> = srgb::<u8>(50, 50, 50);
-    let input_locate_x: f32 = model.rs.input_txt_left;  // 入力スペースの中心座標
+    let input_locate_x: f32 = model.rs.input_txt_left; // 入力スペースの中心座標
     let input_locate_y: f32 = model.rs.input_txt_top; // 入力スペースの中心座標
     let input_start_x: f32 = input_locate_x - INPUT_TXT_X_SZ / 2.0 + 120.0;
     let cursor_y: f32 = input_locate_y - INPUT_TXT_Y_SZ / 2.0 + 2.0;
@@ -280,7 +308,8 @@ fn input_text(model: &Model, draw: Draw, tm: f32) {
         .stroke_color(WHITE);
 
     // Cursor
-    if (tm % 0.5) < 0.3 {   // Cursor Blink
+    if (tm % 0.5) < 0.3 {
+        // Cursor Blink
         draw.rect()
             .color(LIGHTGRAY)
             .x_y(
@@ -292,7 +321,8 @@ fn input_text(model: &Model, draw: Draw, tm: f32) {
 
     // プロンプトの描画
     let hcnt = model.itxt.get_history_cnt();
-    let prompt_txt: &str = &(format!("{:03}:", hcnt) + model.guiev.get_part_txt(model.itxt.get_input_part()) + ">");
+    let prompt_txt: &str =
+        &(format!("{:03}:", hcnt) + model.guiev.get_part_txt(model.itxt.get_input_part()) + ">");
     for (i, c) in prompt_txt.chars().enumerate() {
         draw.text(&c.to_string())
             .font(model.font_nrm.clone()) // 事前にロードしたフォントを使用
@@ -313,22 +343,16 @@ fn input_text(model: &Model, draw: Draw, tm: f32) {
             .color(WHITE)
             .left_justify()
             .x_y(
-                ((i as f32) + PROMPT_LTR_NUM)* LETTER_SZ_X + input_start_x,
+                ((i as f32) + PROMPT_LTR_NUM) * LETTER_SZ_X + input_start_x,
                 input_locate_y + LETTER_MARGIN_Y,
             );
     }
 }
 fn scroll_text(model: &Model, draw: Draw) {
-    //const LETTER_SZ_X: f32 = 16.0;
-    //const LETTER_MARGIN_X: f32 = 5.0;
-    //const LETTER_MARGIN_Y: f32 = 3.0;
-    //const PROMPT_LTR_NUM: f32 = 7.0;
     const LINE_THICKNESS: f32 = 2.0;
-
     const SCRTXT_FONT_SIZE: u32 = 18;
     const SCRTXT_FONT_HEIGHT: f32 = 25.0;
     const SCRTXT_FONT_WIDTH: f32 = 12.0;
-
     const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
     const SCRTXT_HEIGHT_LIMIT: f32 = 200.0;
 
@@ -381,20 +405,19 @@ fn scroll_text(model: &Model, draw: Draw) {
         // line
         if top_scroll_line + i == crnt_line {
             draw.rect()
-            .color(LIGHTGRAY)
-            .x_y(
-                model.rs.scroll_txt_left + center_adjust - 60.0,
-                model.rs.scroll_txt_top - SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
-            )
-            .w_h(
-                SCRTXT_FONT_WIDTH * (ltrcnt as f32),
-                LINE_THICKNESS
-            );
+                .color(LIGHTGRAY)
+                .x_y(
+                    model.rs.scroll_txt_left + center_adjust - 60.0,
+                    model.rs.scroll_txt_top - SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
+                )
+                .w_h(SCRTXT_FONT_WIDTH * (ltrcnt as f32), LINE_THICKNESS);
         }
 
         // string
         let (txt_color, fontname) = if past_text_set.0 == TextAttribute::Answer {
             (MAGENTA, &model.font_italic)
+        } else if model.gmode == GraphMode::Light {
+            (GRAY, &model.font_nrm)
         } else {
             (WHITE, &model.font_nrm)
         };
@@ -414,16 +437,18 @@ fn scroll_text(model: &Model, draw: Draw) {
     }
 }
 fn eight_indicator(model: &Model, draw: Draw) {
+    let txt_color = if model.gmode == GraphMode::Light {
+        GRAY
+    } else {
+        WHITE
+    };
     let msr = model.guiev.get_indicator(3);
     draw.text(msr)
         .font(model.font_nrm.clone())
         .font_size(40)
-        .color(WHITE)
+        .color(txt_color)
         .left_justify()
-        .x_y(
-            model.rs.eight_indic_left,
-            model.rs.eight_indic_top,
-        )
+        .x_y(model.rs.eight_indic_left, model.rs.eight_indic_top)
         .w_h(400.0, 40.0);
 
     let bpm = model.guiev.get_indicator(1);
@@ -440,7 +465,7 @@ fn eight_indicator(model: &Model, draw: Draw) {
     draw.text(bpm)
         .font(model.font_nrm.clone())
         .font_size(28)
-        .color(WHITE)
+        .color(txt_color)
         .left_justify()
         .x_y(
             model.rs.eight_indic_left + 170.0,
@@ -462,7 +487,7 @@ fn eight_indicator(model: &Model, draw: Draw) {
     draw.text(meter)
         .font(model.font_nrm.clone())
         .font_size(28)
-        .color(WHITE)
+        .color(txt_color)
         .left_justify()
         .x_y(
             model.rs.eight_indic_left + 170.0,
@@ -484,7 +509,7 @@ fn eight_indicator(model: &Model, draw: Draw) {
     draw.text(key)
         .font(model.font_nrm.clone())
         .font_size(28)
-        .color(WHITE)
+        .color(txt_color)
         .left_justify()
         .x_y(
             model.rs.eight_indic_left + 170.0,
@@ -493,11 +518,11 @@ fn eight_indicator(model: &Model, draw: Draw) {
         .w_h(400.0, 40.0);
 
     for i in 0..4 {
-        let pt = model.guiev.get_indicator(i+4);
-        draw.text(&(model.guiev.get_part_txt(i).to_string() + pt))
+        let pt = model.guiev.get_indicator(7 - i);
+        draw.text(&(model.guiev.get_part_txt(3 - i).to_string() + pt))
             .font(model.font_nrm.clone())
             .font_size(20)
-            .color(WHITE)
+            .color(txt_color)
             .left_justify()
             .x_y(
                 model.rs.eight_indic_left + 40.0,
@@ -505,5 +530,4 @@ fn eight_indicator(model: &Model, draw: Draw) {
             )
             .w_h(400.0, 30.0);
     }
-
 }
