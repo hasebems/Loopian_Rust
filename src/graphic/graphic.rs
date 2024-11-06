@@ -1,54 +1,26 @@
-//  Created by Hasebe Masahiko on 2023/10/31.
-//  Copyright (c) 2023 Hasebe Masahiko.
+//  Created by Hasebe Masahiko on 2024/11/06.
+//  Copyright (c) 2024 Hasebe Masahiko.
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+
+use nannou::prelude::*;
+use std::fs::File;
+use std::io::Read;
+
 use super::guiev::GuiEv;
 use super::noteobj::NoteObj;
-use super::voice::Voice4;
 use super::waterripple::WaterRipple;
-use crate::file::settings::Settings;
+use crate::file::input_txt::InputText;
 use crate::lpnlib::*;
-use eframe::{egui, egui::*};
-use rand::{rngs, thread_rng, Rng};
-use std::time::Instant;
 
-const MAZENTA: Color32 = Color32::from_rgb(255, 0, 255);
-const TEXT_GRAY: Color32 = Color32::from_rgb(0, 0, 0);
-const _TEXT_BG: Color32 = Color32::from_rgb(0, 200, 200);
-
-const BACK_WHITE0: Color32 = Color32::from_rgb(220, 220, 220); // LIGHTの明るいグレー
-const BACK_WHITE1: Color32 = Color32::from_rgb(180, 180, 180); // DARKの明るいグレー
-const BACK_WHITE2: Color32 = Color32::from_rgb(128, 128, 128); // DARKの薄暗いグレー
-const _BACK_MAZENTA: Color32 = Color32::from_rgb(180, 160, 180);
-const _BACK_GRAY: Color32 = Color32::from_rgb(48, 48, 48);
-const BACK_DARK_GRAY: Color32 = Color32::from_rgb(64, 64, 64);
-const BACK_GRAY2: Color32 = Color32::from_rgb(160, 160, 160);
-
-const EI_FONT_SIZE: f32 = 16.0;
-
-const SCRTXT_FONT_SIZE: f32 = 20.0;
-const SCRTXT_FONT_HEIGHT: f32 = 25.0;
-const SCRTXT_FONT_WIDTH: f32 = 11.95; // fsz(16) 9.56
-
-const INPUT_TXT_X_SZ: f32 = 1240.0; // fsz(20) 940.0
-const INPUT_TXT_Y_SZ: f32 = 40.0; //
-const INPUTTXT_FONT_SIZE: f32 = 28.0; // org: 20.0
-const INPUTTXT_LETTER_WIDTH: f32 = 16.73; // org: 11.95 (0.5975*fontsz)
-
-pub struct Graphic {
-    full_size: Pos2,
-    nobj: Vec<Box<dyn NoteObj>>,
-    start_time: Instant,
-    frame_counter: i32,          // one per 20msec
-    _frame_counter_old_dbg: i32, // debug
-    rndm: rngs::ThreadRng,
-    mode: GraphMode,
-    note: GraphNote,
-    top_scroll_line: usize,
-    _last_location: usize,
-}
-struct Resize {
+//*******************************************************************
+//      struct Graphic
+//*******************************************************************
+#[derive(Default, Debug, Clone)]
+pub struct Resize {
+    full_size_x: f32,
+    full_size_y: f32,
     eight_indic_top: f32,
     eight_indic_left: f32,
     scroll_txt_top: f32,
@@ -56,295 +28,343 @@ struct Resize {
     input_txt_top: f32,
     input_txt_left: f32,
 }
+impl Resize {
+    pub fn resize(app: &App) -> Resize {
+        const EIGHT_INDIC_TOP: f32 = 40.0; // eight indicator
+        const SCROLL_TXT_TOP: f32 = 80.0; // scroll text
+        const INPUT_TXT_LOWER_MERGIN: f32 = 80.0; // input text
+        const MIN_LEFT_MERGIN: f32 = 140.0;
+        const MIN_RIGHT_MERGIN: f32 = 140.0;
+
+        let win = app.main_window();
+        let win_rect = win.rect();
+        let win_width = win_rect.w();
+        let win_height = win_rect.h();
+        let st_left_mergin = -win_width / 2.0 + MIN_LEFT_MERGIN;
+
+        Resize {
+            full_size_x: win_width,
+            full_size_y: win_height,
+            eight_indic_top: win_height / 2.0 - EIGHT_INDIC_TOP,
+            eight_indic_left: win_width / 2.0 - MIN_RIGHT_MERGIN,
+            scroll_txt_top: win_height / 2.0 - SCROLL_TXT_TOP,
+            scroll_txt_left: st_left_mergin,
+            input_txt_top: -win_height / 2.0 + INPUT_TXT_LOWER_MERGIN,
+            input_txt_left: 0.0,
+        }
+    }
+    pub fn get_full_size_x(&self) -> f32 {
+        self.full_size_x
+    }
+    pub fn get_full_size_y(&self) -> f32 {
+        self.full_size_y
+    }
+}
+pub struct Graphic {
+    graphmsg: Vec<i16>,
+    font_nrm: nannou::text::Font,
+    font_italic: nannou::text::Font,
+    font_newyork: nannou::text::Font,
+    rs: Resize,
+    nobj: Vec<Box<dyn NoteObj>>,
+    gmode: GraphMode,
+    gptn: GraphPattern,
+    crnt_time: f32,
+}
+
+//*******************************************************************
+//      impl Graphic
+//*******************************************************************
 impl Graphic {
-    pub fn new() -> Graphic {
-        let winsz = &Settings::load_settings().window_size;
+    pub fn new(app: &App) -> Graphic {
+        // フォントをロード（初期化時に一度だけ）
+        let font_nrm = Self::load_font(app, "CourierPrime-Regular.ttf");
+        let font_italic = Self::load_font(app, "CourierPrime-Italic.ttf");
+        let font_newyork = Self::load_font(app, "NewYork.ttf");
+
         Self {
-            full_size: Pos2 {
-                x: winsz.window_x_default,
-                y: winsz.window_y_default,
-            },
+            graphmsg: Vec::new(),
+            font_nrm,
+            font_italic,
+            font_newyork,
+            rs: Resize::default(),
             nobj: Vec::new(),
-            start_time: Instant::now(),
-            frame_counter: 0,
-            _frame_counter_old_dbg: 0,
-            rndm: thread_rng(),
-            mode: GraphMode::Dark,
-            note: GraphNote::Ripple,
-            top_scroll_line: 0,
-            _last_location: 0,
+            gmode: GraphMode::Dark,
+            gptn: GraphPattern::Ripple,
+            crnt_time: 0.0,
         }
     }
-    pub fn set_mode(&mut self, md: GraphMode) {
-        self.mode = md;
-    }
-    pub fn set_noteptn(&mut self, ptn: GraphNote) {
-        self.note = ptn;
-    }
-    //*******************************************************************
-    //      Update Screen
-    //*******************************************************************
-    pub fn update(
-        &mut self,
-        ui: &mut Ui,
-        infs: (
-            usize,                                 // cursor position
-            &String,                               // input text
-            &Vec<(TextAttribute, String, String)>, // scroll text(TextAttribute::Common/Answer, time, text)
-            usize,                                 // selected scroll text line
-            usize,                                 // input part
-            &GuiEv,                                // eight indicator
-        ),
-        _frame: &mut eframe::Frame,
-    ) {
-        // window size を得る
-        let new_x = ui.available_size().x;
-        let new_y = ui.available_size().y;
-        if new_x != self.full_size.x {
-            self.full_size.x = new_x;
-            println!("New Window Size X={}", new_x);
-        }
-        if new_y != self.full_size.y {
-            self.full_size.y = new_y;
-            println!("New Window Size Y={}", new_y);
-        }
-        let rs = self.resize();
+    fn load_font(app: &App, font_path: &str) -> nannou::text::Font {
+        let assets = app.assets_path().expect("The asset path cannot be found.");
+        let font_path = assets.join("fonts").join(font_path); // フォントファイルのパスを指定
 
-        // frame_counter の更新
-        const FPS: i32 = 1000 / 50;
-        let time = self.start_time.elapsed();
-        self.frame_counter = (time.as_millis() as i32) / FPS;
+        // フォントファイルをバイト列として読み込む
+        let mut file = File::open(&font_path).expect("Failed to open font file");
+        let mut font_data = Vec::new();
+        file.read_to_end(&mut font_data)
+            .expect("Failed to load font file");
 
-        //  Note Object の描画
-        if let Some(gev) = infs.5.get_graphic_ev() {
+        // バイト列からフォントを作成
+        nannou::text::Font::from_bytes(font_data).expect("Failed to analyze font file")
+    }
+    pub fn graph_msg(&mut self) -> &mut Vec<i16> {
+        &mut self.graphmsg
+    }
+    pub fn set_rs(&mut self, rs: Resize) {
+        self.rs = rs;
+    }
+
+    //*******************************************************************
+    //      Update & Event
+    //*******************************************************************
+    pub fn update_lpn_model(&mut self, guiev: &mut GuiEv, crnt_time: f32) {
+        self.crnt_time = crnt_time;
+
+        // 画面モードの設定
+        if self.graphmsg.len() > 0 {
+            let msg = self.graphmsg[0];
+            match msg {
+                LIGHT_MODE => self.gmode = GraphMode::Light,
+                DARK_MODE => self.gmode = GraphMode::Dark,
+                RIPPLE_PATTERN => self.gptn = GraphPattern::Ripple,
+                VOICE_PATTERN => self.gptn = GraphPattern::Voice,
+                _ => (),
+            }
+            self.graphmsg.remove(0);
+        }
+
+        // Note Object の更新
+        if let Some(gev) = guiev.get_graphic_ev() {
             for ev in gev {
                 let nt: i32 = ev.key_num as i32;
                 let vel: i32 = ev.vel as i32;
                 let pt: i32 = ev.pt as i32;
-                let rnd: f32 = self.rndm.gen();
-                self.push_note_obj(nt, vel, pt, rnd);
+                self.push_note_obj(nt, vel, pt, crnt_time);
             }
+            guiev.clear_graphic_ev();
         }
         let nlen = self.nobj.len();
         let mut rls = vec![true; nlen];
         for (i, obj) in self.nobj.iter_mut().enumerate() {
-            if obj.disp(self.frame_counter, ui, self.full_size) == false {
-                rls[i] = false;
-            }
+            rls[i] = if !obj.update_model(crnt_time, self.rs.clone()) {
+                false
+            } else {
+                true
+            };
         }
         for i in 0..nlen {
-            // 一度に一つ消去
             if !rls[i] {
                 self.nobj.remove(i);
                 break;
             }
         }
-
-        // Title 描画
-        self.update_title(ui);
-
-        // Eight Indicator 描画
-        self.update_eight_indicator(ui, infs.4, infs.5, &rs);
-
-        // Scroll Text 描画
-        self.update_scroll_text(ui, infs.2, infs.3, &rs);
-
-        // Input Text 描画
-        self.update_input_text(ui, infs, &rs);
     }
-    pub fn back_color(&self) -> Color32 {
-        if self.mode == GraphMode::Dark {
-            Color32::BLACK
-        } else {
-            Color32::WHITE
-        }
+    fn push_note_obj(&mut self, nt: i32, vel: i32, _pt: i32, tm: f32) {
+        self.nobj.push(Box::new(WaterRipple::new(
+            nt as f32, vel as f32, tm, self.gmode,
+        )));
     }
-    fn letter_color(&self) -> Color32 {
-        if self.mode == GraphMode::Dark {
-            Color32::WHITE
-        } else {
-            Color32::BLACK
+    pub fn get_color(&self) -> Srgb<u8> {
+        match self.gmode {
+            GraphMode::Dark => srgb::<u8>(0, 0, 0),
+            GraphMode::Light => srgb::<u8>(255, 255, 255),
         }
-    }
-    fn light_box_color(&self) -> Color32 {
-        if self.mode == GraphMode::Dark {
-            BACK_WHITE1
-        } else {
-            BACK_WHITE0
-        }
-    }
-    fn resize(&self) -> Resize {
-        const EIGHT_INDIC_TOP: f32 = 40.0; // eight indicator
-        const SCROLL_TXT_TOP: f32 = 200.0; // scroll text
-        const INPUT_TXT_TOP_SZ: f32 = 100.0; // input text
-        const MIN_LEFT_MERGIN: f32 = 140.0;
-
-        let mut st_left_mertin = 0.0;
-        if self.full_size.x > 1200.0 {
-            st_left_mertin = 200.0;
-        } else if self.full_size.x > 1000.0 {
-            st_left_mertin = self.full_size.x - 1000.0;
-        }
-
-        let mut it_left_mergin = 0.0;
-        if self.full_size.x > INPUT_TXT_X_SZ {
-            it_left_mergin = (self.full_size.x - INPUT_TXT_X_SZ) / 2.0;
-        }
-
-        Resize {
-            eight_indic_top: EIGHT_INDIC_TOP,
-            eight_indic_left: MIN_LEFT_MERGIN,
-            scroll_txt_top: SCROLL_TXT_TOP,
-            scroll_txt_left: st_left_mertin,
-            input_txt_top: self.full_size.y - INPUT_TXT_TOP_SZ,
-            input_txt_left: it_left_mergin,
-        }
-    }
-    fn push_note_obj(&mut self, nt: i32, vel: i32, pt: i32, rnd: f32) {
-        match self.note {
-            GraphNote::Ripple => self.nobj.push(Box::new(WaterRipple::new(
-                nt as f32,
-                vel as f32,
-                rnd,
-                self.frame_counter,
-                self.mode,
-            ))),
-            GraphNote::Voice => self.nobj.push(Box::new(Voice4::new(
-                nt as f32,
-                vel as f32,
-                pt,
-                self.frame_counter,
-                self.mode,
-            ))),
-        }
-    }
-    fn update_title(&self, ui: &mut egui::Ui) {
-        ui.put(
-            Rect {
-                min: Pos2 {
-                    x: self.full_size.x / 2.0 - 50.0,
-                    y: self.full_size.y - 50.0,
-                },
-                max: Pos2 {
-                    x: self.full_size.x / 2.0 + 50.0,
-                    y: self.full_size.y - 10.0,
-                },
-            }, //  location
-            Label::new(
-                RichText::new("Loopian")
-                    .size(28.0)
-                    .color(self.letter_color())
-                    .family(FontFamily::Proportional),
-            ),
-        );
-    }
-    fn update_eight_indicator(
-        &mut self,
-        ui: &mut egui::Ui,
-        input_part: usize,
-        guiev: &GuiEv,
-        rs: &Resize,
-    ) {
-        const SPACE1_NEXT: f32 = 50.0;
-        const BLOCK_LENGTH: f32 = 200.0;
-        const BLOCK_HEIGHT: f32 = 30.0;
-        const MIN_MERGIN: f32 = 20.0; // (NEXT_BLOCK - BLOCK_LENGTH)/2
-        const EI_FONT16_WIDTH: f32 = 9.56;
-
-        let mut interval: f32 = 240.0;
-        let mut min_left: f32 = rs.eight_indic_left;
-        if self.full_size.x > 1000.0 {
-            let times = (self.full_size.x - 1000.0) / 1500.0 + 1.0;
-            let center = self.full_size.x / 2.0;
-            interval = (BLOCK_LENGTH + MIN_MERGIN) * times;
-            min_left = center - interval * 1.5;
-        }
-
-        let mut back_color;
-        for i in 0..MAX_INDICATOR / 2 {
-            for j in 0..2 {
-                back_color = self.light_box_color();
-                if i as usize != input_part && j == 1 {
-                    back_color = BACK_WHITE2;
-                }
-
-                let raw: f32 = interval * (i as f32);
-                let line: f32 = SPACE1_NEXT * (j as f32);
-                ui.painter().rect_filled(
-                    Rect {
-                        min: Pos2 {
-                            x: min_left + raw - BLOCK_LENGTH / 2.0,
-                            y: rs.eight_indic_top + line,
-                        },
-                        max: Pos2 {
-                            x: min_left + raw - BLOCK_LENGTH / 2.0 + BLOCK_LENGTH,
-                            y: rs.eight_indic_top + BLOCK_HEIGHT + line,
-                        },
-                    }, //  location
-                    8.0,        //  curve
-                    back_color, //  color
-                );
-                let tx = self.text_for_eight_indicator(i + j * 4, guiev);
-                let ltrcnt = tx.chars().count();
-                for k in 0..ltrcnt {
-                    ui.put(
-                        Rect {
-                            min: Pos2 {
-                                x: min_left + raw - BLOCK_LENGTH / 2.0
-                                    + 10.0
-                                    + EI_FONT16_WIDTH * (k as f32),
-                                y: rs.eight_indic_top + 2.0 + line,
-                            },
-                            max: Pos2 {
-                                x: min_left + raw - BLOCK_LENGTH / 2.0
-                                    + 10.0
-                                    + EI_FONT16_WIDTH * ((k + 1) as f32),
-                                y: rs.eight_indic_top + 27.0 + line,
-                            },
-                        },
-                        Label::new(
-                            RichText::new(&tx[k..k + 1])
-                                .size(EI_FONT_SIZE)
-                                .color(TEXT_GRAY)
-                                .family(FontFamily::Monospace)
-                                .text_style(TextStyle::Monospace),
-                        ),
-                    );
-                }
-            }
-        }
-    }
-    fn text_for_eight_indicator(&mut self, num: usize, guiev: &GuiEv) -> String {
-        let indi_txt;
-        match num {
-            0 => indi_txt = "key: ".to_string() + guiev.get_indicator(0),
-            1 => indi_txt = "bpm: ".to_string() + guiev.get_indicator(1),
-            2 => indi_txt = "beat:".to_string() + guiev.get_indicator(2),
-            4 => indi_txt = "L1:".to_string() + guiev.get_indicator(4),
-            5 => indi_txt = "L2:".to_string() + guiev.get_indicator(5),
-            6 => indi_txt = "R1:".to_string() + guiev.get_indicator(6),
-            7 => indi_txt = "R2:".to_string() + guiev.get_indicator(7),
-            3 => indi_txt = guiev.get_indicator(3).to_string(),
-            _ => indi_txt = "".to_string(),
-        }
-        indi_txt
     }
     //*******************************************************************
-    fn update_scroll_text(
-        &mut self,
-        ui: &mut egui::Ui,
-        scroll_lines: &Vec<(TextAttribute, String, String)>,
-        crnt_history: usize,
-        rs: &Resize,
-    ) {
+    //      View (no mutable)
+    //*******************************************************************
+    pub fn view_mine(&self, draw: Draw, tm: f32) {
+        //  Note Object の描画
+        for obj in self.nobj.iter() {
+            obj.disp(draw.clone(), tm, self.rs.clone());
+        }
+    }
+    pub fn title(&self, draw: Draw) {
+        let title_color = if self.gmode == GraphMode::Light {
+            GRAY
+        } else {
+            WHITE
+        };
+        draw.text("Loopian")
+            .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
+            .font_size(32)
+            .color(title_color)
+            .center_justify()
+            .x_y(0.0, 42.0 - self.rs.full_size_y / 2.0);
+    }
+    pub fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {
+        let txt_color = if self.gmode == GraphMode::Light {
+            GRAY
+        } else {
+            WHITE
+        };
+        let msr = guiev.get_indicator(3);
+        draw.text(msr)
+            .font(self.font_nrm.clone())
+            .font_size(40)
+            .color(txt_color)
+            .left_justify()
+            .x_y(self.rs.eight_indic_left, self.rs.eight_indic_top)
+            .w_h(400.0, 40.0);
+
+        let bpm = guiev.get_indicator(1);
+        draw.text("bpm:")
+            .font(self.font_nrm.clone())
+            .font_size(28)
+            .color(MAGENTA)
+            .left_justify()
+            .x_y(
+                self.rs.eight_indic_left + 40.0,
+                self.rs.eight_indic_top - 70.0,
+            )
+            .w_h(400.0, 40.0);
+        draw.text(bpm)
+            .font(self.font_nrm.clone())
+            .font_size(28)
+            .color(txt_color)
+            .left_justify()
+            .x_y(
+                self.rs.eight_indic_left + 170.0,
+                self.rs.eight_indic_top - 70.0,
+            )
+            .w_h(400.0, 40.0);
+
+        let meter = guiev.get_indicator(2);
+        draw.text("meter:")
+            .font(self.font_nrm.clone())
+            .font_size(28)
+            .color(MAGENTA)
+            .left_justify()
+            .x_y(
+                self.rs.eight_indic_left + 40.0,
+                self.rs.eight_indic_top - 110.0,
+            )
+            .w_h(400.0, 40.0);
+        draw.text(meter)
+            .font(self.font_nrm.clone())
+            .font_size(28)
+            .color(txt_color)
+            .left_justify()
+            .x_y(
+                self.rs.eight_indic_left + 170.0,
+                self.rs.eight_indic_top - 110.0,
+            )
+            .w_h(400.0, 40.0);
+
+        let key = guiev.get_indicator(0);
+        draw.text("key:")
+            .font(self.font_nrm.clone())
+            .font_size(28)
+            .color(MAGENTA)
+            .left_justify()
+            .x_y(
+                self.rs.eight_indic_left + 40.0,
+                self.rs.eight_indic_top - 150.0,
+            )
+            .w_h(400.0, 40.0);
+        draw.text(key)
+            .font(self.font_nrm.clone())
+            .font_size(28)
+            .color(txt_color)
+            .left_justify()
+            .x_y(
+                self.rs.eight_indic_left + 170.0,
+                self.rs.eight_indic_top - 150.0,
+            )
+            .w_h(400.0, 40.0);
+
+        for i in 0..4 {
+            let pt = guiev.get_indicator(7 - i);
+            draw.text(&(guiev.get_part_txt(3 - i).to_string() + pt))
+                .font(self.font_nrm.clone())
+                .font_size(20)
+                .color(txt_color)
+                .left_justify()
+                .x_y(
+                    self.rs.eight_indic_left + 40.0,
+                    self.rs.eight_indic_top - 190.0 - (i as f32) * 30.0,
+                )
+                .w_h(400.0, 30.0);
+        }
+    }
+    pub fn input_text(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
+        const INPUT_TXT_X_SZ: f32 = 1240.0;
+        const INPUT_TXT_Y_SZ: f32 = 40.0;
+        const LETTER_SZ_X: f32 = 16.0;
+        const CURSOR_THICKNESS: f32 = 5.0;
+        const LETTER_MARGIN_Y: f32 = 3.0;
+        const PROMPT_LTR_NUM: f32 = 7.0;
+
+        let input_bg_color: Srgb<u8> = srgb::<u8>(50, 50, 50);
+        let input_locate_x: f32 = self.rs.input_txt_left; // 入力スペースの中心座標
+        let input_locate_y: f32 = self.rs.input_txt_top; // 入力スペースの中心座標
+        let input_start_x: f32 = input_locate_x - INPUT_TXT_X_SZ / 2.0 + 120.0;
+        let cursor_y: f32 = input_locate_y - INPUT_TXT_Y_SZ / 2.0 + 2.0;
+        let cursor_locate: f32 = itxt.get_cursor_locate() as f32;
+
+        // Input Space
+        draw.rect()
+            .color(input_bg_color)
+            .x_y(input_locate_x, input_locate_y)
+            .w_h(INPUT_TXT_X_SZ, INPUT_TXT_Y_SZ)
+            .stroke_weight(0.2)
+            .stroke_color(WHITE);
+
+        // Cursor
+        if (tm % 0.5) < 0.3 {
+            // Cursor Blink
+            draw.rect()
+                .color(LIGHTGRAY)
+                .x_y(
+                    (cursor_locate + 1.0) * LETTER_SZ_X + input_start_x + 5.0,
+                    cursor_y,
+                )
+                .w_h(LETTER_SZ_X, CURSOR_THICKNESS);
+        }
+
+        // プロンプトの描画
+        let hcnt = itxt.get_history_cnt();
+        let prompt_txt: &str =
+            &(format!("{:03}:", hcnt) + guiev.get_part_txt(itxt.get_input_part()) + ">");
+        for (i, c) in prompt_txt.chars().enumerate() {
+            draw.text(&c.to_string())
+                .font(self.font_nrm.clone()) // 事前にロードしたフォントを使用
+                .font_size(22)
+                .color(MAGENTA)
+                .left_justify()
+                .x_y(
+                    (i as f32) * LETTER_SZ_X + input_start_x,
+                    input_locate_y + LETTER_MARGIN_Y,
+                );
+        }
+
+        // テキストを描画
+        for (i, c) in itxt.get_input_text().chars().enumerate() {
+            draw.text(&c.to_string())
+                .font(self.font_nrm.clone()) // 事前にロードしたフォントを使用
+                .font_size(22)
+                .color(WHITE)
+                .left_justify()
+                .x_y(
+                    ((i as f32) + PROMPT_LTR_NUM) * LETTER_SZ_X + input_start_x,
+                    input_locate_y + LETTER_MARGIN_Y,
+                );
+        }
+    }
+    pub fn scroll_text(&self, draw: Draw, itxt: &InputText) {
+        const LINE_THICKNESS: f32 = 2.0;
+        const SCRTXT_FONT_SIZE: u32 = 18;
+        const SCRTXT_FONT_HEIGHT: f32 = 25.0;
+        const SCRTXT_FONT_WIDTH: f32 = 12.0;
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
-        const SCRTXT_HEIGHT_LIMIT: f32 = 340.0;
+        const SCRTXT_HEIGHT_LIMIT: f32 = 200.0;
 
         // generating max_line_in_window, and updating self.top_scroll_line
-        let letter_color = self.letter_color();
+        let scroll_lines = itxt.get_scroll_lines();
         let lines = scroll_lines.len();
+        let mut top_scroll_line = 0;
         let max_line_in_window =
-            ((self.full_size.y - SCRTXT_HEIGHT_LIMIT) as usize) / (SCRTXT_FONT_HEIGHT as usize);
+            ((self.rs.full_size_y - SCRTXT_HEIGHT_LIMIT) as usize) / (SCRTXT_FONT_HEIGHT as usize);
         let mut crnt_line: usize = lines;
         let mut max_disp_line = max_line_in_window;
         let max_history = scroll_lines
@@ -355,9 +375,9 @@ impl Graphic {
 
         if lines < max_line_in_window {
             // not filled yet
-            self.top_scroll_line = 0;
             max_disp_line = lines;
         }
+        let crnt_history = itxt.get_history_cnt();
         if crnt_history < max_history {
             crnt_line = 0;
             for i in 0..lines {
@@ -369,205 +389,54 @@ impl Graphic {
                     crnt_line += 1;
                 }
             }
-            if crnt_line < self.top_scroll_line {
-                self.top_scroll_line = crnt_line;
-            } else if crnt_line > self.top_scroll_line + max_line_in_window - 1 {
-                self.top_scroll_line = crnt_line - max_line_in_window + 1;
+            if crnt_line < top_scroll_line {
+                top_scroll_line = crnt_line;
+            } else if crnt_line > top_scroll_line + max_line_in_window {
+                top_scroll_line = crnt_line - max_line_in_window;
             }
         } else if lines >= max_line_in_window {
-            self.top_scroll_line = lines - max_line_in_window;
+            top_scroll_line = lines - max_line_in_window;
         }
-
-        // debug
-        //        if self.frame_counter > self._frame_counter_old_dbg + 50 || self._last_location != lines {
-        //            println!("crnt_history:{}, line:{}, top:{}, max:{}", crnt_history, crnt_line, self.top_scroll_line, max_history);
-        //            self._frame_counter_old_dbg = self.frame_counter;
-        //            self._last_location = lines;
-        //        }
 
         // Draw Letters
         for i in 0..max_disp_line {
-            let past_text_set = scroll_lines[self.top_scroll_line + i].clone();
+            let past_text_set = scroll_lines[top_scroll_line + i].clone();
             let past_text = past_text_set.1.clone() + &past_text_set.2;
             let ltrcnt = past_text.chars().count();
+            let center_adjust = ltrcnt as f32 * SCRTXT_FONT_WIDTH / 2.0;
 
             // line
-            if self.top_scroll_line + i == crnt_line {
-                ui.painter().rect_filled(
-                    Rect {
-                        min: Pos2 {
-                            x: rs.scroll_txt_left + SPACE2_TXT_LEFT_MARGIN,
-                            y: rs.scroll_txt_top + SCRTXT_FONT_HEIGHT * (i as f32) + 21.0,
-                        },
-                        max: Pos2 {
-                            x: rs.scroll_txt_left
-                                + SPACE2_TXT_LEFT_MARGIN
-                                + SCRTXT_FONT_WIDTH * (ltrcnt as f32),
-                            y: rs.scroll_txt_top + SCRTXT_FONT_HEIGHT * (i as f32) + 23.0,
-                        },
-                    },
-                    0.0,        //  curve
-                    BACK_GRAY2, //  color
-                );
+            if top_scroll_line + i == crnt_line {
+                draw.rect()
+                    .color(LIGHTGRAY)
+                    .x_y(
+                        self.rs.scroll_txt_left + center_adjust - 60.0,
+                        self.rs.scroll_txt_top - SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
+                    )
+                    .w_h(SCRTXT_FONT_WIDTH * (ltrcnt as f32), LINE_THICKNESS);
             }
 
             // string
-            let txt_color = if past_text_set.0 == TextAttribute::Answer {
-                MAZENTA
+            let (txt_color, fontname) = if past_text_set.0 == TextAttribute::Answer {
+                (MAGENTA, &self.font_italic)
+            } else if self.gmode == GraphMode::Light {
+                (GRAY, &self.font_nrm)
             } else {
-                letter_color
+                (WHITE, &self.font_nrm)
             };
-            for j in 0..ltrcnt {
-                // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
-                ui.put(
-                    Rect {
-                        min: Pos2 {
-                            x: rs.scroll_txt_left
-                                + SPACE2_TXT_LEFT_MARGIN
-                                + SCRTXT_FONT_WIDTH * (j as f32),
-                            y: rs.scroll_txt_top + SCRTXT_FONT_HEIGHT * (i as f32),
-                        },
-                        max: Pos2 {
-                            x: rs.scroll_txt_left
-                                + SPACE2_TXT_LEFT_MARGIN
-                                + SCRTXT_FONT_WIDTH * ((j as f32) + 1.0),
-                            y: rs.scroll_txt_top + SCRTXT_FONT_HEIGHT * ((i + 1) as f32),
-                        },
-                    },
-                    Label::new(
-                        RichText::new(past_text[j..j + 1].to_string())
-                            .size(SCRTXT_FONT_SIZE)
-                            .color(txt_color)
-                            .family(FontFamily::Monospace),
-                    ),
-                );
+            for (j, d) in past_text.chars().enumerate() {
+                draw.text(&d.to_string())
+                    .font(fontname.clone())
+                    .font_size(SCRTXT_FONT_SIZE)
+                    .color(txt_color)
+                    .left_justify()
+                    .x_y(
+                        self.rs.scroll_txt_left
+                            + SPACE2_TXT_LEFT_MARGIN
+                            + SCRTXT_FONT_WIDTH * (j as f32),
+                        self.rs.scroll_txt_top - SCRTXT_FONT_HEIGHT * (i as f32),
+                    );
             }
-        }
-    }
-    //*******************************************************************
-    fn update_input_text(
-        &mut self,
-        ui: &mut egui::Ui,
-        infs: (
-            usize,                                 // cursor position
-            &String,                               // input text
-            &Vec<(TextAttribute, String, String)>, // scroll text
-            usize,                                 // selected scroll text line
-            usize,                                 // input part
-            &GuiEv,                                // eight indicator
-        ),
-        rs: &Resize,
-    ) {
-        const CURSOR_LEFT_MARGIN: f32 = 10.0;
-        const CURSOR_LOWER_MERGIN: f32 = 6.0;
-        //        const CURSOR_TXT_LENGTH: f32 = 9.55;  // FONT 16p
-        const CURSOR_TXT_LENGTH: f32 = INPUTTXT_LETTER_WIDTH;
-        const CURSOR_THICKNESS: f32 = 8.0;
-        const PROMPT_LETTERS: usize = 8; // "000: R1>"
-
-        const INPUTTXT_UPPER_MARGIN: f32 = 0.0;
-        const INPUTTXT_LOWER_MARGIN: f32 = 0.0;
-
-        const PROMPT_MERGIN: f32 = INPUTTXT_LETTER_WIDTH * (PROMPT_LETTERS as f32);
-        const INPUT_MERGIN_OFFSET: f32 = 3.25;
-        const INPUT_MERGIN: f32 = PROMPT_MERGIN + INPUT_MERGIN_OFFSET;
-
-        const SPACE3_TXT_LEFT_MARGIN: f32 = 5.0;
-
-        // Paint Letter Space
-        ui.painter().rect_filled(
-            Rect::from_min_max(
-                pos2(rs.input_txt_left, rs.input_txt_top),
-                pos2(
-                    rs.input_txt_left + INPUT_TXT_X_SZ,
-                    rs.input_txt_top + INPUT_TXT_Y_SZ,
-                ),
-            ),
-            2.0,            //  curve
-            BACK_DARK_GRAY, //  color
-        );
-
-        // Paint cursor
-        let cursor = infs.0 + PROMPT_LETTERS;
-        let elapsed_time = self.start_time.elapsed().as_millis();
-        if elapsed_time % 500 > 200 {
-            ui.painter().rect_filled(
-                Rect {
-                    min: Pos2 {
-                        x: rs.input_txt_left
-                            + CURSOR_LEFT_MARGIN
-                            + CURSOR_TXT_LENGTH * (cursor as f32),
-                        y: rs.input_txt_top + INPUT_TXT_Y_SZ - CURSOR_LOWER_MERGIN,
-                    },
-                    max: Pos2 {
-                        x: rs.input_txt_left
-                            + CURSOR_LEFT_MARGIN
-                            + CURSOR_TXT_LENGTH * ((cursor + 1) as f32)
-                            - 2.0,
-                        y: rs.input_txt_top + INPUT_TXT_Y_SZ - CURSOR_LOWER_MERGIN
-                            + CURSOR_THICKNESS,
-                    },
-                },
-                0.0,        //  curve
-                BACK_GRAY2, //  color
-            );
-        }
-
-        // Draw Letters
-        let mut hcnt = infs.3;
-        if hcnt >= 1000 {
-            hcnt %= 1000;
-        }
-        let prompt_txt: &str = &(format!("{:03}: ", hcnt) + infs.5.get_part_txt(infs.4) + ">");
-
-        // Prompt Text
-        ui.put(
-            Rect {
-                min: Pos2 {
-                    x: rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN - 2.0,
-                    y: rs.input_txt_top + INPUTTXT_UPPER_MARGIN,
-                },
-                max: Pos2 {
-                    x: rs.input_txt_left + SPACE3_TXT_LEFT_MARGIN + PROMPT_MERGIN,
-                    y: rs.input_txt_top + INPUT_TXT_Y_SZ + INPUTTXT_LOWER_MARGIN,
-                },
-            },
-            Label::new(
-                RichText::new(prompt_txt)
-                    .size(INPUTTXT_FONT_SIZE)
-                    .color(MAZENTA)
-                    .family(FontFamily::Monospace),
-            ),
-        );
-        // User Input
-        let ltrcnt = infs.1.chars().count();
-        for i in 0..ltrcnt {
-            // 位置を合わせるため、１文字ずつ Label を作って並べて配置する
-            ui.put(
-                Rect {
-                    min: Pos2 {
-                        x: rs.input_txt_left
-                            + SPACE3_TXT_LEFT_MARGIN
-                            + INPUT_MERGIN
-                            + INPUTTXT_LETTER_WIDTH * (i as f32),
-                        y: rs.input_txt_top + INPUTTXT_UPPER_MARGIN,
-                    },
-                    max: Pos2 {
-                        x: rs.input_txt_left
-                            + SPACE3_TXT_LEFT_MARGIN
-                            + INPUT_MERGIN
-                            + INPUTTXT_LETTER_WIDTH * ((i + 1) as f32),
-                        y: rs.input_txt_top + INPUT_TXT_Y_SZ + INPUTTXT_LOWER_MARGIN,
-                    },
-                },
-                Label::new(
-                    RichText::new(infs.1[i..i + 1].to_string())
-                        .size(INPUTTXT_FONT_SIZE)
-                        .color(Color32::WHITE)
-                        .family(FontFamily::Monospace)
-                        .text_style(TextStyle::Monospace),
-                ),
-            );
         }
     }
 }

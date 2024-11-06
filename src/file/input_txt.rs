@@ -4,14 +4,13 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
-use eframe::egui::*;
+use nannou::prelude::*;
 use std::sync::mpsc;
 
 use super::history::History;
 use crate::cmd::cmdparse::*;
 use crate::cmd::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
-use crate::graphic::graphic::Graphic;
 use crate::graphic::guiev::GuiEv;
 use crate::lpnlib::*;
 
@@ -28,6 +27,8 @@ pub struct InputText {
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history: History,
     cmd: LoopianCmd,
+    shift_pressed: bool,
+    ctrl_pressed: bool,
 }
 impl InputText {
     const CURSOR_MAX_VISIBLE_LOCATE: usize = 65;
@@ -43,6 +44,8 @@ impl InputText {
             scroll_lines: vec![],
             history: History::new(),
             cmd: LoopianCmd::new(msg_hndr),
+            shift_pressed: false,
+            ctrl_pressed: false,
         }
     }
     pub fn get_history_cnt(&self) -> usize {
@@ -66,77 +69,134 @@ impl InputText {
     pub fn get_scroll_lines(&self) -> &Vec<(TextAttribute, String, String)> {
         &self.scroll_lines
     }
-    pub fn input_letter(&mut self, letters: Vec<&String>) {
-        letters.iter().for_each(|ltr| {
-            self.input_text.insert_str(self.input_locate, ltr);
-            self.input_locate += 1;
-            self.update_visible_locate();
-        });
-        // autofill
-        if let Some(&ltr) = letters.last() {
-            if ltr == "(" {
-                self.input_text.insert_str(self.input_locate, ")");
-            } else if ltr == "[" {
-                self.input_text.insert_str(self.input_locate, "]");
-            } else if ltr == "{" {
-                self.input_text.insert_str(self.input_locate, "}");
+    pub fn window_event(&mut self, event: Event, graphmsg: &mut Vec<i16>) {
+        match event {
+            Event::WindowEvent {
+                simple: Some(WindowEvent::ReceivedCharacter(c)),
+                ..
+            } => {
+                // 制御文字（例: バックスペース）を除外
+                if !c.is_control() {
+                    self.input_letter(&c);
+                }
             }
+            Event::WindowEvent {
+                simple: Some(WindowEvent::KeyPressed(key)),
+                ..
+            } => {
+                self.key_pressed(&key, graphmsg);
+                //println!("Key pressed: {:?}", key);
+            }
+            Event::WindowEvent {
+                simple: Some(WindowEvent::KeyReleased(key)),
+                ..
+            } => {
+                self.key_released(&key);
+                //println!("Key released: {:?}", key);
+            }
+            _ => {}
+        }
+    }
+    fn key_pressed(&mut self, key: &Key, graphmsg: &mut Vec<i16>) {
+        match key {
+            &Key::LShift | &Key::RShift => {
+                self.shift_pressed = true;
+            }
+            &Key::LControl => {
+                self.ctrl_pressed = true;
+            }
+            &Key::Return => {
+                self.pressed_enter(graphmsg);
+            }
+            &Key::V => {
+                // for ctrl+V
+                if self.ctrl_pressed {
+                    let mut ctx = ClipboardContext::new().unwrap();
+                    let clip_text = ctx.get_contents().unwrap();
+                    self.input_text += &clip_text;
+                }
+            }
+            &Key::Back => {
+                if self.input_locate > 0 {
+                    self.input_locate -= 1;
+                    self.input_text.remove(self.input_locate);
+                    self.update_visible_locate();
+                }
+            }
+            &Key::Left => {
+                if self.shift_pressed {
+                    self.input_locate = 0;
+                } else if self.input_locate > 0 {
+                    self.input_locate -= 1;
+                }
+                self.update_visible_locate();
+            }
+            &Key::Right => {
+                let maxlen = self.input_text.chars().count();
+                if self.shift_pressed {
+                    self.input_locate = maxlen;
+                } else {
+                    self.input_locate += 1;
+                }
+                self.update_visible_locate();
+                if self.input_locate > maxlen {
+                    self.input_locate = maxlen;
+                }
+            }
+            &Key::Up => {
+                if self.input_locate == 0 {
+                    if let Some(txt) = self.history.arrow_up() {
+                        self.input_text = txt.0;
+                        self.history_cnt = txt.1;
+                    }
+                    self.input_locate = 0;
+                    self.visible_locate = 0;
+                }
+            }
+            &Key::Down => {
+                if self.input_locate == 0 {
+                    if let Some(txt) = self.history.arrow_down() {
+                        self.input_text = txt.0;
+                        self.history_cnt = txt.1;
+                    }
+                    self.input_locate = 0;
+                    self.visible_locate = 0;
+                }
+            }
+            &Key::RControl => {}
+            &Key::LAlt => {}
+            &Key::RAlt => {}
+            &Key::LWin => {}
+            &Key::RWin => {}
+            _ => {}
+        }
+    }
+    fn key_released(&mut self, key: &Key) {
+        if key == &Key::LShift || key == &Key::RShift {
+            self.shift_pressed = false;
+        } else
+        /*if key == &Key::LControl*/
+        {
+            // カーソルKeyに使うと Ctrl Released が反応しないため
+            self.ctrl_pressed = false;
+        }
+    }
+    fn input_letter(&mut self, ltr: &char) {
+        self.input_text.insert(self.input_locate, *ltr);
+        self.input_locate += 1;
+        self.update_visible_locate();
+        // 括弧の補完
+        if *ltr == '(' {
+            self.input_text.insert(self.input_locate, ')');
+        } else if *ltr == '[' {
+            self.input_text.insert(self.input_locate, ']');
+        } else if *ltr == '{' {
+            self.input_text.insert(self.input_locate, '}');
         }
         // space を . に変換
         if self.input_text.chars().any(|x| x == ' ') {
             let itx = self.input_text.clone();
             self.input_text = itx.replacen(' ', ".", 100); // egui とぶつかり replace が使えない
-        }
-    }
-    pub fn pressed_key(&mut self, key: &Key, modifiers: &Modifiers, graph: &mut Graphic) {
-        let itxt: String = self.input_text.clone();
-        if key == &Key::Enter {
-            self.pressed_enter(itxt, graph);
-        } else if key == &Key::V {
-            // for ctrl+V
-            if modifiers.ctrl {
-                let mut ctx = ClipboardContext::new().unwrap();
-                let clip_text = ctx.get_contents().unwrap();
-                self.input_text += &clip_text;
-            }
-        } else if key == &Key::Backspace {
-            if self.input_locate > 0 {
-                self.input_locate -= 1;
-                self.input_text.remove(self.input_locate);
-                self.update_visible_locate();
-            }
-        } else if key == &Key::ArrowLeft {
-            if modifiers.shift {
-                self.input_locate = 0;
-            } else if self.input_locate > 0 {
-                self.input_locate -= 1;
-            }
-            self.update_visible_locate();
-        } else if key == &Key::ArrowRight {
-            let maxlen = self.input_text.chars().count();
-            if modifiers.shift {
-                self.input_locate = maxlen;
-            } else {
-                self.input_locate += 1;
-            }
-            self.update_visible_locate();
-            if self.input_locate > maxlen {
-                self.input_locate = maxlen;
-            }
-        } else if key == &Key::ArrowUp && self.input_locate == 0 {
-            if let Some(txt) = self.history.arrow_up() {
-                self.input_text = txt.0;
-                self.history_cnt = txt.1;
-            }
-            self.input_locate = 0;
-            self.visible_locate = 0;
-        } else if key == &Key::ArrowDown && self.input_locate == 0 {
-            if let Some(txt) = self.history.arrow_down() {
-                self.input_text = txt.0;
-                self.history_cnt = txt.1;
-            }
-            self.input_locate = 0;
-            self.visible_locate = 0;
         }
     }
     fn update_visible_locate(&mut self) {
@@ -153,7 +213,8 @@ impl InputText {
             self.input_locate
         }
     }
-    fn pressed_enter(&mut self, itxt: String, graph: &mut Graphic) {
+    fn pressed_enter(&mut self, graphmsg: &mut Vec<i16>) {
+        let itxt = self.input_text.clone();
         if itxt.len() == 0 {
             return;
         }
@@ -165,7 +226,7 @@ impl InputText {
         if chr != '!' {
             // Normal Input
             let msg = self.one_command(get_crnt_date_txt(), itxt, true);
-            self.set_graphic_msg(msg, graph);
+            self.set_graphic_msg(msg, graphmsg);
         } else if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
             // The end of the App
             self.cmd.send_quit();
@@ -174,7 +235,7 @@ impl InputText {
             std::process::exit(0);
         } else if (len >= 2 && &itxt[0..2] == "!l") || (len >= 5 && &itxt[0..5] == "!load") {
             // Load File
-            self.load_file(&itxt[0..], graph);
+            self.load_file(&itxt[0..], graphmsg);
         } else if (len >= 6 && &itxt[0..6] == "!clear")
             || (len >= 4 && &itxt[0..4] == "!clr")
             || (len >= 2 && &itxt[0..2] == "!c")
@@ -215,7 +276,7 @@ impl InputText {
             }
         }
     }
-    fn load_file(&mut self, itxt: &str, graph: &mut Graphic) {
+    fn load_file(&mut self, itxt: &str, graphmsg: &mut Vec<i16>) {
         let blk_exists = |fnm: String| -> (Option<String>, Option<usize>) {
             let mut ltr = None;
             let mut num = None;
@@ -264,7 +325,7 @@ impl InputText {
                 self.cmd.set_measure(msr0ori);
                 mt.msr = msr_num as i32;
             }
-            self.next_msr_tick = self.get_loaded_text(mt, graph);
+            self.next_msr_tick = self.get_loaded_text(mt, graphmsg);
         } else {
             // 適切なファイルや中身がなかった場合
             self.scroll_lines.push((
@@ -274,7 +335,7 @@ impl InputText {
             ));
         }
     }
-    pub fn auto_load_command(&mut self, guiev: &GuiEv, graph: &mut Graphic) {
+    pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<i16>) {
         // from main loop
         if let Some(nmt) = self.next_msr_tick {
             let crnt: CrntMsrTick = guiev.get_msr_tick();
@@ -283,15 +344,15 @@ impl InputText {
                 && nmt.msr - 1 == crnt.msr  // 一つ前の小節(両方とも1origin)
                 && crnt.tick_for_onemsr - crnt.tick < 240
             {
-                self.next_msr_tick = self.get_loaded_text(nmt, graph);
+                self.next_msr_tick = self.get_loaded_text(nmt, graphmsg);
             }
         }
     }
-    fn get_loaded_text(&mut self, mt: CrntMsrTick, graph: &mut Graphic) -> Option<CrntMsrTick> {
+    fn get_loaded_text(&mut self, mt: CrntMsrTick, graphmsg: &mut Vec<i16>) -> Option<CrntMsrTick> {
         let loaded = self.history.get_loaded_text(mt);
         for onecmd in loaded.0.iter() {
             let msg = self.one_command(get_crnt_date_txt(), onecmd.clone(), false);
-            self.set_graphic_msg(msg, graph);
+            self.set_graphic_msg(msg, graphmsg);
         }
         self.scroll_lines.push((
             TextAttribute::Answer,
@@ -321,12 +382,12 @@ impl InputText {
         }
         NO_MSG
     }
-    fn set_graphic_msg(&mut self, msg: i16, graph: &mut Graphic) {
+    fn set_graphic_msg(&mut self, msg: i16, graphmsg: &mut Vec<i16>) {
         match msg {
-            LIGHT_MODE => graph.set_mode(GraphMode::Light),
-            DARK_MODE => graph.set_mode(GraphMode::Dark),
-            RIPPLE_PATTERN => graph.set_noteptn(GraphNote::Ripple),
-            VOICE_PATTERN => graph.set_noteptn(GraphNote::Voice),
+            LIGHT_MODE => graphmsg.push(LIGHT_MODE),
+            DARK_MODE => graphmsg.push(DARK_MODE),
+            RIPPLE_PATTERN => graphmsg.push(RIPPLE_PATTERN),
+            VOICE_PATTERN => graphmsg.push(VOICE_PATTERN),
             _ => {}
         }
     }

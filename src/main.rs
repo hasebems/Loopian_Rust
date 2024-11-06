@@ -1,5 +1,5 @@
-//  Created by Hasebe Masahiko on 2022/10/30.
-//  Copyright (c) 2022 Hasebe Masahiko.
+//  Created by Hasebe Masahiko on 2024/11/03.
+//  Copyright (c) 2024 Hasebe Masahiko.
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
@@ -12,206 +12,64 @@ mod midi;
 mod server;
 mod test;
 
-use eframe::{egui, egui::*};
+use nannou::prelude::*;
 use std::env;
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
-use std::time::Duration;
 
 use elapse::stack_elapse::ElapseStack;
 use file::input_txt::InputText;
-use file::settings::Settings;
-use graphic::graphic::Graphic;
+use graphic::graphic::{Graphic, Resize};
 use graphic::guiev::GuiEv;
 use lpnlib::*;
 use server::server::cui_loop;
 
-pub struct LoopianApp {
+//*******************************************************************
+//      Main
+//*******************************************************************
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    println!("Args: {:?}", args);
+    if args.len() > 1 && args[1] == "server" {
+        // CUI version
+        cui_loop();
+    } else {
+        // GUI version
+        nannou::app(model).event(event).update(update).run();
+    }
+}
+
+//*******************************************************************
+//      Model
+//*******************************************************************
+const FIRST_WIDTH: u32 = 2800;
+const FIRST_HEIGHT: u32 = 1800;
+
+pub struct Model {
     ui_hndr: mpsc::Receiver<UiMsg>,
     itxt: InputText,
     graph: Graphic,
     guiev: GuiEv,
 }
-impl LoopianApp {
-    //*******************************************************************
-    //      App Initialize / Log File /  App End
-    //*******************************************************************
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        let (txmsg, rxui) = gen_elapse_thread();
-        Self::init_font(cc);
-        Self {
-            itxt: InputText::new(txmsg),
-            ui_hndr: rxui,
-            graph: Graphic::new(),
-            guiev: GuiEv::new(true),
-        }
-    }
-    fn init_font(cc: &eframe::CreationContext<'_>) {
-        let mut fonts = Self::add_myfont();
+fn model(app: &App) -> Model {
+    let (txmsg, rxui) = gen_elapse_thread();
+    app.new_window().view(view).build().unwrap();
 
-        // Put my font first (highest priority) for proportional text:
-        fonts
-            .families
-            .entry(FontFamily::Proportional) //  search value of this key
-            .or_default() //  if not found
-            .insert(0, "profont".to_owned());
+    // app に対する初期設定
+    app.set_exit_on_escape(false);
+    let win = app.main_window();
+    win.set_title("Loopian");
+    win.set_inner_size_pixels(FIRST_WIDTH, FIRST_HEIGHT);
 
-        // Put my font first (highest priority) for monospace text:
-        fonts
-            .families
-            .entry(FontFamily::Monospace)
-            .or_default()
-            .insert(0, "monofont".to_owned());
-
-        // Tell egui to use these fonts:
-        cc.egui_ctx.set_fonts(fonts);
-    }
-    /// Font Data File Name with path
-    pub fn add_myfont() -> FontDefinitions {
-        let mut fonts = FontDefinitions::default();
-
-        // Install my own font (maybe supporting non-latin characters).
-        #[cfg(not(feature = "raspi"))]
-        fonts.font_data.insert(
-            "profont".to_owned(),
-            FontData::from_static(include_bytes!("../assets/newyork.ttf")), // for Mac
-        );
-        #[cfg(feature = "raspi")]
-        fonts.font_data.insert(
-            "profont".to_owned(),
-            FontData::from_static(include_bytes!(
-                "/home/pi/loopian/Loopian_Rust/assets/NewYork.ttf"
-            )), // for linux
-        );
-        #[cfg(not(feature = "raspi"))]
-        fonts.font_data.insert(
-            "monofont".to_owned(),
-            FontData::from_static(include_bytes!("../assets/courier.ttc")), // for Mac
-        );
-        #[cfg(feature = "raspi")]
-        fonts.font_data.insert(
-            "monofont".to_owned(),
-            FontData::from_static(include_bytes!(
-                "/home/pi/loopian/Loopian_Rust/assets/Courier.ttc"
-            )), // for linux
-        );
-        fonts
-    }
-    //*******************************************************************
-    //      Central Panel
-    //*******************************************************************
-    fn draw_central_panel(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
-        // Configuration for CentralPanel
-        let back_color = self.graph.back_color();
-        let my_frame = egui::containers::Frame {
-            inner_margin: egui::Margin {
-                left: 0.,
-                right: 0.,
-                top: 0.,
-                bottom: 0.,
-            },
-            outer_margin: egui::Margin {
-                left: 0.,
-                right: 0.,
-                top: 0.,
-                bottom: 0.,
-            },
-            rounding: egui::Rounding {
-                nw: 0.0,
-                ne: 0.0,
-                sw: 0.0,
-                se: 0.0,
-            },
-            shadow: eframe::epaint::Shadow {
-                offset: Vec2::ZERO,
-                blur: 0.0,
-                spread: 0.0,
-                color: back_color,
-            },
-            fill: back_color,
-            stroke: egui::Stroke::new(0.0, back_color),
-        };
-        CentralPanel::default().frame(my_frame).show(ctx, |ui| {
-            self.graph.update(
-                ui,
-                (
-                    self.itxt.get_cursor_locate(),
-                    &self.itxt.get_input_text(),
-                    self.itxt.get_scroll_lines(),
-                    self.itxt.get_history_cnt(),
-                    self.itxt.get_input_part(),
-                    &self.guiev,
-                ),
-                frame,
-            );
-            self.guiev.clear_graphic_ev();
-        });
-    }
-    pub fn read_from_ui_hndr(&mut self) {
-        loop {
-            match self.ui_hndr.try_recv() {
-                Ok(msg) => {
-                    let key = self.itxt.get_indicator_key_stock();
-                    self.guiev.set_indicator(msg, key);
-                }
-                Err(TryRecvError::Disconnected) => break, // Wrong!
-                Err(TryRecvError::Empty) => break,
-            }
-        }
+    Model {
+        ui_hndr: rxui,
+        itxt: InputText::new(txmsg),
+        graph: Graphic::new(app),
+        guiev: GuiEv::new(true),
     }
 }
-//*******************************************************************
-//     Egui/Eframe framework basic
-//*******************************************************************
-impl eframe::App for LoopianApp {
-    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        self.itxt.gen_log(0, "".to_string());
-        println!("That's all. Thank you!");
-    }
-    fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
-        // 40fps で画面更新
-        ctx.request_repaint_after(Duration::from_millis(25));
-
-        //  Get Keyboard Event from Egui::Context
-        ctx.input(|i| {
-            let mut letters: Vec<&String> = vec![];
-            for ev in i.events.iter() {
-                match ev {
-                    Event::Text(ltr) => letters.push(ltr),
-                    Event::Key {
-                        key,
-                        pressed,
-                        modifiers,
-                        repeat: _,
-                        physical_key: _,
-                    } => {
-                        if pressed == &true {
-                            self.itxt.pressed_key(&key, &modifiers, &mut self.graph);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            if letters.len() >= 1 {
-                self.itxt.input_letter(letters);
-            }
-        });
-
-        //  Read imformation from StackElapse
-        self.read_from_ui_hndr();
-
-        //  Auto Load Function
-        self.itxt.auto_load_command(&self.guiev, &mut self.graph);
-
-        //  Draw CentralPanel
-        self.draw_central_panel(ctx, frame);
-    }
-}
-//*******************************************************************
-//      Main
-//*******************************************************************
 /// GUI/CUI 両方から呼ばれる
 fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<UiMsg>) {
     //  create new thread & channel
@@ -227,24 +85,71 @@ fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<UiMsg>) {
     });
     (txmsg, rxui)
 }
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    println!("Args: {:?}", args);
-    if args.len() > 1 && args[1] == "server" {
-        // CUI version
-        cui_loop();
-    } else {
-        // GUI version
-        let winsz = &Settings::load_settings().window_size;
-        let sz_default = [winsz.window_x_default, winsz.window_y_default];
-        let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size(sz_default),
-            ..eframe::NativeOptions::default()
-        };
-        let _ = eframe::run_native(
-            "Loopian",
-            options,
-            Box::new(|cc| Ok(Box::new(LoopianApp::new(cc)))),
-        );
+
+//*******************************************************************
+//      Update & Event
+//*******************************************************************
+fn update(app: &App, model: &mut Model, _update: Update) {
+    model.graph.set_rs(Resize::resize(app));
+    let crnt_time = app.time;
+
+    //  Read imformation from StackElapse
+    read_from_ui_hndr(model);
+
+    // Auto Load
+    model
+        .itxt
+        .auto_load_command(&model.guiev, model.graph.graph_msg());
+
+    //  Update Model
+    model.graph.update_lpn_model(&mut model.guiev, crnt_time);
+
+    // as you like
+}
+fn read_from_ui_hndr(model: &mut Model) {
+    loop {
+        match model.ui_hndr.try_recv() {
+            Ok(msg) => {
+                let key = model.itxt.get_indicator_key_stock();
+                model.guiev.set_indicator(msg, key);
+            }
+            Err(TryRecvError::Disconnected) => break, // Wrong!
+            Err(TryRecvError::Empty) => break,
+        }
     }
+}
+fn event(_app: &App, model: &mut Model, event: Event) {
+    model.itxt.window_event(event, model.graph.graph_msg());
+}
+
+//*******************************************************************
+//      View
+//*******************************************************************
+fn view(app: &App, model: &Model, frame: Frame) {
+    let draw = app.draw();
+    let tm = app.time;
+
+    // 画面全体の背景色
+    draw.background().color(model.graph.get_color());
+
+    // as you like
+
+    //  Note Object の描画
+    model.graph.view_mine(draw.clone(), tm);
+
+    // title
+    model.graph.title(draw.clone());
+
+    // eight indicator
+    model.graph.eight_indicator(draw.clone(), &model.guiev);
+
+    // scroll text
+    model.graph.scroll_text(draw.clone(), &model.itxt);
+
+    // input text
+    model
+        .graph
+        .input_text(draw.clone(), &model.guiev, &model.itxt, tm);
+
+    draw.to_frame(app, &frame).unwrap();
 }

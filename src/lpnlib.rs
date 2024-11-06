@@ -322,7 +322,7 @@ pub enum GraphMode {
     Light,
 }
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum GraphNote {
+pub enum GraphPattern {
     Ripple,
     Voice,
 }

@@ -73,8 +73,8 @@ impl GuiEv {
                 self.denomirator = denomi;
             }
             UiMsg::TickUi(during_play, m, b, t) => {
-                let p = if during_play { ">" } else { "" };
-                self.indicator[3] = format!("{} {} : {} : {:>03}", p.to_string(), m, b, t);
+                let p = if during_play { ">" } else { " " };
+                self.indicator[3] = format!("{}{}:{}:{:>03}", p.to_string(), m, b, t);
                 self.during_play = during_play;
                 self.crnt_msr.msr = m;
                 let base_tick = DEFAULT_TICK_FOR_ONE_MEASURE / self.denomirator;
@@ -82,13 +82,13 @@ impl GuiEv {
             }
             UiMsg::PartUi(pnum, pui) => {
                 if pui.exist {
-                    let loop_msr = format!("{}/{}", pui.msr_in_loop, pui.all_msrs);
-                    self.indicator[4 + pnum] = format!("{} {}", loop_msr, pui.chord_name);
+                    let loop_msr = format!(" {}/{}", pui.msr_in_loop, pui.all_msrs);
+                    self.indicator[4 + pnum] = format!(" {} {}", loop_msr, pui.chord_name);
                 } else if pui.flow {
                     let loop_msr = "FLOW".to_string();
-                    self.indicator[4 + pnum] = format!("{} {}", loop_msr, pui.chord_name);
+                    self.indicator[4 + pnum] = format!(" {} {}", loop_msr, pui.chord_name);
                 } else {
-                    self.indicator[4 + pnum] = "---".to_string();
+                    self.indicator[4 + pnum] = "  ---".to_string();
                 }
             }
             UiMsg::NoteUi(note_ev) => {
