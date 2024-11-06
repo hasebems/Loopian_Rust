@@ -5,7 +5,7 @@
 //
 use nannou::prelude::*;
 
-use crate::Resize;
+use super::graphic::Resize;
 
 pub trait NoteObj {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) -> bool; //  false: 消去可能

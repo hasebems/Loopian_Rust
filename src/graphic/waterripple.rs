@@ -6,9 +6,9 @@
 use nannou::prelude::*;
 use rand::{thread_rng, Rng};
 
+use super::graphic::Resize;
 use super::noteobj::NoteObj;
 use crate::lpnlib::*;
-use crate::Resize;
 
 pub struct WaterRipple {
     para1: f32, // 0.0 - 1.0
@@ -66,8 +66,8 @@ impl NoteObj for WaterRipple {
             if radius_sz > 0.0 {
                 draw.ellipse()
                     .x_y(
-                        ((self.para1 - 0.5) * 2.0 * 1.4) * rs.full_size_x,
-                        (self.para2 - 0.5) * (rs.full_size_y * 0.6),
+                        ((self.para1 - 0.5) * 2.0 * 1.4) * rs.get_full_size_x(),
+                        (self.para2 - 0.5) * (rs.get_full_size_y() * 0.6),
                     )
                     .no_fill()
                     .stroke_weight(THICKNESS)
