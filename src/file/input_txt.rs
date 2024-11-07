@@ -76,7 +76,7 @@ impl InputText {
                 ..
             } => {
                 // 制御文字（例: バックスペース）を除外
-                if !c.is_control() {
+                if !c.is_control() && ((c != ' ') || !self.shift_pressed) {
                     self.input_letter(&c);
                 }
             }
@@ -168,6 +168,11 @@ impl InputText {
             &Key::RAlt => {}
             &Key::LWin => {}
             &Key::RWin => {}
+            &Key::Space => {
+                if self.shift_pressed {
+                    self.set_graphic_msg(TEXT_VISIBLE_CTRL, graphmsg);
+                }
+            }
             _ => {}
         }
     }
@@ -383,12 +388,6 @@ impl InputText {
         NO_MSG
     }
     fn set_graphic_msg(&mut self, msg: i16, graphmsg: &mut Vec<i16>) {
-        match msg {
-            LIGHT_MODE => graphmsg.push(LIGHT_MODE),
-            DARK_MODE => graphmsg.push(DARK_MODE),
-            RIPPLE_PATTERN => graphmsg.push(RIPPLE_PATTERN),
-            VOICE_PATTERN => graphmsg.push(VOICE_PATTERN),
-            _ => {}
-        }
+        graphmsg.push(msg);
     }
 }

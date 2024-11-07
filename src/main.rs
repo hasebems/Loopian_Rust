@@ -52,6 +52,7 @@ pub struct Model {
     itxt: InputText,
     graph: Graphic,
     guiev: GuiEv,
+    // as you like
 }
 fn model(app: &App) -> Model {
     let (txmsg, rxui) = gen_elapse_thread();
@@ -134,22 +135,8 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
     // as you like
 
-    //  Note Object の描画
-    model.graph.view_mine(draw.clone(), tm);
-
-    // title
-    model.graph.title(draw.clone());
-
-    // eight indicator
-    model.graph.eight_indicator(draw.clone(), &model.guiev);
-
-    // scroll text
-    model.graph.scroll_text(draw.clone(), &model.itxt);
-
-    // input text
-    model
-        .graph
-        .input_text(draw.clone(), &model.guiev, &model.itxt, tm);
+    //  Loopian View の描画
+    model.graph.view_loopian(draw.clone(), &model.guiev, &model.itxt, tm);
 
     draw.to_frame(app, &frame).unwrap();
 }

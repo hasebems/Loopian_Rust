@@ -3,7 +3,6 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-
 use nannou::prelude::*;
 use std::fs::File;
 use std::io::Read;
@@ -69,6 +68,7 @@ pub struct Graphic {
     nobj: Vec<Box<dyn NoteObj>>,
     gmode: GraphMode,
     gptn: GraphPattern,
+    text_visible: bool,
     crnt_time: f32,
 }
 
@@ -91,6 +91,7 @@ impl Graphic {
             nobj: Vec::new(),
             gmode: GraphMode::Dark,
             gptn: GraphPattern::Ripple,
+            text_visible: true,
             crnt_time: 0.0,
         }
     }
@@ -128,6 +129,9 @@ impl Graphic {
                 DARK_MODE => self.gmode = GraphMode::Dark,
                 RIPPLE_PATTERN => self.gptn = GraphPattern::Ripple,
                 VOICE_PATTERN => self.gptn = GraphPattern::Voice,
+                TEXT_VISIBLE_CTRL => {
+                    self.text_visible = if self.text_visible { false } else { true };
+                }
                 _ => (),
             }
             self.graphmsg.remove(0);
@@ -171,15 +175,24 @@ impl Graphic {
         }
     }
     //*******************************************************************
-    //      View (no mutable)
+    //      View (no mutable self)
     //*******************************************************************
-    pub fn view_mine(&self, draw: Draw, tm: f32) {
+    pub fn view_loopian(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
+        self.view_loopian_obj(draw.clone(), tm);
+        if self.text_visible {
+            self.title(draw.clone());
+            self.eight_indicator(draw.clone(), guiev);
+            self.scroll_text(draw.clone(), itxt);
+            self.input_text(draw.clone(), guiev, itxt, tm);
+        }
+    }
+    fn view_loopian_obj(&self, draw: Draw, tm: f32) {
         //  Note Object の描画
         for obj in self.nobj.iter() {
             obj.disp(draw.clone(), tm, self.rs.clone());
         }
     }
-    pub fn title(&self, draw: Draw) {
+    fn title(&self, draw: Draw) {
         let title_color = if self.gmode == GraphMode::Light {
             GRAY
         } else {
@@ -192,7 +205,7 @@ impl Graphic {
             .center_justify()
             .x_y(0.0, 42.0 - self.rs.full_size_y / 2.0);
     }
-    pub fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {
+    fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {
         let txt_color = if self.gmode == GraphMode::Light {
             GRAY
         } else {
@@ -287,7 +300,7 @@ impl Graphic {
                 .w_h(400.0, 30.0);
         }
     }
-    pub fn input_text(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
+    fn input_text(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
         const INPUT_TXT_X_SZ: f32 = 1240.0;
         const INPUT_TXT_Y_SZ: f32 = 40.0;
         const LETTER_SZ_X: f32 = 16.0;
@@ -351,7 +364,10 @@ impl Graphic {
                 );
         }
     }
-    pub fn scroll_text(&self, draw: Draw, itxt: &InputText) {
+    fn scroll_text(&self, draw: Draw, itxt: &InputText) {
+        if !self.text_visible {
+            return;
+        } 
         const LINE_THICKNESS: f32 = 2.0;
         const SCRTXT_FONT_SIZE: u32 = 18;
         const SCRTXT_FONT_HEIGHT: f32 = 25.0;
