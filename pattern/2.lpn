@@ -5,10 +5,10 @@ set.beat(4/4)
 L1
 [d^^,m,s^,m].para().dyn(mp).dmp(off)
 @2=[3ex.,+d^,qta^,s^,m].para().dyn(mf).dmp(off)
-set oct=-1
 L2
-@c=mst
+@c=-mst
 [3ex.,c,x..,c^,xo/3ec,x...,c^,xo].stacc(40).dyn(p)
 L12.{I/I/IV7/I/V7/IV7/I/V7@2}
 FLOW.{I9/I9/IV9/I9/V9/IV9/I9/V7}
+set.oct(1)
 play
