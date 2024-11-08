@@ -48,7 +48,7 @@ impl InputText {
             ctrl_pressed: false,
         }
     }
-    pub fn get_history_cnt(&self) -> usize {
+    pub fn get_history_locate(&self) -> usize {
         self.history_cnt
     }
     pub fn gen_log(&mut self, num: usize, fname: String) {

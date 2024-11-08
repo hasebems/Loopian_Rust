@@ -70,12 +70,19 @@ pub struct Graphic {
     gptn: GraphPattern,
     text_visible: bool,
     crnt_time: f32,
+    top_visible_line: usize,
+    max_lines: usize,
+    crnt_line: usize,
 }
 
 //*******************************************************************
 //      impl Graphic
 //*******************************************************************
 impl Graphic {
+    const SCRTXT_FONT_HEIGHT: f32 = 25.0;
+    const SCRTXT_FONT_WIDTH: f32 = 12.0;
+    const SCRTXT_HEIGHT_LIMIT: f32 = 240.0;
+
     pub fn new(app: &App) -> Graphic {
         // フォントをロード（初期化時に一度だけ）
         let font_nrm = Self::load_font(app, "CourierPrime-Regular.ttf");
@@ -93,6 +100,9 @@ impl Graphic {
             gptn: GraphPattern::Ripple,
             text_visible: true,
             crnt_time: 0.0,
+            top_visible_line: 0,
+            max_lines: 0,
+            crnt_line: 0,
         }
     }
     fn load_font(app: &App, font_path: &str) -> nannou::text::Font {
@@ -118,7 +128,7 @@ impl Graphic {
     //*******************************************************************
     //      Update & Event
     //*******************************************************************
-    pub fn update_lpn_model(&mut self, guiev: &mut GuiEv, crnt_time: f32) {
+    pub fn update_lpn_model(&mut self, guiev: &mut GuiEv, itxt: &InputText, crnt_time: f32) {
         self.crnt_time = crnt_time;
 
         // 画面モードの設定
@@ -162,6 +172,9 @@ impl Graphic {
                 break;
             }
         }
+
+        // Scroll Text の更新
+        self.update_scroll_text(itxt);
     }
     fn push_note_obj(&mut self, nt: i32, vel: i32, _pt: i32, tm: f32) {
         self.nobj.push(Box::new(WaterRipple::new(
@@ -173,6 +186,52 @@ impl Graphic {
             GraphMode::Dark => srgb::<u8>(0, 0, 0),
             GraphMode::Light => srgb::<u8>(255, 255, 255),
         }
+    }
+    fn update_scroll_text(&mut self, itxt: &InputText) {
+        // generating max_lines_in_window, and updating self.top_scroll_line
+        let scroll_texts = itxt.get_scroll_lines();
+        let lines = scroll_texts.len();
+        let mut top_visible_line = self.top_visible_line;
+        let max_lines_in_window =
+            ((self.rs.full_size_y - Graphic::SCRTXT_HEIGHT_LIMIT) as usize) / (Graphic::SCRTXT_FONT_HEIGHT as usize);
+        let mut max_lines = max_lines_in_window;
+        let max_histories = scroll_texts
+            .iter()
+            .filter(|x| x.0 == TextAttribute::Common)
+            .collect::<Vec<_>>()
+            .len();
+        if lines < max_lines_in_window {
+            // not filled yet
+            max_lines = lines;
+        }
+
+        // Adjust top_visible_line
+        let crnt_history = itxt.get_history_locate();
+        let mut crnt_line: usize = lines;
+        if crnt_history < max_histories {
+            // 対応する履歴が全体のどの位置にあるかを調べる
+            let mut linecnt = 0;
+            for i in 0..lines {
+                if scroll_texts[i].0 == TextAttribute::Common {
+                    if linecnt == crnt_history {
+                        crnt_line = i;
+                        break;
+                    }
+                    linecnt += 1;
+                }
+            }
+            if crnt_line < top_visible_line {
+                top_visible_line = crnt_line;
+            } else if crnt_line >= top_visible_line + max_lines_in_window  {
+                top_visible_line = crnt_line - max_lines_in_window + 1;
+            }
+        } else if lines >= max_lines_in_window {
+            top_visible_line = lines - max_lines_in_window;
+        }
+
+        self.top_visible_line = top_visible_line;
+        self.max_lines = max_lines;
+        self.crnt_line = crnt_line;
     }
     //*******************************************************************
     //      View (no mutable self)
@@ -336,7 +395,7 @@ impl Graphic {
         }
 
         // プロンプトの描画
-        let hcnt = itxt.get_history_cnt();
+        let hcnt = itxt.get_history_locate();
         let prompt_txt: &str =
             &(format!("{:03}:", hcnt) + guiev.get_part_txt(itxt.get_input_part()) + ">");
         for (i, c) in prompt_txt.chars().enumerate() {
@@ -365,71 +424,30 @@ impl Graphic {
         }
     }
     fn scroll_text(&self, draw: Draw, itxt: &InputText) {
-        if !self.text_visible {
-            return;
-        } 
         const LINE_THICKNESS: f32 = 2.0;
         const SCRTXT_FONT_SIZE: u32 = 18;
-        const SCRTXT_FONT_HEIGHT: f32 = 25.0;
-        const SCRTXT_FONT_WIDTH: f32 = 12.0;
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
-        const SCRTXT_HEIGHT_LIMIT: f32 = 200.0;
-
-        // generating max_line_in_window, and updating self.top_scroll_line
-        let scroll_lines = itxt.get_scroll_lines();
-        let lines = scroll_lines.len();
-        let mut top_scroll_line = 0;
-        let max_line_in_window =
-            ((self.rs.full_size_y - SCRTXT_HEIGHT_LIMIT) as usize) / (SCRTXT_FONT_HEIGHT as usize);
-        let mut crnt_line: usize = lines;
-        let mut max_disp_line = max_line_in_window;
-        let max_history = scroll_lines
-            .iter()
-            .filter(|x| x.0 == TextAttribute::Common)
-            .collect::<Vec<_>>()
-            .len();
-
-        if lines < max_line_in_window {
-            // not filled yet
-            max_disp_line = lines;
-        }
-        let crnt_history = itxt.get_history_cnt();
-        if crnt_history < max_history {
-            crnt_line = 0;
-            for i in 0..lines {
-                if scroll_lines[i].0 == TextAttribute::Common {
-                    if crnt_line == crnt_history {
-                        crnt_line = i;
-                        break;
-                    }
-                    crnt_line += 1;
-                }
-            }
-            if crnt_line < top_scroll_line {
-                top_scroll_line = crnt_line;
-            } else if crnt_line > top_scroll_line + max_line_in_window {
-                top_scroll_line = crnt_line - max_line_in_window;
-            }
-        } else if lines >= max_line_in_window {
-            top_scroll_line = lines - max_line_in_window;
-        }
 
         // Draw Letters
-        for i in 0..max_disp_line {
-            let past_text_set = scroll_lines[top_scroll_line + i].clone();
+        let top_visible_line = self.top_visible_line;
+        let max_lines = self.max_lines;
+        let crnt_line = self.crnt_line;
+        let scroll_texts = itxt.get_scroll_lines();
+        for i in 0..max_lines {
+            let past_text_set = scroll_texts[top_visible_line + i].clone();
             let past_text = past_text_set.1.clone() + &past_text_set.2;
             let ltrcnt = past_text.chars().count();
-            let center_adjust = ltrcnt as f32 * SCRTXT_FONT_WIDTH / 2.0;
+            let center_adjust = ltrcnt as f32 * Graphic::SCRTXT_FONT_WIDTH / 2.0;
 
-            // line
-            if top_scroll_line + i == crnt_line {
+            // underline
+            if top_visible_line + i == crnt_line {
                 draw.rect()
                     .color(LIGHTGRAY)
                     .x_y(
                         self.rs.scroll_txt_left + center_adjust - 60.0,
-                        self.rs.scroll_txt_top - SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
+                        self.rs.scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
                     )
-                    .w_h(SCRTXT_FONT_WIDTH * (ltrcnt as f32), LINE_THICKNESS);
+                    .w_h(Graphic::SCRTXT_FONT_WIDTH * (ltrcnt as f32), LINE_THICKNESS);
             }
 
             // string
@@ -449,10 +467,19 @@ impl Graphic {
                     .x_y(
                         self.rs.scroll_txt_left
                             + SPACE2_TXT_LEFT_MARGIN
-                            + SCRTXT_FONT_WIDTH * (j as f32),
-                        self.rs.scroll_txt_top - SCRTXT_FONT_HEIGHT * (i as f32),
+                            + Graphic::SCRTXT_FONT_WIDTH * (j as f32),
+                        self.rs.scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32),
                     );
             }
         }
+        //{
+        //    let d = format!("{}",top_visible_line);
+        //    draw.text(&d)
+        //    .font(self.font_nrm.clone())
+        //    .font_size(SCRTXT_FONT_SIZE)
+        //    .color(RED)
+        //    .left_justify()
+        //    .x_y(0.0,0.0);
+        //}
     }
 }

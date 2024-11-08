@@ -103,7 +103,7 @@ fn update(app: &App, model: &mut Model, _update: Update) {
         .auto_load_command(&model.guiev, model.graph.graph_msg());
 
     //  Update Model
-    model.graph.update_lpn_model(&mut model.guiev, crnt_time);
+    model.graph.update_lpn_model(&mut model.guiev, &model.itxt, crnt_time);
 
     // as you like
 }
