@@ -153,6 +153,7 @@ impl PhrLoopManager {
     pub fn del_phr(&mut self) {
         self.del_loop_phrase();
         self.new_data_stock = vec![PhrData::empty()];
+        self.clear_phr_prm();
         self.state_reserve = true;
     }
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {

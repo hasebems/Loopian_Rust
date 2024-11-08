@@ -85,6 +85,15 @@ impl SeqDataStock {
         }
         None
     }
+    pub fn del_raw_phrase(&mut self, part: usize) {
+        if part < MAX_KBD_PART {
+            for i in 0..(MAX_VARIATION + 1) {
+                if self.pdt[part][i].set_raw("[]".to_string(), &self.cluster_memory) {
+                    self.pdt[part][i].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+                }
+            }
+        }
+    }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
         if part < MAX_COMPOSITION_PART {
             if self.cdt[part].set_raw(input_text) {

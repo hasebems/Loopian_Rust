@@ -537,7 +537,10 @@ impl LoopianCmd {
         }
     }
     fn clear_part(&mut self, part_num: usize) {
-        // Phrase を消去
+        // seq stock のデータを消去
+        self.dtstk.del_raw_phrase(part_num);
+
+        // Phrase を消去する message を送る
         self.sndr.clear_phrase_to_elapse(part_num);
 
         let empty_cmp = "{}".to_string();
