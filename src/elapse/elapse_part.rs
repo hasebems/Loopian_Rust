@@ -110,15 +110,7 @@ impl PhrLoopManager {
     pub fn rcv_phr(&mut self, msg: PhrData) {
         if msg.evts.len() == 0 && msg.whole_tick == 0 {
             // phrase = [] の時の処理
-            let mut num = MAX_VARIATION;
-            for (i, phr) in self.new_data_stock.iter().enumerate() {
-                if phr.vari == msg.vari {
-                    // i,num は Variation の番号そのものではないことに注意(ただし0:Normal)
-                    num = i;
-                    break;
-                }
-            }
-            if num != MAX_VARIATION {
+            if let Some(num) = self.exists_same_vari(msg.vari) {
                 if num == 0 {
                     // 0 の場合は、空の Phrase を入れ、new_data_stock の要素数を0にしない
                     self.new_data_stock = vec![PhrData::empty()];
@@ -140,7 +132,11 @@ impl PhrLoopManager {
                     self.state_reserve = true;
                 }
                 PhraseAs::Variation(_v) => {
-                    self.new_data_stock.push(msg);
+                    if let Some(num) = self.exists_same_vari(msg.clone().vari) {
+                        self.new_data_stock[num] = msg; // 上書き
+                    } else {
+                        self.new_data_stock.push(msg);  // 追加
+                    }
                 }
                 PhraseAs::Measure(msr) => {
                     let mut msg_modified = msg.clone();
@@ -175,6 +171,21 @@ impl PhrLoopManager {
     pub fn reserve_vari(&mut self, vari_num: usize) {
         if vari_num != 0 {
             self.vari_reserve = vari_num; // 1-9
+        }
+    }
+    fn exists_same_vari(&self, vari: PhraseAs) -> Option<usize> {
+        let mut num = MAX_VARIATION;
+        for (i, phr) in self.new_data_stock.iter().enumerate() {
+            if phr.vari == vari {
+                // i,num は Variation の番号そのものではないことに注意(ただし0:Normal)
+                num = i;
+                break;
+            }
+        }
+        if num == MAX_VARIATION {
+            None
+        } else {
+            Some(num)
         }
     }
     fn del_loop_phrase(&mut self) {
