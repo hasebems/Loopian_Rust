@@ -3,12 +3,13 @@ set.key(D)
 set.bpm(144)
 set.beat(4/4)
 L1
-[d^^,m,s^,m].para().dyn(mp).dmp(off)
-@2=[3ex.,+d^,qta^,s^,m].para().dyn(mf).dmp(off)
+[d^^,m,s^,m].para().stacc(70).dyn(mp).dmp(off)
+@1=[3ex.,+d^,qta^,s^,m].para().dyn(mf).dmp(off)
 L2
 @c=-mst
 [3ex.,c,x..,c^,xo/3ec,x...,c^,xo].stacc(40).dyn(p)
-L12.{I/I/IV7/I/V7/IV7/I/V7@2}
+@1=[x]
+L12.{I/I/IV7/I/V7/IV7/I/V7@1}
 FLOW.{I9/I9/IV9/I9/V9/IV9/I9/V7}
 set.oct(1)
 play
