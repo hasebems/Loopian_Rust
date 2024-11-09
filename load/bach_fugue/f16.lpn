@@ -75,6 +75,8 @@ R1
 [A1:ex,+vr^^,m^^,ef^,-l^,qsi^,el^./.,vt,d,er,vd%,t%,d,-m,fi%,si%,ql%/]+
 [vx,l,s%,f%,m%....,d,r%,m%,f%.../.,f,m%,r%,d%....,l,t%,di%,r%.../]+
 [.,r,d%,t%,l....,l^,t^,d^,er^,ri^^/qm^,x..//].dyn(p)
+
+!msr(21)
 R2
 [A3:ex,+l^^,ta^^,-r^/qdi^,r^,ex,vm,f,es,vf,m/f,m,f,s,el,x,x,vm,r,ed,vr%,m%/]+
 [vf,m,r,d,et,+si,l,x,vx,m,r%,d%/t%....,d,r%,m%,-l%....,d,ta%,l%/]+
