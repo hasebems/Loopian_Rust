@@ -132,7 +132,7 @@ pub fn cui_loop() {
                     let lvl = pin.read();
                     if lvl == Level::Low && !reconnect_sw {
                         // reconnect
-                        srv.cmd.send_reconnect();
+                        srv.itxt.send_reconnect();
                         reconnect_sw = true;
                     } else if lvl == Level::High {
                         reconnect_sw = false;

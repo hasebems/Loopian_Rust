@@ -69,6 +69,10 @@ impl InputText {
     pub fn get_scroll_lines(&self) -> &Vec<(TextAttribute, String, String)> {
         &self.scroll_lines
     }
+    #[cfg(feature = "raspi")]
+    pub fn send_reconnect(&self) {
+        self.cmd.send_reconnect();
+    }
     pub fn window_event(&mut self, event: Event, graphmsg: &mut Vec<i16>) {
         match event {
             Event::WindowEvent {
