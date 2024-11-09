@@ -9,6 +9,7 @@ use std::io::Read;
 
 use super::guiev::GuiEv;
 use super::noteobj::NoteObj;
+use super::voice::{StaticViewForVoice4, Voice4};
 use super::waterripple::WaterRipple;
 use crate::file::input_txt::InputText;
 use crate::lpnlib::*;
@@ -66,6 +67,7 @@ pub struct Graphic {
     font_newyork: nannou::text::Font,
     rs: Resize,
     nobj: Vec<Box<dyn NoteObj>>,
+    svce: StaticViewForVoice4,
     gmode: GraphMode,
     gptn: GraphPattern,
     text_visible: bool,
@@ -91,11 +93,12 @@ impl Graphic {
 
         Self {
             graphmsg: Vec::new(),
-            font_nrm,
+            font_nrm: font_nrm.clone(),
             font_italic,
             font_newyork,
             rs: Resize::default(),
             nobj: Vec::new(),
+            svce: StaticViewForVoice4::new(font_nrm),
             gmode: GraphMode::Dark,
             gptn: GraphPattern::Ripple,
             text_visible: true,
@@ -138,7 +141,7 @@ impl Graphic {
                 LIGHT_MODE => self.gmode = GraphMode::Light,
                 DARK_MODE => self.gmode = GraphMode::Dark,
                 RIPPLE_PATTERN => self.gptn = GraphPattern::Ripple,
-                VOICE_PATTERN => self.gptn = GraphPattern::Voice,
+                VOICE_PATTERN => self.gptn = GraphPattern::Voice4,
                 TEXT_VISIBLE_CTRL => {
                     self.text_visible = if self.text_visible { false } else { true };
                 }
@@ -176,10 +179,15 @@ impl Graphic {
         // Scroll Text の更新
         self.update_scroll_text(itxt);
     }
-    fn push_note_obj(&mut self, nt: i32, vel: i32, _pt: i32, tm: f32) {
-        self.nobj.push(Box::new(WaterRipple::new(
-            nt as f32, vel as f32, tm, self.gmode,
-        )));
+    fn push_note_obj(&mut self, nt: i32, vel: i32, pt: i32, tm: f32) {
+        match self.gptn {
+            GraphPattern::Ripple => self.nobj.push(Box::new(WaterRipple::new(
+                nt as f32, vel as f32, tm, self.gmode,
+            ))),
+            GraphPattern::Voice4 => self.nobj.push(Box::new(Voice4::new(
+                nt as f32, vel as f32, pt, tm, self.gmode,
+            ))),
+        }
     }
     pub fn get_color(&self) -> Srgb<u8> {
         match self.gmode {
@@ -192,8 +200,8 @@ impl Graphic {
         let scroll_texts = itxt.get_scroll_lines();
         let lines = scroll_texts.len();
         let mut top_visible_line = self.top_visible_line;
-        let max_lines_in_window =
-            ((self.rs.full_size_y - Graphic::SCRTXT_HEIGHT_LIMIT) as usize) / (Graphic::SCRTXT_FONT_HEIGHT as usize);
+        let max_lines_in_window = ((self.rs.full_size_y - Graphic::SCRTXT_HEIGHT_LIMIT) as usize)
+            / (Graphic::SCRTXT_FONT_HEIGHT as usize);
         let mut max_lines = max_lines_in_window;
         let max_histories = scroll_texts
             .iter()
@@ -222,7 +230,7 @@ impl Graphic {
             }
             if crnt_line < top_visible_line {
                 top_visible_line = crnt_line;
-            } else if crnt_line >= top_visible_line + max_lines_in_window  {
+            } else if crnt_line >= top_visible_line + max_lines_in_window {
                 top_visible_line = crnt_line - max_lines_in_window + 1;
             }
         } else if lines >= max_lines_in_window {
@@ -237,12 +245,25 @@ impl Graphic {
     //      View (no mutable self)
     //*******************************************************************
     pub fn view_loopian(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
+        // Gererative Pattern
+        self.view_loopian_static_view(draw.clone());
         self.view_loopian_obj(draw.clone(), tm);
+
+        // テキスト表示
         if self.text_visible {
             self.title(draw.clone());
             self.eight_indicator(draw.clone(), guiev);
             self.scroll_text(draw.clone(), itxt);
             self.input_text(draw.clone(), guiev, itxt, tm);
+        }
+    }
+    fn view_loopian_static_view(&self, draw: Draw) {
+        match self.gptn {
+            GraphPattern::Voice4 => {
+                self.svce
+                    .disp(draw.clone(), self.rs.clone());
+            }
+            _ => {}
         }
     }
     fn view_loopian_obj(&self, draw: Draw, tm: f32) {
