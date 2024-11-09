@@ -103,7 +103,9 @@ fn update(app: &App, model: &mut Model, _update: Update) {
         .auto_load_command(&model.guiev, model.graph.graph_msg());
 
     //  Update Model
-    model.graph.update_lpn_model(&mut model.guiev, &model.itxt, crnt_time);
+    model
+        .graph
+        .update_lpn_model(&mut model.guiev, &model.itxt, crnt_time);
 
     // as you like
 }
@@ -136,7 +138,9 @@ fn view(app: &App, model: &Model, frame: Frame) {
     // as you like
 
     //  Loopian View の描画
-    model.graph.view_loopian(draw.clone(), &model.guiev, &model.itxt, tm);
+    model
+        .graph
+        .view_loopian(draw.clone(), &model.guiev, &model.itxt, tm);
 
     draw.to_frame(app, &frame).unwrap();
 }

@@ -135,7 +135,7 @@ impl PhrLoopManager {
                     if let Some(num) = self.exists_same_vari(msg.clone().vari) {
                         self.new_data_stock[num] = msg; // 上書き
                     } else {
-                        self.new_data_stock.push(msg);  // 追加
+                        self.new_data_stock.push(msg); // 追加
                     }
                 }
                 PhraseAs::Measure(msr) => {

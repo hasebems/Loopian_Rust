@@ -89,7 +89,11 @@ impl SeqDataStock {
         if part < MAX_KBD_PART {
             for i in 0..(MAX_VARIATION + 1) {
                 if self.pdt[part][i].set_raw("[]".to_string(), &self.cluster_memory) {
-                    self.pdt[part][i].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+                    self.pdt[part][i].set_recombined(
+                        self.input_mode,
+                        self.bpm,
+                        self.tick_for_onemsr,
+                    );
                 }
             }
         }
