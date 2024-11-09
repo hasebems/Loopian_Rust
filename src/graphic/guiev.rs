@@ -79,6 +79,7 @@ impl GuiEv {
                 self.crnt_msr.msr = m;
                 let base_tick = DEFAULT_TICK_FOR_ONE_MEASURE / self.denomirator;
                 self.crnt_msr.tick = b * base_tick + t;
+                self.crnt_msr.tick_for_onemsr = base_tick * self.numerator;
             }
             UiMsg::PartUi(pnum, pui) => {
                 if pui.exist {
