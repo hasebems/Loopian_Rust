@@ -5,6 +5,7 @@
 //
 
 use std::fs;
+use std::env;
 //use std::fs::File;
 use serde::{Deserialize, Serialize};
 
@@ -28,11 +29,45 @@ pub struct Settings {
 impl Settings {
     const SETTINGS_FILE: &'static str = "settings.toml";
     pub fn load_settings() -> Settings {
-        let fs: String = fs::read_to_string(Self::SETTINGS_FILE).unwrap();
-        let sts: Result<Settings, toml::de::Error> = toml::from_str(&fs);
-        match sts {
-            Ok(s) => s,
-            Err(e) => panic!("Filed to parse TOML: {}", e),
+        match fs::read_to_string(Self::SETTINGS_FILE) {
+            Ok(fs) => {
+                let sts: Result<Settings, toml::de::Error> = toml::from_str(&fs);
+                match sts {
+                    Ok(s) => s,
+                    Err(e) => panic!("Filed to parse TOML: {}", e),
+                }
+            }
+            Err(e) => {
+                panic!("Failed to read settings file: {}", e);
+            }
         }
+    }
+    pub fn find_setting_file() -> bool {
+        if fs::metadata(Self::SETTINGS_FILE).is_err() {
+            // もし設定ファイルが存在しない場合は、実行ファイルのディレクトリに移動
+
+            // 現在の実行ファイルのパスを取得
+            let exe_path = env::current_exe().expect("Failed to get current exe path");
+        
+            // 実行ファイルのディレクトリパスを取得
+            let exe_dir = exe_path.parent().expect("Failed to get exe directory");
+
+            if exe_path != *exe_dir {
+                // ディレクトリを移動
+                env::set_current_dir(exe_dir).expect("Failed to change directory");
+                if fs::metadata(Self::SETTINGS_FILE).is_err() {
+                    println!("Settings file not found.");
+                    return false;
+                } else {
+                    println!("*** Settings file found.");
+                }
+            } else {
+                println!("Settings file not found.");
+                return false;
+            }
+        } else {
+            println!("*** Settings file found.");
+        }
+        true
     }
 }

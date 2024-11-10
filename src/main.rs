@@ -21,6 +21,7 @@ use std::thread;
 
 use elapse::stack_elapse::ElapseStack;
 use file::input_txt::InputText;
+use file::settings::Settings;
 use graphic::graphic::{Graphic, Resize};
 use graphic::guiev::GuiEv;
 use lpnlib::*;
@@ -31,7 +32,19 @@ use server::server::cui_loop;
 //*******************************************************************
 fn main() {
     let args: Vec<String> = env::args().collect();
-    println!("Args: {:?}", args);
+
+    //  Version
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+    println!("*** Version: {}", VERSION);
+
+    //  Args
+    println!("*** Args: {:?}", args);
+ 
+    //  Setting file の存在確認
+    if !Settings::find_setting_file() {
+        return;
+    }
+
     if args.len() > 1 && args[1] == "server" {
         // CUI version
         cui_loop();
