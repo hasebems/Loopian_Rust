@@ -7,10 +7,6 @@
 - To achieve a somewhat natural performance, the velocity, pitch during chord changes, and damper pedal usage are automatically calculated.
 - Phrases are specified using movable-do solfège.
 
-# How to get loopian::APP executable file
-
-The executable file for the Mac version of `loopian::APP` is located at `/target/release/loopian`. Currently, executable files for platforms other than Mac are not supported, so if needed, please set up a Rust environment and build the application yourself.
-
 
 # loopian::APP とは
 
@@ -20,11 +16,8 @@ loopian::APP は、Live Coding などで使うために開発している、テ�
 - ある程度自然な演奏になるように、ベロシティや和音変換時の音程、ダンパーペダルを自動算出
 - フレーズは移動ドにて指定
 
-# loopian::APP の実行ファイル
 
-loopian::APP Mac版の実行ファイルは `/target/release/loopian` です。現在、Mac以外は実行ファイルは未対応ですので、必要に応じて自力でRust環境を作成し、ビルドしてください。
-
-# Loopian記法の説明
+# Loopian記法の紹介
 
 ## ◆Loopianについて
 
@@ -246,3 +239,9 @@ Loopianは、基本的にループ再生します。
 最初の旋律では、`d` `m` `s`の３つの音があるので、和音が`I`のときは、音程はそのまま再生されますが、和音が`IV`のときには、`m`や`s`の音が`IV`の構成音のどれかの音程に自動的に変換されます。
 このようにLoopianでは、和音進行を指定することによって、入力した旋律を和音に合った音で演奏することができます。
 また、変換の方法や、その微調整も設定できるようになっています。
+
+
+### リンク
+
+- [Loopian詳細仕様](doc/howtouse.md)
+- [Loopianで音符を書いてみよう(note記事)](https://note.com/hasebems/n/n0cd822840e51)

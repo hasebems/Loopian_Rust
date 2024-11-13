@@ -5,7 +5,7 @@
 # Loopian Alpha-version written in Rust
 
 
-<img src="window.png" width="80%">
+<img src="v050.png" width="80%">
 
 ## about loopian
 
