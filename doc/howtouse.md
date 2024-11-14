@@ -7,14 +7,14 @@
 
 <img src="v050.png" width="80%">
 
-## about loopian
+## about Loopian
 
-'loopian' is a sequencer for piano tones with text input that we are developing for use mostly in Live Coding.
+`loopian` is a sequencer for piano tones with text input that we are developing for use mostly in Live Coding.
 
 
-## loopian とは
+## Loopian とは
 
-loopian は、Live Coding などで使うために開発している、テキスト入力によるピアノ音色用シーケンサです。
+Loopian は、Live Coding などで使うために開発している、テキスト入力によるピアノ音色用シーケンサです。
 以下の特徴があります
 - テキストは1行単位で入力し、フレーズや和音を指定したり、演奏全体をコントロールするコマンドを指定
 - ある程度自然な演奏になるように、ベロシティや和音変換時の音程、ダンパーペダルを自動算出
@@ -273,7 +273,7 @@ Phrase 追加
     - Dynamic Pattern は、Phrase の中で実際の音程を指示せず、和音やアルペジオ演奏を自動生成する
     - 同時に鳴る複数の音(Cluster)は `Cls()` 、アルペジオ(Arpeggio)は `Arp()` と記述する
         - `C(), A()` と小文字を省略可能
-        - [hCls(),hArp()] のように、Phrase の中に記載し、前に Pattern 全体の音価を示す
+        - `[hCls(),hArp()]` のように、Phrase の中に記載し、前に Pattern 全体の音価を示す
     - `Cls(a,b,c)` とあった場合、各パラメータは以下の意味になる
         - a: 音価を表す。h,q,e,v,w およびその付点を選ぶことができる(default:q)
         - b: 和音の音数(2-5)(default:4)
@@ -386,7 +386,6 @@ Graphic
 設計資料へのリンク
 ---------------------
 
-- [Loopian::ORBIT仕様](doc/orbit.md)
 - [詳細設計](doc/idea.md)
 
 
