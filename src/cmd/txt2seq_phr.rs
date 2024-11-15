@@ -234,7 +234,12 @@ fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
 /// 同じ Phrase を指定回数回、コピーし追加する
 fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
     let mut nnv: Vec<String> = Vec::new();
-    let num = extract_number_from_parentheses(ne);
+    let num;
+    if let Some(n) = extract_number_from_parentheses(ne) {
+        num = n;
+    } else {
+        num = 1;
+    }
     nnv.extend(nv.clone()); //  repeat前
     for _ in 0..num {
         nnv.push("$RPT".to_string());

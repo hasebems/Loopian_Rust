@@ -264,7 +264,12 @@ impl InputText {
             } else {
                 "".to_string()
             };
-            let num = extract_number_from_parentheses(&itxts[0]);
+            let num;
+            if let Some(n) = extract_number_from_parentheses(&itxts[0]) {
+                num = n;
+            } else {
+                num = 0;
+            }
             self.gen_log(num, fname);
             self.scroll_lines.push((
                 TextAttribute::Answer,
@@ -275,7 +280,12 @@ impl InputText {
             || (len >= 3 && &itxt[0..3] == "!rd")
             || (len >= 5 && &itxt[0..5] == "!read")
         {
-            let num = extract_number_from_parentheses(itxt.as_str());
+            let num;
+            if let Some(n) = extract_number_from_parentheses(itxt.as_str()) {
+                num = n;
+            } else {
+                num = 0;
+            }
             if let Some(cmd) = self.history.read_line_from_lpn(
                 self.file_name_stock.clone(),
                 self.cmd.get_path().as_deref(),
@@ -292,7 +302,9 @@ impl InputText {
             if fnm.contains("blk") {
                 ltr = Some(extract_texts_from_parentheses(fnm.as_str()).to_string());
             } else if fnm.contains("msr") {
-                num = Some(extract_number_from_parentheses(fnm.as_str()));
+                if let Some(e) = extract_number_from_parentheses(fnm.as_str()) {
+                    num = Some(e);
+                }
             }
             (ltr, num) // blk命令があるか調べ、あった場合は () 内の文字列取得
         };

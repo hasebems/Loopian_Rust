@@ -289,7 +289,12 @@ impl LoopianCmd {
         if split_txt.len() == 2 {
             let len = split_txt[0].chars().count();
             if len >= 4 && &input_text[0..4] == "@msr" {
-                let msr = extract_number_from_parentheses(&split_txt[0]);
+                let msr;
+                if let Some(m) = extract_number_from_parentheses(&split_txt[0]){
+                    msr = m;
+                } else {
+                    msr = 1;
+                }
                 if let Some(additional) =
                     self.set_phrase(self.input_part, PhraseAs::Measure(msr), &split_txt[1])
                 {

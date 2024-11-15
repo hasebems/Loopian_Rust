@@ -152,9 +152,10 @@ impl History {
                     if line.len() >= 4 && &line[0..4] == "!rd(" {
                         let rd_line = split_by(':', line.to_string());
                         if rd_line.len() == 2 {
-                            let rd_num = extract_number_from_parentheses(&rd_line[0]);
-                            if rd_num == num {
-                                return Some(rd_line[1].clone());
+                            if let Some(rd_num) = extract_number_from_parentheses(&rd_line[0]) {
+                                if rd_num == num {
+                                    return Some(rd_line[1].clone());
+                                }
                             }
                         }
                     }
@@ -175,10 +176,11 @@ impl History {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
                 if ctxt.len() > 5 && ctxt[0..5] == *"!msr(" {
-                    let msr = extract_number_from_parentheses(ctxt);
-                    if msr == mt.msr.try_into().unwrap_or(0) {
-                        idx = crnt.0 + 1;
-                        break;
+                    if let Some(msr) = extract_number_from_parentheses(ctxt) {
+                        if msr == mt.msr.try_into().unwrap_or(0) {
+                            idx = crnt.0 + 1;
+                            break;
+                        }
                     }
                 }
             }
@@ -187,7 +189,12 @@ impl History {
         for n in idx..self.loaded_text.len() {
             let ctxt = &self.loaded_text[n];
             if ctxt.len() > 5 && ctxt[0..5] == *"!msr(" {
-                let msr = extract_number_from_parentheses(ctxt);
+                let msr;
+                if let Some(m) = extract_number_from_parentheses(ctxt) {
+                    msr = m;
+                } else {
+                    msr = 0;
+                }
                 return (
                     txt_this_time,
                     Some(CrntMsrTick {

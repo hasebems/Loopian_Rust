@@ -219,10 +219,13 @@ pub fn crispy_tick(exp_others: &Vec<String>) -> Vec<AnaEvt> {
     let mut ana: Vec<AnaEvt> = vec![];
     exp_others.iter().for_each(|x| {
         if x.contains("stacc(") {
-            let mut rate = extract_number_from_parentheses(x);
-            if rate == 0 {
-                rate = 50; //default
-            } else if rate >= 100 {
+            let mut rate;
+            if let Some(r) = extract_number_from_parentheses(x) {
+                rate = r;
+            } else {
+                rate = 50;
+            }
+            if rate >= 100 {
                 rate = 100;
             }
             let mut anev = AnaEvt::new();
@@ -234,10 +237,13 @@ pub fn crispy_tick(exp_others: &Vec<String>) -> Vec<AnaEvt> {
     });
     exp_others.iter().for_each(|x| {
         if x.contains("legato(") {
-            let mut rate = extract_number_from_parentheses(x);
-            if rate == 0 {
-                rate = 120; //default
-            } else if rate < 100 {
+            let mut rate;
+            if let Some(r) = extract_number_from_parentheses(x) {
+                rate = r;
+            } else {
+                rate = 120;
+            }
+            if rate < 100 {
                 rate = 100;
             } else if rate > 200 {
                 rate = 200;

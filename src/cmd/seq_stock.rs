@@ -160,7 +160,12 @@ impl SeqDataStock {
         let strlen = raw.len();
         if strlen >= 9 && raw.contains("].rpt(") && &raw[(strlen - 2)..] == ")+" {
             let input_txt = split_by('.', raw);
-            let rpt_cnt = extract_number_from_parentheses(&input_txt[1]);
+            let rpt_cnt;
+            if let Some(r) = extract_number_from_parentheses(&input_txt[1]) {
+                rpt_cnt = r;
+            } else {
+                rpt_cnt = 1;
+            }
             let plen = input_txt[0].len();
             for i in 0..(rpt_cnt + 1) {
                 if i == 0 && self.raw_additional.len() == 0 {
