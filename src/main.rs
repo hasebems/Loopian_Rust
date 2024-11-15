@@ -57,9 +57,6 @@ fn main() {
 //*******************************************************************
 //      Model
 //*******************************************************************
-const FIRST_WIDTH: u32 = 2800;
-const FIRST_HEIGHT: u32 = 1800;
-
 pub struct Model {
     ui_hndr: mpsc::Receiver<UiMsg>,
     itxt: InputText,
@@ -74,8 +71,10 @@ fn model(app: &App) -> Model {
     // app に対する初期設定
     app.set_exit_on_escape(false);
     let win = app.main_window();
+    let first_width = Settings::load_settings().window_size.window_x_default;
+    let first_height = Settings::load_settings().window_size.window_y_default;
     win.set_title("Loopian");
-    win.set_inner_size_pixels(FIRST_WIDTH, FIRST_HEIGHT);
+    win.set_inner_size_pixels(first_width, first_height);
 
     Model {
         ui_hndr: rxui,

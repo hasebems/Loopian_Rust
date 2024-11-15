@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WindowSize {
-    pub window_x_default: f32,
-    pub window_y_default: f32,
+    pub window_x_default: u32,
+    pub window_y_default: u32,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MIDI {

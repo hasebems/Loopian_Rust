@@ -1,6 +1,6 @@
 [window_size]
-window_x_default = 1280.0
-window_y_default = 860.0
+window_x_default = 2800
+window_y_default = 1800
 
 [midi]
 midi_out = "IACdriver"
