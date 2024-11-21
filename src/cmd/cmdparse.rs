@@ -152,6 +152,27 @@ impl LoopianCmd {
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
             self.during_play = false;
             "Fine.".to_string()
+        } else if len >= 5 && &input_text[0..5] == "efct." {
+            let efct = &input_text[5..];
+            if efct.contains("dmp(") {
+                if let Some(dmp) = extract_number_from_parentheses(efct) {
+                    self.sndr
+                        .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_DMP,dmp as i16]));
+                    format!("Set Damper Value: {}", dmp)
+                } else {
+                    "No Value!".to_string()
+                }
+            } else if efct.contains("cc70(") {
+                if let Some(cc70) = extract_number_from_parentheses(efct) {
+                    self.sndr
+                        .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_CC70,cc70 as i16]));
+                    format!("Set CC70 Value: {}", cc70)
+                } else {
+                    "No Value!".to_string()
+                }
+            } else {
+                "what?".to_string()
+            }
         } else {
             "what?".to_string()
         }

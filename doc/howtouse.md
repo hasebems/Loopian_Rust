@@ -105,6 +105,9 @@ Compile Switch
 * `clear` : データの中身を消去
     - 引数がない場合、全パート消去し、再生も止まる
     - `clear.L1` : L1パートの中身を消去。同様に L2,R1,R2 も指定可
+* `efct` : MIDI Controller の出力
+    - `efct.cc70(nn)` : cc70に対して nn(0-127) を送る
+    - `efct.dmp(nn)` : cc64のDamperが on になったとき、nn(0-127) を送る
 
 
 入力環境コマンド

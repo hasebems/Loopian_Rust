@@ -200,7 +200,7 @@ impl Elapse for Note {
 pub struct Damper {
     id: ElapseId,
     priority: u32,
-    _position: i32,
+    position: u8,
     duration: i32,
     damper_started: bool,
     destroy: bool,
@@ -223,7 +223,7 @@ impl Damper {
                 elps_type: ElapseType::TpNote,
             },
             priority: PRI_NOTE,
-            _position: ev.position as i32,
+            position: ev.position as u8,
             duration: ev.dur as i32,
             damper_started: false,
             destroy: false,
@@ -232,9 +232,10 @@ impl Damper {
         }))
     }
     fn damper_on(&mut self, estk: &mut ElapseStack) {
-        estk.midi_out(0xb0, 0x40, 127);
+        let pos = if self.position > 127 { 127 } else { self.position };
+        estk.midi_out(0xb0, 0x40, pos);
         #[cfg(feature = "verbose")]
-        println!("Damper-On: {}", self._position);
+        println!("Damper-On: {}", self.position);
     }
     fn damper_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;

@@ -234,6 +234,7 @@ pub enum ElpsMsg {
     Sync(i16),
     Rit([i16; 2]),
     Set([i16; 2]),
+    Efct([i16; 2]),
     //    SetBpm([i16; 3]),
     SetBeat([i16; 2]),
     //    SetKey([i16; 3]),
@@ -271,6 +272,9 @@ pub const MSG_SET_KEY: i16 = 2;
 pub const MSG_SET_TURN: i16 = 3;
 pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
                                      //  Set BEAT  : numerator, denomirator
+//  Effect
+pub const MSG_EFCT_DMP: i16 = 1;
+pub const MSG_EFCT_CC70: i16 = 2;
 
 //*******************************************************************
 //          UI Message from Elapse thread

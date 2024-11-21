@@ -51,7 +51,7 @@ pub struct ElapseStack {
     tg: TickGen,
     flac: u64,
     part_vec: Vec<Rc<RefCell<Part>>>, // Part Instance が繋がれた Vec
-    _damper_part: Rc<RefCell<DamperPart>>,
+    damper_part: Rc<RefCell<DamperPart>>,
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
     limit_for_deb: i32,
@@ -115,7 +115,7 @@ impl ElapseStack {
             tg: TickGen::new(0),
             flac: 0,
             part_vec: part_vec.clone(),
-            _damper_part: damper_part,
+            damper_part,
             elapse_vec,
             key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
             limit_for_deb: 0,
@@ -301,6 +301,7 @@ impl ElapseStack {
             Sync(m) => self.sync(m),
             Rit(m) => self.rit(m),
             Set(m) => self.setting_cmnd(m),
+            Efct(m) => self.efct(m),
             SetBeat(m) => self.set_beat(m),
             Phr(m0, mv) => self.phrase(m0, mv),
             Cmp(m0, mv) => self.composition(m0, mv),
@@ -481,6 +482,16 @@ impl ElapseStack {
                 .for_each(|x| x.borrow_mut().set_turnnote(msg[1]));
         } else if msg[0] == MSG_SET_CRNT_MSR {
             self.tg.set_crnt_msr(msg[1] as i32);
+        }
+    }
+    fn efct(&mut self, msg: [i16; 2]) {
+        if msg[0] == MSG_EFCT_DMP {
+            self.damper_part
+                .borrow_mut()
+                .set_position(msg[1]);
+        } else if msg[0] == MSG_EFCT_CC70 {
+            let val = if msg[1] > 127 { 127 } else { msg[1] as u8 };
+            self.midi_out(0xb0, 70, val);
         }
     }
     fn set_beat(&mut self, msg: [i16; 2]) {

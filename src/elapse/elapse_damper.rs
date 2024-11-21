@@ -22,6 +22,7 @@ pub struct DamperPart {
     next_msr: i32,
     next_tick: i32,
     start_flag: bool,
+    position: i16,
 
     evt: Vec<DmprEvt>,
     play_counter: usize,
@@ -41,11 +42,15 @@ impl DamperPart {
             next_msr: 0,
             next_tick: 0,
             start_flag: false,
+            position: 127,
 
             evt: Vec::new(),
             play_counter: 0,
             whole_tick: 0,
         }))
+    }
+    pub fn set_position(&mut self, pos: i16) {
+        self.position = pos;
     }
     /// 次回イベントの小節、tickを算出する
     fn gen_next_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {
@@ -174,7 +179,7 @@ impl DamperPart {
                         mtype: TYPE_DAMPER,
                         tick,
                         dur: (((j - keep) as i32) * tick_for_onebeat - PDL_MARGIN_TICK) as i16,
-                        position: 127,
+                        position: self.position,
                     });
                     if first_tick == NO_DATA {
                         first_tick = tick as i32
@@ -189,7 +194,7 @@ impl DamperPart {
                 mtype: TYPE_DAMPER,
                 tick,
                 dur: (((beat_num - keep) as i32) * tick_for_onebeat - PDL_MARGIN_TICK) as i16,
-                position: 127,
+                position: self.position,
             });
             if first_tick == NO_DATA {
                 first_tick = tick as i32
