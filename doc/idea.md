@@ -577,6 +577,7 @@ NoteObj <|-- WaterRipple
         - 小節数が新しい方が同じか多い
 - 過去の特定のコマンド区間だけを save できる機能(11/2)
 - !rd(n) でファイル内の !rd(n): 以降を、Input Window に呼び出す(11/2)
+- efct.dmp(),cc70() を追加(11/21)
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -626,7 +627,7 @@ NoteObj <|-- WaterRipple
   Pianoteq8付きサイズ 1600 * 900
   全体で録画して、iMovieの中で単体を切り出し、Pianoteq8の切り出しをピクチャインピクチャで上に載せてもいい
 - オーディオ出力 : 複数出力装置（BlackHole & xxxのスピーカー）
-    - DAW/Soft音源(Pianoteq)の出力も確認
+    - DAW/Soft音源(Pianoteq)の出力も上のオーディオ出力と同じにする
 - 録音設定 : オプションから BlackHole 2ch を選択
 - Audio MIDI -> オーディオ装置 -> 「複数出力装置」選択 -> マスター装置: BlackHole 2ch
 - iMovieに入れるが、YouTubeではなく、ファイル出力指定にする(1080p 60)
