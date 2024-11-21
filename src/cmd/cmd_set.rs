@@ -37,7 +37,7 @@ impl LoopianCmd {
                         "Number is wrong.".to_string()
                     }
                 }
-            } else if cmd == "beat" {
+            } else if cmd == "beat" || cmd == "meter" {
                 let numvec = split_by('/', prm.to_string());
                 if numvec.len() < 2 {
                     "Number is wrong.".to_string()
