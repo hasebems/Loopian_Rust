@@ -67,7 +67,7 @@ impl GuiEv {
             UiMsg::BpmUi(bpm) => {
                 self.indicator[1] = format!("{}", bpm);
             }
-            UiMsg::Beat(nume, denomi) => {
+            UiMsg::Meter(nume, denomi) => {
                 self.indicator[2] = format!("{}/{}", nume, denomi);
                 self.numerator = nume;
                 self.denomirator = denomi;

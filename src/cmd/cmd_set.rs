@@ -46,10 +46,10 @@ impl LoopianCmd {
                         (Ok(numerator), Ok(denomirator)) => {
                             self.dtstk.change_beat(numerator, denomirator);
                             self.sndr
-                                .send_msg_to_elapse(ElpsMsg::SetBeat([numerator, denomirator]));
+                                .send_msg_to_elapse(ElpsMsg::SetMeter([numerator, denomirator]));
                             self.sndr
                                 .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
-                            "Beat has changed!".to_string()
+                            "Meter has changed!".to_string()
                         }
                         _ => "Number is wrong.".to_string(),
                     }

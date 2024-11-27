@@ -5,7 +5,7 @@
 //
 
 #[derive(Copy, Clone, PartialEq)]
-pub struct Beat(pub i32, pub i32); // 分子/分母
+pub struct Meter(pub i32, pub i32); // 分子(numerator)/分母(denominator)
 
 pub const DEFAULT_TICK_FOR_QUARTER: i32 = 480;
 pub const DEFAULT_TICK_FOR_ONE_MEASURE: i32 = 1920; // 480 * 4
@@ -236,7 +236,7 @@ pub enum ElpsMsg {
     Set([i16; 2]),
     Efct([i16; 2]),
     //    SetBpm([i16; 3]),
-    SetBeat([i16; 2]),
+    SetMeter([i16; 2]),
     //    SetKey([i16; 3]),
     Phr(i16, PhrData),      //  Phr : part, (whole_tick,evts)
     PhrX(i16),              //  PhrX : part
@@ -302,7 +302,7 @@ pub struct PartUi {
 pub enum UiMsg {
     NewMeasure,
     BpmUi(i16),
-    Beat(i32, i32),
+    Meter(i32, i32),
     TickUi(bool, i32, i32, i32), //running, tick_in_beat, beat, msr
     PartUi(usize, PartUi),       // part_num
     NoteUi(NoteUiEv),

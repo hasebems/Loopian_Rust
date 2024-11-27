@@ -44,7 +44,7 @@ pub struct ElapseStack {
 
     crnt_time: Instant,
     bpm_stock: i16,
-    beat_stock: Beat,
+    beat_stock: Meter,
 
     during_play: bool,
     display_time: Instant,
@@ -109,7 +109,7 @@ impl ElapseStack {
             mdx: c,
             crnt_time: Instant::now(),
             bpm_stock: DEFAULT_BPM,
-            beat_stock: Beat(4, 4),
+            beat_stock: Meter(4, 4),
             during_play: false,
             display_time: Instant::now(),
             tg: TickGen::new(0),
@@ -199,9 +199,6 @@ impl ElapseStack {
             return true;
         }
 
-        //  for GUI
-        self.update_gui();
-
         //  新tick計算
         let mut crnt_ = CrntMsrTick::default();
         if self.during_play {
@@ -211,6 +208,9 @@ impl ElapseStack {
                 self.measure_top(&mut crnt_);
             }
         };
+
+        //  for GUI
+        self.update_gui();
 
         //　MIDI Rx処理
         self.check_rcv_midi(&crnt_);
@@ -262,7 +262,7 @@ impl ElapseStack {
         // 小節先頭ならば、beat/bpm のイベント調査
         self.limit_for_deb = 0;
         // change beat event
-        if self.beat_stock != self.tg.get_beat() {
+        if self.beat_stock != self.tg.get_meter() {
             let tick_for_onemsr =
                 (DEFAULT_TICK_FOR_ONE_MEASURE / self.beat_stock.1) * self.beat_stock.0;
             self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
@@ -302,7 +302,7 @@ impl ElapseStack {
             Rit(m) => self.rit(m),
             Set(m) => self.setting_cmnd(m),
             Efct(m) => self.efct(m),
-            SetBeat(m) => self.set_beat(m),
+            SetMeter(m) => self.set_meter(m),
             Phr(m0, mv) => self.phrase(m0, mv),
             Cmp(m0, mv) => self.composition(m0, mv),
             PhrX(m) => self.del_phrase(m),
@@ -494,8 +494,8 @@ impl ElapseStack {
             self.midi_out(0xb0, 70, val);
         }
     }
-    fn set_beat(&mut self, msg: [i16; 2]) {
-        self.beat_stock = Beat(msg[0] as i32, msg[1] as i32);
+    fn set_meter(&mut self, msg: [i16; 2]) {
+        self.beat_stock = Meter(msg[0] as i32, msg[1] as i32);
         self.sync(MSG_SYNC_ALL);
     }
     fn phrase(&mut self, part_num: i16, evts: PhrData) {
@@ -603,8 +603,8 @@ impl ElapseStack {
         // key
         self.send_msg_to_ui(UiMsg::NewMeasure);
         // beat
-        let beat = self.tg.get_beat();
-        self.send_msg_to_ui(UiMsg::Beat(beat.0, beat.1));
+        let beat = self.tg.get_meter();
+        self.send_msg_to_ui(UiMsg::Meter(beat.0, beat.1));
     }
     /// 50-60msec に一度、表示更新のイベントを Main Thread に送る
     fn update_gui(&mut self) {

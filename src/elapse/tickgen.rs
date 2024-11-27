@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib::{Beat, DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, DEFAULT_TICK_FOR_QUARTER};
+use crate::lpnlib::{Meter, DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, DEFAULT_TICK_FOR_QUARTER};
 use std::time::{Duration, Instant};
 
 //*******************************************************************
@@ -11,13 +11,14 @@ use std::time::{Duration, Instant};
 //*******************************************************************
 pub struct TickGen {
     bpm: i16,
-    beat: Beat,
-    tick_for_onemsr: i32,    // beat によって決まる１小節の tick 数
+    meter: Meter,
+    tick_for_onemsr: i32,    // meter によって決まる１小節の tick 数
+    tick_for_beat: i32,      // 1拍の tick 数
     bpm_stock: i16,          // change bpm で BPM を変えた直後の値
     origin_time: Instant,    // start 時の絶対時間
-    bpm_start_time: Instant, // tempo/beat が変わった時点の絶対時間、tick 計測の開始時間
-    bpm_start_tick: i32,     // tempo が変わった時点の tick, beat が変わったとき0clear
-    beat_start_msr: i32,     // beat が変わった時点の経過小節数
+    bpm_start_time: Instant, // tempo/meter が変わった時点の絶対時間、tick 計測の開始時間
+    bpm_start_tick: i32,     // tempo が変わった時点の tick, meter が変わったとき0clear
+    meter_start_msr: i32,     // meter が変わった時点の経過小節数
     crnt_msr: i32,           // start からの小節数（最初の小節からイベントを出すため、-1初期化)
     crnt_tick_inmsr: i32,    // 現在の小節内の tick 数
     crnt_time: Instant,      // 現在の時刻
@@ -51,13 +52,14 @@ impl TickGen {
         }
         Self {
             bpm: DEFAULT_BPM,
-            beat: Beat(4, 4),
+            meter: Meter(4, 4),
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+            tick_for_beat: DEFAULT_TICK_FOR_ONE_MEASURE / 4,
             bpm_stock: DEFAULT_BPM,
             origin_time: Instant::now(),
             bpm_start_time: Instant::now(),
             bpm_start_tick: 0,
-            beat_start_msr: 0,
+            meter_start_msr: 0,
             crnt_msr: -1,
             crnt_tick_inmsr: 0,
             crnt_time: Instant::now(),
@@ -66,14 +68,16 @@ impl TickGen {
             ritgen: rit,
         }
     }
-    pub fn change_beat_event(&mut self, tick_for_onemsr: i32, beat: Beat) {
+    pub fn change_beat_event(&mut self, tick_for_onemsr: i32, meter: Meter) {
         self.rit_state = false;
         self.fermata_state = false;
         self.tick_for_onemsr = tick_for_onemsr;
-        self.beat = beat;
-        self.beat_start_msr = self.crnt_msr;
+        self.meter = meter;
+        self.meter_start_msr = self.crnt_msr;
         self.bpm_start_time = self.crnt_time;
         self.bpm_start_tick = 0;
+        // DEFAULT_TICK_FOR_ONE_MEASURE を分母で割った値が 1拍の tick 数で正しい！
+        self.tick_for_beat = DEFAULT_TICK_FOR_ONE_MEASURE / (self.meter.1 as i32);
     }
     pub fn change_bpm(&mut self, bpm: i16) {
         self.bpm_stock = bpm;
@@ -102,9 +106,9 @@ impl TickGen {
         self.bpm = bpm;
         self.bpm_stock = bpm;
         if resume {
-            self.beat_start_msr = self.crnt_msr;
+            self.meter_start_msr = self.crnt_msr;
         } else {
-            self.beat_start_msr = 0;
+            self.meter_start_msr = 0;
         }
     }
     pub fn gen_tick(&mut self, crnt_time: Instant) -> bool {
@@ -114,10 +118,10 @@ impl TickGen {
             self.gen_rit();
         } else {
             // same bpm
-            let tick_from_beat_starts = self.calc_crnt_tick();
+            let tick_from_meter_starts = self.calc_crnt_tick();
             self.crnt_msr =
-                (tick_from_beat_starts / self.tick_for_onemsr + self.beat_start_msr) as i32;
-            self.crnt_tick_inmsr = tick_from_beat_starts % self.tick_for_onemsr;
+                (tick_from_meter_starts / self.tick_for_onemsr + self.meter_start_msr) as i32;
+            self.crnt_tick_inmsr = tick_from_meter_starts % self.tick_for_onemsr;
         }
         let new_msr = self.crnt_msr != former_msr;
         if new_msr {
@@ -148,22 +152,21 @@ impl TickGen {
         self.bpm_start_time = Instant::now();
         self.bpm_start_tick = 0;
         self.crnt_msr = msr;
-        self.beat_start_msr = msr;
+        self.meter_start_msr = msr;
         self.crnt_tick_inmsr = 0;
     }
     pub fn get_tick(&self) -> (i32, i32, i32, i32) {
-        let tick_for_beat = DEFAULT_TICK_FOR_ONE_MEASURE / (self.beat.1 as i32); // 一拍のtick数
         (
             (self.crnt_msr + 1).try_into().unwrap(),    // measure
-            (self.crnt_tick_inmsr / tick_for_beat) + 1, // beat(1,2,3...)
-            self.crnt_tick_inmsr % tick_for_beat,       // tick
-            self.tick_for_onemsr / tick_for_beat,
+            (self.crnt_tick_inmsr / self.tick_for_beat) + 1, // beat(1,2,3...)
+            self.crnt_tick_inmsr % self.tick_for_beat,       // tick
+            self.tick_for_onemsr / self.tick_for_beat,
         )
     }
     pub fn get_beat_tick(&self) -> (i32, i32) {
         (
             self.tick_for_onemsr,
-            DEFAULT_TICK_FOR_ONE_MEASURE / (self.beat.1 as i32),
+            self.tick_for_beat,
         )
     }
     pub fn get_bpm(&self) -> i16 {
@@ -176,8 +179,8 @@ impl TickGen {
             self.bpm
         }
     }
-    pub fn get_beat(&self) -> Beat {
-        self.beat
+    pub fn get_meter(&self) -> Meter {
+        self.meter
     }
     pub fn get_origin_time(&self) -> Instant {
         self.origin_time
@@ -194,7 +197,7 @@ impl TickGen {
             );
         }
         self.rit_state = true;
-        self.beat_start_msr = self.crnt_msr;
+        self.meter_start_msr = self.crnt_msr;
         self.bpm_start_time = start_time;
         self.bpm_start_tick = self.crnt_tick_inmsr;
         self.bpm_stock = target_bpm;
@@ -212,9 +215,9 @@ impl TickGen {
             let addup_msr = addup_tick / self.tick_for_onemsr;
             let real_tick = addup_tick % self.tick_for_onemsr;
             self.rit_state = false;
-            self.crnt_msr = self.beat_start_msr + addup_msr;
+            self.crnt_msr = self.meter_start_msr + addup_msr;
             self.crnt_tick_inmsr = real_tick;
-            self.beat_start_msr = self.crnt_msr;
+            self.meter_start_msr = self.crnt_msr;
             self.bpm_start_time = self.crnt_time;
             self.bpm_start_tick = real_tick;
             self.bpm = self.bpm_stock;
