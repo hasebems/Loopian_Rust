@@ -160,6 +160,9 @@ impl Graphic {
             }
             self.graphmsg.remove(0);
         }
+        if let Some(sv) = self.svce.as_mut() {
+            sv.update_model(crnt_time, self.rs.clone());
+        }
 
         // Note Object の更新
         if let Some(gev) = guiev.get_graphic_ev() {

@@ -21,6 +21,7 @@ impl StaticViewForVoice4 {
     }
 }
 impl NormalView for StaticViewForVoice4 {
+    fn update_model(&mut self, _crnt_time: f32, _rs: Resize) {}
     fn disp(&self, draw: Draw, _tm: f32, rs: Resize) {
         let x = rs.get_full_size_x() / 5.0;
         let y = rs.get_full_size_y() / 5.0;

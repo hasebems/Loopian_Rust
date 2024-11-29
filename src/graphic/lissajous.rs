@@ -5,26 +5,25 @@
 //
 use nannou::prelude::*;
 
-use super::viewobj::{NormalView, NoteObj};
 use super::graphic::Resize;
+use super::viewobj::{NormalView, NoteObj};
 
 pub struct Lissajous {
-
+    crnt_time: f32,
 }
 
 impl Lissajous {
     pub fn new() -> Self {
-        Self {
-        }
+        Self { crnt_time: 0.0 }
     }
 }
 
 impl NormalView for Lissajous {
+    fn update_model(&mut self, crnt_time: f32, _rs: Resize) {
+        self.crnt_time = crnt_time;
+    }
     fn disp(&self, draw: Draw, _tm: f32, _rs: Resize) {
-        draw.ellipse()
-            .x_y(0.0, 0.0)
-            .radius(30.0)
-            .color(WHITE);
+        draw.ellipse().x_y(0.0, 0.0).radius(30.0).color(WHITE);
     }
 }
 
@@ -32,6 +31,5 @@ impl NoteObj for Lissajous {
     fn update_model(&mut self, _crnt_time: f32, _rs: Resize) -> bool {
         true
     }
-    fn disp(&self, _draw: Draw, _crnt_time: f32, _rs: Resize) {
-    }
+    fn disp(&self, _draw: Draw, _crnt_time: f32, _rs: Resize) {}
 }
