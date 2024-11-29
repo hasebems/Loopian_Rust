@@ -4,8 +4,8 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 
-use std::fs;
 use std::env;
+use std::fs;
 //use std::fs::File;
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +48,7 @@ impl Settings {
 
             // 現在の実行ファイルのパスを取得
             let exe_path = env::current_exe().expect("Failed to get current exe path");
-        
+
             // 実行ファイルのディレクトリパスを取得
             let exe_dir = exe_path.parent().expect("Failed to get exe directory");
 

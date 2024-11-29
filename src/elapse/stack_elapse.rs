@@ -486,9 +486,7 @@ impl ElapseStack {
     }
     fn efct(&mut self, msg: [i16; 2]) {
         if msg[0] == MSG_EFCT_DMP {
-            self.damper_part
-                .borrow_mut()
-                .set_position(msg[1]);
+            self.damper_part.borrow_mut().set_position(msg[1]);
         } else if msg[0] == MSG_EFCT_CC70 {
             let val = if msg[1] > 127 { 127 } else { msg[1] as u8 };
             self.midi_out(0xb0, 70, val);

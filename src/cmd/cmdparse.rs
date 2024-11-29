@@ -157,7 +157,7 @@ impl LoopianCmd {
             if efct.contains("dmp(") {
                 if let Some(dmp) = extract_number_from_parentheses(efct) {
                     self.sndr
-                        .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_DMP,dmp as i16]));
+                        .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_DMP, dmp as i16]));
                     format!("Set Damper Value: {}", dmp)
                 } else {
                     "No Value!".to_string()
@@ -165,7 +165,7 @@ impl LoopianCmd {
             } else if efct.contains("cc70(") {
                 if let Some(cc70) = extract_number_from_parentheses(efct) {
                     self.sndr
-                        .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_CC70,cc70 as i16]));
+                        .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_CC70, cc70 as i16]));
                     format!("Set CC70 Value: {}", cc70)
                 } else {
                     "No Value!".to_string()
@@ -205,7 +205,10 @@ impl LoopianCmd {
             } else if len == 11 && &input_text[6..11] == "voice" {
                 CmndRtn("Changed Graphic Note Pattern!".to_string(), VOICE_PATTERN)
             } else if len == 11 && &input_text[6..11] == "lissa" {
-                CmndRtn("Changed Graphic Note Pattern!".to_string(), LISSAJOUS_PATTERN)
+                CmndRtn(
+                    "Changed Graphic Note Pattern!".to_string(),
+                    LISSAJOUS_PATTERN,
+                )
             } else {
                 CmndRtn("what?".to_string(), 0)
             }
@@ -313,7 +316,7 @@ impl LoopianCmd {
             let len = split_txt[0].chars().count();
             if len >= 4 && &input_text[0..4] == "@msr" {
                 let msr;
-                if let Some(m) = extract_number_from_parentheses(&split_txt[0]){
+                if let Some(m) = extract_number_from_parentheses(&split_txt[0]) {
                     msr = m;
                 } else {
                     msr = 1;

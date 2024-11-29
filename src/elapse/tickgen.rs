@@ -18,7 +18,7 @@ pub struct TickGen {
     origin_time: Instant,    // start 時の絶対時間
     bpm_start_time: Instant, // tempo/meter が変わった時点の絶対時間、tick 計測の開始時間
     bpm_start_tick: i32,     // tempo が変わった時点の tick, meter が変わったとき0clear
-    meter_start_msr: i32,     // meter が変わった時点の経過小節数
+    meter_start_msr: i32,    // meter が変わった時点の経過小節数
     crnt_msr: i32,           // start からの小節数（最初の小節からイベントを出すため、-1初期化)
     crnt_tick_inmsr: i32,    // 現在の小節内の tick 数
     crnt_time: Instant,      // 現在の時刻
@@ -157,17 +157,14 @@ impl TickGen {
     }
     pub fn get_tick(&self) -> (i32, i32, i32, i32) {
         (
-            (self.crnt_msr + 1).try_into().unwrap(),    // measure
+            (self.crnt_msr + 1).try_into().unwrap(),         // measure
             (self.crnt_tick_inmsr / self.tick_for_beat) + 1, // beat(1,2,3...)
             self.crnt_tick_inmsr % self.tick_for_beat,       // tick
             self.tick_for_onemsr / self.tick_for_beat,
         )
     }
     pub fn get_beat_tick(&self) -> (i32, i32) {
-        (
-            self.tick_for_onemsr,
-            self.tick_for_beat,
-        )
+        (self.tick_for_onemsr, self.tick_for_beat)
     }
     pub fn get_bpm(&self) -> i16 {
         self.bpm

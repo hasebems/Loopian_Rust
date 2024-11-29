@@ -15,9 +15,7 @@ pub struct StaticViewForVoice4 {
 
 impl StaticViewForVoice4 {
     pub fn new(font: nannou::text::Font) -> Self {
-        Self {
-            font,
-        }
+        Self { font }
     }
 }
 impl NormalView for StaticViewForVoice4 {
@@ -30,8 +28,9 @@ impl NormalView for StaticViewForVoice4 {
             let d = format!("{}", part_name[i]);
             draw.ellipse()
                 //.w_h(x * 0.5, y * 0.5)
-                .x_y(if i / 2 == 1 { x } else { -x }, 
-                    if i % 2 == 0 { -y-5.0 } else { y-5.0 }
+                .x_y(
+                    if i / 2 == 1 { x } else { -x },
+                    if i % 2 == 0 { -y - 5.0 } else { y - 5.0 },
                 )
                 .color(MAGENTA)
                 .radius(30.0);

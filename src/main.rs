@@ -39,7 +39,7 @@ fn main() {
 
     //  Args
     println!("*** Args: {:?}", args);
- 
+
     //  Setting file の存在確認
     if !Settings::find_setting_file() {
         return;

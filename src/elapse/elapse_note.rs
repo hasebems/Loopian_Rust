@@ -232,7 +232,11 @@ impl Damper {
         }))
     }
     fn damper_on(&mut self, estk: &mut ElapseStack) {
-        let pos = if self.position > 127 { 127 } else { self.position };
+        let pos = if self.position > 127 {
+            127
+        } else {
+            self.position
+        };
         estk.midi_out(0xb0, 0x40, pos);
         #[cfg(feature = "verbose")]
         println!("Damper-On: {}", self.position);
