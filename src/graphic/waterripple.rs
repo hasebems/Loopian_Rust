@@ -7,7 +7,7 @@ use nannou::prelude::*;
 use rand::{thread_rng, Rng};
 
 use super::graphic::Resize;
-use super::noteobj::NoteObj;
+use super::viewobj::NoteObj;
 use crate::lpnlib::*;
 
 pub struct WaterRipple {

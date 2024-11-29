@@ -7,6 +7,14 @@ use nannou::prelude::*;
 
 use super::graphic::Resize;
 
+pub trait NormalView {
+    fn disp(&self,
+        draw: Draw,
+        crnt_time: f32, //  const FPS(50msec) のカウンター
+        rs: Resize,
+    );
+}
+
 pub trait NoteObj {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) -> bool; //  false: 消去可能
     fn disp(

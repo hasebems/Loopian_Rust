@@ -374,6 +374,8 @@ Graphic
 - `graph.dark`  : 黒基調の画面に変化
 - `graph.ripple`: 水紋の画面に変化
 - `graph.voice` : 各声部が分割される画面に変化
+- `graph.lissa` : リサジュー波形を表示する画面に変化
+- shift + space で、Graphic Pattern のみになり、テキスト全部が非表示となる。同じ操作をもう一度行うと元に戻る
 
 
 

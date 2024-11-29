@@ -8,7 +8,8 @@ use std::fs::File;
 use std::io::Read;
 
 use super::guiev::GuiEv;
-use super::noteobj::NoteObj;
+use super::lissajous::Lissajous;
+use super::viewobj::{NormalView, NoteObj};
 use super::voice::{StaticViewForVoice4, Voice4};
 use super::waterripple::WaterRipple;
 use crate::file::input_txt::InputText;
@@ -67,7 +68,7 @@ pub struct Graphic {
     font_newyork: nannou::text::Font,
     rs: Resize,
     nobj: Vec<Box<dyn NoteObj>>,
-    svce: StaticViewForVoice4,
+    svce: Option<Box<dyn NormalView>>,
     gmode: GraphMode,
     gptn: GraphPattern,
     text_visible: bool,
@@ -98,7 +99,7 @@ impl Graphic {
             font_newyork,
             rs: Resize::default(),
             nobj: Vec::new(),
-            svce: StaticViewForVoice4::new(font_nrm),
+            svce: None,
             gmode: GraphMode::Dark,
             gptn: GraphPattern::Ripple,
             text_visible: true,
@@ -134,14 +135,24 @@ impl Graphic {
     pub fn update_lpn_model(&mut self, guiev: &mut GuiEv, itxt: &InputText, crnt_time: f32) {
         self.crnt_time = crnt_time;
 
-        // 画面モードの設定
+        // 画面モードの変化イベントの受信
         if self.graphmsg.len() > 0 {
             let msg = self.graphmsg[0];
             match msg {
                 LIGHT_MODE => self.gmode = GraphMode::Light,
                 DARK_MODE => self.gmode = GraphMode::Dark,
-                RIPPLE_PATTERN => self.gptn = GraphPattern::Ripple,
-                VOICE_PATTERN => self.gptn = GraphPattern::Voice4,
+                RIPPLE_PATTERN => {
+                    self.gptn = GraphPattern::Ripple;
+                    self.svce = None;
+                }
+                VOICE_PATTERN => {
+                    self.gptn = GraphPattern::Voice4;
+                    self.svce = Some(Box::new(StaticViewForVoice4::new(self.font_nrm.clone())));
+                }
+                LISSAJOUS_PATTERN => {
+                    self.gptn = GraphPattern::Lissajous;
+                    self.svce = Some(Box::new(Lissajous::new()));
+                }
                 TEXT_VISIBLE_CTRL => {
                     self.text_visible = if self.text_visible { false } else { true };
                 }
@@ -179,6 +190,7 @@ impl Graphic {
         // Scroll Text の更新
         self.update_scroll_text(itxt);
     }
+    /// Note Object の追加
     fn push_note_obj(&mut self, nt: i32, vel: i32, pt: i32, tm: f32) {
         match self.gptn {
             GraphPattern::Ripple => self.nobj.push(Box::new(WaterRipple::new(
@@ -187,9 +199,10 @@ impl Graphic {
             GraphPattern::Voice4 => self.nobj.push(Box::new(Voice4::new(
                 nt as f32, vel as f32, pt, tm, self.gmode,
             ))),
+            GraphPattern::Lissajous => self.nobj.push(Box::new(Lissajous::new())),
         }
     }
-    pub fn get_color(&self) -> Srgb<u8> {
+    pub fn get_bgcolor(&self) -> Srgb<u8> {
         match self.gmode {
             GraphMode::Dark => srgb::<u8>(0, 0, 0),
             GraphMode::Light => srgb::<u8>(255, 255, 255),
@@ -246,7 +259,7 @@ impl Graphic {
     //*******************************************************************
     pub fn view_loopian(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
         // Gererative Pattern
-        self.view_loopian_static_view(draw.clone());
+        self.view_loopian_normal_view(draw.clone(), tm);
         self.view_loopian_obj(draw.clone(), tm);
 
         // テキスト表示
@@ -257,13 +270,9 @@ impl Graphic {
             self.input_text(draw.clone(), guiev, itxt, tm);
         }
     }
-    fn view_loopian_static_view(&self, draw: Draw) {
-        match self.gptn {
-            GraphPattern::Voice4 => {
-                self.svce
-                    .disp(draw.clone(), self.rs.clone());
-            }
-            _ => {}
+    fn view_loopian_normal_view(&self, draw: Draw, tm: f32) {
+        if let Some(sv) = self.svce.as_ref() {
+            sv.disp(draw.clone(), tm, self.rs.clone());
         }
     }
     fn view_loopian_obj(&self, draw: Draw, tm: f32) {
@@ -285,6 +294,7 @@ impl Graphic {
             .center_justify()
             .x_y(0.0, 42.0 - self.rs.full_size_y / 2.0);
     }
+    /// Eight Indicator の描画
     fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {
         let txt_color = if self.gmode == GraphMode::Light {
             GRAY
@@ -380,6 +390,7 @@ impl Graphic {
                 .w_h(400.0, 30.0);
         }
     }
+    /// Input Text の描画
     fn input_text(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
         const INPUT_TXT_X_SZ: f32 = 1240.0;
         const INPUT_TXT_Y_SZ: f32 = 40.0;
@@ -444,6 +455,7 @@ impl Graphic {
                 );
         }
     }
+    /// Scroll Text の描画
     fn scroll_text(&self, draw: Draw, itxt: &InputText) {
         const LINE_THICKNESS: f32 = 2.0;
         const SCRTXT_FONT_SIZE: u32 = 18;

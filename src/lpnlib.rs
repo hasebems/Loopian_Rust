@@ -318,9 +318,10 @@ pub struct CmndRtn(pub String, pub i16);
 pub const NO_MSG: i16 = -1;
 pub const LIGHT_MODE: i16 = 1;
 pub const DARK_MODE: i16 = 2;
-pub const TEXT_VISIBLE_CTRL: i16 = 5;
-pub const RIPPLE_PATTERN: i16 = 3;
-pub const VOICE_PATTERN: i16 = 4;
+pub const TEXT_VISIBLE_CTRL: i16 = 3;
+pub const RIPPLE_PATTERN: i16 = 10;
+pub const VOICE_PATTERN: i16 = 11;
+pub const LISSAJOUS_PATTERN: i16 = 12;
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum GraphMode {
     Dark,
@@ -330,6 +331,7 @@ pub enum GraphMode {
 pub enum GraphPattern {
     Ripple,
     Voice4,
+    Lissajous,
 }
 //-------------------------------------------------------------------
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

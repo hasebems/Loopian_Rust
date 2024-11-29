@@ -6,7 +6,7 @@
 use nannou::prelude::*;
 
 use super::graphic::Resize;
-use super::noteobj::NoteObj;
+use super::viewobj::{NormalView, NoteObj};
 use crate::lpnlib::*;
 
 pub struct StaticViewForVoice4 {
@@ -19,16 +19,25 @@ impl StaticViewForVoice4 {
             font,
         }
     }
-    pub fn disp(&self, draw: Draw, rs: Resize) {
+}
+impl NormalView for StaticViewForVoice4 {
+    fn disp(&self, draw: Draw, _tm: f32, rs: Resize) {
         let x = rs.get_full_size_x() / 5.0;
         let y = rs.get_full_size_y() / 5.0;
         let part_name = ["L1", "L2", "R1", "R2"];
         for i in 0..4 {
             let d = format!("{}", part_name[i]);
+            draw.ellipse()
+                //.w_h(x * 0.5, y * 0.5)
+                .x_y(if i / 2 == 1 { x } else { -x }, 
+                    if i % 2 == 0 { -y-5.0 } else { y-5.0 }
+                )
+                .color(MAGENTA)
+                .radius(30.0);
             draw.text(&d)
                 .font(self.font.clone())
                 .font_size(32)
-                .color(LIGHTBLUE)
+                .color(BLACK)
                 .center_justify()
                 .x_y(
                     if i / 2 == 1 { x } else { -x },

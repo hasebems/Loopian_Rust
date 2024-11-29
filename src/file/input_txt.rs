@@ -356,8 +356,8 @@ impl InputText {
             ));
         }
     }
+    /// Auto Load  called from main::update()
     pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<i16>) {
-        // from main loop
         if let Some(nmt) = self.next_msr_tick {
             let crnt: CrntMsrTick = guiev.get_msr_tick();
             if nmt.msr != LAST
