@@ -22,7 +22,7 @@ use std::thread;
 use elapse::stack_elapse::ElapseStack;
 use file::input_txt::InputText;
 use file::settings::Settings;
-use graphic::graphic::{Graphic, Resize};
+use graphic::draw_graph::{Graphic, Resize};
 use graphic::guiev::GuiEv;
 use lpnlib::*;
 use server::server::cui_loop;
@@ -103,7 +103,7 @@ fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<UiMsg>) {
 //      Update & Event
 //*******************************************************************
 fn update(app: &App, model: &mut Model, _update: Update) {
-    model.graph.set_rs(Resize::resize(app));
+    model.graph.set_rs(Resize::new(app));
     let crnt_time = app.time;
 
     //  Read imformation from StackElapse

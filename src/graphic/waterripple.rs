@@ -6,7 +6,7 @@
 use nannou::prelude::*;
 use rand::{thread_rng, Rng};
 
-use super::graphic::Resize;
+use super::draw_graph::Resize;
 use super::viewobj::NoteObj;
 use crate::lpnlib::*;
 
@@ -41,11 +41,7 @@ impl WaterRipple {
 impl NoteObj for WaterRipple {
     fn update_model(&mut self, crnt_time: f32, _rs: Resize) -> bool {
         self.elapsed_time = crnt_time - self.start_time;
-        if self.elapsed_time > WaterRipple::DISAPPEAR_TIME {
-            false
-        } else {
-            true
-        }
+        self.elapsed_time <= WaterRipple::DISAPPEAR_TIME
     }
     fn disp(&self, draw: Draw, _crnt_time: f32, rs: Resize) {
         const THICKNESS: f32 = 3.0;

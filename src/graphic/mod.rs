@@ -1,4 +1,4 @@
-pub mod graphic;
+pub mod draw_graph;
 pub mod guiev;
 pub mod lissajous;
 pub mod viewobj;

@@ -5,7 +5,7 @@
 //
 use nannou::prelude::*;
 
-use super::graphic::Resize;
+use super::draw_graph::Resize;
 use super::viewobj::{NormalView, NoteObj};
 use crate::lpnlib::*;
 
@@ -20,12 +20,13 @@ impl StaticViewForVoice4 {
 }
 impl NormalView for StaticViewForVoice4 {
     fn update_model(&mut self, _crnt_time: f32, _rs: Resize) {}
+    fn note_on(&mut self, _nt: i32, _vel: i32, _pt: i32, _tm: f32) {}
     fn disp(&self, draw: Draw, _tm: f32, rs: Resize) {
         let x = rs.get_full_size_x() / 5.0;
         let y = rs.get_full_size_y() / 5.0;
         let part_name = ["L1", "L2", "R1", "R2"];
-        for i in 0..4 {
-            let d = format!("{}", part_name[i]);
+        for (i, &pt) in part_name.iter().enumerate() {
+            let d = pt.to_string();//format!("{}", pt);
             draw.ellipse()
                 //.w_h(x * 0.5, y * 0.5)
                 .x_y(
@@ -71,11 +72,7 @@ impl Voice4 {
 impl NoteObj for Voice4 {
     fn update_model(&mut self, crnt_time: f32, _rs: Resize) -> bool {
         let elapsed_time = crnt_time - self.time;
-        if elapsed_time > Voice4::DISAPPEAR_TIME {
-            false
-        } else {
-            true
-        }
+        elapsed_time <= Voice4::DISAPPEAR_TIME
     }
     fn disp(&self, draw: Draw, crnt_time: f32, rs: Resize) {
         let elapsed_time = (crnt_time - self.time) * 4.0;

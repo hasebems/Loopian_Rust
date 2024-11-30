@@ -92,7 +92,7 @@ impl PhrEvt {
     pub fn gen_repeat(tick: i16) -> Self {
         Self {
             mtype: TYPE_INFO,
-            tick: tick as i16,
+            tick,
             dur: 0,
             note: RPT_HEAD as i16,
             vel: 0,
@@ -143,16 +143,11 @@ impl AnaEvt {
 }
 //-------------------------------------------------------------------
 // Phrase DATA
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum PhraseAs {
-    Normal,
+    #[default]Normal,
     Variation(usize), // 1..9:variation
     Measure(usize),   // 1..:measure number
-}
-impl Default for PhraseAs {
-    fn default() -> Self {
-        PhraseAs::Normal
-    }
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PhrData {

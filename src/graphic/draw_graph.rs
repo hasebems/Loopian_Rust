@@ -30,7 +30,7 @@ pub struct Resize {
     input_txt_left: f32,
 }
 impl Resize {
-    pub fn resize(app: &App) -> Resize {
+    pub fn new(app: &App) -> Resize {
         const EIGHT_INDIC_TOP: f32 = 40.0; // eight indicator
         const SCROLL_TXT_TOP: f32 = 80.0; // scroll text
         const INPUT_TXT_LOWER_MERGIN: f32 = 80.0; // input text
@@ -67,10 +67,10 @@ pub struct Graphic {
     font_italic: nannou::text::Font,
     font_newyork: nannou::text::Font,
     rs: Resize,
-    nobj: Vec<Box<dyn NoteObj>>,
-    svce: Option<Box<dyn NormalView>>,
-    gmode: GraphMode,
-    gptn: GraphPattern,
+    nobj: Vec<Box<dyn NoteObj>>,        // Note Object
+    svce: Option<Box<dyn NormalView>>,  // Normal View
+    gmode: GraphMode,                   // Graph Mode  (Light or Dark)
+    gptn: GraphPattern,                 // Graph Pattern
     text_visible: bool,
     crnt_time: f32,
     top_visible_line: usize,
@@ -136,11 +136,12 @@ impl Graphic {
         self.crnt_time = crnt_time;
 
         // 画面モードの変化イベントの受信
-        if self.graphmsg.len() > 0 {
+        if !self.graphmsg.len().is_zero() {
             let msg = self.graphmsg[0];
             match msg {
                 LIGHT_MODE => self.gmode = GraphMode::Light,
                 DARK_MODE => self.gmode = GraphMode::Dark,
+                // ◆◆◆ Graphic Pattern が追加されたらここにも追加
                 RIPPLE_PATTERN => {
                     self.gptn = GraphPattern::Ripple;
                     self.svce = None;
@@ -154,7 +155,7 @@ impl Graphic {
                     self.svce = Some(Box::new(Lissajous::new()));
                 }
                 TEXT_VISIBLE_CTRL => {
-                    self.text_visible = if self.text_visible { false } else { true };
+                    self.text_visible = !self.text_visible;
                 }
                 _ => (),
             }
@@ -164,7 +165,7 @@ impl Graphic {
             sv.update_model(crnt_time, self.rs.clone());
         }
 
-        // Note Object の更新
+        // Note Object の生成
         if let Some(gev) = guiev.get_graphic_ev() {
             for ev in gev {
                 let nt: i32 = ev.key_num as i32;
@@ -174,18 +175,15 @@ impl Graphic {
             }
             guiev.clear_graphic_ev();
         }
-        let nlen = self.nobj.len();
-        let mut rls = vec![true; nlen];
-        for (i, obj) in self.nobj.iter_mut().enumerate() {
-            rls[i] = if !obj.update_model(crnt_time, self.rs.clone()) {
-                false
-            } else {
-                true
-            };
+        
+        // Note Object の更新と削除
+        let mut retain: Vec<bool> = Vec::new();
+        for obj in self.nobj.iter_mut() {
+            retain.push(obj.update_model(crnt_time, self.rs.clone()));
         }
-        for i in 0..nlen {
-            if !rls[i] {
-                self.nobj.remove(i);
+        for (j, rt) in retain.iter().enumerate() {
+            if !rt {
+                self.nobj.remove(j);
                 break;
             }
         }
@@ -193,16 +191,21 @@ impl Graphic {
         // Scroll Text の更新
         self.update_scroll_text(itxt);
     }
-    /// Note Object の追加
+    /// Note Object の追加、Note On Event の処理
     fn push_note_obj(&mut self, nt: i32, vel: i32, pt: i32, tm: f32) {
         match self.gptn {
+            // ◆◆◆ Graphic Pattern が追加されたらここにも追加
             GraphPattern::Ripple => self.nobj.push(Box::new(WaterRipple::new(
                 nt as f32, vel as f32, tm, self.gmode,
             ))),
             GraphPattern::Voice4 => self.nobj.push(Box::new(Voice4::new(
                 nt as f32, vel as f32, pt, tm, self.gmode,
             ))),
-            GraphPattern::Lissajous => self.nobj.push(Box::new(Lissajous::new())),
+            GraphPattern::Lissajous => {
+                if let Some(sv) = self.svce.as_mut() {
+                    sv.note_on(nt, vel, pt, tm);
+                }
+            }
         }
     }
     pub fn get_bgcolor(&self) -> Srgb<u8> {
@@ -235,8 +238,8 @@ impl Graphic {
         if crnt_history < max_histories {
             // 対応する履歴が全体のどの位置にあるかを調べる
             let mut linecnt = 0;
-            for i in 0..lines {
-                if scroll_texts[i].0 == TextAttribute::Common {
+            for (i, st) in scroll_texts.iter().enumerate().take(lines) {
+                if st.0 == TextAttribute::Common {
                     if linecnt == crnt_history {
                         crnt_line = i;
                         break;
