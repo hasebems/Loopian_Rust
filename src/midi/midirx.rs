@@ -6,7 +6,7 @@
 extern crate midir;
 
 use crate::file::settings::Settings;
-use crate::lpnlib::{ElpsMsg::*, *};
+use crate::lpnlib::*;
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
@@ -34,7 +34,7 @@ impl MidiRxBuf {
         self.buf.insert(0, (tm, msg));
     }
     pub fn take(&mut self) -> Option<(u64, Vec<u8>)> {
-        if self.buf.len() > 0 {
+        if !self.buf.is_empty() {
             self.buf.pop()
         } else {
             None
@@ -106,7 +106,7 @@ impl MidiRx {
         midi_in.ignore(Ignore::None);
 
         let in_ports = midi_in.ports();
-        if in_ports.len() == 0 {
+        if in_ports.is_empty() {
             return;
         }
         // 全inputを表示
@@ -140,7 +140,7 @@ impl MidiRx {
     ) -> Result<usize, &str> {
         let midi_in = MidiInput::new("midir reading input").unwrap();
         let in_ports = midi_in.ports();
-        if in_ports.len() == 0 {
+        if in_ports.is_empty() {
             return Err("no input port found");
         }
         let mut in_port: Option<&MidiInputPort> = None;
@@ -148,7 +148,7 @@ impl MidiRx {
         for (i, p) in in_ports.iter().enumerate() {
             let drv_name = midi_in.port_name(p).unwrap();
             let dev_name = &Settings::load_settings().midi.midi_device;
-            if drv_name.find(dev_name).is_some() && i != num_to_avoid {
+            if drv_name.contains(dev_name) && i != num_to_avoid {
                 println!(
                     "{}: {} <as Flow{}>",
                     i,
@@ -182,9 +182,8 @@ impl MidiRx {
         Ok(ret_num)
     }
     fn send_msg_to_elapse(&self, msg: ElpsMsg) {
-        match self.tx_hndr.send(msg) {
-            Err(e) => println!("Something happened on MPSC from MIDIRx! {}", e),
-            _ => {}
+        if let Err(e) = self.tx_hndr.send(msg) {
+            println!("Something happened on MPSC from MIDIRx! {}", e);
         }
     }
     pub fn periodic(&mut self, rx_ctrlmsg: Result<ElpsMsg, TryRecvError>) -> bool {
@@ -192,21 +191,18 @@ impl MidiRx {
         match rx_ctrlmsg {
             // 制御用メッセージ
             Ok(n) => {
-                match n {
-                    Ctrl(m) => {
-                        if m == MSG_CTRL_QUIT {
-                            return true;
-                        } else if m == MSG_CTRL_START {
-                            for i in 0..2 {
-                                if let Ok(mut mb) = self.mdr_buf[i].as_ref().unwrap().lock() {
-                                    mb.flush(); // MIDI In Buffer をクリア
-                                }
+                if let ElpsMsg::Ctrl(m) = n {
+                    if m == MSG_CTRL_QUIT {
+                        return true;
+                    } else if m == MSG_CTRL_START {
+                        for i in 0..2 {
+                            if let Ok(mut mb) = self.mdr_buf[i].as_ref().unwrap().lock() {
+                                mb.flush(); // MIDI In Buffer をクリア
                             }
-                        } else if m == MSG_CTRL_MIDI_RECONNECT {
-                            let _b = self.set_connect();
                         }
+                    } else if m == MSG_CTRL_MIDI_RECONNECT {
+                        let _b = self.set_connect();
                     }
-                    _ => (),
                 }
             }
             Err(TryRecvError::Disconnected) => return true, // Wrong!
@@ -290,7 +286,7 @@ impl MidiRx {
                             self.midi_stream_status, dt1, input_data
                         );
                         self.midi_stream_data1 = INVALID;
-                    } else if input_data >= MIN_NOTE_NUMBER && input_data <= MAX_NOTE_NUMBER {
+                    } else if (MIN_NOTE_NUMBER..=MAX_NOTE_NUMBER).contains(&input_data) {
                         // note num がピアノ鍵盤範囲外なら受け付けない
                         self.midi_stream_data1 = input_data;
                     } else {

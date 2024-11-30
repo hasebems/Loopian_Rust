@@ -67,7 +67,7 @@ impl MidiTx {
                 }
                 Err(_e) => continue,
             }
-            if drv_name.find(midi_out).is_some() {
+            if drv_name.contains(midi_out) {
                 match driver.connect(p, "loopian_tx1") {
                     Ok(c) => {
                         this.connection_tx = Some(Box::new(c));
@@ -78,7 +78,7 @@ impl MidiTx {
                         println!("Connection Failed! for No.{}", i);
                     }
                 }
-            } else if drv_name.find(midi_device).is_some() {
+            } else if drv_name.contains(midi_device) {
                 if this.connection_tx_led1.is_none() {
                     match driver.connect(p, "loopian_tx2") {
                         Ok(c) => {
@@ -102,7 +102,7 @@ impl MidiTx {
                         }
                     }
                 }
-            } else if drv_name.find(midi_ext_out).is_some() {
+            } else if drv_name.contains(midi_ext_out) {
                 match driver.connect(p, "loopian_tx3") {
                     Ok(c) => {
                         this.connection_ext_loopian = Some(Box::new(c));
