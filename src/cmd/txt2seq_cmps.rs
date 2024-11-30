@@ -9,7 +9,7 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          Chord Tables and IF
 //*******************************************************************
-const ROOT_NAME: [&'static str; 7] = ["I", "II", "III", "IV", "V", "VI", "VII"];
+const ROOT_NAME: [&str; 7] = ["I", "II", "III", "IV", "V", "VI", "VII"];
 struct ChordTable {
     name: &'static str,
     table: &'static [i16],
@@ -198,21 +198,15 @@ pub fn complement_composition(input_text: String) -> Option<Vec<String>> {
 }
 pub fn divide_brace(input_text: String) -> Option<String> {
     let isx: &str = &input_text;
-    if let Some(n2) = isx.find('}') {
-        Some(isx[1..n2].to_string())
-    } else {
-        None
-    }
+    isx.find('}').map(|n2| isx[1..n2].to_string())
 }
 fn fill_omitted_chord_data(mut cmps: String) -> Vec<String> {
     let cmp_len = cmps.len();
     if cmp_len == 0 {
         return vec!["".to_string()];
-    } else if cmp_len >= 2 {
-        if cmps.ends_with("//") {
-            cmps.pop();
-            cmps += "LPEND";
-        }
+    } else if cmp_len >= 2 && cmps.ends_with("//") {
+        cmps.pop();
+        cmps += "LPEND";
     }
 
     const NO_CHORD: &str = "X"; // 省略を X で補填
@@ -238,7 +232,7 @@ fn fill_omitted_chord_data(mut cmps: String) -> Vec<String> {
             chord.push(ltr); // 文字を chord に追加
         }
     }
-    if chord != "" {
+    if !chord.is_empty() {
         fill += &chord; // 最後の文字
     }
     fill += "|";
@@ -254,11 +248,11 @@ fn fill_omitted_chord_data(mut cmps: String) -> Vec<String> {
 //          recombine_to_chord_loop
 //*******************************************************************
 pub fn recombine_to_chord_loop(
-    comp: &Vec<String>,
+    comp: &[String],
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
 ) -> (i32, bool, Vec<ChordEvt>) {
-    if comp.len() == 0 {
+    if comp.is_empty() {
         //let mut zero = ChordEvt::new();
         //zero.add_dt(vec![0]);
         return (0, true, Vec::new());
@@ -288,7 +282,7 @@ pub fn recombine_to_chord_loop(
             let msgs_sp: Vec<&str> = msgs.split('@').collect();
             let num = msgs_sp[1]
                 .chars()
-                .nth(0)
+                .next()
                 .unwrap_or('0')
                 .to_digit(10)
                 .unwrap_or(0) as i16;
@@ -300,19 +294,19 @@ pub fn recombine_to_chord_loop(
                     tbl: 0,
                 })
             }
-            if msgs_sp[1][1..].len() > 0 {
+            if !msgs_sp[1][1..].is_empty() {
                 let rest = msgs_sp[1][1..].to_string();
                 msgs = format!("{}{}", msgs_sp[0], rest);
             } else {
                 msgs = msgs_sp[0].to_string();
             }
-            if msgs.len() == 0 {
+            if msgs.is_empty() {
                 msgs = "X".to_string();
             }
         }
 
         (chord, dur) = divide_chord_and_dur(msgs);
-        if chord == "" {
+        if chord.is_empty() {
             chord = same_chord.clone();
         } else {
             same_chord = chord.clone();
@@ -340,11 +334,11 @@ pub fn recombine_to_chord_loop(
 
     let tmp = ChordEvt::default();
     let last_one = rcmb.last().unwrap_or(&tmp);
-    let do_loop = if last_one.tbl != NO_LOOP { true } else { false };
+    let do_loop = last_one.tbl != NO_LOOP;
     if !do_loop {
         rcmb.pop();
     }
-    ((msr * tick_for_onemsr) as i32, do_loop, rcmb)
+    (msr * tick_for_onemsr, do_loop, rcmb)
 }
 fn divide_chord_and_dur(mut chord: String) -> (String, i32) {
     let mut dur: i32 = 1;

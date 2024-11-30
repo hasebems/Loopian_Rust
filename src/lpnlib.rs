@@ -268,7 +268,7 @@ pub const MSG_SET_KEY: i16 = 2;
 pub const MSG_SET_TURN: i16 = 3;
 pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
                                      //  Set BEAT  : numerator, denomirator
-//  Effect
+                                     //  Effect
 pub const MSG_EFCT_DMP: i16 = 1;
 pub const MSG_EFCT_CC70: i16 = 2;
 

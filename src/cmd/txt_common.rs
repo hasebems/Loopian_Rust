@@ -28,11 +28,11 @@ pub fn split_by(splitter: char, txt: String) -> Vec<String> {
     let mut old_locate: usize = 0;
     for (i, ltr) in txt.chars().enumerate() {
         if ltr == splitter {
-            splited.push((&txt[old_locate..i]).to_string());
+            splited.push(txt[old_locate..i].to_string());
             old_locate = i + 1;
         }
     }
-    splited.push((&txt[old_locate..txt.len()]).to_string());
+    splited.push(txt[old_locate..txt.len()].to_string());
     splited
 }
 #[allow(dead_code)]
@@ -41,17 +41,17 @@ pub fn split_by_by(sp1: char, sp2: char, txt: String) -> Vec<String> {
     let mut old_locate: usize = 0;
     for (i, ltr) in txt.chars().enumerate() {
         if ltr == sp1 || ltr == sp2 {
-            splited.push((&txt[old_locate..i]).to_string());
+            splited.push(txt[old_locate..i].to_string());
             old_locate = i + 1;
         }
     }
-    splited.push((&txt[old_locate..txt.len()]).to_string());
+    splited.push(txt[old_locate..txt.len()].to_string());
     splited
 }
 pub fn doremi_to_notenum(doremi: String, mut base_note: i32) -> i32 {
-    if doremi.len() != 0 {
+    if !doremi.is_empty() {
         // d,r,m,f,s,l,t
-        base_note = doremi_number(doremi.chars().nth(0).unwrap_or(' '), base_note);
+        base_note = doremi_number(doremi.chars().next().unwrap_or(' '), base_note);
         if doremi.len() != 1 {
             // i,a
             base_note = doremi_semi_number(doremi.chars().nth(1).unwrap_or(' '), base_note);

@@ -9,14 +9,13 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          analyse_data
 //*******************************************************************
-pub fn analyse_data(generated: &Vec<PhrEvt>, exps: &Vec<String>) -> Vec<AnaEvt> {
+pub fn analyse_data(generated: &[PhrEvt], exps: &[String]) -> Vec<AnaEvt> {
     let mut exp_analysis = put_exp_data(exps);
-    let mut beat_analysis = analyse_beat(&generated);
+    let mut beat_analysis = analyse_beat(generated);
     exp_analysis.append(&mut beat_analysis);
     let mut crispy_analysis = crispy_tick(exps);
     exp_analysis.append(&mut crispy_analysis);
-    let rcmb = arp_translation(exp_analysis, exps);
-    rcmb
+    arp_translation(exp_analysis, exps)
 }
 //*******************************************************************
 // other music expression data format:
@@ -24,7 +23,7 @@ pub fn analyse_data(generated: &Vec<PhrEvt>, exps: &Vec<String>) -> Vec<AnaEvt> 
 //      2nd     EXP:        NOPED
 //                          PARA_ROOT(noteに値を入れる)
 //*******************************************************************
-fn put_exp_data(exps: &Vec<String>) -> Vec<AnaEvt> {
+fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
     let noped = exps.iter().any(|exp| exp == "dmp(off)");
     let asmin = exps.iter().any(|exp| exp == "asMin()" || exp == "as(VI)");
     let mut exp = Vec::new();
@@ -59,7 +58,7 @@ fn put_exp_data(exps: &Vec<String>) -> Vec<AnaEvt> {
 //              note count が１より大きい時、note num には最も高い音程の音が記録される
 //      atype   NOTHING
 //*******************************************************************
-fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
+fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
     let get_hi = |na: Vec<i16>| -> i16 {
         match na.iter().max() {
             Some(x) => *x,
@@ -136,7 +135,7 @@ fn analyse_beat(phr_evts: &Vec<PhrEvt>) -> Vec<AnaEvt> {
 //       arp:   arpeggio 用 Note変換を発動させる（前の音と連続している）
 //       $DIFF: arp の場合の、前の音との音程の差分
 //*******************************************************************
-fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt> {
+fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
     let para = exps
         .iter()
         .any(|exp| exp == "para()" || exp == "trns(para)");
@@ -215,7 +214,7 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &Vec<String>) -> Vec<AnaEvt
 //      mtype = TYPE_EXP, atype = ARTIC
 //      cnt: Staccato Rate
 //*******************************************************************
-pub fn crispy_tick(exp_others: &Vec<String>) -> Vec<AnaEvt> {
+pub fn crispy_tick(exp_others: &[String]) -> Vec<AnaEvt> {
     let mut ana: Vec<AnaEvt> = vec![];
     exp_others.iter().for_each(|x| {
         if x.contains("stacc(") {
@@ -243,11 +242,7 @@ pub fn crispy_tick(exp_others: &Vec<String>) -> Vec<AnaEvt> {
             } else {
                 rate = 120;
             }
-            if rate < 100 {
-                rate = 100;
-            } else if rate > 200 {
-                rate = 200;
-            }
+            rate = rate.clamp(100, 200);
             let mut anev = AnaEvt::new();
             anev.mtype = TYPE_EXP;
             anev.cnt = rate as i16;
@@ -264,13 +259,13 @@ const EFFECT: i16 = 20; // bigger(1..100), stronger
 const MIN_BPM: i16 = 60;
 const MIN_AVILABLE_VELO: i16 = 30;
 const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
-pub fn beat_filter(rcmb: &Vec<PhrEvt>, bpm: i16, tick_for_onemsr: i32) -> Vec<PhrEvt> {
+pub fn beat_filter(rcmb: &[PhrEvt], bpm: i16, tick_for_onemsr: i32) -> Vec<PhrEvt> {
     if bpm < MIN_BPM {
-        return rcmb.clone();
+        return rcmb.to_owned();
     }
 
     // 純粋な四拍子、三拍子のみ対応
-    let mut all_dt = rcmb.clone();
+    let mut all_dt = rcmb.to_vec();
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in all_dt.iter_mut() {
             if dt.mtype != TYPE_NOTE {

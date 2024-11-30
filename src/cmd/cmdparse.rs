@@ -68,7 +68,7 @@ impl LoopianCmd {
     }
     //*************************************************************************
     pub fn set_and_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
-        if input_text.len() == 0 {
+        if input_text.is_empty() {
             return None;
         }
         println!("Set Text: {}", input_text);
@@ -97,13 +97,11 @@ impl LoopianCmd {
             Some(CmndRtn(self.letter_r(input_text), NO_MSG))
         } else if first_letter == "s" {
             Some(CmndRtn(self.letter_s(input_text), NO_MSG))
-        } else if first_letter == "L" {
-            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
-        } else if first_letter == "R" {
-            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
-        } else if first_letter == "F" {
-            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
-        } else if first_letter == "A" {
+        } else if first_letter == "L"
+            || first_letter == "R"
+            || first_letter == "F"
+            || first_letter == "A"
+        {
             Some(CmndRtn(self.letter_part(input_text), NO_MSG))
         } else {
             Some(CmndRtn("what?".to_string(), NO_MSG))
@@ -112,7 +110,7 @@ impl LoopianCmd {
     fn letter_c(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len >= 5 && &input_text[0..5] == "clear" {
-            if self.recursive == false && len == 5 {
+            if !self.recursive && len == 5 {
                 // stop
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
                 self.during_play = false;
@@ -122,7 +120,7 @@ impl LoopianCmd {
                 }
                 self.send_clear();
                 "all data erased!".to_string()
-            } else if self.recursive == true {
+            } else if self.recursive {
                 self.clear_part(self.input_part);
                 "designated part data erased!".to_string()
             } else {
@@ -282,8 +280,7 @@ impl LoopianCmd {
             }
         } else if len >= 4 && &input_text[0..4] == "set." {
             // set
-            let responce = self.parse_set_command(input_text);
-            responce
+            self.parse_set_command(input_text)
         } else if len >= 4 && &input_text[0..4] == "sync" {
             if len == 4 {
                 self.sndr
@@ -586,7 +583,7 @@ impl LoopianCmd {
         let mut bar_num: i16 = 0;
         let mut rit_txt = split_by('.', input_text[4..].to_string());
 
-        while rit_txt.len() > 0 {
+        while !rit_txt.is_empty() {
             if rit_txt[0].chars().any(|x| x == '(') {
                 if let Some((cmd, prm)) = separate_cmnd_and_str(&rit_txt[0]) {
                     if cmd == "bar" {
@@ -598,21 +595,17 @@ impl LoopianCmd {
                     } else if cmd == "bpm" {
                         if prm == "fermata" {
                             aft_rit = MSG2_RIT_FERMATA;
+                        } else if let Ok(tmp) = prm.parse::<i16>() {
+                            aft_rit = tmp;
                         } else {
-                            if let Ok(tmp) = prm.parse::<i16>() {
-                                aft_rit = tmp;
-                            } else {
-                                return "Number is wrong.".to_string();
-                            }
+                            return "Number is wrong.".to_string();
                         }
                     }
                 }
-            } else {
-                if rit_txt[0] == "molto" {
-                    strength_value = MSG_RIT_MLT;
-                } else if rit_txt[0] == "poco" {
-                    strength_value = MSG_RIT_POCO;
-                }
+            } else if rit_txt[0] == "molto" {
+                strength_value = MSG_RIT_MLT;
+            } else if rit_txt[0] == "poco" {
+                strength_value = MSG_RIT_POCO;
             }
             rit_txt.remove(0);
         }

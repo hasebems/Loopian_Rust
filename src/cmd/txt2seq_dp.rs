@@ -7,16 +7,11 @@ use super::txt2seq_phr::*;
 use super::txt_common::*;
 use crate::lpnlib::*;
 
-pub fn available_for_dp(text: &String) -> bool {
-    if !text.contains("C(")
+pub fn available_for_dp(text: &str) -> bool {
+    !(!text.contains("C(")
         && !text.contains("Cls(")
         && !text.contains("A(")
-        && !text.contains("Arp(")
-    {
-        false
-    } else {
-        true
-    }
+        && !text.contains("Arp("))
 }
 /// Note のときの fn break_up_nt_dur_vel() と同様の処理
 pub fn treat_dp(
@@ -56,7 +51,7 @@ pub fn treat_dp(
 
     (ev, bdur)
 }
-fn gen_dp_pattern(nt: &String, case_arp: bool) -> Vec<i16> {
+fn gen_dp_pattern(nt: &str, case_arp: bool) -> Vec<i16> {
     let params = extract_texts_from_parentheses(nt);
     let param = split_by('@', params.to_string());
     let pnum = param.len();
@@ -87,9 +82,9 @@ fn gen_dp_pattern(nt: &String, case_arp: bool) -> Vec<i16> {
 
     vec![mtype, note, trns, each_dur]
 }
-fn calc_dur(durstr: &String) -> i16 {
+fn calc_dur(durstr: &str) -> i16 {
     let mut dur = 480;
-    let ch0 = durstr.chars().nth(0).unwrap_or(' ');
+    let ch0 = durstr.chars().next().unwrap_or(' ');
     let dot = if durstr.len() > 1 {
         let c = durstr.chars().nth(1).unwrap_or(' ');
         if c == '\'' {

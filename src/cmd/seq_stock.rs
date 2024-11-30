@@ -99,11 +99,9 @@ impl SeqDataStock {
         }
     }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
-        if part < MAX_COMPOSITION_PART {
-            if self.cdt[part].set_raw(input_text) {
-                self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
-                return true;
-            }
+        if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw(input_text) {
+            self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
+            return true;
         }
         false
     }
@@ -168,9 +166,9 @@ impl SeqDataStock {
             }
             let plen = input_txt[0].len();
             for i in 0..(rpt_cnt + 1) {
-                if i == 0 && self.raw_additional.len() == 0 {
+                if i == 0 && self.raw_additional.is_empty() {
                     // 1st time
-                    self.raw_additional = (&input_txt[0][0..(plen - 1)]).to_string();
+                    self.raw_additional = input_txt[0][0..(plen - 1)].to_string();
                 } else {
                     // 2nd and more time
                     self.raw_additional += &input_txt[0][1..(plen - 1)];
@@ -178,9 +176,9 @@ impl SeqDataStock {
             }
             None
         } else if strlen >= 2 && &raw[(strlen - 2)..] == "]+" {
-            if self.raw_additional.len() == 0 {
+            if self.raw_additional.is_empty() {
                 // 1st time
-                self.raw_additional = (&raw[0..(strlen - 2)]).to_string();
+                self.raw_additional = raw[0..(strlen - 2)].to_string();
             } else {
                 // 2nd and more time
                 self.raw_additional += &raw[1..(strlen - 2)];
@@ -189,7 +187,7 @@ impl SeqDataStock {
             None
         } else {
             let mut newraw = raw.clone();
-            if self.raw_additional.len() != 0 {
+            if !self.raw_additional.is_empty() {
                 // last time
                 newraw = self.raw_additional.clone() + &raw[1..];
                 #[cfg(feature = "verbose")]
@@ -257,11 +255,7 @@ impl PhraseDataStock {
         &self.phr
     }
     pub fn get_final(&self, part: i16, vari: PhraseAs) -> ElpsMsg {
-        let do_loop = if vari == PhraseAs::Normal && self.do_loop {
-            true
-        } else {
-            false
-        };
+        let do_loop = vari == PhraseAs::Normal && self.do_loop;
         ElpsMsg::Phr(
             part,
             PhrData {
@@ -316,7 +310,7 @@ impl PhraseDataStock {
         self.ana = analyse_data(&self.phr, &self.cmpl_ex);
 
         // 5.humanized data
-        self.phr = beat_filter(&mut self.phr, bpm, tick_for_onemsr);
+        self.phr = beat_filter(&self.phr, bpm, tick_for_onemsr);
         #[cfg(feature = "verbose")]
         {
             println!("final_phrase: {:?}", self.phr);
