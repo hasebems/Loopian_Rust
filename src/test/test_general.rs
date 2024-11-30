@@ -25,7 +25,7 @@ fn pedal() {
             Ok(n) => match n {
                 Ctrl(_m0) => {
                     break;
-                },
+                }
                 Phr(_m0, dt) => {
                     assert_eq!(
                         dt.evts[0],
@@ -39,7 +39,7 @@ fn pedal() {
                             each_dur: 0,
                         }
                     );
-                },
+                }
                 _ => {}
             },
             Err(TryRecvError::Disconnected) => panic!(),

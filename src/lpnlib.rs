@@ -145,7 +145,8 @@ impl AnaEvt {
 // Phrase DATA
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum PhraseAs {
-    #[default]Normal,
+    #[default]
+    Normal,
     Variation(usize), // 1..9:variation
     Measure(usize),   // 1..:measure number
 }

@@ -26,7 +26,7 @@ impl NormalView for StaticViewForVoice4 {
         let y = rs.get_full_size_y() / 5.0;
         let part_name = ["L1", "L2", "R1", "R2"];
         for (i, &pt) in part_name.iter().enumerate() {
-            let d = pt.to_string();//format!("{}", pt);
+            let d = pt.to_string();
             draw.ellipse()
                 //.w_h(x * 0.5, y * 0.5)
                 .x_y(

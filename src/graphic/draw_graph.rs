@@ -67,10 +67,10 @@ pub struct Graphic {
     font_italic: nannou::text::Font,
     font_newyork: nannou::text::Font,
     rs: Resize,
-    nobj: Vec<Box<dyn NoteObj>>,        // Note Object
-    svce: Option<Box<dyn NormalView>>,  // Normal View
-    gmode: GraphMode,                   // Graph Mode  (Light or Dark)
-    gptn: GraphPattern,                 // Graph Pattern
+    nobj: Vec<Box<dyn NoteObj>>,       // Note Object
+    svce: Option<Box<dyn NormalView>>, // Normal View
+    gmode: GraphMode,                  // Graph Mode  (Light or Dark)
+    gptn: GraphPattern,                // Graph Pattern
     text_visible: bool,
     crnt_time: f32,
     top_visible_line: usize,
@@ -175,7 +175,7 @@ impl Graphic {
             }
             guiev.clear_graphic_ev();
         }
-        
+
         // Note Object の更新と削除
         let mut retain: Vec<bool> = Vec::new();
         for obj in self.nobj.iter_mut() {
