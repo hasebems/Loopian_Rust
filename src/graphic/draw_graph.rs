@@ -136,7 +136,7 @@ impl Graphic {
         self.crnt_time = crnt_time;
 
         // 画面モードの変化イベントの受信
-        if !self.graphmsg.len().is_zero() {
+        if !self.graphmsg.is_empty() {
             let msg = self.graphmsg[0];
             match msg {
                 LIGHT_MODE => self.gmode = GraphMode::Light,

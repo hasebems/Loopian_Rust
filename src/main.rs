@@ -25,7 +25,7 @@ use file::settings::Settings;
 use graphic::draw_graph::{Graphic, Resize};
 use graphic::guiev::GuiEv;
 use lpnlib::*;
-use server::server::cui_loop;
+use server::server_loop::cui_loop;
 
 //*******************************************************************
 //      Main

@@ -40,12 +40,9 @@ impl LoopianServer {
     fn read_from_midi(&mut self) -> u8 {
         loop {
             match self.ui_hndr.try_recv() {
-                Ok(msg) => match msg {
-                    UiMsg::ChangePtn(ptn) => {
-                        self.get_pcmsg_from_midi(ptn);
-                        return ptn;
-                    }
-                    _ => {}
+                Ok(msg) => if let UiMsg::ChangePtn(ptn) = msg {
+                    self.get_pcmsg_from_midi(ptn);
+                    return ptn;
                 },
                 Err(TryRecvError::Disconnected) => break, // Wrong!
                 Err(TryRecvError::Empty) => break,
@@ -79,7 +76,7 @@ impl LoopianServer {
                             comment = true;
                         }
                     }
-                    if line.len() > 0 && !comment {
+                    if !line.is_empty() && !comment {
                         command.push(line.to_string());
                     }
                 }

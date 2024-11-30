@@ -1,10 +1,10 @@
 #[test]
 fn general1() {
     let (txmsg, _rxmsg) = std::sync::mpsc::channel();
-    let (_txui, rxui) = std::sync::mpsc::channel();
-    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg, rxui);
+    //let (_txui, rxui) = std::sync::mpsc::channel();
+    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
 
-    assert_eq!(cmd.set_and_responce("ABC"), Some("what?".to_string()));
+    assert_eq!(cmd.set_and_responce("ABC").unwrap().0, "what?".to_string());
 }
 #[test]
 fn pedal() {
@@ -12,18 +12,21 @@ fn pedal() {
     use std::sync::mpsc::TryRecvError;
 
     let (txmsg, rxmsg) = std::sync::mpsc::channel();
-    let (_txui, rxui) = std::sync::mpsc::channel();
-    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg, rxui);
+    //let (_txui, rxui) = std::sync::mpsc::channel();
+    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
 
     assert_eq!(
-        cmd.set_and_responce("[d].dmp(off)"),
-        Some("Set Phrase!".to_string())
+        cmd.set_and_responce("[d].dmp(off)").unwrap().0,
+        "Set Phrase!".to_string()
     );
     loop {
         // message 受信処理
         match rxmsg.try_recv() {
             Ok(n) => match n {
-                Phr(_m0, _m1, dt) => {
+                Ctrl(_m0) => {
+                    break;
+                },
+                Phr(_m0, dt) => {
                     assert_eq!(
                         dt.evts[0],
                         PhrEvt {
@@ -32,37 +35,14 @@ fn pedal() {
                             dur: 440,
                             note: 60,
                             vel: 72,
-                            trns: 0
+                            trns: 0,
+                            each_dur: 0,
                         }
                     );
-                }
-                Ana(_m0, _m1, dt) => {
-                    assert_eq!(
-                        dt.evts[0],
-                        AnaEvt {
-                            mtype: TYPE_BEAT,
-                            tick: 0,
-                            dur: 480,
-                            note: 60,
-                            cnt: 1,
-                            atype: 0
-                        }
-                    );
-                    assert_eq!(
-                        dt.evts[1],
-                        AnaEvt {
-                            mtype: TYPE_EXP,
-                            tick: 0,
-                            dur: 0,
-                            note: 0,
-                            cnt: 0,
-                            atype: NOPED
-                        }
-                    );
-                }
+                },
                 _ => {}
             },
-            Err(TryRecvError::Disconnected) => assert!(false),
+            Err(TryRecvError::Disconnected) => panic!(),
             Err(TryRecvError::Empty) => break,
         }
     }
