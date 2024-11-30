@@ -37,7 +37,7 @@ impl History {
         self.make_folder(Self::LOG_FOLDER);
 
         // 時間をファイル名に使う
-        let file = if fname.len() == 0 {
+        let file = if fname.is_empty() {
             Local::now().format("%Y-%m-%d_%H-%M-%S.lpn").to_string()
         } else {
             fname + ".lpn"
@@ -54,7 +54,7 @@ impl History {
             if i < num {
                 continue;
             }
-            if line.0.len() > 0 && line.1 != "quit" {
+            if !line.0.is_empty() && line.1 != "quit" {
                 //whole_txt += &line.0.to_string(); // 日付時刻の挿入
                 whole_txt += &line.1.to_string();
                 whole_txt += "\n";
@@ -63,7 +63,7 @@ impl History {
         }
         if txt_exist {
             // ファイル作成
-            let mut file = match File::create(&path) {
+            let mut file = match File::create(path) {
                 Err(why) => panic!("couldn't create {}: {}", display, why),
                 Ok(file) => file,
             };
@@ -88,11 +88,11 @@ impl History {
         self.make_folder(Self::LOAD_FOLDER); // フォルダ作成
         let mut real_path = Self::LOAD_FOLDER.to_string();
         if let Some(lp) = path {
-            real_path = real_path + "/" + &lp;
+            real_path = real_path + "/" + lp;
         }
         println!("Path: {}", real_path);
         println!("File: {}", fname.clone() + ".lpn");
-        let enable_blk = if blk.clone().is_some() { true } else { false };
+        let enable_blk = blk.clone().is_some();
         let mut inside_blk = !enable_blk;
         match fs::read_to_string(real_path + "/" + &fname + ".lpn") {
             Ok(content) => {
@@ -123,18 +123,14 @@ impl History {
                     } else if enable_blk && inside_blk {
                         inside_blk = false;
                     }
-                    if line.len() > 0 && lodable && inside_blk {
+                    if !line.is_empty() && lodable && inside_blk {
                         self.loaded_text.push(line.to_string());
                     }
                 }
             }
             Err(_err) => println!("Can't open a file"),
         };
-        if self.loaded_text.len() != 0 {
-            true
-        } else {
-            false
-        }
+        !self.loaded_text.is_empty()
     }
     pub fn read_line_from_lpn(
         &self,
@@ -144,7 +140,7 @@ impl History {
     ) -> Option<String> {
         let mut real_path = Self::LOAD_FOLDER.to_string();
         if let Some(lp) = path {
-            real_path = real_path + "/" + &lp;
+            real_path = real_path + "/" + lp;
         }
         match fs::read_to_string(real_path + "/" + &fname + ".lpn") {
             Ok(content) => {

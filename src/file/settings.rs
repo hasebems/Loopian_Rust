@@ -15,7 +15,7 @@ pub struct WindowSize {
     pub window_y_default: u32,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MIDI {
+pub struct Midi {
     pub midi_out: String,
     pub midi_ext_out: String,
     pub midi_device: String,
@@ -23,7 +23,7 @@ pub struct MIDI {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub window_size: WindowSize,
-    pub midi: MIDI,
+    pub midi: Midi,
 }
 
 impl Settings {

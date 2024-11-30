@@ -10,6 +10,7 @@ use super::draw_graph::Resize;
 pub trait NormalView {
     /// 画面全体の Model の更新
     fn update_model(&mut self, crnt_time: f32, rs: Resize);
+    /// Note 演奏情報を受け取る
     fn note_on(&mut self, nt: i32, vel: i32, pt: i32, tm: f32);
     /// 画面全体の描画
     fn disp(

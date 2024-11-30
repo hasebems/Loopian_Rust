@@ -224,7 +224,7 @@ impl InputText {
     }
     fn pressed_enter(&mut self, graphmsg: &mut Vec<i16>) {
         let itxt = self.input_text.clone();
-        if itxt.len() == 0 {
+        if itxt.is_empty() {
             return;
         }
         self.input_text = "".to_string();
