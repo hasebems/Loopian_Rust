@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::elapse_note::Note;
+use super::elapse_note::*;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
@@ -276,13 +276,15 @@ impl DynamicPattern {
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             self.play_counter as u32, //  read pointer
             self.id.sid,              //  loop.sid -> note.pid
-            estk,
-            &crnt_ev,
-            self.keynote,
-            format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
-            self.first_msr_num,
-            self.ptn_tick + self.ptn_each_dur * (self.play_counter as i32),
-            self.part,
+            NoteParam::new(
+                estk,
+                &crnt_ev,
+                self.keynote,
+                format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
+                self.first_msr_num,
+                self.ptn_tick + self.ptn_each_dur * (self.play_counter as i32),
+                self.part,
+            ),
         );
         estk.add_elapse(Rc::clone(&nt));
     }

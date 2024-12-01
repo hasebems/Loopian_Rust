@@ -16,6 +16,36 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          Note Event Struct
 //*******************************************************************
+pub struct NoteParam<'a> {
+    _estk: &'a mut ElapseStack,
+    ev: &'a PhrEvt,
+    keynote: u8,
+    _deb_txt: String,
+    msr: i32,
+    tick: i32,
+    part: u32,
+}
+impl<'a> NoteParam<'a> {
+    pub fn new(
+        _estk: &'a mut ElapseStack,
+        ev: &'a PhrEvt,
+        keynote: u8,
+        _deb_txt: String,
+        msr: i32,
+        tick: i32,
+        part: u32,
+    ) -> Self {
+        Self {
+            _estk,
+            ev,
+            keynote,
+            _deb_txt,
+            msr,
+            tick,
+            part,
+        }
+    }
+}
 pub struct Note {
     id: ElapseId,
     priority: u32,
@@ -36,13 +66,14 @@ impl Note {
     pub fn new(
         sid: u32,
         pid: u32,
-        _estk: &mut ElapseStack,
-        ev: &PhrEvt,
-        keynote: u8,
-        _deb_txt: String,
-        msr: i32,
-        tick: i32,
-        part: u32,
+        prm: NoteParam,
+        //_estk: &mut ElapseStack,
+        //ev: &PhrEvt,
+        //keynote: u8,
+        //_deb_txt: String,
+        //msr: i32,
+        //tick: i32,
+        //part: u32,
     ) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -51,17 +82,17 @@ impl Note {
                 elps_type: ElapseType::TpNote,
             },
             priority: PRI_NOTE,
-            note_num: ev.note as u8,
-            velocity: ev.vel as u8,
-            duration: ev.dur as i32,
-            keynote,
+            note_num: prm.ev.note as u8,
+            velocity: prm.ev.vel as u8,
+            duration: prm.ev.dur as i32,
+            keynote: prm.keynote,
             real_note: 0,
             noteon_started: false,
             destroy: false,
-            next_msr: msr,
-            next_tick: tick,
-            part,
-            _deb_txt,
+            next_msr: prm.msr,
+            next_tick: prm.tick,
+            part: prm.part,
+            _deb_txt: prm._deb_txt,
         }))
     }
     fn note_on(&mut self, estk: &mut ElapseStack) -> bool {

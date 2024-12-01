@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::elapse_note::Note;
+use super::elapse_note::*;
 use super::elapse_pattern::DynamicPattern;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
@@ -34,6 +34,33 @@ pub trait Loop: Elapse {
 //*******************************************************************
 //          Phrase Loop Struct
 //*******************************************************************
+pub struct PhraseLoopParam {
+    keynote: u8,
+    msr: i32,
+    phr: Vec<PhrEvt>,
+    ana: Vec<AnaEvt>,
+    whole_tick: i32,
+    turnnote: i16,
+}
+impl PhraseLoopParam {
+    pub fn new(
+        keynote: u8,
+        msr: i32,
+        phr: Vec<PhrEvt>,
+        ana: Vec<AnaEvt>,
+        whole_tick: i32,
+        turnnote: i16,
+    ) -> Self {
+        Self {
+            keynote,
+            msr,
+            phr,
+            ana,
+            whole_tick,
+            turnnote,
+        }
+    }
+}
 pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
@@ -63,25 +90,20 @@ impl PhraseLoop {
     pub fn new(
         sid: u32,
         pid: u32,
-        keynote: u8,
-        msr: i32,
-        phr: Vec<PhrEvt>,
-        ana: Vec<AnaEvt>,
-        whole_tick: i32,
-        turnnote: i16,
+        prm: PhraseLoopParam,
     ) -> Rc<RefCell<Self>> {
-        let noped = ana
+        let noped = prm.ana
             .clone()
             .iter()
             .any(|x| x.mtype == TYPE_EXP && x.atype == NOPED);
         let mut para_root_base = 0;
-        ana.iter().for_each(|x| {
+        prm.ana.iter().for_each(|x| {
             if x.mtype == TYPE_EXP && x.atype == PARA_ROOT {
                 para_root_base = x.note;
             }
         });
         let mut staccato_rate = 100;
-        ana.iter().for_each(|x| {
+        prm.ana.iter().for_each(|x| {
             if x.mtype == TYPE_EXP && x.atype == ARTIC {
                 staccato_rate = x.cnt as i32;
             }
@@ -93,23 +115,23 @@ impl PhraseLoop {
                 elps_type: ElapseType::TpPhraseLoop,
             },
             priority: PRI_PHR_LOOP,
-            phrase: phr,
-            analys: ana,
-            keynote,
+            phrase: prm.phr,
+            analys: prm.ana,
+            keynote: prm.keynote,
             play_counter: 0,
             next_tick_in_phrase: 0,
             last_note: NO_NOTE as i16,
             noped,
-            turnnote,
+            turnnote: prm.turnnote,
             para_root_base,
             same_note_stuck: Vec::new(),
             same_note_msr: 0,
             same_note_tick: 0,
             staccato_rate,
             // for super's member
-            whole_tick,
+            whole_tick: prm.whole_tick,
             destroy: false,
-            first_msr_num: msr,
+            first_msr_num: prm.msr,
             next_msr: 0,
             next_tick: 0,
         }))
@@ -232,13 +254,15 @@ impl PhraseLoop {
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             trace as u32, //  read pointer
             self.id.sid,  //  loop.sid -> note.pid
-            estk,
-            &crnt_ev,
-            self.keynote,
-            deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
-            msr,
-            tick,
-            self.id.pid,
+            NoteParam::new(
+                estk,
+                &crnt_ev,
+                self.keynote,
+                deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
+                msr,
+                tick,
+                self.id.pid,
+            ),
         );
         estk.add_elapse(Rc::clone(&nt));
     }

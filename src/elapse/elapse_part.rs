@@ -8,7 +8,7 @@ use std::rc::Rc;
 use std::cmp::Ordering;
 
 use super::elapse_base::*;
-use super::elapse_loop::{CompositionLoop, Loop, PhraseLoop};
+use super::elapse_loop::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::elapse::elapse_flow::Flow;
@@ -326,15 +326,18 @@ impl PhrLoopManager {
 
         // Phrase の新規生成
         self.loop_id += 1;
+
         let lp = PhraseLoop::new(
             self.loop_id,
             pbp.part_num,
-            pbp.keynote,
-            self.first_msr_num, // 今の Phrase の開始小節
-            self.new_data_stock[self.active_phr].evts.to_vec(),
-            self.new_data_stock[self.active_phr].ana.to_vec(),
-            self.whole_tick,
-            self.turnnote,
+            PhraseLoopParam::new(
+                pbp.keynote,
+                self.first_msr_num,
+                self.new_data_stock[self.active_phr].evts.to_vec(),
+                self.new_data_stock[self.active_phr].ana.to_vec(),
+                self.whole_tick,
+                self.turnnote,
+            ),
         );
 
         // Phrase の更新
@@ -382,12 +385,14 @@ impl PhrLoopManager {
         let lp = PhraseLoop::new(
             self.loop_id,
             pbp.part_num,
-            pbp.keynote,
-            prm.0,
-            self.new_data_stock[self.active_phr].evts.to_vec(),
-            self.new_data_stock[self.active_phr].ana.to_vec(),
-            self.whole_tick,
-            self.turnnote,
+            PhraseLoopParam::new(
+                pbp.keynote,
+                prm.0,
+                self.new_data_stock[self.active_phr].evts.to_vec(),
+                self.new_data_stock[self.active_phr].ana.to_vec(),
+                self.whole_tick,
+                self.turnnote,
+            ),
         );
 
         self.loop_phrase = Some(Rc::clone(&lp));
