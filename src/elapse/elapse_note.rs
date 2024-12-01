@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use super::{elapse::*, stack_elapse};
+use super::{elapse_base::*, stack_elapse};
 use crate::lpnlib::*;
 
 //*******************************************************************

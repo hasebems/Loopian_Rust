@@ -6,7 +6,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::elapse::*;
+use super::elapse_base::*;
 use super::elapse_note::Damper;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;

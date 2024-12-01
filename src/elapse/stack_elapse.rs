@@ -12,7 +12,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use std::vec::Vec;
 
-use super::elapse::*;
+use super::elapse_base::*;
 use super::elapse_damper::DamperPart;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{CompositionLoop, PhraseLoop};
