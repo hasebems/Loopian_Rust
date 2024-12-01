@@ -6,7 +6,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::elapse::*;
+use super::elapse_base::*;
 use super::elapse_note::Note;
 use super::elapse_pattern::DynamicPattern;
 use super::note_translation::*;
@@ -590,7 +590,7 @@ impl Elapse for CompositionLoop {
         }
 
         //  現在の tick を 1tick 後ろにずらす（Play直後以外）
-        let mut cm_crnt = crnt_.clone();
+        let mut cm_crnt = *crnt_;
         if !self.just_after_start {
             if cm_crnt.tick == crnt_.tick_for_onemsr - 1 {
                 cm_crnt.msr += 1;

@@ -11,8 +11,9 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::vec::Vec;
+use std::cmp::Ordering;
 
-use super::elapse::*;
+use super::elapse_base::*;
 use super::elapse_damper::DamperPart;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{CompositionLoop, PhraseLoop};
@@ -24,9 +25,9 @@ use crate::midi::miditx::MidiTx;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SameKeyState {
-    MORE,    //  まだある
-    LAST,    //  これが最後
-    NOTHING, //  もうない
+    More,    //  まだある
+    Last,    //  これが最後
+    Nothing, //  もうない
 }
 
 //*******************************************************************
@@ -65,7 +66,7 @@ fn gen_midirx_thread() -> (Receiver<ElpsMsg>, Sender<ElpsMsg>) {
     let (txctrl, rxctrl) = mpsc::channel();
     thread::spawn(move || match MidiRx::new(txmsg /* , rxctrl*/) {
         Some(mut rx) => loop {
-            if rx.periodic(rxctrl.try_recv()) == true {
+            if rx.periodic(rxctrl.try_recv()) {
                 break;
             }
         },
@@ -160,14 +161,16 @@ impl ElapseStack {
     }
     pub fn dec_key_map(&mut self, key_num: u8) -> SameKeyState {
         let idx = (key_num - MIN_NOTE_NUMBER) as usize;
-        if self.key_map[idx] > 1 {
-            self.key_map[idx] -= 1;
-            SameKeyState::MORE
-        } else if self.key_map[idx] == 1 {
-            self.key_map[idx] = 0;
-            SameKeyState::LAST
-        } else {
-            SameKeyState::NOTHING
+        match self.key_map[idx].cmp(&1) {
+            Ordering::Greater => {
+                self.key_map[idx] -= 1;
+                SameKeyState::More
+            }
+            Ordering::Equal => {
+                self.key_map[idx] = 0;
+                SameKeyState::Last
+            }
+            Ordering::Less => SameKeyState::Nothing,
         }
     }
     pub fn set_phrase_vari(&self, part_num: usize, vari_num: usize) {
@@ -217,24 +220,20 @@ impl ElapseStack {
 
         if self.during_play {
             let mut debcnt = 0;
-            loop {
+            while let Some(felps) = self.pick_up_first(&crnt_) {
                 // 現measure/tick より前のイベントを持つ obj を返す
-                if let Some(felps) = self.pick_up_first(&crnt_) {
-                    #[cfg(feature = "verbose")]
-                    {
-                        let et = felps.borrow().id();
-                        let mt = felps.borrow().next();
-                        println!(
-                            "<{:>02}:{:>04}> pid: {:?}, sid: {:?}, type: {:?}, nmsr: {:?}, ntick: {:?}",
-                            crnt_.msr, crnt_.tick, et.pid, et.sid, et.elps_type, mt.0, mt.1
-                        );
-                    }
-                    felps.borrow_mut().process(&crnt_, self);
-                    debcnt += 1;
-                    assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
-                } else {
-                    break;
+                #[cfg(feature = "verbose")]
+                {
+                    let et = felps.borrow().id();
+                    let mt = felps.borrow().next();
+                    println!(
+                        "<{:>02}:{:>04}> pid: {:?}, sid: {:?}, type: {:?}, nmsr: {:?}, ntick: {:?}",
+                        crnt_.msr, crnt_.tick, et.pid, et.sid, et.elps_type, mt.0, mt.1
+                    );
                 }
+                felps.borrow_mut().process(&crnt_, self);
+                debcnt += 1;
+                assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
             }
             if self.limit_for_deb < debcnt {
                 self.limit_for_deb = debcnt;
@@ -245,7 +244,7 @@ impl ElapseStack {
         }
 
         // play 中でなければ return
-        return false;
+        false
     }
     fn measure_top(&mut self, crnt_: &mut CrntMsrTick) {
         // デバッグ用表示
@@ -293,7 +292,7 @@ impl ElapseStack {
             Err(TryRecvError::Disconnected) => return true, // Wrong!
             Err(TryRecvError::Empty) => return false,       // No event
         }
-        return false;
+        false
     }
     fn parse_elps_msg(&mut self, msg: ElpsMsg) {
         match msg {
@@ -326,24 +325,21 @@ impl ElapseStack {
         }
     }
     fn send_msg_to_ui(&self, msg: UiMsg) {
-        match self.ui_hndr.send(msg) {
-            Err(e) => println!("Something happened on MPSC for UI! {}", e),
-            _ => {}
+        if let Err(e) = self.ui_hndr.send(msg) {
+            println!("Something happened on MPSC for UI! {}", e);
         }
     }
     fn send_msg_to_rx(&self, msg: ElpsMsg) {
-        match self.tx_ctrl.send(msg) {
-            Err(e) => println!("Something happened on MPSC To MIDIRx! {}", e),
-            _ => {}
+        if let Err(e) = self.tx_ctrl.send(msg) {
+            println!("Something happened on MPSC To MIDIRx! {}", e);
         }
     }
     fn check_rcv_midi(&mut self, crnt_: &CrntMsrTick) {
         match self.rx_hndr.try_recv() {
-            Ok(rxmsg) => match rxmsg {
-                MIDIRx(sts, nt, vel, extra) => {
+            Ok(rxmsg) => {
+                if let MIDIRx(sts, nt, vel, extra) = rxmsg {
                     self.rcv_midi_msg(crnt_, sts, nt, vel, extra);
                 }
-                _ => (),
             },
             Err(TryRecvError::Disconnected) => {} // Wrong!
             Err(TryRecvError::Empty) => {}
@@ -551,9 +547,9 @@ impl ElapseStack {
             let (msr, tick) = elps.borrow().next();
             if (msr == crnt_.msr && tick <= crnt_.tick) || msr < crnt_.msr {
                 // 現在のタイミングより前のイベントがあれば
-                if playable.len() == 0 {
+                if playable.is_empty() {
                     // playable にまだ何も無ければ、普通に push
-                    playable.push(Rc::clone(&elps));
+                    playable.push(Rc::clone(elps));
                 } else {
                     // playable に、時間順になるように挿入
                     let mut after_break = false;
@@ -565,14 +561,14 @@ impl ElapseStack {
                                     || ((tick == tickx)
                                         && (one_plabl.borrow().prio() > elps.borrow().prio()))))
                         {
-                            playable.insert(i, Rc::clone(&elps));
+                            playable.insert(i, Rc::clone(elps));
                             after_break = true;
                             break;
                         }
                     }
                     if !after_break {
                         // 条件にはまらなければ最後に入れる
-                        playable.push(Rc::clone(&elps));
+                        playable.push(Rc::clone(elps));
                     }
                 }
             }
