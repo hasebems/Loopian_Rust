@@ -97,7 +97,7 @@ impl Note {
         }
     }
     fn note_limit_available(num: u8, min_value: u8, max_value: u8) -> bool {
-        !(min_value..=max_value).contains(&num)
+        (min_value..=max_value).contains(&num)
     }
     fn random_velocity(&self, input_vel: u8) -> u8 {
         let mut rng = thread_rng();

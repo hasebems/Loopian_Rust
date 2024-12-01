@@ -347,6 +347,7 @@ impl RitLinear {
 //*******************************************************************
 const IDX_MAX: usize = 128;
 #[rustfmt::skip]
+#[allow(clippy::excessive_precision)]
 const SIGMOID: [f32; IDX_MAX] = [// time -> tps(bpm)
     0.993307149,0.992767236,0.992184111,0.991554373,
     0.990874363,0.990140145,0.989347489,0.988491851,
@@ -383,6 +384,7 @@ const SIGMOID: [f32; IDX_MAX] = [// time -> tps(bpm)
     //0.006692851,
 ];
 #[rustfmt::skip]
+#[allow(clippy::excessive_precision)]
 const INTEGRAL_SIGMOID: [f32; IDX_MAX] = [ // time -> tick
     0.0,0.015516206,0.031023639,0.046521595,
     0.06200932,0.077485996,0.092950743,0.108402613,

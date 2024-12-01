@@ -253,8 +253,6 @@ pub fn recombine_to_chord_loop(
     tick_for_onebeat: i32,
 ) -> (i32, bool, Vec<ChordEvt>) {
     if comp.is_empty() {
-        //let mut zero = ChordEvt::new();
-        //zero.add_dt(vec![0]);
         return (0, true, Vec::new());
     }
     let max_read_ptr = comp.len();

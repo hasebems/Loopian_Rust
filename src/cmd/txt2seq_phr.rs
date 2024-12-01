@@ -24,7 +24,7 @@ pub fn complement_phrase(
 
     // 3. 関数を . で分割し、音符変調と音楽表現に分ける
     let mut nev = split_by('.', ne);
-    nev.retain(|nt| nt.is_empty());
+    nev.retain(|nt| !nt.is_empty());
     let (nmvec, nevec) = divide_notemod_and_musicex(nev);
 
     // 4. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
@@ -596,19 +596,19 @@ pub fn gen_diff_vel(nt: String) -> (String, i32) {
     while last_ltr == '^' {
         diff_vel += VEL_UP;
         ntext.pop();
-        last_ltr = if !ntext.is_empty() {
-            ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
-        } else {
+        last_ltr = if ntext.is_empty() {
             ' '
+        } else {
+            ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
         };
     }
     while last_ltr == '%' {
         diff_vel += VEL_DOWN;
         ntext.pop();
-        last_ltr = if !ntext.is_empty() {
-            ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
-        } else {
+        last_ltr = if ntext.is_empty() {
             ' '
+        } else {
+            ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
         };
     }
     (ntext, diff_vel)

@@ -34,10 +34,10 @@ impl MidiRxBuf {
         self.buf.insert(0, (tm, msg));
     }
     pub fn take(&mut self) -> Option<(u64, Vec<u8>)> {
-        if !self.buf.is_empty() {
-            self.buf.pop()
-        } else {
+        if self.buf.is_empty() {
             None
+        } else {
+            self.buf.pop()
         }
     }
 }

@@ -49,15 +49,15 @@ pub fn split_by_by(sp1: char, sp2: char, txt: String) -> Vec<String> {
     splited
 }
 pub fn doremi_to_notenum(doremi: String, mut base_note: i32) -> i32 {
-    if !doremi.is_empty() {
+    if doremi.is_empty() {
+        base_note = NO_NOTE as i32;
+    } else {
         // d,r,m,f,s,l,t
         base_note = doremi_number(doremi.chars().next().unwrap_or(' '), base_note);
         if doremi.len() != 1 {
             // i,a
             base_note = doremi_semi_number(doremi.chars().nth(1).unwrap_or(' '), base_note);
         }
-    } else {
-        base_note = NO_NOTE as i32;
     }
     base_note
 }
