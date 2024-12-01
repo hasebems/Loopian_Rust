@@ -5,6 +5,7 @@
 //
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::cmp::Ordering;
 
 use super::elapse_base::*;
 use super::elapse_loop::{CompositionLoop, Loop, PhraseLoop};
@@ -108,7 +109,7 @@ impl PhrLoopManager {
         }
     }
     pub fn rcv_phr(&mut self, msg: PhrData) {
-        if msg.evts.len() == 0 && msg.whole_tick == 0 {
+        if msg.evts.is_empty() && msg.whole_tick == 0 {
             // phrase = [] の時の処理
             if let Some(num) = self.exists_same_vari(msg.vari) {
                 if num == 0 {
@@ -117,12 +118,16 @@ impl PhrLoopManager {
                 } else {
                     self.new_data_stock.remove(num);
                 }
-                if num == self.active_phr {
-                    // 今再生している Phrase が削除された
-                    //self.del_loop_phrase(); // これを有効にすると即時消音
-                    self.active_phr = 0;
-                } else if num < self.active_phr {
-                    self.active_phr -= 1;
+                match num.cmp(&self.active_phr) {
+                    Ordering::Equal => {
+                        // 今再生している Phrase が削除された
+                        //self.del_loop_phrase(); // これを有効にすると即時消音
+                        self.active_phr = 0;
+                    }
+                    Ordering::Less => {
+                        self.active_phr -= 1;
+                    }
+                    _ => {}
                 }
             }
         } else {
@@ -232,7 +237,7 @@ impl PhrLoopManager {
         let auftakt_cond_vari = || -> bool {
             // variation 再生時の弱起auftaktの条件
             self.max_loop_msr != 0 &&
-            (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) <= self.max_loop_msr-1 && // 残り１小節以上
+            (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) < self.max_loop_msr && // 残り１小節以上
             phr.whole_tick as i32 >= crnt_.tick_for_onemsr*2 // 新しい Phrase が２小節以上
         };
         let auftakt_cond = || -> bool {
@@ -463,7 +468,7 @@ impl CmpsLoopManager {
     }
     pub fn rcv_cmp(&mut self, msg: ChordData) {
         self.do_loop = msg.do_loop;
-        if msg.evts.len() == 0 && msg.whole_tick == 0 {
+        if msg.evts.is_empty() && msg.whole_tick == 0 {
             self.new_data_stock = ChordData::empty();
         } else {
             self.new_data_stock = msg;
@@ -490,7 +495,7 @@ impl CmpsLoopManager {
     }
     fn new_loop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         // 新たに Loop Obj.を生成
-        if self.new_data_stock.evts.len() != 0 {
+        if !self.new_data_stock.evts.is_empty() {
             #[cfg(feature = "verbose")]
             println!("New Composition Loop! M:{:?},T:{:?}", crnt_.msr, crnt_.tick);
             self.first_msr_num = crnt_.msr; // 計測開始の更新
@@ -702,7 +707,7 @@ impl Elapse for Part {
             };
             self.cm.process(&cm_crnt, estk, pbp);
             // 次の小節の頭をセット
-            self.next_msr = self.next_msr + 1;
+            self.next_msr += 1;
             self.next_tick = 0;
         } else {
             // 小節先頭

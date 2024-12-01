@@ -26,30 +26,20 @@ pub struct TickGen {
     fermata_state: bool, // fermata で止まっている状態
     ritgen: Box<dyn Rit>,
 }
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub struct CrntMsrTick {
     pub msr: i32,
     pub tick: i32,
     pub tick_for_onemsr: i32,
 }
-impl Default for CrntMsrTick {
-    fn default() -> Self {
-        Self {
-            msr: 0,
-            tick: 0,
-            tick_for_onemsr: 0,
-        }
-    }
-}
 
 impl TickGen {
     pub fn new(tp: usize) -> Self {
-        let rit: Box<dyn Rit>;
-        match tp {
-            0 => rit = Box::new(RitLinear::new()),
-            1 => rit = Box::new(RitSigmoid::new()),
-            _ => rit = Box::new(RitCtrl::new()),
-        }
+        let rit: Box<dyn Rit> = match tp {
+            0 => Box::new(RitLinear::new()),
+            1 => Box::new(RitSigmoid::new()),
+            _ => Box::new(RitCtrl::new()),
+        };
         Self {
             bpm: DEFAULT_BPM,
             meter: Meter(4, 4),
@@ -77,7 +67,7 @@ impl TickGen {
         self.bpm_start_time = self.crnt_time;
         self.bpm_start_tick = 0;
         // DEFAULT_TICK_FOR_ONE_MEASURE を分母で割った値が 1拍の tick 数で正しい！
-        self.tick_for_beat = DEFAULT_TICK_FOR_ONE_MEASURE / (self.meter.1 as i32);
+        self.tick_for_beat = DEFAULT_TICK_FOR_ONE_MEASURE / self.meter.1;
     }
     pub fn change_bpm(&mut self, bpm: i16) {
         self.bpm_stock = bpm;
@@ -120,18 +110,16 @@ impl TickGen {
             // same bpm
             let tick_from_meter_starts = self.calc_crnt_tick();
             self.crnt_msr =
-                (tick_from_meter_starts / self.tick_for_onemsr + self.meter_start_msr) as i32;
+                tick_from_meter_starts / self.tick_for_onemsr + self.meter_start_msr;
             self.crnt_tick_inmsr = tick_from_meter_starts % self.tick_for_onemsr;
         }
         let new_msr = self.crnt_msr != former_msr;
-        if new_msr {
-            if !self.rit_state && (self.bpm != self.bpm_stock) {
-                // Tempo Change
-                self.change_bpm_event(self.bpm_stock);
-                if self.bpm == 0 {
-                    // fermata
-                    self.crnt_tick_inmsr = 0;
-                }
+        if new_msr && !self.rit_state && (self.bpm != self.bpm_stock) {
+            // Tempo Change
+            self.change_bpm_event(self.bpm_stock);
+            if self.bpm == 0 {
+                // fermata
+                self.crnt_tick_inmsr = 0;
             }
         }
         new_msr
@@ -157,7 +145,7 @@ impl TickGen {
     }
     pub fn get_tick(&self) -> (i32, i32, i32, i32) {
         (
-            (self.crnt_msr + 1).try_into().unwrap(),         // measure
+            self.crnt_msr + 1,         // measure
             (self.crnt_tick_inmsr / self.tick_for_beat) + 1, // beat(1,2,3...)
             self.crnt_tick_inmsr % self.tick_for_beat,       // tick
             self.tick_for_onemsr / self.tick_for_beat,

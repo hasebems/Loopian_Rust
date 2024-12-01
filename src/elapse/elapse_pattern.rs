@@ -190,8 +190,8 @@ impl DynamicPattern {
         };
 
         // Cluster発音
-        for i in 0..maxnt {
-            self.gen_note_ev(estk, ntlist[i], vel);
+        for &note in ntlist.iter().take(maxnt) {
+            self.gen_note_ev(estk, note, vel);
         }
     }
     fn play_arpeggio(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
@@ -203,13 +203,11 @@ impl DynamicPattern {
                     x = 0;
                     oct += 1;
                 }
+            } else if x == 0 {
+                x = max_tbl_num - 1;
+                oct -= 1;
             } else {
-                if x == 0 {
-                    x = max_tbl_num - 1;
-                    oct -= 1;
-                } else {
-                    x -= 1;
-                }
+                x -= 1;
             }
             (x, oct)
         };
@@ -222,12 +220,10 @@ impl DynamicPattern {
             if !up {
                 pre_add_nt += 12;
             }
+        } else if up {
+            pre_add_nt += root - 12;
         } else {
-            if up {
-                pre_add_nt += root - 12;
-            } else {
-                pre_add_nt += root + 12;
-            }
+            pre_add_nt += root + 12;
         }
 
         let mut note: i16;
@@ -257,17 +253,19 @@ impl DynamicPattern {
             }
             note += post_add_nt;
         } else {
-            (self.next_index, self.oct_up) = incdec_idx(up, self.next_index, self.oct_up.clone());
+            (self.next_index, self.oct_up) = incdec_idx(up, self.next_index, self.oct_up);
             note = tblptr[self.next_index] + pre_add_nt + self.oct_up * 12;
             note += post_add_nt;
         }
         self.gen_note_ev(estk, note, vel);
     }
     fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16, vel: i16) {
-        let mut crnt_ev = PhrEvt::default();
-        crnt_ev.dur = self.ptn_each_dur as i16;
-        crnt_ev.note = note;
-        crnt_ev.vel = vel;
+        let mut crnt_ev = PhrEvt {
+            dur: self.ptn_each_dur as i16,
+            note,
+            vel,
+            ..PhrEvt::default()
+        };
 
         //  Generate Note Struct
         if self.staccato_rate != 100 {

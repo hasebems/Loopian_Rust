@@ -3,6 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use std::cmp::Ordering;
+
 use crate::cmd::txt2seq_cmps;
 use crate::lpnlib::*;
 
@@ -24,20 +26,25 @@ pub fn translate_note_parascl(para_note: i16, ctbl: i16, ntev: i16) -> i16 {
     let mut former_nt = 0;
     let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     for ntx in tbl.iter() {
-        if *ntx == input_doremi {
-            output_doremi = input_doremi;
-            break;
-        } else if *ntx > input_doremi {
-            if (input_doremi - former_nt > *ntx - input_doremi)
-                || ((input_doremi - former_nt == *ntx - input_doremi) && take_upper)
-            {
-                //等距離なら
-                output_doremi = *ntx;
+        match ntx.cmp(&input_doremi) {
+            Ordering::Equal => {
+                output_doremi = input_doremi;
+                break;
             }
-            break;
+            Ordering::Greater => {
+                if (input_doremi - former_nt > *ntx - input_doremi)
+                    || ((input_doremi - former_nt == *ntx - input_doremi) && take_upper)
+                {
+                    // 等距離なら
+                    output_doremi = *ntx;
+                }
+                break;
+            }
+            Ordering::Less => {
+                former_nt = *ntx;
+                output_doremi = former_nt;
+            }
         }
-        former_nt = *ntx;
-        output_doremi = former_nt;
     }
     output_doremi + input_oct * 12
 }
@@ -54,28 +61,31 @@ pub fn translate_note_com(root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
     };
     for ntx in tbl.iter() {
         proper_nt = *ntx + real_root + oct_adjust * 12;
-        if proper_nt == tgt_nt {
-            found = true;
-            break;
-        } else if proper_nt > tgt_nt {
-            if (tgt_nt - former_nt < proper_nt - tgt_nt)
-                || ((tgt_nt - former_nt == proper_nt - tgt_nt) && !take_upper)
-            {
-                //等距離なら
-                proper_nt = former_nt;
+        match proper_nt.cmp(&tgt_nt) {
+            Ordering::Equal => {
+                found = true;
+                break;
             }
-            found = true;
-            break;
+            Ordering::Greater => {
+                match (tgt_nt - former_nt).cmp(&(proper_nt - tgt_nt)) {
+                    Ordering::Less | Ordering::Equal if !take_upper => {
+                        proper_nt = former_nt;
+                    }
+                    _ => {}
+                }
+                found = true;
+                break;
+            }
+            Ordering::Less => {
+                former_nt = proper_nt;
+            }
         }
-        former_nt = proper_nt;
     }
     if !found {
         proper_nt = tbl[0] + real_root + (oct_adjust + 1) * 12;
-        if (tgt_nt - former_nt < proper_nt - tgt_nt)
-            || ((tgt_nt - former_nt == proper_nt - tgt_nt) && !take_upper)
-        {
-            // 等距離なら
-            proper_nt = former_nt
+        match (tgt_nt - former_nt).cmp(&(proper_nt - tgt_nt)) {
+            Ordering::Less | Ordering::Equal if !take_upper => proper_nt = former_nt,
+            _ => {}
         }
     }
     proper_nt
@@ -86,44 +96,46 @@ pub fn _translate_note_arp(root: i16, ctbl: i16, nt_diff: i16, last_note: i16) -
     let arp_nt = last_note + nt_diff;
     let mut nty = DEFAULT_NOTE_NUMBER as i16;
     let (tbl, _take_upper) = txt2seq_cmps::get_table(ctbl as usize);
-    if nt_diff == 0 {
-        arp_nt
-    } else if nt_diff > 0 {
-        let mut ntx = last_note + 1;
-        ntx = search_scale_nt_just_above(root, tbl, ntx);
-        if ntx >= arp_nt {
-            return ntx;
-        }
-        while nty < 128 {
-            nty = ntx + 1;
-            nty = search_scale_nt_just_above(root, tbl, nty);
-            if nty >= arp_nt {
-                if nty - arp_nt > arp_nt - ntx {
-                    nty = ntx;
-                }
-                break;
+    match nt_diff.cmp(&0) {
+        Ordering::Equal => arp_nt,
+        Ordering::Greater => {
+            let mut ntx = last_note + 1;
+            ntx = search_scale_nt_just_above(root, tbl, ntx);
+            if ntx >= arp_nt {
+                return ntx;
             }
-            ntx = nty;
-        }
-        nty
-    } else {
-        let mut ntx = last_note - 1;
-        ntx = search_scale_nt_just_below(root, tbl, ntx);
-        if ntx <= arp_nt {
-            return ntx;
-        }
-        while nty >= 0 {
-            nty = ntx - 1;
-            nty = search_scale_nt_just_below(root, tbl, nty);
-            if nty <= arp_nt {
-                if arp_nt - nty > ntx - arp_nt {
-                    nty = ntx;
+            while nty < 128 {
+                nty = ntx + 1;
+                nty = search_scale_nt_just_above(root, tbl, nty);
+                if nty >= arp_nt {
+                    if nty - arp_nt > arp_nt - ntx {
+                        nty = ntx;
+                    }
+                    break;
                 }
-                break;
+                ntx = nty;
             }
-            ntx = nty;
+            nty
         }
-        nty
+        Ordering::Less => {
+            let mut ntx = last_note - 1;
+            ntx = search_scale_nt_just_below(root, tbl, ntx);
+            if ntx <= arp_nt {
+                return ntx;
+            }
+            while nty >= 0 {
+                nty = ntx - 1;
+                nty = search_scale_nt_just_below(root, tbl, nty);
+                if nty <= arp_nt {
+                    if arp_nt - nty > ntx - arp_nt {
+                        nty = ntx;
+                    }
+                    break;
+                }
+                ntx = nty;
+            }
+            nty
+        }
     }
 }
 pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16, last_note: i16) -> i16 {
@@ -139,18 +151,22 @@ pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16, last
     };
     for ntx in tbl.iter() {
         proper_nt = *ntx + real_root + oct_adjust * 12;
-        if proper_nt == tgt_nt {
-            found = true;
-            break;
-        } else if proper_nt > tgt_nt {
-            if (tgt_nt - former_nt < proper_nt - tgt_nt)
-                || ((tgt_nt - former_nt == proper_nt - tgt_nt) && !take_upper)
-            {
-                //等距離なら
-                proper_nt = former_nt;
+        match proper_nt.cmp(&tgt_nt) {
+            Ordering::Equal => {
+                found = true;
+                break;
             }
-            found = true;
-            break;
+            Ordering::Greater => {
+                if (tgt_nt - former_nt < proper_nt - tgt_nt)
+                    || ((tgt_nt - former_nt == proper_nt - tgt_nt) && !take_upper)
+                {
+                    // 等距離なら
+                    proper_nt = former_nt;
+                }
+                found = true;
+                break;
+            }
+            Ordering::Less => {}
         }
         former_nt = proper_nt;
     }
@@ -163,16 +179,16 @@ pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16, last
             proper_nt = former_nt
         }
     }
-    if (proper_nt == last_note)
-        || ((proper_nt > last_note) && (nt_diff < 0))
-        || ((proper_nt < last_note) && (nt_diff > 0))
-    {
-        // 前回と同じ音か、アルペジオの方向が逆のとき、方向が同じ別の音を探す
-        if nt_diff > 0 {
-            proper_nt = search_scale_nt_just_above(root, tbl, proper_nt + 1);
-        } else {
-            proper_nt = search_scale_nt_just_below(root, tbl, proper_nt - 1);
+    match (proper_nt.cmp(&last_note), nt_diff.cmp(&0)) {
+        (Ordering::Equal, _) | (Ordering::Greater, Ordering::Less) | (Ordering::Less, Ordering::Greater) => {
+            // 前回と同じ音か、アルペジオの方向が逆のとき、方向が同じ別の音を探す
+            proper_nt = if nt_diff > 0 {
+                search_scale_nt_just_above(root, tbl, proper_nt + 1)
+            } else {
+                search_scale_nt_just_below(root, tbl, proper_nt - 1)
+            };
         }
+        _ => {}
     }
     proper_nt
 }

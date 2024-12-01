@@ -90,20 +90,14 @@ impl Note {
         self.next_msr = FULL;
         // midi note off
         let snk = estk.dec_key_map(self.real_note);
-        if snk == stack_elapse::SameKeyState::LAST {
+        if snk == stack_elapse::SameKeyState::Last {
             estk.midi_out(0x90, self.real_note, 0);
             #[cfg(feature = "verbose")]
             println!("Off: N{}, ", self.real_note);
         }
     }
     fn note_limit_available(num: u8, min_value: u8, max_value: u8) -> bool {
-        if num > max_value {
-            false
-        } else if num < min_value {
-            false
-        } else {
-            true
-        }
+        !(min_value..=max_value).contains(&num)
     }
     fn random_velocity(&self, input_vel: u8) -> u8 {
         let mut rng = thread_rng();
@@ -122,12 +116,11 @@ impl Note {
         let beat_per_sec = (bpm as f32) / 60.0;
         let note_per_beat = (dur as f32) / (1920.0 / (meter.1 as f32));
         let sec = note_per_beat / beat_per_sec;
-        let real_sec: f32;
-        if sec > 0.3 {
-            real_sec = sec - (sec * 0.1 - 0.03);
+        let real_sec = if sec > 0.3 {
+            sec - (sec * 0.1 - 0.03)
         } else {
-            real_sec = sec;
-        }
+            sec
+        };
         (real_sec * (bpm as f32) * 1920.0 / (60.0 * (meter.1 as f32))) as i32
     }
 }
@@ -304,9 +297,7 @@ impl Elapse for Damper {
         }
     }
     fn rcv_sp(&mut self, msg: ElapseMsg, _msg_data: u8) {
-        match msg {
-            _ => (),
-        }
+        let _ = msg;
     }
     fn destroy_me(&self) -> bool {
         self.destroy

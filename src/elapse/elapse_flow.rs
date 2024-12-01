@@ -117,7 +117,7 @@ impl Flow {
                 } else if status & 0xf0 == 0x80 {
                     self.flow_note_off(estk_, locate);
                 }
-            } else if locate >= 4 && locate < 92 {
+            } else if (4..92).contains(&locate) /*locate >= 4 && locate < 92*/ {
                 // 外部から Chord 情報が来ていない時
                 // 4->21 A0, 91->108 C8
                 estk_.midi_out_flow(status, locate + 17, vel);
@@ -140,29 +140,25 @@ impl Flow {
     ///  鳴っていれば、位置を新しいイベントのものに差し替え
     ///  off なら、この音を鳴らしたイベントを locate から探し、その音を消す
     fn convert_evt(&mut self, estk: &mut ElapseStack) {
-        loop {
-            if let Some(ev) = self.raw_ev.pop() {
-                let _ = ev.0; // warning 対策
-                let ch_status = ev.2 & 0xf0;
-                let locate_idx = if (ev.3 as usize) < LOCATION_ALL {
-                    ev.3 as usize
-                } else {
-                    break;
-                };
-                if ch_status == 0x90 && ev.4 != 0x00 {
-                    // on
-                    if self.raw_state[locate_idx] != NO_DATA {
-                        break;
-                    }
-                    self.raw_state[locate_idx] = ev.1;
-                    self.flow_note_on(estk, ev.3, ev.4);
-                } else if ch_status == 0x80 || (ch_status == 0x90 && ev.4 == 0x00) {
-                    // off
-                    self.raw_state[locate_idx] = NO_DATA;
-                    self.flow_note_off(estk, ev.3);
-                }
+        while let Some(ev) = self.raw_ev.pop() {
+            let _ = ev.0; // warning 対策
+            let ch_status = ev.2 & 0xf0;
+            let locate_idx = if (ev.3 as usize) < LOCATION_ALL {
+                ev.3 as usize
             } else {
                 break;
+            };
+            if ch_status == 0x90 && ev.4 != 0x00 {
+                // on
+                if self.raw_state[locate_idx] != NO_DATA {
+                    break;
+                }
+                self.raw_state[locate_idx] = ev.1;
+                self.flow_note_on(estk, ev.3, ev.4);
+            } else if ch_status == 0x80 || (ch_status == 0x90 && ev.4 == 0x00) {
+                // off
+                self.raw_state[locate_idx] = NO_DATA;
+                self.flow_note_off(estk, ev.3);
             }
         }
         self.next_msr = FULL; // process() は呼ばれないようになる
@@ -183,7 +179,7 @@ impl Flow {
         if let Some(idx) = self.same_locate_index(locate) {
             let rnote = self.gen_stock[idx].0;
             let snk = estk.dec_key_map(rnote);
-            if snk == stack_elapse::SameKeyState::LAST {
+            if snk == stack_elapse::SameKeyState::Last {
                 estk.midi_out_flow(0x90, rnote, 0); // test
             }
             #[cfg(feature = "verbose")]
@@ -214,11 +210,12 @@ impl Flow {
         }
 
         real_note += self.keynote;
-        if real_note >= MAX_NOTE_NUMBER {
-            real_note = MAX_NOTE_NUMBER;
-        } else if real_note < MIN_NOTE_NUMBER {
-            real_note = MIN_NOTE_NUMBER;
-        }
+        let _ = real_note.clamp(MIN_NOTE_NUMBER, MAX_NOTE_NUMBER);
+//        if real_note >= MAX_NOTE_NUMBER {
+//            real_note = MAX_NOTE_NUMBER;
+//        } else if real_note < MIN_NOTE_NUMBER {
+//            real_note = MIN_NOTE_NUMBER;
+//        }
         real_note
     }
     fn same_note_index(&self, rnote: u8) -> Option<usize> {
@@ -275,7 +272,7 @@ impl Elapse for Flow {
         {
             self.convert_evt(estk);
         }
-        self.old_msr_tick = crnt_.clone();
+        self.old_msr_tick = *crnt_;
     }
     /// 特定 elapse に message を送る
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
