@@ -8,8 +8,8 @@ use std::fs::File;
 use std::io::Read;
 
 use super::guiev::GuiEv;
+use super::viewobj::*;
 use super::lissajous::Lissajous;
-use super::viewobj::{NormalView, NoteObj};
 use super::voice::{StaticViewForVoice4, Voice4};
 use super::waterripple::WaterRipple;
 use crate::file::input_txt::InputText;
@@ -139,8 +139,18 @@ impl Graphic {
         if !self.graphmsg.is_empty() {
             let msg = self.graphmsg[0];
             match msg {
-                LIGHT_MODE => self.gmode = GraphMode::Light,
-                DARK_MODE => self.gmode = GraphMode::Dark,
+                LIGHT_MODE => {
+                    self.gmode = GraphMode::Light;
+                    if let Some(sv) = self.svce.as_mut() {
+                        sv.set_mode(GraphMode::Light);
+                    }
+                }
+                DARK_MODE => {
+                    self.gmode = GraphMode::Dark;
+                    if let Some(sv) = self.svce.as_mut() {
+                        sv.set_mode(GraphMode::Dark);
+                    }
+                }
                 // ◆◆◆ Graphic Pattern が追加されたらここにも追加
                 RIPPLE_PATTERN => {
                     self.gptn = GraphPattern::Ripple;
@@ -152,7 +162,7 @@ impl Graphic {
                 }
                 LISSAJOUS_PATTERN => {
                     self.gptn = GraphPattern::Lissajous;
-                    self.svce = Some(Box::new(Lissajous::new()));
+                    self.svce = Some(Box::new(Lissajous::new(self.gmode)));
                 }
                 TEXT_VISIBLE_CTRL => {
                     self.text_visible = !self.text_visible;
@@ -511,14 +521,5 @@ impl Graphic {
                     );
             }
         }
-        //{
-        //    let d = format!("{}",top_visible_line);
-        //    draw.text(&d)
-        //    .font(self.font_nrm.clone())
-        //    .font_size(SCRTXT_FONT_SIZE)
-        //    .color(RED)
-        //    .left_justify()
-        //    .x_y(0.0,0.0);
-        //}
     }
 }

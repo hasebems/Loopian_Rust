@@ -6,8 +6,8 @@
 use nannou::prelude::*;
 
 use super::draw_graph::Resize;
-use super::viewobj::{NormalView, NoteObj};
-use crate::lpnlib::*;
+use super::viewobj::*;
+//use crate::lpnlib::*;
 
 pub struct StaticViewForVoice4 {
     font: nannou::text::Font,
@@ -21,6 +21,7 @@ impl StaticViewForVoice4 {
 impl NormalView for StaticViewForVoice4 {
     fn update_model(&mut self, _crnt_time: f32, _rs: Resize) {}
     fn note_on(&mut self, _nt: i32, _vel: i32, _pt: i32, _tm: f32) {}
+    fn set_mode(&mut self, _mode: GraphMode) {}
     fn disp(&self, draw: Draw, _tm: f32, rs: Resize) {
         let x = rs.get_full_size_x() / 5.0;
         let y = rs.get_full_size_y() / 5.0;

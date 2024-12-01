@@ -7,10 +7,11 @@ use nannou::prelude::*;
 use std::f32::consts::PI;
 
 use super::draw_graph::Resize;
-use super::viewobj::NormalView;
+use super::viewobj::*;
 
 pub struct Lissajous {
     crnt_time: f32,
+    mode: GraphMode,
     track: Vec<[Vec2; 2]>,
     range_real: f32,
     range_target: f32,
@@ -19,11 +20,14 @@ pub struct Lissajous {
 }
 
 impl Lissajous {
-    const SPEED: f32 = 2.0;
-    const MAX_TRACK: usize = 30;
-    pub fn new() -> Self {
+    const SPEED: f32 = 0.5;
+    const MAX_TRACK: usize = 50;
+    const X_MAX: f32 = 200.0;
+    const Y_MAX: f32 = 150.0;
+    pub fn new(mode: GraphMode) -> Self {
         Self {
             crnt_time: 0.0,
+            mode,
             track: Vec::new(),
             range_real: 1.0,
             range_target: 1.0,
@@ -37,10 +41,14 @@ impl NormalView for Lissajous {
     fn update_model(&mut self, crnt_time: f32, _rs: Resize) {
         let past_time = self.crnt_time;
         self.crnt_time = crnt_time * Lissajous::SPEED;
-        let x1 = (past_time * 1.0 + self.phase_real).sin() * self.range_real * 150.0;
-        let y1 = (past_time * 2.0).sin() * self.range_real * 200.0;
-        let x2 = (past_time * 2.0 + PI + self.phase_real).sin() * self.range_real * 150.0;
-        let y2 = (past_time * 1.0).sin() * self.range_real * 200.0;
+        let x1 = (past_time * 1.0 + self.phase_real).sin() 
+                        * self.range_real * Lissajous::X_MAX;
+        let y1 = (past_time * 2.0).sin() 
+                        * self.range_real * Lissajous::Y_MAX;
+        let x2 = (past_time * 2.0 + self.phase_real + PI/2.0).sin() 
+                        * self.range_real * Lissajous::X_MAX;
+        let y2 = (past_time * 1.0 - PI/2.0).sin() 
+                        * self.range_real * Lissajous::Y_MAX;
         let v1 = Vec2::new(x1, y1);
         let v2 = Vec2::new(x2, y2);
         self.track.push([v1, v2]);
@@ -48,7 +56,7 @@ impl NormalView for Lissajous {
             self.track.remove(0);
         }
         // range, phase の補間
-        self.range_target *= 0.99;
+        self.range_target *= 0.98;
         if self.range_real < self.range_target {
             self.range_real += (self.range_target - self.range_real) * 0.5;
         } else if self.range_real > self.range_target {
@@ -61,15 +69,22 @@ impl NormalView for Lissajous {
     }
     fn note_on(&mut self, nt: i32, vel: i32, _pt: i32, _tm: f32) {
         self.range_target += vel as f32 / 127.0;
-        if self.range_target > 2.0 {
-            self.range_target = 2.0;
+        if self.range_target > 3.0 {
+            self.range_target = 3.0;
         }
-        self.phase_target += PI * (nt as f32) / 127.0;
+        self.phase_target += PI * ((nt as f32) - 64.0) / 64.0;
+    }
+    fn set_mode(&mut self, mode: GraphMode) {
+        self.mode = mode;
     }
     fn disp(&self, draw: Draw, _tm: f32, _rs: Resize) {
         let num = self.track.len();
+        let light = self.mode == GraphMode::Light;
         for i in 0..num - 1 {
-            let stg: f32 = ((i + 1) as f32) / (num as f32);
+            let mut stg: f32 = ((i + 1) as f32) / (num as f32);
+            if light {
+                stg = 1.0 - stg;
+            }
             draw.line()
                 .start(self.track[i + 1][0])
                 .end(self.track[i][1])
