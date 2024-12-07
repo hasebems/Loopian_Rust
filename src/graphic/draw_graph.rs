@@ -483,6 +483,9 @@ impl Graphic {
         let crnt_line = self.crnt_line;
         let scroll_texts = itxt.get_scroll_lines();
         for i in 0..max_lines {
+            if top_visible_line + i >= scroll_texts.len() {
+                break;
+            }
             let past_text_set = scroll_texts[top_visible_line + i].clone();
             let past_text = past_text_set.1.clone() + &past_text_set.2;
             let ltrcnt = past_text.chars().count();
