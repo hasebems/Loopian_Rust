@@ -6,6 +6,7 @@
 use nannou::prelude::*;
 use std::f32::consts::PI;
 
+use crate::lpnlib::*;
 use super::draw_graph::Resize;
 use super::viewobj::*;
 
@@ -72,7 +73,13 @@ impl NormalView for Lissajous {
         if self.range_target > 3.0 {
             self.range_target = 3.0;
         }
-        self.phase_target += PI * ((nt as f32) - 64.0) / 64.0;
+        // どの音程でも一定程度の位相差を持たせる
+        let pnt = (nt as u8).clamp(MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) as f32;
+        if pnt > 60.0 {    // C4 以上
+            self.phase_target += PI * (pnt - (MAX_NOTE_NUMBER as f32-100.0))/100.0;//68..100
+        } else {    // C4 未満
+            self.phase_target += PI * (pnt - (MIN_NOTE_NUMBER as f32+100.0))/100.0;//-61..-100
+        }
     }
     fn set_mode(&mut self, mode: GraphMode) {
         self.mode = mode;
