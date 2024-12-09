@@ -37,6 +37,7 @@ fn pedal() {
                             vel: 72,
                             trns: 0,
                             each_dur: 0,
+                            artic: 100,
                         }
                     );
                 }

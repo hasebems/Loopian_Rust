@@ -59,6 +59,7 @@ pub const NO_MIDI_VALUE: u8 = 128;
 pub const DEFAULT_TURNNOTE: i16 = 5;
 pub const VEL_UP: i32 = 10;
 pub const VEL_DOWN: i32 = -20;
+pub const DEFAULT_ARTIC: i16 = 100;
 
 //*******************************************************************
 //          UI->ELPS Message
@@ -87,6 +88,7 @@ pub struct PhrEvt {
     // TYPE_ARP: u/d/xu/xd(0-3) figure of arpeggio
     pub each_dur: i16, // each duration for special purpose
                        // TYPE_CLS/ARP: each note's duration
+    pub artic: i16,    // 0..100..200[%] staccato/legato
 }
 impl PhrEvt {
     pub fn gen_repeat(tick: i16) -> Self {
@@ -98,6 +100,7 @@ impl PhrEvt {
             vel: 0,
             trns: TRNS_NONE,
             each_dur: 0,
+            artic: 100,
         }
     }
 }
