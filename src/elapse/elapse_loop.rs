@@ -246,11 +246,15 @@ impl PhraseLoop {
             self.same_note_stuck.push(crnt_ev.note);
         }
 
-        //  Generate Note Struct
-        if self.staccato_rate != 100 {
-            let old = crnt_ev.dur as i32;
-            crnt_ev.dur = ((old * self.staccato_rate) / 100) as i16;
+        //  Calculate Duration
+        if crnt_ev.artic != DEFAULT_ARTIC {
+            let calc = (crnt_ev.dur as i32) * (crnt_ev.artic as i32);
+            crnt_ev.dur = (calc / DEFAULT_ARTIC as i32) as i16;
+        } else if (self.staccato_rate as i16) != DEFAULT_ARTIC {
+            let calc = (crnt_ev.dur as i32) * self.staccato_rate;
+            crnt_ev.dur = (calc / DEFAULT_ARTIC as i32) as i16;
         }
+        //  Generate Note Struct
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             trace as u32, //  read pointer
             self.id.sid,  //  loop.sid -> note.pid

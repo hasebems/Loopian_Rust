@@ -69,43 +69,46 @@ fn divide_brackets(input_text: String) -> (String, String) {
     (ninfo, minfo)
 }
 fn divide_arrow_bracket(nt: String) -> String {
-    let mut one_arrow_flg = false;
-    let mut two_arrow_flg = false;
-    let mut arrow_cnt = 0;
     let mut ret_str: String = "".to_string();
-    for ltr in nt.chars() {
+    let mut i = 0;
+    while let Some(ltr) = nt.chars().nth(i) {
         if ltr == '<' {
-            if arrow_cnt == 1 {
-                two_arrow_flg = true;
-                one_arrow_flg = false;
-            } else if arrow_cnt == 0 {
-                one_arrow_flg = true;
-            }
-            arrow_cnt += 1;
-            ret_str.push('>');
-        } else if ltr == '>' {
-            if two_arrow_flg && arrow_cnt == 0 {
-                arrow_cnt = -1;
-            } else if one_arrow_flg && arrow_cnt == 0 {
-                one_arrow_flg = false;
-            } else if arrow_cnt == -1 {
-                two_arrow_flg = false;
-            } else {
-                ret_str.push(ltr);
-            }
-        } else {
-            arrow_cnt = 0;
-            ret_str.push(ltr);
-            if ltr == ',' {
-                if one_arrow_flg {
-                    ret_str.push('>');
-                } else if two_arrow_flg {
-                    ret_str.push('>');
-                    ret_str.push('>');
+            // 閉じる矢印を探し、その後ろの文字を取得
+            if let Some(loc) = nt[i + 1..].chars().position(|c| c == '>') {
+                let end_arrow = i + 1 + loc;
+                let mut omit = false;
+                let mut mark = nt.chars().nth(end_arrow + 1).unwrap_or('~');
+                let mut comma = ',';
+                if mark == ',' || mark == '/' || mark == '|' {
+                    comma = mark;
+                    mark = '~';
+                    omit = true;
+                }
+                if mark == 'p' || mark == '\'' || mark == '~' || mark == 'n' {
+                    for j in i + 1..end_arrow {
+                        let nx = nt.chars().nth(j).unwrap_or(' ');
+                        if nx == ',' || nx == '|' || nx == '/' {
+                            ret_str.push(mark);
+                        }
+                        if let Some(c) = nt.chars().nth(j) {
+                            ret_str.push(c);
+                        }
+                    }
+                    ret_str.push(mark);
+                    ret_str.push(comma);
+                    if omit {   // markがない場合、XX で ',' の分を飛ばす
+                        i = end_arrow + 1;
+                    } else {    // mark + ',' の２文字進める(最後の XX を考慮)
+                        i = end_arrow + 2;
+                    }
                 }
             }
+        } else {
+            ret_str.push(ltr);
         }
+        i += 1; // XX
     }
+    //println!("$$$Divided letter in <>: {}", ret_str);
     ret_str
 }
 fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<bool>) {
@@ -249,6 +252,24 @@ fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
 //*******************************************************************
 ///          recombine_to_internal_format
 //*******************************************************************
+struct AddNoteParam {
+    mes_top: bool,
+    dur: i32,
+    vel: i16,
+    trns: i16,
+    artic: i16,
+}
+impl Default for AddNoteParam {
+    fn default() -> Self {
+        AddNoteParam {
+            mes_top: false,
+            dur: 0,
+            vel: 0,
+            trns: 0,
+            artic: DEFAULT_ARTIC,
+        }
+    }
+}
 pub fn recombine_to_internal_format(
     ntvec: &[String],
     expvec: &[String],
@@ -304,21 +325,31 @@ pub fn recombine_to_internal_format(
             }
         } else {
             // Note 処理
-            let (notes, note_dur, diff_vel, bdur, lnt) =
+            let (notes, note_dur, diff_vel, bdur, lnt, artic) =
                 break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, rest_tick, imd);
             last_nt = lnt; // 次回の音程の上下判断のため
             base_dur = bdur;
 
             if crnt_tick < whole_msr_tick {
                 // add to recombined data (NO_NOTE 含む(タイの時に使用))
+                let note_dur = get_note_dur(note_dur, whole_msr_tick, crnt_tick);
+                let last_vel = velo_limits(exp_vel + diff_vel, 1);
                 rcmb = add_note(
                     rcmb,
                     crnt_tick,
                     notes,
-                    get_note_dur(note_dur, whole_msr_tick, crnt_tick),
-                    velo_limits(exp_vel + diff_vel, 1),
-                    mes_top,
-                    trns,
+                    AddNoteParam {
+                        mes_top,
+                        dur: note_dur,
+                        vel: last_vel,
+                        trns,
+                        artic,
+                    },
+                    //note_dur,
+                    //last_vel,
+                    //mes_top,
+                    //trns,
+                    //artic,
                 );
                 crnt_tick += note_dur;
             }
@@ -372,17 +403,31 @@ fn break_up_nt_dur_vel(
     last_nt: i32,      // 前回の音程
     rest_tick: i32,    // 小節の残りtick
     imd: InputMode,    // input mode
-) -> (Vec<u8>, i32, i32, i32, i32)
+) -> (Vec<u8>, i32, i32, i32, i32, i16)
 /*( notes,      // 発音ノート
     dur_cnt,    // 音符のtick数
     diff_vel,   // 音量情報
     base_dur,   // 基準音価 -> bdur
-    last_nt     // 次回判定用の今回の音程 -> last_nt
+    last_nt,    // 次回判定用の今回の音程 -> last_nt
+    artic       // アーティキュレーション情報
   )*/
 {
     //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、解析を終えたら文字列を再結合
+    println!("Phrase Note: {}",note_text);
     let mut ntext1 = note_text;
     let oct = extract_top_pm(&mut ntext1);
+
+    //  Articulation 情報の抽出
+    let mut artic: i16 = DEFAULT_ARTIC;
+    if let Some(e) = ntext1.chars().last() {
+        if e == '~' {
+            artic = 120;
+            ntext1.pop();
+        } else if e == '\'' {
+            artic = 50;
+            ntext1.pop();
+        }
+    }
 
     //  duration 情報、 Velocity 情報の抽出
     let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur, rest_tick);
@@ -417,7 +462,7 @@ fn break_up_nt_dur_vel(
         notes.push(NO_NOTE);
     }
 
-    (notes, dur_cnt, diff_vel, base_dur, next_last_nt)
+    (notes, dur_cnt, diff_vel, base_dur, next_last_nt, artic)
 }
 /// 文字列の冒頭にあるプラスマイナスを抽出
 fn extract_top_pm(ntext: &mut String) -> String {
@@ -513,7 +558,7 @@ fn extract_o_dot(nt: String) -> (String, i32) {
                     break;
                 }
                 let ltr = ntext.chars().nth(length - 1).unwrap_or(' ');
-                if ltr == '.' || ltr == '~' {
+                if ltr == '.' {
                     dur_cnt += 1;
                     ntext.pop();
                 } else {
@@ -617,10 +662,7 @@ fn add_note(
     rcmb: Vec<PhrEvt>,
     tick: i32,
     notes: Vec<u8>,
-    note_dur: i32,
-    last_vel: i16,
-    mes_top: bool,
-    trns: i16,
+    prm: AddNoteParam,
 ) -> Vec<PhrEvt> {
     let mut return_rcmb = rcmb.clone();
     for note in notes.iter() {
@@ -628,7 +670,7 @@ fn add_note(
             continue;
         } else if *note == NO_NOTE {
             let l = return_rcmb.len();
-            if mes_top && l > 0 {
+            if prm.mes_top && l > 0 {
                 // 小節先頭にタイがあった場合、前の音の音価を増やす
                 // 前回の入力が和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
                 let mut search_idx = l - 1;
@@ -636,7 +678,7 @@ fn add_note(
                 loop {
                     if return_rcmb[search_idx].tick == last_tick {
                         let dur = return_rcmb[search_idx].dur;
-                        return_rcmb[search_idx].dur = dur + note_dur as i16;
+                        return_rcmb[search_idx].dur = dur + prm.dur as i16;
                     } else {
                         break;
                     }
@@ -652,11 +694,12 @@ fn add_note(
             let nt_data = PhrEvt {
                 mtype: TYPE_NOTE,
                 tick: tick as i16,
-                dur: note_dur as i16,
+                dur: prm.dur as i16,
                 note: *note as i16,
-                vel: last_vel,
-                trns,
-                each_dur: 0,
+                vel: prm.vel,
+                trns: prm.trns,
+                artic: prm.artic,
+                ..Default::default()
             };
             return_rcmb.push(nt_data);
         }
