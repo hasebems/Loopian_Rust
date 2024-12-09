@@ -477,6 +477,9 @@ impl ElapseStack {
                 .iter_mut()
                 .for_each(|x| x.borrow_mut().set_turnnote(msg[1]));
         } else if msg[0] == MSG_SET_CRNT_MSR {
+            if self.during_play {
+                self.stop();
+            }
             self.tg.set_crnt_msr(msg[1] as i32);
         }
     }
@@ -491,6 +494,10 @@ impl ElapseStack {
     fn set_meter(&mut self, msg: [i16; 2]) {
         self.beat_stock = Meter(msg[0] as i32, msg[1] as i32);
         self.sync(MSG_SYNC_ALL);
+        if !self.during_play {
+            let tick_for_onemsr = (DEFAULT_TICK_FOR_ONE_MEASURE / msg[1] as i32) * msg[0] as i32;
+            self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
+        }
     }
     fn phrase(&mut self, part_num: i16, evts: PhrData) {
         println!("Received Phrase Message! Part: {}", part_num);
