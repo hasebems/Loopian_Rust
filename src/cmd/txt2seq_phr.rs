@@ -96,9 +96,11 @@ fn divide_arrow_bracket(nt: String) -> String {
                     }
                     ret_str.push(mark);
                     ret_str.push(comma);
-                    if omit {   // markがない場合、XX で ',' の分を飛ばす
+                    if omit {
+                        // markがない場合、XX で ',' の分を飛ばす
                         i = end_arrow + 1;
-                    } else {    // mark + ',' の２文字進める(最後の XX を考慮)
+                    } else {
+                        // mark + ',' の２文字進める(最後の XX を考慮)
                         i = end_arrow + 2;
                     }
                 }
@@ -270,6 +272,7 @@ impl Default for AddNoteParam {
         }
     }
 }
+//*******************************************************************
 pub fn recombine_to_internal_format(
     ntvec: &[String],
     expvec: &[String],
@@ -329,28 +332,16 @@ pub fn recombine_to_internal_format(
                 break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, rest_tick, imd);
             last_nt = lnt; // 次回の音程の上下判断のため
             base_dur = bdur;
-
             if crnt_tick < whole_msr_tick {
                 // add to recombined data (NO_NOTE 含む(タイの時に使用))
-                let note_dur = get_note_dur(note_dur, whole_msr_tick, crnt_tick);
-                let last_vel = velo_limits(exp_vel + diff_vel, 1);
-                rcmb = add_note(
-                    rcmb,
-                    crnt_tick,
-                    notes,
-                    AddNoteParam {
-                        mes_top,
-                        dur: note_dur,
-                        vel: last_vel,
-                        trns,
-                        artic,
-                    },
-                    //note_dur,
-                    //last_vel,
-                    //mes_top,
-                    //trns,
-                    //artic,
-                );
+                let prm = AddNoteParam {
+                    mes_top,
+                    dur: get_note_dur(note_dur, whole_msr_tick, crnt_tick),
+                    vel: velo_limits(exp_vel + diff_vel, 1),
+                    trns,
+                    artic,
+                };
+                rcmb = add_note(rcmb, crnt_tick, notes, prm);
                 crnt_tick += note_dur;
             }
         }
@@ -413,24 +404,12 @@ fn break_up_nt_dur_vel(
   )*/
 {
     //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、解析を終えたら文字列を再結合
-    println!("Phrase Note: {}",note_text);
+    println!("Phrase Note: {}", note_text);
     let mut ntext1 = note_text;
     let oct = extract_top_pm(&mut ntext1);
 
-    //  Articulation 情報の抽出
-    let mut artic: i16 = DEFAULT_ARTIC;
-    if let Some(e) = ntext1.chars().last() {
-        if e == '~' {
-            artic = 120;
-            ntext1.pop();
-        } else if e == '\'' {
-            artic = 50;
-            ntext1.pop();
-        }
-    }
-
     //  duration 情報、 Velocity 情報の抽出
-    let (ntext3, base_dur, dur_cnt) = gen_dur_info(ntext1, bdur, rest_tick);
+    let (ntext3, base_dur, dur_cnt, artic) = gen_dur_info(ntext1, bdur, rest_tick);
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
 
     // 複数音を分離してベクトル化
@@ -490,17 +469,29 @@ fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
     base_pitch as u8
 }
 /// 音価情報を生成
-fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32) {
+fn gen_dur_info(mut ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32, i16) {
+    //  Articulation 情報の抽出
+    let mut artic: i16 = DEFAULT_ARTIC;
+    if let Some(e) = ntext1.chars().last() {
+        if e == '~' {
+            artic = 120;
+            ntext1.pop();
+        } else if e == '\'' {
+            artic = 50;
+            ntext1.pop();
+        }
+    }
+
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
     let (no_nt, ret) = detect_measure_top_tie(ntext1.clone(), bdur, rest_tick);
     if no_nt {
-        return ret;
+        return (ret.0, ret.1, ret.2, artic);
     }
 
     // 音価伸ばしを解析し、dur_cnt を確定
     let (ntext1, dur_cnt) = extract_o_dot(ntext1.clone());
     if dur_cnt == LAST {
-        return (ntext1, bdur, rest_tick);
+        return (ntext1, bdur, rest_tick, artic);
     }
 
     // タイを探して追加する tick を算出
@@ -517,7 +508,7 @@ fn gen_dur_info(ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32)
     if tie_dur != 0 {
         base_dur = tie_dur
     }
-    (nt, base_dur, tick)
+    (nt, base_dur, tick, artic)
 }
 fn detect_measure_top_tie(nt: String, bdur: i32, rest_tick: i32) -> (bool, (String, i32, i32)) {
     // 階名指定が無く、小節冒頭のタイの場合の音価を判定
@@ -658,12 +649,7 @@ pub fn gen_diff_vel(nt: String) -> (String, i32) {
     }
     (ntext, diff_vel)
 }
-fn add_note(
-    rcmb: Vec<PhrEvt>,
-    tick: i32,
-    notes: Vec<u8>,
-    prm: AddNoteParam,
-) -> Vec<PhrEvt> {
+fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> Vec<PhrEvt> {
     let mut return_rcmb = rcmb.clone();
     for note in notes.iter() {
         if *note == REST {
@@ -679,6 +665,8 @@ fn add_note(
                     if return_rcmb[search_idx].tick == last_tick {
                         let dur = return_rcmb[search_idx].dur;
                         return_rcmb[search_idx].dur = dur + prm.dur as i16;
+                        return_rcmb[search_idx].vel = prm.vel;
+                        return_rcmb[search_idx].artic = prm.artic;
                     } else {
                         break;
                     }
