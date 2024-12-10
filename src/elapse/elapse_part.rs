@@ -4,8 +4,8 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use std::cell::RefCell;
-use std::rc::Rc;
 use std::cmp::Ordering;
+use std::rc::Rc;
 
 use super::elapse_base::*;
 use super::elapse_loop::*;

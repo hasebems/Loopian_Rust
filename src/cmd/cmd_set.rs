@@ -60,13 +60,12 @@ impl LoopianCmd {
                         if msr < 1 {
                             return "Number is wrong.".to_string();
                         }
-                        self.set_measure(msr-1);
+                        self.set_measure(msr - 1);
                         "Measure has changed!".to_string()
                     }
                     Err(_) => "Number is wrong.".to_string(),
                 }
-            }
-            else if cmd == "input" {
+            } else if cmd == "input" {
                 if self.change_input_mode(prm) {
                     "Input mode has changed!".to_string()
                 } else {

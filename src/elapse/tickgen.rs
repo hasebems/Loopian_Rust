@@ -109,8 +109,7 @@ impl TickGen {
         } else {
             // same bpm
             let tick_from_meter_starts = self.calc_crnt_tick();
-            self.crnt_msr =
-                tick_from_meter_starts / self.tick_for_onemsr + self.meter_start_msr;
+            self.crnt_msr = tick_from_meter_starts / self.tick_for_onemsr + self.meter_start_msr;
             self.crnt_tick_inmsr = tick_from_meter_starts % self.tick_for_onemsr;
         }
         let new_msr = self.crnt_msr != former_msr;
@@ -145,7 +144,7 @@ impl TickGen {
     }
     pub fn get_tick(&self) -> (i32, i32, i32, i32) {
         (
-            self.crnt_msr + 1,         // measure
+            self.crnt_msr + 1,                               // measure
             (self.crnt_tick_inmsr / self.tick_for_beat) + 1, // beat(1,2,3...)
             self.crnt_tick_inmsr % self.tick_for_beat,       // tick
             self.tick_for_onemsr / self.tick_for_beat,

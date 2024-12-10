@@ -180,7 +180,9 @@ pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16, last
         }
     }
     match (proper_nt.cmp(&last_note), nt_diff.cmp(&0)) {
-        (Ordering::Equal, _) | (Ordering::Greater, Ordering::Less) | (Ordering::Less, Ordering::Greater) => {
+        (Ordering::Equal, _)
+        | (Ordering::Greater, Ordering::Less)
+        | (Ordering::Less, Ordering::Greater) => {
             // 前回と同じ音か、アルペジオの方向が逆のとき、方向が同じ別の音を探す
             proper_nt = if nt_diff > 0 {
                 search_scale_nt_just_above(root, tbl, proper_nt + 1)

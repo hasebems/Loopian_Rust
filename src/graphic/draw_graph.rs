@@ -8,8 +8,8 @@ use std::fs::File;
 use std::io::Read;
 
 use super::guiev::GuiEv;
-use super::viewobj::*;
 use super::lissajous::Lissajous;
+use super::viewobj::*;
 use super::voice::{StaticViewForVoice4, Voice4};
 use super::waterripple::WaterRipple;
 use crate::file::input_txt::InputText;

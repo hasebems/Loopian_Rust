@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use std::cell::RefCell;
+use std::cmp::Ordering;
 use std::rc::Rc;
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;
@@ -11,7 +12,6 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::vec::Vec;
-use std::cmp::Ordering;
 
 use super::elapse_base::*;
 use super::elapse_damper::DamperPart;
@@ -340,7 +340,7 @@ impl ElapseStack {
                 if let MIDIRx(sts, nt, vel, extra) = rxmsg {
                     self.rcv_midi_msg(crnt_, sts, nt, vel, extra);
                 }
-            },
+            }
             Err(TryRecvError::Disconnected) => {} // Wrong!
             Err(TryRecvError::Empty) => {}
         }

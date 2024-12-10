@@ -87,12 +87,9 @@ pub struct PhraseLoop {
     next_tick: i32, //   次に呼ばれるTick数が保持される
 }
 impl PhraseLoop {
-    pub fn new(
-        sid: u32,
-        pid: u32,
-        prm: PhraseLoopParam,
-    ) -> Rc<RefCell<Self>> {
-        let noped = prm.ana
+    pub fn new(sid: u32, pid: u32, prm: PhraseLoopParam) -> Rc<RefCell<Self>> {
+        let noped = prm
+            .ana
             .clone()
             .iter()
             .any(|x| x.mtype == TYPE_EXP && x.atype == NOPED);

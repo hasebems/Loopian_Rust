@@ -117,7 +117,8 @@ impl Flow {
                 } else if status & 0xf0 == 0x80 {
                     self.flow_note_off(estk_, locate);
                 }
-            } else if (4..92).contains(&locate) /*locate >= 4 && locate < 92*/ {
+            } else if (4..92).contains(&locate) {
+                // locate >= 4 && locate < 92
                 // 外部から Chord 情報が来ていない時
                 // 4->21 A0, 91->108 C8
                 estk_.midi_out_flow(status, locate + 17, vel);
@@ -211,11 +212,6 @@ impl Flow {
 
         real_note += self.keynote;
         let _ = real_note.clamp(MIN_NOTE_NUMBER, MAX_NOTE_NUMBER);
-//        if real_note >= MAX_NOTE_NUMBER {
-//            real_note = MAX_NOTE_NUMBER;
-//        } else if real_note < MIN_NOTE_NUMBER {
-//            real_note = MIN_NOTE_NUMBER;
-//        }
         real_note
     }
     fn same_note_index(&self, rnote: u8) -> Option<usize> {

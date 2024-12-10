@@ -87,8 +87,8 @@ pub struct PhrEvt {
     // TYPE_CLS: number of notes: 2-5
     // TYPE_ARP: u/d/xu/xd(0-3) figure of arpeggio
     pub each_dur: i16, // each duration for special purpose
-                       // TYPE_CLS/ARP: each note's duration
-    pub artic: i16,    // 0..100..200[%] staccato/legato
+    // TYPE_CLS/ARP: each note's duration
+    pub artic: i16, // 0..100..200[%] staccato/legato
 }
 impl PhrEvt {
     pub fn gen_repeat(tick: i16) -> Self {

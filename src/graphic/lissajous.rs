@@ -6,9 +6,9 @@
 use nannou::prelude::*;
 use std::f32::consts::PI;
 
-use crate::lpnlib::*;
 use super::draw_graph::Resize;
 use super::viewobj::*;
+use crate::lpnlib::*;
 
 pub struct Lissajous {
     crnt_time: f32,
@@ -42,14 +42,12 @@ impl NormalView for Lissajous {
     fn update_model(&mut self, crnt_time: f32, _rs: Resize) {
         let past_time = self.crnt_time;
         self.crnt_time = crnt_time * Lissajous::SPEED;
-        let x1 = (past_time * 1.0 + self.phase_real).sin() 
-                        * self.range_real * Lissajous::X_MAX;
-        let y1 = (past_time * 2.0).sin() 
-                        * self.range_real * Lissajous::Y_MAX;
-        let x2 = (past_time * 2.0 + self.phase_real + PI/2.0).sin() 
-                        * self.range_real * Lissajous::X_MAX;
-        let y2 = (past_time * 1.0 - PI/2.0).sin() 
-                        * self.range_real * Lissajous::Y_MAX;
+        let x1 = (past_time * 1.0 + self.phase_real).sin() * self.range_real * Lissajous::X_MAX;
+        let y1 = (past_time * 2.0).sin() * self.range_real * Lissajous::Y_MAX;
+        let x2 = (past_time * 2.0 + self.phase_real + PI / 2.0).sin()
+            * self.range_real
+            * Lissajous::X_MAX;
+        let y2 = (past_time * 1.0 - PI / 2.0).sin() * self.range_real * Lissajous::Y_MAX;
         let v1 = Vec2::new(x1, y1);
         let v2 = Vec2::new(x2, y2);
         self.track.push([v1, v2]);
@@ -75,10 +73,12 @@ impl NormalView for Lissajous {
         }
         // どの音程でも一定程度の位相差を持たせる
         let pnt = (nt as u8).clamp(MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) as f32;
-        if pnt > 60.0 {    // C4 以上
-            self.phase_target += PI * (pnt - (MAX_NOTE_NUMBER as f32-100.0))/100.0;//68..100
-        } else {    // C4 未満
-            self.phase_target += PI * (pnt - (MIN_NOTE_NUMBER as f32+100.0))/100.0;//-61..-100
+        if pnt > 60.0 {
+            // C4 以上 -> 68..100
+            self.phase_target += PI * (pnt - (MAX_NOTE_NUMBER as f32 - 100.0)) / 100.0;
+        } else {
+            // C4 未満 -> -61..-100
+            self.phase_target += PI * (pnt - (MIN_NOTE_NUMBER as f32 + 100.0)) / 100.0;
         }
     }
     fn set_mode(&mut self, mode: GraphMode) {
