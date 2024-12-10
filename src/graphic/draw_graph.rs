@@ -281,10 +281,10 @@ impl Graphic {
         // テキスト表示
         if self.text_visible {
             self.title(draw.clone());
-            self.eight_indicator(draw.clone(), guiev);
             self.scroll_text(draw.clone(), itxt);
             self.input_text(draw.clone(), guiev, itxt, tm);
         }
+        self.eight_indicator(draw.clone(), guiev);
     }
     fn view_loopian_normal_view(&self, draw: Draw, tm: f32) {
         if let Some(sv) = self.svce.as_ref() {
