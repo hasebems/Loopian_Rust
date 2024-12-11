@@ -404,7 +404,6 @@ fn break_up_nt_dur_vel(
   )*/
 {
     //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、解析を終えたら文字列を再結合
-    println!("Phrase Note: {}", note_text);
     let mut ntext1 = note_text;
     let oct = extract_top_pm(&mut ntext1);
 
@@ -537,19 +536,16 @@ fn detect_measure_top_tie(nt: String, bdur: i32, rest_tick: i32) -> (bool, (Stri
 fn extract_o_dot(nt: String) -> (String, i32) {
     let mut ntext = nt;
     let mut dur_cnt: i32 = 1;
-    let txtlen = ntext.len();
-    if txtlen > 0 {
-        if ntext.chars().nth(txtlen - 1).unwrap_or(' ') == 'o' {
+    if !ntext.is_empty() {
+        if let Some('o') = ntext.chars().last() {
             dur_cnt = LAST;
             ntext.pop();
         } else {
             loop {
-                let length = ntext.len();
-                if length == 0 {
+                if ntext.is_empty() {
                     break;
                 }
-                let ltr = ntext.chars().nth(length - 1).unwrap_or(' ');
-                if ltr == '.' {
+                if let Some('.') = ntext.chars().last() {
                     dur_cnt += 1;
                     ntext.pop();
                 } else {
@@ -635,7 +631,7 @@ pub fn gen_diff_vel(nt: String) -> (String, i32) {
         last_ltr = if ntext.is_empty() {
             ' '
         } else {
-            ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
+            ntext.chars().last().unwrap_or(' ')
         };
     }
     while last_ltr == '%' {
@@ -644,7 +640,7 @@ pub fn gen_diff_vel(nt: String) -> (String, i32) {
         last_ltr = if ntext.is_empty() {
             ' '
         } else {
-            ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
+            ntext.chars().last().unwrap_or(' ')
         };
     }
     (ntext, diff_vel)
@@ -820,7 +816,8 @@ pub fn split_notes(txt: String) -> Vec<String> {
         } else if ltr == 'x' {
             return vec!["x".to_string()];
         } else {
-            return vec!["".to_string()];
+            set_vec(i);
+            return splitted;
         }
     }
     set_vec(txt.len());
