@@ -3,7 +3,7 @@ window_x_default = 2880
 window_y_default = 1620
 
 [midi]
-midi_out = "IACdriver"
+midi_out = "IAC"
 midi_ext_out = "U6MIDI Pro ポート1"  # Loopian::ORBIT by raspberry pi5 
 midi_device = "Pico"                # Loopian::ORBIT by raspberry pi5 
 # midi_out = "Midi Through:Midi Through Port-0 14:0" # Loopian::ORBIT by raspberry pi5 

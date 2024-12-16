@@ -46,7 +46,7 @@ impl MidiTx {
             match MidiOutput::new("Loopian_tx") {
                 Ok(driver) => {
                     let drv_name = driver.port_name(p).unwrap();
-                    println!("[MIDI Output] No.{}: {}", i, drv_name);
+                    println!("--MIDI Output List-- No.{}: {}", i, drv_name);
                 }
                 Err(_e) => continue,
             }
@@ -72,7 +72,7 @@ impl MidiTx {
                     Ok(c) => {
                         this.connection_tx = Some(Box::new(c));
                         an_least_one = true;
-                        println!("{}: {} <as Piano>", i, drv_name);
+                        println!("<<Output Connected!>> No.{}: {} <as Piano>", i, drv_name);
                     }
                     Err(_e) => {
                         println!("Connection Failed! for No.{}", i);
@@ -84,7 +84,7 @@ impl MidiTx {
                         Ok(c) => {
                             this.connection_tx_led1 = Some(Box::new(c));
                             an_least_one = true;
-                            println!("{}: {} <as LED1>", i, drv_name);
+                            println!("<<Output Connected!>> No.{}: {} <as LED1>", i, drv_name);
                         }
                         Err(_e) => {
                             println!("Connection Failed! for No.{}", i);
@@ -95,7 +95,7 @@ impl MidiTx {
                         Ok(c) => {
                             this.connection_tx_led2 = Some(Box::new(c));
                             an_least_one = true;
-                            println!("{}: {} <as LED2>", i, drv_name);
+                            println!("<<Output Connected!>> No.{}: {} <as LED2>", i, drv_name);
                         }
                         Err(_e) => {
                             println!("Connection Failed! for No.{}", i);
@@ -107,14 +107,14 @@ impl MidiTx {
                     Ok(c) => {
                         this.connection_ext_loopian = Some(Box::new(c));
                         an_least_one = true;
-                        println!("{}: {} <as Ext>", i, drv_name);
+                        println!("<<Output Connected!>> No.{}: {} <as Ext>", i, drv_name);
                     }
                     Err(_e) => {
                         println!("Connection Failed! for No.{}", i);
                     }
                 }
             } else {
-                println!("[no connect]: {}", drv_name);
+                println!("no connect: {}", drv_name);
             }
         }
         if an_least_one {

@@ -112,7 +112,7 @@ impl MidiRx {
         // 全inputを表示
         for (i, p) in in_ports.iter().enumerate() {
             let drv_name = midi_in.port_name(p).unwrap();
-            println!("[MIDI Input] No.{}: {}", i, drv_name);
+            println!("--MIDI Input List-- No.{}: {}", i, drv_name);
         }
     }
     fn connect_uart(&mut self) {
@@ -150,7 +150,7 @@ impl MidiRx {
             let dev_name = &Settings::load_settings().midi.midi_device;
             if drv_name.contains(dev_name) && i != num_to_avoid {
                 println!(
-                    "{}: {} <as Flow{}>",
+                    "<<Input Connected!>> No.{}: {} <as Flow{}>",
                     i,
                     midi_in.port_name(p).unwrap(),
                     idx_num + 1 // 1ori
