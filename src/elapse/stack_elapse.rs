@@ -18,7 +18,7 @@ use super::elapse_damper::DamperPart;
 use super::elapse_flow::Flow;
 use super::elapse_loop::{CompositionLoop, PhraseLoop};
 use super::elapse_part::Part;
-use super::tickgen::{CrntMsrTick, TickGen};
+use super::tickgen::{CrntMsrTick, RitType, TickGen};
 use crate::lpnlib::{ElpsMsg::*, *};
 use crate::midi::midirx::MidiRx;
 use crate::midi::miditx::MidiTx;
@@ -113,7 +113,7 @@ impl ElapseStack {
             beat_stock: Meter(4, 4),
             during_play: false,
             display_time: Instant::now(),
-            tg: TickGen::new(0),
+            tg: TickGen::new(RitType::LinearPrecise),
             flac: 0,
             part_vec: part_vec.clone(),
             damper_part,
@@ -446,7 +446,7 @@ impl ElapseStack {
     }
     fn rit(&mut self, msg: [i16; 2]) {
         let strength_set: [(i16, i32); 3] =
-            [(MSG_RIT_POCO, 98), (MSG_RIT_NRM, 90), (MSG_RIT_MLT, 80)];
+            [(MSG_RIT_POCO, 80), (MSG_RIT_NRM, 60), (MSG_RIT_MLT, 40)];
         let strength_msg = msg[0] % 10;
         let bar = (msg[0] / 10) as i32;
         let target_bpm: i16;

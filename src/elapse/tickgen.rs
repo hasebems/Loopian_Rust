@@ -32,13 +32,20 @@ pub struct CrntMsrTick {
     pub tick: i32,
     pub tick_for_onemsr: i32,
 }
-
+#[allow(dead_code)]
+pub enum RitType {
+    Linear,
+    LinearPrecise,
+    Sigmoid,
+    Control,
+}
 impl TickGen {
-    pub fn new(tp: usize) -> Self {
+    pub fn new(tp: RitType) -> Self {
         let rit: Box<dyn Rit> = match tp {
-            0 => Box::new(RitLinear::new()),
-            1 => Box::new(RitSigmoid::new()),
-            _ => Box::new(RitCtrl::new()),
+            RitType::Linear => Box::new(RitLinear::new()),
+            RitType::LinearPrecise => Box::new(RitLinearPrecise::new()),
+            RitType::Sigmoid => Box::new(RitSigmoid::new()),
+            RitType::Control => Box::new(RitCtrl::new()),
         };
         Self {
             bpm: DEFAULT_BPM,
@@ -342,101 +349,24 @@ impl RitLinear {
 }
 
 //*******************************************************************
-//          Rit. Sigmoid Struct
+//          Rit. Linear Precise Struct
 //*******************************************************************
-const IDX_MAX: usize = 128;
-#[rustfmt::skip]
-#[allow(clippy::excessive_precision)]
-const SIGMOID: [f32; IDX_MAX] = [// time -> tps(bpm)
-    0.993307149,0.992767236,0.992184111,0.991554373,
-    0.990874363,0.990140145,0.989347489,0.988491851,
-    0.987568349,0.986571745,0.98549642,0.984336351,
-    0.983085087,0.981735722,0.980280872,0.978712648,
-    0.97702263,0.97520184,0.973240717,0.971129093,
-    0.968856169,0.966410494,0.963779944,0.960951707,
-    0.957912272,0.954647419,0.951142221,0.947381047,
-    0.943347575,0.939024819,0.934395163,0.929440404,
-    0.92414182,0.918480244,0.91243616,0.90598982,
-    0.89912137,0.891811045,0.884039282,0.875786992,
-    0.86703576,0.857768105,0.847967758,0.837619963,
-    0.826711794,0.815232489,0.803173796,0.790530319,
-    0.777299861,0.763483764,0.749087213,0.734119527,
-    0.718594393,0.702530057,0.685949455,0.66888026,
-    0.651354865,0.633410264,0.615087856,0.596433146,
-    0.577495365,0.558326994,0.538983221,0.519521322,
-    0.0,0.480478678,0.461016779,0.441673006,
-    0.422504635,0.403566854,0.384912144,0.366589736,
-    0.348645135,0.33111974,0.314050545,0.297469943,
-    0.281405607,0.265880473,0.250912787,0.236516236,
-    0.222700139,0.209469681,0.196826204,0.184767511,
-    0.173288206,0.162380037,0.152032242,0.142231895,
-    0.13296424,0.124213008,0.115960718,0.108188955,
-    0.100878623,0.09401018,0.08756384,0.081519756,
-    0.07585818,0.070559596,0.065604837,0.060975181,
-    0.056652425,0.052618953,0.048857779,0.045352581,
-    0.042087728,0.039048293,0.036220056,0.033589506,
-    0.031143831,0.028870907,0.026759283,0.02479816,
-    0.02297737,0.021287352,0.019719128,0.018264278,
-    0.016914913,0.015663649,0.01450358,0.013428255,
-    0.012431651,0.011508149,0.010652511,0.009859855,
-    0.009125637,0.008445627,0.007815889,0.007232764,
-    //0.006692851,
-];
-#[rustfmt::skip]
-#[allow(clippy::excessive_precision)]
-const INTEGRAL_SIGMOID: [f32; IDX_MAX] = [ // time -> tick
-    0.0,0.015516206,0.031023639,0.046521595,
-    0.06200932,0.077485996,0.092950743,0.108402613,
-    0.123840583,0.139263553,0.154670335,0.170059654,
-    0.185430134,0.200780296,0.216108551,0.231413188,
-    0.24669237,0.261944123,0.277166331,0.29235672,
-    0.307512855,0.322632126,0.337711738,0.352748704,
-    0.367739829,0.382681702,0.397570683,0.412402896,
-    0.427174214,0.441880248,0.456516342,0.471077557,
-    0.485558668,0.499954153,0.514258187,0.52846464,
-    0.542567072,0.556558731,0.570432562,0.584181205,
-    0.597797007,0.611272038,0.624598099,0.637766753,
-    0.650769345,0.663597035,0.676240834,0.688691647,
-    0.70094032,0.712977693,0.724794653,0.736382206,
-    0.747731533,0.758834068,0.769681564,0.780266172,
-    0.790580508,0.800617736,0.810371628,0.819836635,
-    0.829007952,0.837881564,0.8464543,0.854723867,
-    0.862688877,0.870348867,0.8777043,0.884756564,
-    0.891507952,0.897961635,0.904121628,0.909992736,
-    0.915580508,0.920891172,0.925931564,0.930709068,
-    0.935231533,0.939507206,0.943544653,0.947352693,
-    0.95094032,0.954316647,0.957490834,0.960472035,
-    0.963269345,0.965891753,0.968348099,0.970647038,
-    0.972797007,0.974806205,0.976682562,0.978433731,
-    0.980067072,0.98158964,0.983008187,0.984329153,
-    0.985558668,0.986702557,0.987766342,0.988755248,
-    0.989674214,0.990527896,0.991320683,0.992056702,
-    0.992739829,0.993373704,0.993961738,0.994507126,
-    0.995012855,0.99548172,0.995916331,0.996319123,
-    0.99669237,0.997038188,0.997358551,0.997655296,
-    0.997930134,0.998184654,0.998420335,0.998638553,
-    0.998840583,0.999027613,0.999200743,0.999360996,
-    0.99950932,0.999646595,0.999773639,0.999891206,
-    //1.0,
-];
-pub struct RitSigmoid {
-    ratio: i32,
-    bar: i32,
-    bpm: f32,
-    end_bpm: f32,
-    start_tick: i32,
+pub struct RitLinearPrecise {
     start_time: Instant,
-    to_end: Duration, // end までの時間
-    se_tick: i32,     // rit start-end の tick
-    crnt_idx: usize,
+    total_time: Duration,
+    start_tick: i32,
+    total_tick: i32,
+    original_tps: i32,
+    target_tps: i32,
+    crnt_tps: i32,
     tick_for_onemsr: i32,
-    crnt_tick: i32,
 }
-impl Rit for RitSigmoid {
+
+impl Rit for RitLinearPrecise {
     //==== rit. ======================
-    // ratio  0:   目的地で tempo を 30
-    //        50:  目的地で tempo を半分
-    //        100: 目的地で tempo は変わらない
+    // ratio  0:   tempo 停止
+    //        50:  最終到達点でテンポが 50%(1/2)
+    //        100: 何もしない
     fn set_rit(
         &mut self,
         ratio: i32,
@@ -446,70 +376,204 @@ impl Rit for RitSigmoid {
         start_tick: i32,
         tick_for_onemsr: i32,
     ) {
-        self.ratio = ratio;
-        self.bar = bar;
-        self.bpm = bpm;
-        self.start_tick = start_tick;
         self.start_time = start_time;
+        self.start_tick = start_tick;
         self.tick_for_onemsr = tick_for_onemsr;
-        self.se_tick = tick_for_onemsr - start_tick + tick_for_onemsr * bar;
-        self.end_bpm = if bpm * (ratio as f32) / 100.0 > 30.0 {
-            bpm * (ratio as f32) / 100.0
-        } else {
-            30.0
-        };
-        //self.to_end = Duration::from_micros((((self.se_tick as f32)/(bpm*8.0))*1000000.0) as u64);
-        let t1 = (self.se_tick as f32) / (bpm * 8.0);
-        self.to_end =
-            Duration::from_micros((2.0 * bpm / (bpm + self.end_bpm) * t1 * 1000000.0) as u64);
-        #[cfg(feature = "verbose")]
-        {
-            println!("end_bpm:::::{}", self.end_bpm);
-            println!("tick:::::{}", start_tick);
-            println!("se_tick:::::{}", self.se_tick);
-            println!("org_end:::::{}", t1);
-            println!("to_end:::::{:?}", self.to_end);
-        }
+        self.original_tps = (bpm * 8.0) as i32;
+        self.crnt_tps = self.original_tps;
+        self.target_tps = (self.original_tps * ratio) / 100;
+        self.total_tick = (tick_for_onemsr - start_tick) + (bar * tick_for_onemsr);
+        let milli_sec = ((self.total_tick as f32) * 2.0)
+            / (self.original_tps as f32 + self.target_tps as f32)
+            * 1000.0;
+        self.total_time = Duration::from_millis(milli_sec as u64);
+        println!(
+            ">>>Rit Status: total_tick:{:?}, total_time:{:?}",
+            self.total_tick, self.total_time
+        );
     }
     fn calc_tick_rit(&mut self, crnt_time: Instant) -> (i32, bool) {
-        let bunshi = crnt_time - self.start_time;
-        self.crnt_idx = ((bunshi.as_secs_f32() / self.to_end.as_secs_f32()) * 128.0) as usize;
-        if self.crnt_idx >= IDX_MAX {
-            (self.se_tick + self.start_tick, true)
+        let elapsed_time = crnt_time - self.start_time;
+        let time_ratio = elapsed_time.as_secs_f32() / self.total_time.as_secs_f32();
+        self.crnt_tps =
+            self.original_tps - ((self.original_tps - self.target_tps) as f32 * time_ratio) as i32;
+        let addup_tick = (((self.original_tps + self.crnt_tps) as f32 * elapsed_time.as_secs_f32())
+            / 2.0) as i32;
+        if addup_tick >= self.total_tick {
+            // reached last bar, and stop rit.
+            println!(">>>Rit End: elapsed_time:{:?}", elapsed_time);
+            (self.start_tick + self.total_tick, true)
         } else {
-            let tick_ratio = INTEGRAL_SIGMOID[self.crnt_idx];
-            let crnt_tick = (((self.se_tick as f32) * tick_ratio) as i32) + self.start_tick;
-            if self.crnt_tick != crnt_tick {
-                self.crnt_tick = crnt_tick;
-            }
-            (crnt_tick, false)
+            (self.start_tick + addup_tick, false)
         }
     }
     fn get_real_bpm(&self) -> i16 {
-        let tps_ratio = if self.crnt_idx >= IDX_MAX {
-            0.0
-        } else {
-            SIGMOID[self.crnt_idx]
-        };
-        let crnt_bpm = tps_ratio * (self.bpm - self.end_bpm) + self.end_bpm;
-        crnt_bpm as i16
+        (self.crnt_tps / 8) as i16
+    }
+}
+impl RitLinearPrecise {
+    pub fn new() -> Self {
+        Self {
+            //original_bpm: 0.0,
+            start_time: Instant::now(),
+            total_time: Duration::from_secs(0),
+            start_tick: 0,
+            total_tick: 0,
+            tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+            original_tps: 0,
+            target_tps: 0,
+            crnt_tps: 0,
+        }
     }
 }
 
+//*******************************************************************
+//          Rit. Sigmoid Struct
+//*******************************************************************
+const IDX_MAX: usize = 201;
+#[rustfmt::skip]
+#[allow(clippy::excessive_precision)]
+const SIGMOID: [f32; IDX_MAX] = [
+    1.0, 0.998, 0.997, 0.995, 0.994, 0.992, 0.99, 0.988, 0.987, 0.985,
+    0.983, 0.981, 0.979, 0.977, 0.975, 0.972, 0.97, 0.968, 0.965, 0.963,
+    0.961, 0.958, 0.955, 0.953, 0.95, 0.947, 0.944, 0.941, 0.938, 0.935,
+    0.932, 0.929, 0.925, 0.922, 0.918, 0.915, 0.911, 0.907, 0.904, 0.9,
+    0.896, 0.892, 0.887, 0.883, 0.879, 0.874, 0.87, 0.865, 0.861, 0.856,
+    0.851, 0.846, 0.841, 0.836, 0.83, 0.825, 0.819, 0.814, 0.808, 0.803,
+    0.797, 0.791, 0.785, 0.779, 0.772, 0.766, 0.76, 0.753, 0.747, 0.74,
+    0.733, 0.726, 0.719, 0.712, 0.705, 0.698, 0.691, 0.683, 0.676, 0.668,
+    0.661, 0.653, 0.646, 0.638, 0.63, 0.622, 0.614, 0.606, 0.598, 0.59,
+    0.582, 0.574, 0.566, 0.558, 0.55, 0.541, 0.533, 0.525, 0.517, 0.508,
+    0.5, 0.492, 0.483, 0.475, 0.467, 0.459, 0.45, 0.442, 0.434, 0.426,
+    0.418, 0.41, 0.402, 0.394, 0.386, 0.378, 0.37, 0.362, 0.354, 0.347,
+    0.339, 0.332, 0.324, 0.317, 0.309, 0.302, 0.295, 0.288, 0.281, 0.274,
+    0.267, 0.26, 0.253, 0.247, 0.24, 0.234, 0.228, 0.221, 0.215, 0.209,
+    0.203, 0.197, 0.192, 0.186, 0.181, 0.175, 0.17, 0.164, 0.159, 0.154,
+    0.149, 0.144, 0.139, 0.135, 0.13, 0.126, 0.121, 0.117, 0.113, 0.108,
+    0.104, 0.1, 0.096, 0.093, 0.089, 0.085, 0.082, 0.078, 0.075, 0.071,
+    0.068, 0.065, 0.062, 0.059, 0.056, 0.053, 0.05, 0.047, 0.045, 0.042,
+    0.039, 0.037, 0.035, 0.032, 0.03, 0.028, 0.025, 0.023, 0.021, 0.019,
+    0.017, 0.015, 0.013, 0.012, 0.01, 0.008, 0.006, 0.005, 0.003, 0.002,
+    0.0
+];
+#[rustfmt::skip]
+#[allow(clippy::excessive_precision)]
+const INTEGRAL_SIGMOID: [f32; IDX_MAX] = [
+    0.01,0.02,0.03,0.04,0.05,0.059,0.069,0.079,
+    0.089,0.099,0.109,0.118,0.128,0.138,0.147,0.157,
+    0.167,0.176,0.186,0.196,0.205,0.215,0.224,0.234,
+    0.243,0.253,0.262,0.271,0.281,0.29,0.299,0.308,
+    0.317,0.327,0.336,0.345,0.354,0.363,0.372,0.381,
+    0.39,0.399,0.408,0.417,0.425,0.434,0.443,0.451,
+    0.46,0.468,0.477,0.485,0.494,0.502,0.51,0.518,
+    0.527,0.535,0.543,0.551,0.559,0.566,0.574,0.582,
+    0.59,0.597,0.605,0.612,0.62,0.627,0.634,0.642,
+    0.649,0.656,0.663,0.67,0.677,0.684,0.69,0.697,
+    0.703,0.71,0.716,0.723,0.729,0.735,0.741,0.747,
+    0.753,0.759,0.765,0.771,0.776,0.782,0.787,0.793,
+    0.798,0.803,0.808,0.813,0.818,0.823,0.828,0.833,
+    0.838,0.842,0.847,0.851,0.855,0.86,0.864,0.868,
+    0.872,0.876,0.879,0.883,0.887,0.891,0.894,0.898,
+    0.901,0.904,0.907,0.911,0.914,0.917,0.92,0.922,
+    0.925,0.928,0.931,0.933,0.936,0.938,0.941,0.943,
+    0.945,0.947,0.95,0.952,0.954,0.956,0.957,0.959,
+    0.961,0.963,0.965,0.966,0.968,0.969,0.971,0.972,
+    0.974,0.975,0.976,0.978,0.979,0.98,0.981,0.982,
+    0.983,0.984,0.985,0.986,0.987,0.988,0.989,0.989,
+    0.99,0.991,0.991,0.992,0.993,0.993,0.994,0.994,
+    0.995,0.995,0.996,0.996,0.997,0.997,0.997,0.998,
+    0.998,0.998,0.998,0.999,0.999,0.999,0.999,0.999,
+    1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,
+];
+
+pub struct RitSigmoid {
+    start_time: Instant,
+    total_time: Duration,
+    start_tick: i32,
+    total_tick: i32,
+    original_tps: i32,
+    target_tps: i32,
+    crnt_tps: i32,
+    tick_for_onemsr: i32,
+    tps_ratio: f32,
+}
+
+impl Rit for RitSigmoid {
+    //==== rit. ======================
+    // ratio  0:   tempo 停止
+    //        50:  最終到達点でテンポが 50%(1/2)
+    //        100: 何もしない
+    fn set_rit(
+        &mut self,
+        ratio: i32,
+        bar: i32,
+        bpm: f32,
+        start_time: Instant,
+        start_tick: i32,
+        tick_for_onemsr: i32,
+    ) {
+        self.start_time = start_time;
+        self.start_tick = start_tick;
+        self.tick_for_onemsr = tick_for_onemsr;
+        self.original_tps = (bpm * 8.0) as i32;
+        self.crnt_tps = self.original_tps;
+        self.target_tps = (self.original_tps * ratio) / 100;
+        self.total_tick = (tick_for_onemsr - start_tick) + (bar * tick_for_onemsr);
+        let milli_sec = ((self.total_tick as f32) * 2.0)
+            / (self.original_tps as f32 + self.target_tps as f32)
+            * 1000.0;
+        self.total_time = Duration::from_millis(milli_sec as u64);
+        self.tps_ratio = self.original_tps as f32 / self.target_tps as f32;
+        println!(
+            ">>>Rit Status: total_tick:{:?}, total_time:{:?}",
+            self.total_tick, self.total_time
+        );
+    }
+    fn calc_tick_rit(&mut self, crnt_time: Instant) -> (i32, bool) {
+        let elapsed_time = crnt_time - self.start_time;
+        let time_index =
+            (IDX_MAX as f32 * elapsed_time.as_secs_f32() / self.total_time.as_secs_f32()) as usize;
+        let index_rate;
+        let integral_sig;
+        if time_index >= IDX_MAX {
+            // reached last bar, and stop rit.
+            self.crnt_tps = self.target_tps;
+            index_rate = 1.0;
+            integral_sig = 1.0;
+        } else {
+            self.crnt_tps = self.target_tps
+                + ((self.original_tps - self.target_tps) as f32 * SIGMOID[time_index]) as i32;
+            index_rate = time_index as f32 / IDX_MAX as f32;
+            integral_sig = INTEGRAL_SIGMOID[time_index];
+        }
+        let tps_rate =
+            2.0 * self.target_tps as f32 / (self.original_tps as f32 - self.target_tps as f32);
+        let addup_base = (integral_sig + (tps_rate * index_rate)) / (1.0 + tps_rate);
+        let addup_tick = (addup_base * (self.total_tick as f32)) as i32;
+        if addup_tick >= self.total_tick {
+            // reached last bar, and stop rit.
+            (self.start_tick + self.total_tick, true)
+        } else {
+            (self.start_tick + addup_tick, false)
+        }
+    }
+    fn get_real_bpm(&self) -> i16 {
+        (self.crnt_tps / 8) as i16
+    }
+}
 impl RitSigmoid {
     pub fn new() -> Self {
         Self {
-            ratio: 0,
-            bar: 0,
-            bpm: 0.0,
-            end_bpm: 0.0,
-            start_tick: 0,
+            //original_bpm: 0.0,
             start_time: Instant::now(),
-            to_end: Duration::from_secs(0),
-            se_tick: 0,
-            crnt_idx: 0,
-            tick_for_onemsr: 0,
-            crnt_tick: 0,
+            total_time: Duration::from_secs(0),
+            start_tick: 0,
+            total_tick: 0,
+            tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+            original_tps: 0,
+            target_tps: 0,
+            crnt_tps: 0,
+            tps_ratio: 0.0,
         }
     }
 }
