@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib::{Meter, DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, DEFAULT_TICK_FOR_QUARTER};
+use crate::lpnlib::{Meter, DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE};
 use std::time::{Duration, Instant};
 
 //*******************************************************************
@@ -196,7 +196,7 @@ impl TickGen {
     fn calc_crnt_tick(&self) -> i32 {
         let diff = self.crnt_time - self.bpm_start_time;
         let elapsed_tick =
-            ((DEFAULT_TICK_FOR_QUARTER as f32) * (self.bpm as f32) * diff.as_secs_f32()) / 60.0;
+            ((self.tick_for_beat as f32) * (self.bpm as f32) * diff.as_secs_f32()) / 60.0;
         elapsed_tick as i32 + self.bpm_start_tick
     }
     fn gen_rit(&mut self) {

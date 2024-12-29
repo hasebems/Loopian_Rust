@@ -125,7 +125,7 @@ impl DynamicPattern {
             println!("DynamicPattern: No Chord Data!!");
             return END_OF_DATA;
         }
-        let vel = self.calc_dynamic_vel(crnt_.tick_for_onemsr, estk.get_bpm());
+        let vel = self.calc_dynamic_vel(crnt_.tick_for_onemsr, estk.get_bpm(), estk.tg().get_meter().1);
 
         if self.arp_available {
             // Arpeggio
@@ -144,12 +144,18 @@ impl DynamicPattern {
             next_tick
         }
     }
-    fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16) -> i16 {
+    fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
         let mut vel: i16 = self.ptn_vel as i16;
-        if tick_for_onemsr == TICK_4_4 as i32 {
-            vel = txt2seq_ana::calc_vel_for4(self.ptn_vel as i16, self.next_tick as f32, bpm);
-        } else if tick_for_onemsr == TICK_3_4 as i32 {
-            vel = txt2seq_ana::calc_vel_for3(self.ptn_vel as i16, self.next_tick as f32, bpm);
+        if denomi == 8 {
+            if (tick_for_onemsr / (DEFAULT_TICK_FOR_QUARTER / 2)) % 3 == 0 {
+                vel = txt2seq_ana::calc_vel_for3_8(self.ptn_vel as i16, self.next_tick as f32, bpm);
+            }
+        } else { // denomi == 4
+            if tick_for_onemsr == TICK_4_4 as i32 {
+                vel = txt2seq_ana::calc_vel_for4(self.ptn_vel as i16, self.next_tick as f32, bpm);
+            } else if tick_for_onemsr == TICK_3_4 as i32 {
+                vel = txt2seq_ana::calc_vel_for3(self.ptn_vel as i16, self.next_tick as f32, bpm);
+            }
         }
         vel
     }

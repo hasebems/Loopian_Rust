@@ -22,7 +22,7 @@ pub struct SeqDataStock {
     cluster_memory: String,
     raw_additional: String,
     tick_for_onemsr: i32,
-    tick_for_onebeat: i32,
+    tick_for_beat: i32,
     bpm: i16,
 }
 impl SeqDataStock {
@@ -43,7 +43,7 @@ impl SeqDataStock {
             cluster_memory: "".to_string(),
             raw_additional: "".to_string(),
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
-            tick_for_onebeat: DEFAULT_TICK_FOR_QUARTER,
+            tick_for_beat: DEFAULT_TICK_FOR_QUARTER,
             bpm: DEFAULT_BPM,
         }
     }
@@ -79,7 +79,12 @@ impl SeqDataStock {
                 PhraseAs::Measure(_m) => MAX_VARIATION,
             };
             if self.pdt[part][num].set_raw(input_text, &self.cluster_memory) {
-                self.pdt[part][num].set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+                self.pdt[part][num].set_recombined(
+                    self.input_mode,
+                    self.bpm,
+                    self.tick_for_onemsr,
+                    self.tick_for_beat,
+                );
                 return Some(false);
             }
         }
@@ -93,6 +98,7 @@ impl SeqDataStock {
                         self.input_mode,
                         self.bpm,
                         self.tick_for_onemsr,
+                        self.tick_for_beat,
                     );
                 }
             }
@@ -100,7 +106,7 @@ impl SeqDataStock {
     }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
         if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw(input_text) {
-            self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
+            self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_beat);
             return true;
         }
         false
@@ -110,7 +116,7 @@ impl SeqDataStock {
         println!("beat: {}/{}", numerator, denomirator);
         self.tick_for_onemsr =
             DEFAULT_TICK_FOR_ONE_MEASURE * (numerator as i32) / (denomirator as i32);
-        self.tick_for_onebeat = DEFAULT_TICK_FOR_QUARTER * 4 / (denomirator as i32);
+        self.tick_for_beat = DEFAULT_TICK_FOR_QUARTER * 4 / (denomirator as i32);
         self.recombine_all();
     }
     pub fn change_bpm(&mut self, bpm: i16) {
@@ -146,7 +152,12 @@ impl SeqDataStock {
         if update {
             for epd in self.pdt[part].iter_mut() {
                 epd.base_note = new_bd;
-                epd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+                epd.set_recombined(
+                    self.input_mode,
+                    self.bpm,
+                    self.tick_for_onemsr,
+                    self.tick_for_beat,
+                );
             }
         }
         update
@@ -200,16 +211,26 @@ impl SeqDataStock {
     fn recombine_phr_all(&mut self) {
         for pd in self.pdt.iter_mut() {
             for epd in pd.iter_mut() {
-                epd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+                epd.set_recombined(
+                    self.input_mode,
+                    self.bpm,
+                    self.tick_for_onemsr,
+                    self.tick_for_beat,
+                );
             }
         }
     }
     fn recombine_all(&mut self) {
         for (i, pd) in self.pdt.iter_mut().enumerate() {
             for epd in pd.iter_mut() {
-                epd.set_recombined(self.input_mode, self.bpm, self.tick_for_onemsr);
+                epd.set_recombined(
+                    self.input_mode,
+                    self.bpm,
+                    self.tick_for_onemsr,
+                    self.tick_for_beat,
+                );
             }
-            self.cdt[i].set_recombined(self.tick_for_onemsr, self.tick_for_onebeat);
+            self.cdt[i].set_recombined(self.tick_for_onemsr, self.tick_for_beat);
         }
     }
     fn default_base_note(part_num: usize) -> i32 {
@@ -284,7 +305,13 @@ impl PhraseDataStock {
         );
         true
     }
-    pub fn set_recombined(&mut self, input_mode: InputMode, bpm: i16, tick_for_onemsr: i32) {
+    pub fn set_recombined(
+        &mut self,
+        input_mode: InputMode,
+        bpm: i16,
+        tick_for_onemsr: i32,
+        tick_for_beat: i32,
+    ) {
         if self.cmpl_nt == [""] {
             println!("no_phrase...");
             //  clear
@@ -310,7 +337,7 @@ impl PhraseDataStock {
         self.ana = analyse_data(&self.phr, &self.cmpl_ex);
 
         // 5.humanized data
-        self.phr = beat_filter(&self.phr, bpm, tick_for_onemsr);
+        self.phr = beat_filter(&self.phr, bpm, tick_for_onemsr, tick_for_beat);
         #[cfg(feature = "verbose")]
         {
             println!("final_phrase: {:?}", self.phr);
@@ -372,7 +399,7 @@ impl CompositionDataStock {
             false
         }
     }
-    pub fn set_recombined(&mut self, tick_for_onemsr: i32, tick_for_onebeat: i32) {
+    pub fn set_recombined(&mut self, tick_for_onemsr: i32, tick_for_beat: i32) {
         if self.cmpl_cd == [""] {
             // clear
             self.chord = Vec::new();
@@ -382,7 +409,7 @@ impl CompositionDataStock {
 
         // 3.recombined data
         let (whole_tick, do_loop, rcmb) =
-            recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_onebeat);
+            recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_beat);
         self.chord = rcmb;
         self.do_loop = do_loop;
         self.whole_tick = whole_tick;
