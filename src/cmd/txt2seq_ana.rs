@@ -331,7 +331,7 @@ pub fn calc_vel_for3_8(input_vel: i16, tick: f32, bpm: i16) -> i16 {
     } else {
         (bpm - MIN_BPM * 2) * EFFECT / 200
     };
-    let tm: f32 = (tick % (TICK_1BT*3.0)) / TICK_1BT;
+    let tm: f32 = (tick % (TICK_1BT * 3.0)) / TICK_1BT;
     let mut vel = input_vel;
     if tm == 0.0 {
         vel += base_bpm;
