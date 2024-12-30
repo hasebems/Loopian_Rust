@@ -113,7 +113,7 @@ impl ElapseStack {
             beat_stock: Meter(4, 4),
             during_play: false,
             display_time: Instant::now(),
-            tg: TickGen::new(RitType::LinearPrecise),
+            tg: TickGen::new(RitType::Sigmoid),
             flac: 0,
             part_vec: part_vec.clone(),
             damper_part,
