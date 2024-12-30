@@ -16,7 +16,7 @@ use crate::file::input_txt::InputText;
 use crate::lpnlib::*;
 
 //*******************************************************************
-//      struct Graphic
+//      struct Resize
 //*******************************************************************
 #[derive(Default, Debug, Clone)]
 pub struct Resize {
@@ -61,6 +61,26 @@ impl Resize {
         self.full_size_y
     }
 }
+//*******************************************************************
+//      struct Graphic
+//*******************************************************************
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TextVisible {
+    Full,
+    Pale,
+    VeryPale,
+    Invisible,
+}
+impl TextVisible {
+    fn next(&self) -> TextVisible {
+        match self {
+            TextVisible::Full => TextVisible::Pale,
+            TextVisible::Pale => TextVisible::VeryPale,
+            TextVisible::VeryPale => TextVisible::Invisible,
+            TextVisible::Invisible => TextVisible::Full,
+        }
+    }
+}
 pub struct Graphic {
     graphmsg: Vec<i16>,
     font_nrm: nannou::text::Font,
@@ -71,7 +91,7 @@ pub struct Graphic {
     svce: Option<Box<dyn NormalView>>, // Normal View
     gmode: GraphMode,                  // Graph Mode  (Light or Dark)
     gptn: GraphPattern,                // Graph Pattern
-    text_visible: bool,
+    text_visible: TextVisible,
     crnt_time: f32,
     top_visible_line: usize,
     max_lines: usize,
@@ -102,7 +122,7 @@ impl Graphic {
             svce: None,
             gmode: GraphMode::Dark,
             gptn: GraphPattern::Ripple,
-            text_visible: true,
+            text_visible: TextVisible::Full,
             crnt_time: 0.0,
             top_visible_line: 0,
             max_lines: 0,
@@ -165,7 +185,7 @@ impl Graphic {
                     self.svce = Some(Box::new(Lissajous::new(self.gmode)));
                 }
                 TEXT_VISIBLE_CTRL => {
-                    self.text_visible = !self.text_visible;
+                    self.text_visible = self.text_visible.next();
                 }
                 _ => (),
             }
@@ -274,16 +294,20 @@ impl Graphic {
     //      View (no mutable self)
     //*******************************************************************
     pub fn view_loopian(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
+        // Scroll Text の表示
+        if self.text_visible != TextVisible::Invisible {
+            self.scroll_text(draw.clone(), itxt, self.text_visible);
+        }
+
         // Gererative Pattern
         self.view_loopian_normal_view(draw.clone(), tm);
         self.view_loopian_obj(draw.clone(), tm);
 
-        // テキスト表示
-        if self.text_visible {
-            self.title(draw.clone());
-            self.scroll_text(draw.clone(), itxt);
+        // Input Text 表示
+        if self.text_visible != TextVisible::Invisible {
             self.input_text(draw.clone(), guiev, itxt, tm);
         }
+        self.title(draw.clone());
         self.eight_indicator(draw.clone(), guiev);
     }
     fn view_loopian_normal_view(&self, draw: Draw, tm: f32) {
@@ -472,7 +496,7 @@ impl Graphic {
         }
     }
     /// Scroll Text の描画
-    fn scroll_text(&self, draw: Draw, itxt: &InputText) {
+    fn scroll_text(&self, draw: Draw, itxt: &InputText, text_visible: TextVisible) {
         const LINE_THICKNESS: f32 = 2.0;
         const SCRTXT_FONT_SIZE: u32 = 18;
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
@@ -503,12 +527,27 @@ impl Graphic {
             }
 
             // string
+            let alpha = match text_visible {
+                TextVisible::Full => 1,
+                TextVisible::Pale => 2,
+                TextVisible::VeryPale => 3,
+                TextVisible::Invisible => 0,
+            };
             let (txt_color, fontname) = if past_text_set.0 == TextAttribute::Answer {
-                (MAGENTA, &self.font_italic)
+                let magenta_with_alpha = Srgb::new(
+                    MAGENTA.red / alpha,
+                    MAGENTA.green / alpha,
+                    MAGENTA.blue / alpha,
+                );
+                (magenta_with_alpha, &self.font_italic)
             } else if self.gmode == GraphMode::Light {
-                (GRAY, &self.font_nrm)
+                let gray_with_alpha =
+                    Srgb::new(GRAY.red / alpha, GRAY.green / alpha, GRAY.blue / alpha);
+                (gray_with_alpha, &self.font_nrm)
             } else {
-                (WHITE, &self.font_nrm)
+                let white_with_alpha =
+                    Srgb::new(WHITE.red / alpha, WHITE.green / alpha, WHITE.blue / alpha);
+                (white_with_alpha, &self.font_nrm)
             };
             for (j, d) in past_text.chars().enumerate() {
                 draw.text(&d.to_string())

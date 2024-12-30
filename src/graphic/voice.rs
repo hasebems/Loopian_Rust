@@ -7,7 +7,6 @@ use nannou::prelude::*;
 
 use super::draw_graph::Resize;
 use super::viewobj::*;
-//use crate::lpnlib::*;
 
 pub struct StaticViewForVoice4 {
     font: nannou::text::Font,
@@ -28,23 +27,24 @@ impl NormalView for StaticViewForVoice4 {
         let part_name = ["L1", "L2", "R1", "R2"];
         for (i, &pt) in part_name.iter().enumerate() {
             let d = pt.to_string();
-            draw.ellipse()
-                //.w_h(x * 0.5, y * 0.5)
-                .x_y(
-                    if i / 2 == 1 { x } else { -x },
-                    if i % 2 == 0 { -y - 5.0 } else { y - 5.0 },
-                )
-                .color(MAGENTA)
-                .radius(30.0);
             draw.text(&d)
                 .font(self.font.clone())
                 .font_size(32)
-                .color(BLACK)
+                .color(MAGENTA)
                 .center_justify()
                 .x_y(
                     if i / 2 == 1 { x } else { -x },
                     if i % 2 == 0 { -y } else { y },
                 );
+            draw.rect()
+                .x_y(
+                    if i / 2 == 1 { x } else { -x },
+                    if i % 2 == 0 { -y - 5.0 } else { y - 5.0 },
+                )
+                .w_h(50.0, 30.0)
+                .no_fill()
+                .stroke_weight(2.0)
+                .stroke(MAGENTA);
         }
     }
 }
