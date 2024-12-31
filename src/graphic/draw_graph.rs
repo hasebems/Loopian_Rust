@@ -295,7 +295,7 @@ impl Graphic {
     //*******************************************************************
     pub fn view_loopian(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
         // Scroll Text の表示
-        if self.text_visible != TextVisible::Invisible {
+        if self.text_visible != TextVisible::Full && self.text_visible != TextVisible::Invisible {
             self.scroll_text(draw.clone(), itxt, self.text_visible);
         }
 
@@ -304,7 +304,10 @@ impl Graphic {
         self.view_loopian_obj(draw.clone(), tm);
 
         // Input Text 表示
-        if self.text_visible != TextVisible::Invisible {
+        if self.text_visible != TextVisible::Invisible && self.text_visible == TextVisible::Full {
+            self.scroll_text(draw.clone(), itxt, self.text_visible);
+        }
+        if self.text_visible != TextVisible::Invisible && self.text_visible != TextVisible::VeryPale {
             self.input_text(draw.clone(), guiev, itxt, tm);
         }
         self.title(draw.clone());
