@@ -470,7 +470,7 @@ impl Graphic {
         }
 
         // プロンプトの描画
-        let hcnt = itxt.get_history_locate();
+        let hcnt = itxt.get_history_locate() % 1000;
         let prompt_txt: &str =
             &(format!("{:03}:", hcnt) + guiev.get_part_txt(itxt.get_input_part()) + ">");
         for (i, c) in prompt_txt.chars().enumerate() {
