@@ -271,8 +271,7 @@ impl PhraseDataStock {
         // for test
         &self.cmpl_nt
     }
-    pub fn _get_phr(&self) -> &Vec<PhrEvt> {
-        // for test
+    pub fn get_phr(&self) -> &Vec<PhrEvt> {
         &self.phr
     }
     pub fn get_final(&self, part: i16, vari: PhraseAs) -> ElpsMsg {

@@ -22,12 +22,14 @@ impl MessageSender {
     }
     pub fn send_all_vari_and_phrase(&self, part: usize, gdt: &SeqDataStock) {
         for i in 0..MAX_VARIATION {
-            let vari = if i == 0 {
-                PhraseAs::Normal
+            if i == 0 {
+                // Normal の場合、Phrase が空でない場合のみ送信
+                if !gdt.get_pdstk(part, PhraseAs::Normal).get_phr().is_empty() {
+                    self.send_phrase_to_elapse(part, PhraseAs::Normal, gdt);
+                }
             } else {
-                PhraseAs::Variation(i)
-            };
-            self.send_phrase_to_elapse(part, vari, gdt);
+                self.send_phrase_to_elapse(part, PhraseAs::Variation(i), gdt);
+            }
         }
     }
     pub fn send_phrase_to_elapse(&self, part: usize, vari: PhraseAs, gdt: &SeqDataStock) {
