@@ -58,19 +58,22 @@ impl PhrLoopManager {
     /// Phrase Loop の処理 (Phrase Loop の生成、更新)
     /// 小節先頭でコールされる
     pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        // auftakt は別枠
         if self.proc_auftakt(crnt_, estk, pbp) {
+            // auftakt は別枠
             //return;
         } else if let Some(i) = self.exist_msr_phr(crnt_) {
             // Measure 指定があった場合
             self.active_phr = i;
             self.proc_replace_loop(crnt_, estk, pbp);
-        } else if let Some(i) = self.exist_vari_phr(self.vari_reserve) {
-            // Variation 指定があった場合
-            self.active_phr = i;
-            let sr = self.state_reserve; // イベントがあれば保持
-            self.proc_replace_loop(crnt_, estk, pbp);
-            self.state_reserve = sr;
+        } else if self.vari_reserve != 0 {
+            if let Some(i) = self.exist_vari_phr(self.vari_reserve) {
+                // Variation 指定があった場合
+                self.active_phr = i;
+                let sr = self.state_reserve; // イベントがあれば保持
+                self.proc_replace_loop(crnt_, estk, pbp);
+                self.state_reserve = sr;
+            }
+            self.vari_reserve = 0;
         } else if self.state_reserve {
             // User による Phrase 入力があった場合
             self.active_phr = 0;
@@ -223,16 +226,15 @@ impl PhrLoopManager {
     fn check_last_msr(&self, crnt_: &CrntMsrTick) -> bool {
         self.max_loop_msr != 0 && (crnt_.msr - self.first_msr_num) % (self.max_loop_msr) == 0
     }
+    /// Normal, Variation に Auftakt 指定があった場合、再生中の Phrase の最後の小節か判断、新しい Phrase を生成する。
+    /// @msr() 機能を使う場合、この関数を通過しなくても Auftakt 動作する
     fn proc_auftakt(
         &mut self,
         crnt_: &CrntMsrTick,
         estk: &mut ElapseStack,
         pbp: PartBasicPrm,
     ) -> bool {
-        let phr = &self.new_data_stock[self.active_phr];
-        if phr.auftakt == 0 {
-            return false;
-        } // auftakt phrase でなければすぐに return
+        let mut phr = &self.new_data_stock[0]; // Normal Phrase
 
         let auftakt_cond_vari = || -> bool {
             // variation 再生時の弱起auftaktの条件
@@ -248,15 +250,26 @@ impl PhrLoopManager {
         };
 
         if self.vari_reserve != 0 {
-            // variation : 今再生している Phrase が残り１小節以上
-            if auftakt_cond_vari() {
-                let prm = (crnt_.msr, crnt_.tick_for_onemsr);
-                self.active_phr = self.vari_reserve;
-                self.new_loop(prm, estk, pbp);
-                return true;
+            if let Some(i) = self.exist_vari_phr(self.vari_reserve) {
+                self.active_phr = i;
+                phr = &self.new_data_stock[i];
+                if phr.auftakt == 0 {
+                    return false;
+                }
+                // variation : 今再生している Phrase が残り１小節以上
+                if auftakt_cond_vari() {
+                    let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+                    self.active_phr = self.vari_reserve;
+                    self.new_loop(prm, estk, pbp);
+                    return true;
+                }
             }
+            self.vari_reserve = 0;
         } else if self.state_reserve {
-            // User input : 今再生している Phrase が残り１小節
+            // User input (Normal Phrase) : 今再生している Phrase が残り１小節
+            if phr.auftakt == 0 {
+                return false;
+            }
             if auftakt_cond() {
                 self.state_reserve = false;
                 let prm = (crnt_.msr, crnt_.tick_for_onemsr);
@@ -266,7 +279,14 @@ impl PhrLoopManager {
             }
         } else {
             // repeat : 今再生している Phrase が残り１小節 かつ loop設定の場合
-            if auftakt_cond() && self.new_data_stock[0].do_loop {
+            if self.new_data_stock.len() <= self.active_phr {
+                return false;
+            }
+            phr = &self.new_data_stock[self.active_phr];
+            if phr.auftakt == 0 {
+                return false;
+            }
+            if auftakt_cond() && phr.do_loop {
                 let prm = (crnt_.msr, crnt_.tick_for_onemsr);
                 self.vari_reserve = 0;
                 self.new_loop(prm, estk, pbp);
@@ -301,7 +321,7 @@ impl PhrLoopManager {
         pbp: PartBasicPrm,
     ) {
         self.state_reserve = false;
-        self.del_loop_phrase();
+        //self.del_loop_phrase(); 今動作している Phrase を即座に消す
         let prm = (crnt_.msr, crnt_.tick_for_onemsr);
         self.new_loop(prm, estk, pbp);
     }
@@ -651,6 +671,7 @@ impl Part {
             fl.borrow_mut().rcv_midi(estk_, crnt_, status, locate, vel);
         }
     }
+    /// Composition Loop から、次の小説の Phrase Variation を指定する
     pub fn set_phrase_vari(&mut self, vari_num: usize) {
         self.pm.reserve_vari(vari_num);
     }
