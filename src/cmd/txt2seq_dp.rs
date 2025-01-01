@@ -29,10 +29,10 @@ pub fn treat_dp(
     }
 
     // タイを探して追加する tick を算出
-    let (tie_dur, ntext2) = decide_tie_dur(text.clone());
+    let (tie_dur, bdur_tie, ntext2) = decide_tie_dur(text.clone());
 
     //  duration 情報、 Velocity 情報の抽出
-    let (ntext3, bdur) = decide_dur(ntext2, base_dur);
+    let (ntext3, mut bdur) = decide_dur(ntext2, base_dur);
     let mut duration = bdur + tie_dur;
     if text == ntext3 {
         duration = rest_tick; // dur情報がない場合、小節残り全体とする
@@ -49,6 +49,9 @@ pub fn treat_dp(
     ev.vel = velo_limits(exp_vel + diff_vel, 1);
     ev.dur = duration as i16;
 
+    if bdur_tie != 0 {
+        bdur = bdur_tie;
+    }
     (ev, bdur)
 }
 fn gen_dp_pattern(nt: &str, case_arp: bool) -> Vec<i16> {

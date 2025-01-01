@@ -396,7 +396,7 @@ fn break_up_nt_dur_vel(
     imd: InputMode,    // input mode
 ) -> (Vec<u8>, i32, i32, i32, i32, i16)
 /*( notes,      // 発音ノート
-    dur_cnt,    // 音符のtick数
+    dur_tick,    // 音符のtick数
     diff_vel,   // 音量情報
     base_dur,   // 基準音価 -> bdur
     last_nt,    // 次回判定用の今回の音程 -> last_nt
@@ -408,7 +408,7 @@ fn break_up_nt_dur_vel(
     let oct = extract_top_pm(&mut ntext1);
 
     //  duration 情報、 Velocity 情報の抽出
-    let (ntext3, base_dur, dur_cnt, artic) = gen_dur_info(ntext1, bdur, rest_tick);
+    let (ntext3, base_dur, dur_tick, artic) = gen_dur_info(ntext1, bdur, rest_tick);
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
 
     // 複数音を分離してベクトル化
@@ -440,7 +440,7 @@ fn break_up_nt_dur_vel(
         notes.push(NO_NOTE);
     }
 
-    (notes, dur_cnt, diff_vel, base_dur, next_last_nt, artic)
+    (notes, dur_tick, diff_vel, base_dur, next_last_nt, artic)
 }
 /// 文字列の冒頭にあるプラスマイナスを抽出
 fn extract_top_pm(ntext: &mut String) -> String {
@@ -494,7 +494,7 @@ fn gen_dur_info(mut ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, 
     }
 
     // タイを探して追加する tick を算出
-    let (tie_dur, ntext2) = decide_tie_dur(ntext1);
+    let (tie_dur, bdur_tie, ntext2) = decide_tie_dur(ntext1);
 
     //  基準音価を解析し、base_dur を確定
     let mut nt: String = ntext2.clone();
@@ -504,8 +504,8 @@ fn gen_dur_info(mut ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, 
     }
     let tick = base_dur * dur_cnt + tie_dur;
 
-    if tie_dur != 0 {
-        base_dur = tie_dur
+    if bdur_tie != 0 {
+        base_dur = bdur_tie
     }
     (nt, base_dur, tick, artic)
 }
@@ -556,18 +556,24 @@ fn extract_o_dot(nt: String) -> (String, i32) {
     }
     (ntext, dur_cnt)
 }
-pub fn decide_tie_dur(ntext1: String) -> (i32, String) {
+pub fn decide_tie_dur(ntext1: String) -> (i32, i32, String) {
     let mut tie_dur: i32 = 0;
-    let mut ntext2 = ntext1.clone();
-    if let Some(num) = ntext1.find('_') {
-        ntext2 = ntext1[0..num].to_string();
-        let tie = ntext1[num + 1..].to_string();
+    let mut rest_str = ntext1;
+    let mut bdur_tie: i32 = 0;
+    while let Some(num) = rest_str.rfind('_') {
+        let tie = rest_str[num + 1..].to_string();
         if !tie.is_empty() {
-            let _ntt: String;
-            (_ntt, tie_dur) = decide_dur(tie, 0);
+            let (_ntt, tdur) = decide_dur(tie, 0);
+            tie_dur += tdur;
+            if bdur_tie == 0 {
+                bdur_tie = tdur; // 最後のタイの音価を記録
+            }
+            rest_str = rest_str[0..num].to_string();
+        } else {
+            break;
         }
     }
-    (tie_dur, ntext2)
+    (tie_dur, bdur_tie, rest_str)
 }
 pub fn decide_dur(ntext: String, mut base_dur: i32) -> (String, i32) {
     let mut triplet: i16 = 0;
