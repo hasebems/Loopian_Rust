@@ -307,7 +307,8 @@ impl Graphic {
         if self.text_visible != TextVisible::Invisible && self.text_visible == TextVisible::Full {
             self.scroll_text(draw.clone(), itxt, self.text_visible);
         }
-        if self.text_visible != TextVisible::Invisible && self.text_visible != TextVisible::VeryPale {
+        if self.text_visible != TextVisible::Invisible && self.text_visible != TextVisible::VeryPale
+        {
             self.input_text(draw.clone(), guiev, itxt, tm);
         }
         self.title(draw.clone());
