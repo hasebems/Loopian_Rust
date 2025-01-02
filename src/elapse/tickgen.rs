@@ -22,8 +22,12 @@ pub struct TickGen {
     crnt_msr: i32,           // start からの小節数（最初の小節からイベントを出すため、-1初期化)
     crnt_tick_inmsr: i32,    // 現在の小節内の tick 数
     crnt_time: Instant,      // 現在の時刻
+
+    prepare_rit: bool, // rit. 開始準備中
     rit_state: bool,
     fermata_state: bool, // fermata で止まっている状態
+    prm: RitPrm,
+    start_mt: CrntMsrTick,
     ritgen: Box<dyn Rit>,
 }
 #[derive(Clone, Copy, PartialEq, Default)]
@@ -60,8 +64,11 @@ impl TickGen {
             crnt_msr: -1,
             crnt_tick_inmsr: 0,
             crnt_time: Instant::now(),
+            prepare_rit: false,
             rit_state: false,
             fermata_state: false,
+            prm: RitPrm::default(),
+            start_mt: CrntMsrTick::default(),
             ritgen: rit,
         }
     }
@@ -118,6 +125,9 @@ impl TickGen {
             let tick_from_meter_starts = self.calc_crnt_tick();
             self.crnt_msr = tick_from_meter_starts / self.tick_for_onemsr + self.meter_start_msr;
             self.crnt_tick_inmsr = tick_from_meter_starts % self.tick_for_onemsr;
+            if self.prepare_rit && self.is_over(self.start_mt) {
+                self.start_rit(self.crnt_time);
+            }
         }
         let new_msr = self.crnt_msr != former_msr;
         if new_msr && !self.rit_state && (self.bpm != self.bpm_stock) {
@@ -176,28 +186,38 @@ impl TickGen {
     pub fn get_origin_time(&self) -> Instant {
         self.origin_time
     }
-    pub fn start_rit(&mut self, start_time: Instant, ratio: i32, bar: i32, target_bpm: i16) {
-        if ratio < 100 && !self.rit_state && !self.fermata_state {
-            self.ritgen.set_rit(
-                ratio,
-                bar,
-                self.bpm as f32,
-                start_time,
-                self.crnt_tick_inmsr,
-                self.tick_for_onemsr,
-            );
-        }
-        self.rit_state = true;
-        self.meter_start_msr = self.crnt_msr;
-        self.bpm_start_time = start_time;
-        self.bpm_start_tick = self.crnt_tick_inmsr;
-        self.bpm_stock = target_bpm;
-    }
     fn calc_crnt_tick(&self) -> i32 {
         let diff = self.crnt_time - self.bpm_start_time;
         let elapsed_tick =
             ((self.tick_for_beat as f32) * (self.bpm as f32) * diff.as_secs_f32()) / 60.0;
         elapsed_tick as i32 + self.bpm_start_tick
+    }
+    /// rit. を開始準備する
+    /// 現在の時間と tick を得るが、rit. 開始は拍にクオンタイズされるため、すぐに開始しない
+    pub fn prepare_rit(&mut self, ratio: i32, bar: i32, target_bpm: i16) {
+        self.prm = RitPrm {
+            ratio,
+            bar,
+            tick_for_onemsr: self.tick_for_onemsr,
+            tick_for_beat: self.tick_for_beat,
+        };
+        self.prepare_rit = true;
+        self.rit_state = false;
+        let crnt = self.get_crnt_msr_tick();
+        self.start_mt = self.quantize_tick(crnt, self.meter.1);
+        self.bpm_stock = target_bpm;
+    }
+    // rit. 開始
+    fn start_rit(&mut self, start_time: Instant) {
+        if self.prm.ratio < 100 && !self.rit_state && !self.fermata_state {
+            self.ritgen
+                .set_rit(self.bpm as f32, start_time, self.crnt_tick_inmsr, self.prm);
+        }
+        self.rit_state = true;
+        self.meter_start_msr = self.crnt_msr;
+        self.bpm_start_time = start_time;
+        //self.bpm_start_tick = self.crnt_tick_inmsr;
+        //self.bpm_stock = target_bpm;
     }
     fn gen_rit(&mut self) {
         let (addup_tick, cross_barline, rit_end) = self.ritgen.calc_tick_rit(self.crnt_time);
@@ -205,11 +225,31 @@ impl TickGen {
         self.crnt_tick_inmsr = addup_tick % self.tick_for_onemsr;
         if rit_end {
             // rit 終了
+            self.prepare_rit = false;
             self.rit_state = false;
             self.meter_start_msr = self.crnt_msr;
             self.bpm_start_time = self.crnt_time;
             self.bpm_start_tick = self.crnt_tick_inmsr;
+            self.prm = RitPrm::default();
+            self.start_mt = CrntMsrTick::default();
             self.bpm = self.bpm_stock;
+        }
+    }
+    fn is_over(&self, tgt: CrntMsrTick) -> bool {
+        self.crnt_msr > tgt.msr || (self.crnt_msr == tgt.msr && self.crnt_tick_inmsr >= tgt.tick)
+    }
+    fn quantize_tick(&self, crnt: CrntMsrTick, denominator: i32) -> CrntMsrTick {
+        let tick_for_beat = crnt.tick_for_onemsr / denominator;
+        let mut msr = crnt.msr;
+        let mut tick = (crnt.tick / denominator + 1) * tick_for_beat;
+        if tick >= crnt.tick_for_onemsr {
+            msr += 1;
+            tick = 0;
+        }
+        CrntMsrTick {
+            msr,
+            tick,
+            tick_for_onemsr: self.tick_for_onemsr,
         }
     }
 }
@@ -217,16 +257,21 @@ impl TickGen {
 //*******************************************************************
 //          Rit. Trait (Super Class)
 //*******************************************************************
+#[derive(Clone, Copy, PartialEq, Default)]
+pub struct RitPrm {
+    ratio: i32, // 継承によって自由な単位とする。通常は 0-100 の間で rit. の遅くなる度合いを調整する
+    bar: i32, // これから rit.する小節数, 0: 次の小節まで、1: 次の次の小節まで (何回小節跨ぎをスルーするか)
+    tick_for_onemsr: i32, // 1小節の tick 数
+    tick_for_beat: i32, // 1拍の tick 数
+}
 pub trait Rit {
     // rit 開始時に呼ばれる
     fn set_rit(
         &mut self,
-        ratio: i32, // 継承によって自由な単位とする。通常は 0-100 の間で rit. の遅くなる度合いを調整する
-        bar: i32, // これから rit.する小節数, 0: 次の小節まで、1: 次の次の小節まで (何回小節跨ぎをスルーするか)
-        bpm: f32, // rit.開始時のテンポ
+        bpm: f32,            // rit.開始時のテンポ
         start_time: Instant, // rit.開始時の時間
-        start_tick: i32, // rit.開始時のtick
-        tick_for_onemsr: i32, // 1小節の tick 数
+        start_tick: i32,     // rit.開始時のtick
+        prm: RitPrm,         // rit.のパラメータ
     );
 
     // rit 中、定期的に呼ぶ None:rit終了、Some():rit開始時からの積算tick
@@ -244,6 +289,7 @@ pub trait Rit {
 //          Rit. Linear Struct
 //*******************************************************************
 pub struct RitLinear {
+    bpm2tps: f32,
     original_bpm: f32,
     start_time: Instant,
     start_tick: i32,
@@ -265,21 +311,21 @@ impl Rit for RitLinear {
     //        100: 何もしない
     fn set_rit(
         &mut self,
-        ratio: i32,
-        bar: i32,
+        //        bar: i32,
         bpm: f32,
         start_time: Instant,
         start_tick: i32,
-        tick_for_onemsr: i32,
+        prm: RitPrm, // rit.のパラメータ
     ) {
+        self.bpm2tps = prm.tick_for_beat as f32 / 60.0;
         self.start_time = start_time;
         self.start_tick = start_tick;
-        self.tick_for_onemsr = tick_for_onemsr;
+        self.tick_for_onemsr = prm.tick_for_onemsr;
         self.original_bpm = bpm;
-        self.delta_tps = ((100.0 - ratio as f32) / 100.0) * 8.0 * bpm;
-        self.t0_time = bpm * 8.0 / self.delta_tps; // tempo0 time
+        self.delta_tps = ((100.0 - prm.ratio as f32) / 100.0) * self.bpm2tps * bpm;
+        self.t0_time = bpm * self.bpm2tps / self.delta_tps; // tempo0 time
         self.t0_addup_tick = ((self.delta_tps / 2.0) * self.t0_time * self.t0_time) as i32;
-        self.rit_bar = bar;
+        self.rit_bar = prm.bar;
         self.rit_bar_count = 0;
     }
     fn calc_tick_rit(&mut self, crnt_time: Instant) -> (i32, bool, bool) {
@@ -308,6 +354,7 @@ impl Rit for RitLinear {
 impl RitLinear {
     pub fn new() -> Self {
         Self {
+            bpm2tps: 0.0,
             original_bpm: 0.0,
             start_time: Instant::now(),
             start_tick: 0,
@@ -326,7 +373,7 @@ impl RitLinear {
         const MINIMUM_TEMPO: i16 = 20;
         let start_time = (crnt_time - self.start_time).as_secs_f32();
         let time_to0 = self.t0_time - start_time;
-        self.delta_bpm = (self.delta_tps * start_time / 8.0) as i16;
+        self.delta_bpm = (self.delta_tps * start_time / self.bpm2tps) as i16;
         let addup_tick: i32;
         if self.original_bpm as i16 - self.delta_bpm > MINIMUM_TEMPO {
             // target bpm が MINIMUM_TEMPO 以上
@@ -336,8 +383,9 @@ impl RitLinear {
         } else {
             self.delta_bpm = self.original_bpm as i16 - MINIMUM_TEMPO;
             addup_tick = self.last_addup_tick
-                + (8.0 * (MINIMUM_TEMPO as f32) * (crnt_time - self.last_addup_time).as_secs_f32())
-                    as i32;
+                + (self.bpm2tps
+                    * (MINIMUM_TEMPO as f32)
+                    * (crnt_time - self.last_addup_time).as_secs_f32()) as i32;
         }
         addup_tick
     }
@@ -347,6 +395,7 @@ impl RitLinear {
 //          Rit. Linear Precise Struct
 //*******************************************************************
 pub struct RitLinearPrecise {
+    bpm2tps: f32,
     start_time: Instant,
     total_time: Duration,
     start_tick: i32,
@@ -365,20 +414,19 @@ impl Rit for RitLinearPrecise {
     //        100: 何もしない
     fn set_rit(
         &mut self,
-        ratio: i32,
-        bar: i32,
         bpm: f32,
         start_time: Instant,
         start_tick: i32,
-        tick_for_onemsr: i32,
+        prm: RitPrm, // rit.のパラメータ
     ) {
+        self.bpm2tps = prm.tick_for_beat as f32 / 60.0;
         self.start_time = start_time;
         self.start_tick = start_tick;
-        self.tick_for_onemsr = tick_for_onemsr;
-        self.original_tps = (bpm * 8.0) as i32;
+        self.tick_for_onemsr = prm.tick_for_onemsr;
+        self.original_tps = (bpm * self.bpm2tps) as i32;
         self.crnt_tps = self.original_tps;
-        self.target_tps = (self.original_tps * ratio) / 100;
-        self.total_tick = (tick_for_onemsr - start_tick) + (bar * tick_for_onemsr);
+        self.target_tps = (self.original_tps * prm.ratio) / 100;
+        self.total_tick = (prm.tick_for_onemsr - start_tick) + (prm.bar * prm.tick_for_onemsr);
         let milli_sec = ((self.total_tick as f32) * 2.0)
             / (self.original_tps as f32 + self.target_tps as f32)
             * 1000.0;
@@ -417,12 +465,13 @@ impl Rit for RitLinearPrecise {
         }
     }
     fn get_real_bpm(&self) -> i16 {
-        (self.crnt_tps / 8) as i16
+        (self.crnt_tps as f32 / self.bpm2tps) as i16
     }
 }
 impl RitLinearPrecise {
     pub fn new() -> Self {
         Self {
+            bpm2tps: 0.0,
             start_time: Instant::now(),
             total_time: Duration::from_secs(0),
             start_tick: 0,
@@ -496,6 +545,7 @@ const INTEGRAL_SIGMOID: [f32; IDX_MAX] = [
 ];
 
 pub struct RitSigmoid {
+    bpm2tps: f32,
     start_time: Instant,
     total_time: Duration,
     start_tick: i32,
@@ -515,20 +565,19 @@ impl Rit for RitSigmoid {
     //        100: 何もしない
     fn set_rit(
         &mut self,
-        ratio: i32,
-        bar: i32,
         bpm: f32,
         start_time: Instant,
         start_tick: i32,
-        tick_for_onemsr: i32,
+        prm: RitPrm, // rit.のパラメータ
     ) {
+        self.bpm2tps = prm.tick_for_beat as f32 / 60.0;
         self.start_time = start_time;
         self.start_tick = start_tick;
-        self.tick_for_onemsr = tick_for_onemsr;
-        self.original_tps = (bpm * 8.0) as i32;
+        self.tick_for_onemsr = prm.tick_for_onemsr;
+        self.original_tps = (bpm * self.bpm2tps) as i32;
         self.crnt_tps = self.original_tps;
-        self.target_tps = (self.original_tps * ratio) / 100;
-        self.total_tick = (tick_for_onemsr - start_tick) + (bar * tick_for_onemsr);
+        self.target_tps = (self.original_tps * prm.ratio) / 100;
+        self.total_tick = (prm.tick_for_onemsr - start_tick) + (prm.bar * prm.tick_for_onemsr);
         let milli_sec = ((self.total_tick as f32) * 2.0)
             / (self.original_tps as f32 + self.target_tps as f32)
             * 1000.0;
@@ -582,12 +631,13 @@ impl Rit for RitSigmoid {
         }
     }
     fn get_real_bpm(&self) -> i16 {
-        (self.crnt_tps / 8) as i16
+        (self.crnt_tps as f32 / self.bpm2tps) as i16
     }
 }
 impl RitSigmoid {
     pub fn new() -> Self {
         Self {
+            bpm2tps: 0.0,
             start_time: Instant::now(),
             total_time: Duration::from_secs(0),
             start_tick: 0,
@@ -614,12 +664,10 @@ impl Rit for RitCtrl {
     //        100: そのまま
     fn set_rit(
         &mut self,
-        _ratio: i32,
-        _bar: i32,
         _bpm: f32,
         _start_time: Instant,
         _start_tick: i32,
-        _tick_for_onemsr: i32,
+        _prm: RitPrm, // rit.のパラメータ
     ) {
     }
     fn calc_tick_rit(&mut self, _crnt_time: Instant) -> (i32, bool, bool) {

@@ -461,8 +461,7 @@ impl ElapseStack {
         } else {
             target_bpm = msg[1];
         }
-        self.tg
-            .start_rit(self.crnt_time, strength.1, bar, target_bpm);
+        self.tg.prepare_rit(strength.1, bar, target_bpm);
     }
     fn setting_cmnd(&mut self, msg: [i16; 2]) {
         if msg[0] == MSG_SET_BPM {
