@@ -44,10 +44,10 @@ impl NormalView for Lissajous {
         self.crnt_time = crnt_time * Lissajous::SPEED;
         let x1 = (past_time * 1.0 + self.phase_real).sin() * self.range_real * Lissajous::X_MAX;
         let y1 = (past_time * 2.0).sin() * self.range_real * Lissajous::Y_MAX;
-        let x2 = (past_time * 2.0 + self.phase_real + PI / 2.0).sin()
+        let x2 = (past_time * 2.5 + self.phase_real + PI / 1.5).sin()
             * self.range_real
             * Lissajous::X_MAX;
-        let y2 = (past_time * 1.0 - PI / 2.0).sin() * self.range_real * Lissajous::Y_MAX;
+        let y2 = (past_time * 1.5 - PI / 2.5).sin() * self.range_real * Lissajous::Y_MAX;
         let v1 = Vec2::new(x1, y1);
         let v2 = Vec2::new(x2, y2);
         self.track.push([v1, v2]);
