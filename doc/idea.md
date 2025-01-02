@@ -578,6 +578,7 @@ NoteObj <|-- WaterRipple
 - 過去の特定のコマンド区間だけを save できる機能(11/2)
 - !rd(n) でファイル内の !rd(n): 以降を、Input Window に呼び出す(11/2)
 - efct.dmp(),cc70() を追加(11/21)
+- 以降はリリース情報に追記 //
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
