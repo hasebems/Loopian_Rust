@@ -30,7 +30,7 @@ pub struct TickGen {
     start_mt: CrntMsrTick,
     ritgen: Box<dyn Rit>,
 }
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub struct CrntMsrTick {
     pub msr: i32,
     pub tick: i32,
@@ -239,9 +239,9 @@ impl TickGen {
         self.crnt_msr > tgt.msr || (self.crnt_msr == tgt.msr && self.crnt_tick_inmsr >= tgt.tick)
     }
     fn quantize_tick(&self, crnt: CrntMsrTick, denominator: i32) -> CrntMsrTick {
-        let tick_for_beat = crnt.tick_for_onemsr / denominator;
+        let tick_for_beat = DEFAULT_TICK_FOR_ONE_MEASURE / denominator;
         let mut msr = crnt.msr;
-        let mut tick = (crnt.tick / denominator + 1) * tick_for_beat;
+        let mut tick = ((crnt.tick / tick_for_beat) + 1) * tick_for_beat;
         if tick >= crnt.tick_for_onemsr {
             msr += 1;
             tick = 0;
