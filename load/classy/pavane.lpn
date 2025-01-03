@@ -391,9 +391,9 @@ L1
 [qr].dyn(mp)
 L2
 [efi,si^,si^,fi%,fla,fil^,fil^,fla%].dyn(p)
+rit.poco.bar(2)
 
 !msr(67)
-rit.poco.bar(2)
 L1
 [qf,x,m,x].dyn(mp)
 L2

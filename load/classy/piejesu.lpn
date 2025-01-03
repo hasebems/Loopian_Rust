@@ -146,8 +146,6 @@ L2
 [ef,l,f,s,f,l,f,s/f,l,f,s,f^,r^,+t^,f^^//].dyn(p)
 L1
 [so/so//].dyn(p)
-
-!msr(29)
 rit.poco.bar(2)
 
 !msr(30)
@@ -202,4 +200,4 @@ L1
 [em,s%,m,r^,m^,s%,m,r^/m^,s%,m,r%,d%...//].dyn(p)
 
 !msr(39)
-rit.bar(2)
+rit.
