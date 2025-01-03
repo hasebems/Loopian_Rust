@@ -1,5 +1,3 @@
-use serde::de;
-
 //  Created by Hasebe Masahiko on 2024/09/29.
 //  Copyright (c) 2024 Hasebe Masahiko.
 //  Released under the MIT license
