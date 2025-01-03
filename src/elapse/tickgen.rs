@@ -216,8 +216,6 @@ impl TickGen {
         self.rit_state = true;
         self.meter_start_msr = self.crnt_msr;
         self.bpm_start_time = start_time;
-        //self.bpm_start_tick = self.crnt_tick_inmsr;
-        //self.bpm_stock = target_bpm;
     }
     fn gen_rit(&mut self) {
         let (addup_tick, cross_barline, rit_end) = self.ritgen.calc_tick_rit(self.crnt_time);

@@ -32,6 +32,7 @@ pub struct InputText {
 }
 impl InputText {
     const CURSOR_MAX_VISIBLE_LOCATE: usize = 65;
+    const COMMAND_INPUT_REST_TICK: i32 = 240;
 
     pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>) -> Self {
         Self {
@@ -314,6 +315,8 @@ impl InputText {
         let fname;
         let fnx = split_by('.', itxt.to_string());
         let fn_ele_num = fnx.len();
+
+        // blk と msr の指定があるか調べる
         if fn_ele_num >= 3 {
             (blk, msr) = blk_exists(fnx[2].clone());
             fname = fnx[1].clone();
@@ -363,7 +366,7 @@ impl InputText {
             if nmt.msr != LAST
                 && nmt.msr > 0
                 && nmt.msr - 1 == crnt.msr  // 一つ前の小節(両方とも1origin)
-                && crnt.tick_for_onemsr - crnt.tick < 240
+                && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK
             {
                 self.next_msr_tick = self.get_loaded_text(nmt, graphmsg);
             }
