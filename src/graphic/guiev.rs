@@ -1,3 +1,5 @@
+use serde::de;
+
 //  Created by Hasebe Masahiko on 2024/09/29.
 //  Copyright (c) 2024 Hasebe Masahiko.
 //  Released under the MIT license
@@ -74,11 +76,12 @@ impl GuiEv {
             }
             UiMsg::TickUi(during_play, m, b, t) => {
                 let p = if during_play { ">" } else { " " };
-                self.indicator[3] = format!("{}{}:{}:{:>03}", p, m, b, t);
+                let msr = if m != 0 { m } else { 1 };
+                self.indicator[3] = format!("{}{}:{}:{:>03}", p, msr, b, t);
                 self.during_play = during_play;
                 self.crnt_msr.msr = m;
                 let base_tick = DEFAULT_TICK_FOR_ONE_MEASURE / self.denomirator;
-                self.crnt_msr.tick = b * base_tick + t;
+                self.crnt_msr.tick = (b - 1) * base_tick + t;
                 self.crnt_msr.tick_for_onemsr = base_tick * self.numerator;
             }
             UiMsg::PartUi(pnum, pui) => {
