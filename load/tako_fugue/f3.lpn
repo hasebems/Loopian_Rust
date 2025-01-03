@@ -595,7 +595,7 @@ R2
 [-vr,m,f,s,l,t,qd,ed'].dyn(mf)
 L2
 [-em,f,s,r,m,f].stacc(50).dyn(mf)
-rit.poco.bar(2).bpm(346)
+rit.poco.bpm(346)
 
 !msr(94)
 R2
