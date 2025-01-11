@@ -9,7 +9,7 @@ use crate::lpnlib::*;
 pub struct GuiEv {
     has_gui: bool,
     indicator: Vec<String>,
-    graphic_ev: Vec<NoteUiEv>,
+    graphic_ev: Vec<GraphicEv>,
     crnt_msr: CrntMsrTick,
     numerator: i32,
     denomirator: i32,
@@ -42,7 +42,7 @@ impl GuiEv {
     pub fn get_indicator(&self, num: usize) -> &str {
         &self.indicator[num]
     }
-    pub fn get_graphic_ev(&self) -> Option<Vec<NoteUiEv>> {
+    pub fn get_graphic_ev(&self) -> Option<Vec<GraphicEv>> {
         if self.has_gui {
             Some(self.graphic_ev.clone())
         } else {
@@ -63,6 +63,9 @@ impl GuiEv {
         match msg {
             UiMsg::NewMeasure => {
                 self.indicator[0] = key;
+            }
+            UiMsg::NewBeat(beat) => {
+                self.graphic_ev.push(GraphicEv::BeatEv(beat));
             }
             UiMsg::BpmUi(bpm) => {
                 self.indicator[1] = format!("{}", bpm);
@@ -94,7 +97,7 @@ impl GuiEv {
                 }
             }
             UiMsg::NoteUi(note_ev) => {
-                self.graphic_ev.push(note_ev);
+                self.graphic_ev.push(GraphicEv::NoteEv(note_ev));
             }
             _ => {}
         }

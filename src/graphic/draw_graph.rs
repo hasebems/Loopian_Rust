@@ -12,6 +12,7 @@ use super::lissajous::Lissajous;
 use super::viewobj::*;
 use super::voice::{StaticViewForVoice4, Voice4};
 use super::waterripple::WaterRipple;
+use super::beatview::BeatView;
 use crate::file::input_txt::InputText;
 use crate::lpnlib::*;
 
@@ -88,6 +89,7 @@ pub struct Graphic {
     font_newyork: nannou::text::Font,
     rs: Resize,
     nobj: Vec<Box<dyn NoteObj>>,       // Note Object
+    bobj: Vec<Box<dyn BeatObj>>,       // Beat Object
     svce: Option<Box<dyn NormalView>>, // Normal View
     gmode: GraphMode,                  // Graph Mode  (Light or Dark)
     gptn: GraphPattern,                // Graph Pattern
@@ -119,6 +121,7 @@ impl Graphic {
             font_newyork,
             rs: Resize::default(),
             nobj: Vec::new(),
+            bobj: Vec::new(),
             svce: None,
             gmode: GraphMode::Dark,
             gptn: GraphPattern::Ripple,
@@ -184,6 +187,10 @@ impl Graphic {
                     self.gptn = GraphPattern::Lissajous;
                     self.svce = Some(Box::new(Lissajous::new(self.gmode)));
                 }
+                BEAT_PATTERN => {
+                    self.gptn = GraphPattern::Beat;
+                    self.svce = Some(Box::new(BeatView::new(crnt_time, self.gmode)));
+                }
                 TEXT_VISIBLE_CTRL => {
                     self.text_visible = self.text_visible.next();
                 }
@@ -191,17 +198,26 @@ impl Graphic {
             }
             self.graphmsg.remove(0);
         }
+
+        // 画面全体の Model の更新
         if let Some(sv) = self.svce.as_mut() {
             sv.update_model(crnt_time, self.rs.clone());
         }
 
-        // Note Object の生成
+        // Note/Beat Object の生成
         if let Some(gev) = guiev.get_graphic_ev() {
             for ev in gev {
-                let nt: i32 = ev.key_num as i32;
-                let vel: i32 = ev.vel as i32;
-                let pt: i32 = ev.pt as i32;
-                self.push_note_obj(nt, vel, pt, crnt_time);
+                match ev {
+                    GraphicEv::NoteEv(nev) => {
+                        let nt: i32 = nev.key_num as i32;
+                        let vel: i32 = nev.vel as i32;
+                        let pt: i32 = nev.pt as i32;
+                        self.push_note_obj(nt, vel, pt, crnt_time);
+                    }
+                    GraphicEv::BeatEv(b) => {
+                        self.push_beat_obj(b, crnt_time);
+                    }
+                }
             }
             guiev.clear_graphic_ev();
         }
@@ -214,6 +230,18 @@ impl Graphic {
         for (j, rt) in retain.iter().enumerate() {
             if !rt {
                 self.nobj.remove(j);
+                break;
+            }
+        }
+
+        // Beat Object の更新と削除
+        let mut retain: Vec<bool> = Vec::new();
+        for obj in self.bobj.iter_mut() {
+            retain.push(obj.update_model(crnt_time, self.rs.clone()));
+        }
+        for (j, rt) in retain.iter().enumerate() {
+            if !rt {
+                self.bobj.remove(j);
                 break;
             }
         }
@@ -236,6 +264,18 @@ impl Graphic {
                     sv.note_on(nt, vel, pt, tm);
                 }
             }
+            _ => (),
+        }
+    }
+    /// Beat Object の追加、Beat Event の処理
+    fn push_beat_obj(&mut self, beat: i32, tm: f32) {
+        match self.gptn {
+            GraphPattern::Beat => {
+                if let Some(sv) = self.svce.as_mut() {
+                    sv.on_beat(beat, tm);
+                }
+            }
+            _ => (),
         }
     }
     pub fn get_bgcolor(&self) -> Srgb<u8> {
@@ -290,6 +330,7 @@ impl Graphic {
         self.max_lines = max_lines;
         self.crnt_line = crnt_line;
     }
+
     //*******************************************************************
     //      View (no mutable self)
     //*******************************************************************
@@ -301,7 +342,8 @@ impl Graphic {
 
         // Gererative Pattern
         self.view_loopian_normal_view(draw.clone(), tm);
-        self.view_loopian_obj(draw.clone(), tm);
+        self.view_loopian_nobj(draw.clone(), tm);
+        self.view_loopian_bobj(draw.clone(), tm);
 
         // Input Text 表示
         if self.text_visible != TextVisible::Invisible && self.text_visible == TextVisible::Full {
@@ -319,9 +361,15 @@ impl Graphic {
             sv.disp(draw.clone(), tm, self.rs.clone());
         }
     }
-    fn view_loopian_obj(&self, draw: Draw, tm: f32) {
+    fn view_loopian_nobj(&self, draw: Draw, tm: f32) {
         //  Note Object の描画
         for obj in self.nobj.iter() {
+            obj.disp(draw.clone(), tm, self.rs.clone());
+        }
+    }
+    fn view_loopian_bobj(&self, draw: Draw, tm: f32) {
+        //  Beat Object の描画
+        for obj in self.bobj.iter() {
             obj.disp(draw.clone(), tm, self.rs.clone());
         }
     }
