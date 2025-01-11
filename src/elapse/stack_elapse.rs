@@ -205,10 +205,13 @@ impl ElapseStack {
         //  新tick計算
         let mut crnt_ = CrntMsrTick::default();
         if self.during_play {
-            let msrtop = self.tg.gen_tick(self.crnt_time);
+            let (msrtop, beattop, beatnum) = self.tg.gen_tick(self.crnt_time);
             crnt_ = self.tg.get_crnt_msr_tick();
             if msrtop {
                 self.measure_top(&mut crnt_);
+            }
+            if beattop {
+                self.send_msg_to_ui(UiMsg::NewBeat(beatnum));
             }
         };
 

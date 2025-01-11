@@ -115,8 +115,9 @@ impl TickGen {
             self.meter_start_msr = 0;
         }
     }
-    pub fn gen_tick(&mut self, crnt_time: Instant) -> bool {
+    pub fn gen_tick(&mut self, crnt_time: Instant) -> (bool, bool, i32) {
         let former_msr = self.crnt_msr;
+        let former_tick = self.crnt_tick_inmsr;
         self.crnt_time = crnt_time;
         if self.rit_state {
             self.gen_rit();
@@ -138,7 +139,9 @@ impl TickGen {
                 self.crnt_tick_inmsr = 0;
             }
         }
-        new_msr
+        let beat_num = self.crnt_tick_inmsr / self.tick_for_beat;
+        let new_beat = beat_num != former_tick / self.tick_for_beat;
+        (new_msr, new_beat, beat_num)
     }
     pub fn get_crnt_msr_tick(&self) -> CrntMsrTick {
         let msr = if self.crnt_msr < 0 { 0 } else { self.crnt_msr }; // 0以上の値にする

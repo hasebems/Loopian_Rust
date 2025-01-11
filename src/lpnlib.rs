@@ -298,8 +298,14 @@ pub struct PartUi {
     pub chord_name: String,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum GraphicEv {
+    NoteEv(NoteUiEv),
+    BeatEv(i32),
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum UiMsg {
     NewMeasure,
+    NewBeat(i32),
     BpmUi(i16),
     Meter(i32, i32),
     TickUi(bool, i32, i32, i32), //running, tick_in_beat, beat, msr
@@ -321,6 +327,7 @@ pub const TEXT_VISIBLE_CTRL: i16 = 3;
 pub const RIPPLE_PATTERN: i16 = 10;
 pub const VOICE_PATTERN: i16 = 11;
 pub const LISSAJOUS_PATTERN: i16 = 12;
+pub const BEAT_PATTERN: i16 = 13;
 //-------------------------------------------------------------------
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum InputMode {

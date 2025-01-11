@@ -47,7 +47,8 @@ const CHORD_TABLE: [ChordTable; 58] = [
     ChordTable {name: "_dim7",  table: &DIM7,},
     ChordTable {name: "_m7-5",  table: &MIN7M5,},
     ChordTable {name: "_sus4",  table: &SUS4,},
-    ChordTable {name: "_7sus4", table: &M7SUS4,},// parasc(24-29): para() を付けなくても、para機能
+    ChordTable {name: "_7sus4", table: &M7SUS4,},
+    // parasc(29-34): para() を付けなくても、para機能
     ChordTable {name: "_chr",   table: &THRU,}, // Iのとき音程そのまま。音程関係を保持したまま並行移動
 
     ChordTable {name: "_ion",   table: &IONIAN,}, // Iが音程そのまま。Iとの差分分並行移動し、音程をkeyに合わせる
