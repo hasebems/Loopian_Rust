@@ -81,6 +81,7 @@ impl NormalView for Lissajous {
             self.phase_target += PI * (pnt - (MIN_NOTE_NUMBER as f32 + 100.0)) / 100.0;
         }
     }
+    fn on_beat(&mut self, _bt: i32, _tm: f32) {}
     fn set_mode(&mut self, mode: GraphMode) {
         self.mode = mode;
     }
