@@ -24,7 +24,7 @@ Loopian は、Live Coding などで使うために開発している、テキス
 
 ## 用語集 (Glossary)
 
-- 階名 : 移動ドによる音程呼称。ドレミファソラシドが示す音は、調によって移動する。
+- 階名 : 移動ドによる音程呼称。ドレミファソラシ(`drmfslt`)が示す音は、調によって移動する。
 - phrase : メロディや和音など、時系列の音符情報
 - composition : phrase に適用して音を変化させる Chord/Scale 情報
 - loop : loopian は基本的に、phrase/composition を繰り返す。この繰り返し単位。
@@ -46,25 +46,29 @@ Loopian は、Live Coding などで使うために開発している、テキス
 Option Switch
 - `--server` : サーバとして立ち上げる
 
-Compile Switch
+Compile Switch (`Cargo build`)
 - `--features raspi` : Raspberry Pi5 上で動作
 - `--features verbose` : printlnデバッグ
 
-### 入力
+### コマンド入力
 
-`000: L1>` : 入力用プロンプト
-    
-- 000: は入力したコマンド history の現在の順番を表している
+- アプリを立ち上げると、画面下の Input Window に下記のような入力用プロンプトが表示される
+    - `000: L1>` : 入力用プロンプト
+- 000: は入力したコマンドヒストリーの現在の順番を表している
+    - 999:を超えると表示は000:になるが、以前のヒストリーも覚えている
 - L1> は Left 1 の入力状態であることを示す
-- このプロンプトの後に、コマンドやフレーズを入力し、Return で確定する
-- カーソル（上下）による過去入力のヒストリー呼び出しが可能
-    - Loopian では、space の入力は `.`（ピリオド）に変換される
+- このプロンプトの後のカーソルの位置に、コマンドやフレーズを入力し、Return で確定する
+- 左右矢印キーで、入力中のカーソルを移動できる
+- 上下矢印キーで、過去入力のヒストリー呼び出しが可能
+    - カーソルの誤操作防止のため、入力カーソルが左端にないときはヒストリー呼び出しは出来ない
+- Loopian では、space の入力は `.`（ピリオド）に変換される
+
 
 ### 終了
 
-`!quit` or `!q` をプロンプトに入力し、returnするとアプリが終了
-
+- `!quit` or `!q` をプロンプトに入力し、returnするとアプリが終了
 - ウインドウの close ボタンを押しても終了
+    - ただし、ログファイルは記録されない
 
 
 ### 音を出すための外部環境
@@ -75,7 +79,8 @@ Compile Switch
     - Pianoteq8 : 物理エンジンベースのPiano音源 by MODARTT
 - 専用MIDI Controller(Loopian::ORBIT)を接続し、リアルタイム演奏も可能
 
-## 操作コマンド
+
+## 基本操作コマンド
 
 ### 再生コントロール
 
@@ -84,26 +89,7 @@ Compile Switch
 * `resume` : beatが止まっているとき、その小節の先頭から再生を再開する
 * `stop` or `fine` : 直ちにシーケンス終了
 * `panic` : 今鳴っている音を消音する
-* `rit.` : テンポをだんだん遅くして、次の小節の頭で元のテンポ
-    - `rit.poco` : 遅さが弱い
-    - `rit.molto` : 遅さが強い 
-    - `rit.bpm(fermata)`  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
-    - `rit.molto.bpm(fermata)`
-    - `rit.bpm(120)`   : rit.の次の小節をテンポ120で開始
-    - `rit.bar(2)` : 2小節rit.をつける
-        - `rit.poco.bar(2)`
-        - `rit.poco.bar(2).bpm(100)`
-        - bar(N) の N は任意の数値
-* `sync` : 次の小節の頭で、そのパートの Phrase, Composition を同期させる
-    - `sync.right` : 右手パート(right1/2)
-    - `sync.left`  : 左手パート(left1/2)
-    - `sync.all`   : 全パート
-* `clear` : データの中身を消去
-    - 引数がない場合、全パート消去し、再生も止まる
-    - `clear.L1` : L1パートの中身を消去。同様に L2,R1,R2 も指定可
-* `efct` : MIDI Controller の出力
-    - `efct.cc70(nn)` : cc70に対して nn(0-127) を送る
-    - `efct.dmp(nn)` : cc64のDamperが on になったとき、nn(0-127) を送る
+
 
 ### パートの切り替えと動作
 
@@ -119,10 +105,10 @@ Compile Switch
         - R1=C4-B4
         - R2=C5-B5
     - input(closer)のとき、key(C)なら、フレーズ最初の+-の無い音程は以下の範囲
-        - L1=F#1-F2
-        - L2=F#2-F3
-        - R1=F#3-F4
-        - R2=F#4-F5
+        - L1=G1-F#2
+        - L2=G2-F#3
+        - R1=G3-F#4
+        - R2=G4-F#5
 
 
 ### Phrase 追加
@@ -211,17 +197,56 @@ Compile Switch
     - `X` : original phrase(no pedal)
     - `O` : original phrase(pedal)
     - `I` : `dms` (Iの和音)
-        - ローマ数字: `I,II,III,IV,V, VI,VII`
+        - ローマ数字: `I,II,III,IV,V, VI,VII` で根音(root)を指定
     - `I#` : `dimisi` (数字の後に # を付けると半音高いコードになる。b は半音)
-    - `V` : `str` (Ⅴの和音)
-    - `VIm` : `ldm` (m: minor)
-    - `IVM7` : `fldm` (M7: major7th)
-    - `IIIm7-5` : `mstar` (m7-5: minor7th -5th)
-    - `diatonic` : `drmfslt` (Diatonic Scale)
-    - `lydian` : `drmfislt` (Lydian Scale)
-    - `Iion` : Iを主音としたイオニアン(Ionian)
+    - `Iion` : Iを主音としたイオニアンスケール(Ionian)
+    - `lydian` : 現在のkeyを主音としたリディアンスケール
     - `!` をコードの最後に追加すると、当てはまる音が等距離の場合、上側を採用する（通常は下側を採用）
-    - コードやスケールが判断不能の場合、エラーとなり主音しか出ない
+    - コードやスケールが判断不能の場合、エラーとなり調の主音しか出ない
+
+
+* コード・スケールの種類
+    - 読み方
+        - アンダーバー`_`にはI-VII(root)が入る
+        - []内に、根音から順に対象音`o`か、非対象音`x`かを示す
+    - `_` : `[oxxx-oxxo-xxxx]`
+    - `_m` : `[oxxo-xxxo-xxxx]`
+    - `_7` : `[oxxx-oxxo-xxox]`
+    - `_m7` : `[oxxo-xxxo-xxox]`
+    - `_6` : `[oxxx-oxxo-xoxx]`
+    - `_m6` : `[oxxo-xxxo-xoxx]`
+    - `_M7`,`_maj7` : `[oxxx-oxxo-xxxo]`
+    - `_mM7`,`-mmaj7` : `[oxxo-xxxo-xxxo]`
+    - `_add9` : `[oxox-oxxo-xxxx]`
+    - `_9` : `[oxox-oxxo-xxox]`
+    - `_m9` : `[oxxo-xxxo-xxox]`
+    - `_M9`,`_maj9` : `[oxox-oxxo-xxxo]`
+    - `_mM9` : `[oxoo-xxxo-xxxo]`
+    - `_+5`,`_aug` : `[oxxx-oxxx-oxxx]`
+    - `_7+5`,`_aug7` : `[oxxx-oxxx-oxox]`
+    - `_7-9` : `[ooxx-oxxo-xxox]`
+    - `_7+9` : `[oxxo-oxxo-xxox]`
+    - `_dim` : `[oxxo-xxox-xxxx]`
+    - `_dim7` : `[oxxo-xxox-xoxx]`
+    - `_m7-5` : `[oxxo-xxox-xxox]`
+    - `_sus4` : `[oxxx-xoxo-xxxx]`
+    - `_7sus4` : `[oxxx-xoxo-xxox]`
+    - `_chr` : `[oooo-oooo-oooo]`
+    - `_ion` : `[oxox-ooxo-xoxo]`
+    - `_dor` : `[oxoo-xoxo-xoxo]`
+    - `_lyd` : `[oxox-oxoo-xoxo]`
+    - `_mix` : `[oxox-ooxo-xoox]`
+    - `_aeo` : `[oxoo-xoxo-oxox]`
+    - `diatonic` : `[oxox-ooxo-xoxo]` rootは指定できない
+    - `dorian` : `[oxoo-xoxo-xoxo]` rootは指定できない
+    - `lydian` : `[oxox-oxoo-xoxo]` rootは指定できない
+    - `mixolydian` : `[oxox-ooxo-xoox]` rootは指定できない
+    - `aeolian` : `[oxoo-xoxo-oxox]` rootは指定できない
+    - `comdim` : `[oxoo-xoox-ooxo]` rootは指定できない
+    - `pentatonic` : `[oxox-oxxo-xoxx]` rootは指定できない
+    - `blues` : `[oxxo-xooo-xxox]` rootは指定できない
+    - `O` : `[oooo-oooo-oooo]` rootは指定できない
+    - `X` : `[oooo-oooo-oooo]`  rootは指定できない、pedal無し
 
 
 ### 調、テンポ、拍子、音量
@@ -279,6 +304,30 @@ Compile Switch
         - 途中再生の場合 `play` ではなく、 `resume` を使用する
         - `!load.msr(n)` というように、真ん中のファイル名を省略することも可能
         - ファイルの記述が Loop 前提の場合など、いくつかの条件では途中の小節からの正確な再生は保証しない。
+
+
+## 再生コントロールの拡張仕様
+
+* `rit.` : テンポをだんだん遅くして、次の小節の頭で元のテンポ
+    - `rit.poco` : 遅さが弱い
+    - `rit.molto` : 遅さが強い 
+    - `rit.bpm(fermata)`  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
+    - `rit.molto.bpm(fermata)`
+    - `rit.bpm(120)`   : rit.の次の小節をテンポ120で開始
+    - `rit.bar(2)` : 2小節rit.をつける
+        - `rit.poco.bar(2)`
+        - `rit.poco.bar(2).bpm(100)`
+        - bar(N) の N は任意の数値
+* `sync` : 次の小節の頭で、そのパートの Phrase, Composition を同期させる
+    - `sync.right` : 右手パート(right1/2)
+    - `sync.left`  : 左手パート(left1/2)
+    - `sync.all`   : 全パート
+* `clear` : データの中身を消去
+    - 引数がない場合、全パート消去し、再生も止まる
+    - `clear.L1` : L1パートの中身を消去。同様に L2,R1,R2 も指定可
+* `efct` : MIDI Controller の出力
+    - `efct.cc70(nn)` : cc70に対して nn(0-127) を送る
+    - `efct.dmp(nn)` : cc64のDamperが on になったとき、nn(0-127) を送る
 
 
 ## Phrase 指定時の拡張仕様
@@ -367,7 +416,12 @@ Compile Switch
 - `graph.ripple`: 水紋の画面に変化
 - `graph.voice` : 各声部が分割される画面に変化
 - `graph.lissa` : リサジュー波形を表示する画面に変化
-- shift + space で、4段階に Scroll Text の濃さを変えられる。４段階目は Graphic Pattern のみになり、テキスト全部が非表示となる。もう一度押すと１段階目になり、全てが表示される。
+- `graph.beat` : Beat で表示するパターン（実装中）
+- shift + space で、以下のように4段階で表示する Text の状況を変化させられる。4の次は1に戻る。
+    - 1: 通常の表示。Graphic は文字の後ろのレイヤーとして表示。
+    - 2: Scroll Text が少し薄くなる。Graphic は文字の前のレイヤーとして表示。
+    - 3: Scroll Text がかなり薄くなり、Input Window が非表示となる。Graphic は文字の前のレイヤー。
+    - 4: Graphic Pattern のみになり、Scroll Text と Input Window が非表示となる。Graphic は文字の前のレイヤー。
 
 
 ## データの再生方法
