@@ -16,7 +16,7 @@
     - [Releaseページ](https://github.com/hasebems/Loopian_Rust/releases)
 
 
-## データや情報のやりとりにDiscordを使用しますので、準備をお願いします
+## データや情報のやりとりにDiscordを使用しますので、アカウント作成をお願いします
 
 - DiscordというSNSを利用してデータや情報のやり取りを行う予定です
 - 以下のサイトより説明を読んでいただき、アカウント作成をお願いします
@@ -24,3 +24,6 @@
         - https://support.discord.com/hc/ja
     - 使い方は以下参照ください
         - [Discordの基本　はじめに](https://support.discord.com/hc/ja/sections/360008206871-%E3%81%AF%E3%81%98%E3%82%81%E3%81%AB)
+- 以下のサーバー（特定の仲間が集まる場所）に参加お願いします
+    [サーバーへの招待URL](https://discord.gg/4kVze52DGt)
+- このサーバーにて、WS終了後もLoopianの情報をお伝えしたり、自作品を紹介するなど、皆様の交流のために利用して頂けますが、WS終了後にご自由に退出していただいても構いません。
