@@ -10,13 +10,23 @@ use super::draw_graph::Resize;
 
 pub struct BeatView {
     beat: i32,
+    measure_position: i32,
+    max_sq_inline: i32,
+    _mode: GraphMode,
 }
 
 impl BeatView {
     pub fn new(_tm: f32, _mode: GraphMode) -> Self {
         Self {
             beat: 0,
+            measure_position: 0,
+            max_sq_inline: 0,
+            _mode,
         }
+    }
+    pub fn set_beat_inmsr(&mut self, beat_inmsr: i32) {
+        self.max_sq_inline = if beat_inmsr <= 4 { beat_inmsr*2 } else { beat_inmsr};
+        println!("QQQ::max_sq_inline:{}", self.max_sq_inline);
     }
 }
 impl NormalView for BeatView {
@@ -39,8 +49,10 @@ impl NormalView for BeatView {
         _rs: Resize,
     ) {
         draw.rect()
-            .x_y(100.0*self.beat as f32 - 150.0, 0.0)
-            .w_h(50.0, 50.0)
-            .color(WHITE);
+            .x_y(120.0*self.beat as f32 - 150.0, 0.0)
+            .w_h(100.0, 100.0)
+            .no_fill()
+            .stroke_weight(2.0)
+            .stroke(WHITE);
     }
 }

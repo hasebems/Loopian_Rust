@@ -24,7 +24,6 @@ pub const NO_TABLE: i16 = 10000;
 pub const _CANCEL: i16 = -1;
 pub const NOTHING: i16 = -1;
 
-pub const MAX_INDICATOR: usize = 8;
 pub const MAX_PATTERN_NUM: u8 = 16; // Max Pattern Number
 
 //*******************************************************************

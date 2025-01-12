@@ -7,7 +7,7 @@ use nannou::prelude::*;
 use std::fs::File;
 use std::io::Read;
 
-use super::guiev::GuiEv;
+use super::guiev::*;
 use super::lissajous::Lissajous;
 use super::viewobj::*;
 use super::voice::{StaticViewForVoice4, Voice4};
@@ -15,6 +15,7 @@ use super::waterripple::WaterRipple;
 use super::beatview::BeatView;
 use crate::file::input_txt::InputText;
 use crate::lpnlib::*;
+use crate::cmd::txt_common::*;
 
 //*******************************************************************
 //      struct Resize
@@ -189,7 +190,11 @@ impl Graphic {
                 }
                 BEAT_PATTERN => {
                     self.gptn = GraphPattern::Beat;
-                    self.svce = Some(Box::new(BeatView::new(crnt_time, self.gmode)));
+                    let mut bobj = BeatView::new(crnt_time, self.gmode);
+                    let mt = guiev.get_indicator(INDC_METER).to_string();
+                    let num = split_by('/', mt);
+                    bobj.set_beat_inmsr(num[0].parse::<i32>().unwrap_or(0));
+                    self.svce = Some(Box::new(bobj));
                 }
                 TEXT_VISIBLE_CTRL => {
                     self.text_visible = self.text_visible.next();
@@ -269,13 +274,10 @@ impl Graphic {
     }
     /// Beat Object の追加、Beat Event の処理
     fn push_beat_obj(&mut self, beat: i32, tm: f32) {
-        match self.gptn {
-            GraphPattern::Beat => {
-                if let Some(sv) = self.svce.as_mut() {
-                    sv.on_beat(beat, tm);
-                }
+        if self.gptn == GraphPattern::Beat {
+            if let Some(sv) = self.svce.as_mut() {
+                sv.on_beat(beat, tm);
             }
-            _ => (),
         }
     }
     pub fn get_bgcolor(&self) -> Srgb<u8> {
@@ -393,7 +395,7 @@ impl Graphic {
         } else {
             WHITE
         };
-        let msr = guiev.get_indicator(3);
+        let msr = guiev.get_indicator(INDC_TICK);
         draw.text(msr)
             .font(self.font_nrm.clone())
             .font_size(40)
@@ -402,7 +404,7 @@ impl Graphic {
             .x_y(self.rs.eight_indic_left, self.rs.eight_indic_top)
             .w_h(400.0, 40.0);
 
-        let bpm = guiev.get_indicator(1);
+        let bpm = guiev.get_indicator(INDC_BPM);
         draw.text("bpm:")
             .font(self.font_nrm.clone())
             .font_size(28)
@@ -424,7 +426,7 @@ impl Graphic {
             )
             .w_h(400.0, 40.0);
 
-        let meter = guiev.get_indicator(2);
+        let meter = guiev.get_indicator(INDC_METER);
         draw.text("meter:")
             .font(self.font_nrm.clone())
             .font_size(28)
@@ -446,7 +448,7 @@ impl Graphic {
             )
             .w_h(400.0, 40.0);
 
-        let key = guiev.get_indicator(0);
+        let key = guiev.get_indicator(INDC_KEY);
         draw.text("key:")
             .font(self.font_nrm.clone())
             .font_size(28)

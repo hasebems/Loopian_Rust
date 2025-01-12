@@ -603,11 +603,10 @@ impl ElapseStack {
     //      Update GUI
     //*******************************************************************
     fn update_gui_at_msrtop(&mut self) {
-        // key
-        self.send_msg_to_ui(UiMsg::NewMeasure);
-        // beat
-        let beat = self.tg.get_meter();
-        self.send_msg_to_ui(UiMsg::Meter(beat.0, beat.1));
+        if self.during_play {
+            // key
+            self.send_msg_to_ui(UiMsg::NewMeasure);
+        }
     }
     /// 50-60msec に一度、表示更新のイベントを Main Thread に送る
     fn update_gui(&mut self) {
@@ -615,6 +614,9 @@ impl ElapseStack {
         if diff > Duration::from_millis(50 + self.flac) {
             // 表示が周期的にならないように、間隔をバラす
             self.display_time = self.crnt_time;
+            // beat
+            let beat = self.tg.get_meter();
+            self.send_msg_to_ui(UiMsg::Meter(beat.0, beat.1));
             // bpm
             self.send_msg_to_ui(UiMsg::BpmUi(self.get_bpm()));
             // tick
