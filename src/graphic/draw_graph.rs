@@ -7,15 +7,15 @@ use nannou::prelude::*;
 use std::fs::File;
 use std::io::Read;
 
+use super::beatview::BeatView;
 use super::guiev::*;
 use super::lissajous::Lissajous;
 use super::viewobj::*;
 use super::voice::{StaticViewForVoice4, Voice4};
 use super::waterripple::WaterRipple;
-use super::beatview::BeatView;
+use crate::cmd::txt_common::*;
 use crate::file::input_txt::InputText;
 use crate::lpnlib::*;
-use crate::cmd::txt_common::*;
 
 //*******************************************************************
 //      struct Resize
@@ -154,7 +154,7 @@ impl Graphic {
     }
 
     //*******************************************************************
-    //      Update & Event
+    //      Operate Events & Update Model
     //*******************************************************************
     pub fn update_lpn_model(&mut self, guiev: &mut GuiEv, itxt: &InputText, crnt_time: f32) {
         self.crnt_time = crnt_time;
@@ -162,54 +162,11 @@ impl Graphic {
         // 画面モードの変化イベントの受信
         if !self.graphmsg.is_empty() {
             let msg = self.graphmsg[0];
-            match msg {
-                LIGHT_MODE => {
-                    self.gmode = GraphMode::Light;
-                    if let Some(sv) = self.svce.as_mut() {
-                        sv.set_mode(GraphMode::Light);
-                    }
-                }
-                DARK_MODE => {
-                    self.gmode = GraphMode::Dark;
-                    if let Some(sv) = self.svce.as_mut() {
-                        sv.set_mode(GraphMode::Dark);
-                    }
-                }
-                // ◆◆◆ Graphic Pattern が追加されたらここにも追加
-                RIPPLE_PATTERN => {
-                    self.gptn = GraphPattern::Ripple;
-                    self.svce = None;
-                }
-                VOICE_PATTERN => {
-                    self.gptn = GraphPattern::Voice4;
-                    self.svce = Some(Box::new(StaticViewForVoice4::new(self.font_nrm.clone())));
-                }
-                LISSAJOUS_PATTERN => {
-                    self.gptn = GraphPattern::Lissajous;
-                    self.svce = Some(Box::new(Lissajous::new(self.gmode)));
-                }
-                BEAT_PATTERN => {
-                    self.gptn = GraphPattern::Beat;
-                    let mut bobj = BeatView::new(crnt_time, self.gmode);
-                    let mt = guiev.get_indicator(INDC_METER).to_string();
-                    let num = split_by('/', mt);
-                    bobj.set_beat_inmsr(num[0].parse::<i32>().unwrap_or(0));
-                    self.svce = Some(Box::new(bobj));
-                }
-                TEXT_VISIBLE_CTRL => {
-                    self.text_visible = self.text_visible.next();
-                }
-                _ => (),
-            }
+            self.rcv_graph_command(guiev, crnt_time, msg);
             self.graphmsg.remove(0);
         }
 
-        // 画面全体の Model の更新
-        if let Some(sv) = self.svce.as_mut() {
-            sv.update_model(crnt_time, self.rs.clone());
-        }
-
-        // Note/Beat Object の生成
+        // Note/Beat Event を受信、viewobj へ送る
         if let Some(gev) = guiev.get_graphic_ev() {
             for ev in gev {
                 match ev {
@@ -217,14 +174,19 @@ impl Graphic {
                         let nt: i32 = nev.key_num as i32;
                         let vel: i32 = nev.vel as i32;
                         let pt: i32 = nev.pt as i32;
-                        self.push_note_obj(nt, vel, pt, crnt_time);
+                        self.vobj_note_ev(nt, vel, pt, crnt_time);
                     }
                     GraphicEv::BeatEv(b) => {
-                        self.push_beat_obj(b, crnt_time);
+                        self.vobj_beat_ev(b, crnt_time);
                     }
                 }
             }
             guiev.clear_graphic_ev();
+        }
+
+        // viewobj の更新
+        if let Some(sv) = self.svce.as_mut() {
+            sv.update_model(crnt_time, self.rs.clone());
         }
 
         // Note Object の更新と削除
@@ -254,8 +216,50 @@ impl Graphic {
         // Scroll Text の更新
         self.update_scroll_text(itxt);
     }
-    /// Note Object の追加、Note On Event の処理
-    fn push_note_obj(&mut self, nt: i32, vel: i32, pt: i32, tm: f32) {
+    /// Graphic Command の受信
+    fn rcv_graph_command(&mut self, guiev: &mut GuiEv, crnt_time: f32, msg: i16) {
+        match msg {
+            LIGHT_MODE => {
+                self.gmode = GraphMode::Light;
+                if let Some(sv) = self.svce.as_mut() {
+                    sv.set_mode(GraphMode::Light);
+                }
+            }
+            DARK_MODE => {
+                self.gmode = GraphMode::Dark;
+                if let Some(sv) = self.svce.as_mut() {
+                    sv.set_mode(GraphMode::Dark);
+                }
+            }
+            // ◆◆◆ Graphic Pattern が追加されたらここにも追加
+            RIPPLE_PATTERN => {
+                self.gptn = GraphPattern::Ripple;
+                self.svce = None;
+            }
+            VOICE_PATTERN => {
+                self.gptn = GraphPattern::Voice4;
+                self.svce = Some(Box::new(StaticViewForVoice4::new(self.font_nrm.clone())));
+            }
+            LISSAJOUS_PATTERN => {
+                self.gptn = GraphPattern::Lissajous;
+                self.svce = Some(Box::new(Lissajous::new(self.gmode)));
+            }
+            BEAT_PATTERN => {
+                self.gptn = GraphPattern::Beat;
+                let mut bobj = BeatView::new(crnt_time, self.gmode);
+                let mt = guiev.get_indicator(INDC_METER).to_string();
+                let num = split_by('/', mt);
+                bobj.set_beat_inmsr(num[0].parse::<i32>().unwrap_or(0));
+                self.svce = Some(Box::new(bobj));
+            }
+            TEXT_VISIBLE_CTRL => {
+                self.text_visible = self.text_visible.next();
+            }
+            _ => (),
+        }
+    }
+    /// viewobj への Note Object の追加、Note On Event の処理
+    fn vobj_note_ev(&mut self, nt: i32, vel: i32, pt: i32, tm: f32) {
         match self.gptn {
             // ◆◆◆ Graphic Pattern が追加されたらここにも追加
             GraphPattern::Ripple => self.nobj.push(Box::new(WaterRipple::new(
@@ -272,8 +276,8 @@ impl Graphic {
             _ => (),
         }
     }
-    /// Beat Object の追加、Beat Event の処理
-    fn push_beat_obj(&mut self, beat: i32, tm: f32) {
+    /// viewobj への Beat Object の追加、Beat Event の処理
+    fn vobj_beat_ev(&mut self, beat: i32, tm: f32) {
         if self.gptn == GraphPattern::Beat {
             if let Some(sv) = self.svce.as_mut() {
                 sv.on_beat(beat, tm);
