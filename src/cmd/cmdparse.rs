@@ -103,6 +103,8 @@ impl LoopianCmd {
             || first_letter == "A"
         {
             Some(CmndRtn(self.letter_part(input_text), NO_MSG))
+        } else if first_letter == "h" {
+            Some(CmndRtn(self.letter_h(input_text), NO_MSG))
         } else {
             Some(CmndRtn("what?".to_string(), NO_MSG))
         }
@@ -208,7 +210,7 @@ impl LoopianCmd {
                     LISSAJOUS_PATTERN,
                 )
             } else if len == 10 && &input_text[6..10] == "beat" {
-                CmndRtn("Changed Graphic Beat Pattern!".to_string(),BEAT_PATTERN,)
+                CmndRtn("Changed Graphic Beat Pattern!".to_string(), BEAT_PATTERN)
             } else {
                 CmndRtn("what?".to_string(), 0)
             }
@@ -305,6 +307,14 @@ impl LoopianCmd {
             } else {
                 "what?".to_string()
             }
+        } else {
+            "what?".to_string()
+        }
+    }
+    fn letter_h(&mut self, input_text: &str) -> String {
+        let len = input_text.chars().count();
+        if len == 5 && &input_text[0..5] == "hello" {
+            "Hello,World!".to_string()
         } else {
             "what?".to_string()
         }
