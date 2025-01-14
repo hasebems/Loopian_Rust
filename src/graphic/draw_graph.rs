@@ -236,22 +236,30 @@ impl Graphic {
             RIPPLE_PATTERN => {
                 self.gptn = GraphPattern::Ripple;
                 self.svce = None;
+                self.nobj.clear();
+                self.bobj.clear();
             }
             VOICE_PATTERN => {
                 self.gptn = GraphPattern::Voice4;
                 self.svce = Some(Box::new(StaticViewForVoice4::new(self.font_nrm.clone())));
+                self.nobj.clear();
+                self.bobj.clear();
             }
             LISSAJOUS_PATTERN => {
                 self.gptn = GraphPattern::Lissajous;
                 self.svce = Some(Box::new(Lissajous::new(self.gmode)));
+                self.nobj.clear();
+                self.bobj.clear();
             }
             BEATLISSA_PATTERN => {
                 self.gptn = GraphPattern::BeatLissa;
-                let mut bobj = BeatLissa::new(crnt_time, self.gmode);
+                let mut obj = BeatLissa::new(crnt_time, self.gmode);
                 let mt = guiev.get_indicator(INDC_METER).to_string();
                 let num = split_by('/', mt);
-                bobj.set_beat_inmsr(num[0].parse::<i32>().unwrap_or(0));
-                self.svce = Some(Box::new(bobj));
+                obj.set_beat_inmsr(num[0].parse::<i32>().unwrap_or(0));
+                self.svce = Some(Box::new(obj));
+                self.nobj.clear();
+                self.bobj.clear();
             }
             TEXT_VISIBLE_CTRL => {
                 self.text_visible = self.text_visible.next();
