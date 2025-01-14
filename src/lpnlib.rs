@@ -326,7 +326,7 @@ pub const TEXT_VISIBLE_CTRL: i16 = 3;
 pub const RIPPLE_PATTERN: i16 = 10;
 pub const VOICE_PATTERN: i16 = 11;
 pub const LISSAJOUS_PATTERN: i16 = 12;
-pub const BEAT_PATTERN: i16 = 13;
+pub const BEATLISSA_PATTERN: i16 = 13;
 //-------------------------------------------------------------------
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum InputMode {

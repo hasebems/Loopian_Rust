@@ -7,7 +7,7 @@ use nannou::prelude::*;
 use std::fs::File;
 use std::io::Read;
 
-use super::beatview::BeatView;
+use super::beatlissa::*;
 use super::guiev::*;
 use super::lissajous::Lissajous;
 use super::viewobj::*;
@@ -155,6 +155,7 @@ impl Graphic {
 
     //*******************************************************************
     //      Operate Events & Update Model
+    //          crnt_time: [sec]
     //*******************************************************************
     pub fn update_lpn_model(&mut self, guiev: &mut GuiEv, itxt: &InputText, crnt_time: f32) {
         self.crnt_time = crnt_time;
@@ -177,7 +178,7 @@ impl Graphic {
                         self.vobj_note_ev(nt, vel, pt, crnt_time);
                     }
                     GraphicEv::BeatEv(b) => {
-                        self.vobj_beat_ev(b, crnt_time);
+                        self.vobj_beat_ev(b, crnt_time, guiev);
                     }
                 }
             }
@@ -244,9 +245,9 @@ impl Graphic {
                 self.gptn = GraphPattern::Lissajous;
                 self.svce = Some(Box::new(Lissajous::new(self.gmode)));
             }
-            BEAT_PATTERN => {
-                self.gptn = GraphPattern::Beat;
-                let mut bobj = BeatView::new(crnt_time, self.gmode);
+            BEATLISSA_PATTERN => {
+                self.gptn = GraphPattern::BeatLissa;
+                let mut bobj = BeatLissa::new(crnt_time, self.gmode);
                 let mt = guiev.get_indicator(INDC_METER).to_string();
                 let num = split_by('/', mt);
                 bobj.set_beat_inmsr(num[0].parse::<i32>().unwrap_or(0));
@@ -277,10 +278,25 @@ impl Graphic {
         }
     }
     /// viewobj への Beat Object の追加、Beat Event の処理
-    fn vobj_beat_ev(&mut self, beat: i32, tm: f32) {
-        if self.gptn == GraphPattern::Beat {
+    fn vobj_beat_ev(&mut self, beat: i32, tm: f32, guiev: &GuiEv) {
+        if self.gptn == GraphPattern::BeatLissa {
             if let Some(sv) = self.svce.as_mut() {
                 sv.on_beat(beat, tm);
+                let max_obj = sv.get_crnt_num();
+                if max_obj <= 1 && self.bobj.len() > max_obj {
+                    self.bobj.clear();
+                }
+                if self.bobj.len() < max_obj {
+                    let loc = sv.get_obj_position(0, self.bobj.len());
+                    let bpm = guiev
+                        .get_indicator(INDC_BPM)
+                        .parse::<f32>()
+                        .unwrap_or(100.0);
+                    let draw_time = (60.0 / bpm) + 0.1;
+                    self.bobj.push(Box::new(BeatLissaObj::new(
+                        tm, draw_time, loc.x, loc.y, self.gmode,
+                    )));
+                }
             }
         }
     }

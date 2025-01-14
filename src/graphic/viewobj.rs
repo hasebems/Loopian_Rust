@@ -17,18 +17,26 @@ pub enum GraphPattern {
     Ripple,
     Voice4,
     Lissajous,
-    Beat,
+    BeatLissa,
 }
 
 pub trait NormalView {
     /// 画面全体の Model の更新
     fn update_model(&mut self, crnt_time: f32, rs: Resize);
     /// Note 演奏情報を受け取る
-    fn note_on(&mut self, nt: i32, vel: i32, pt: i32, tm: f32);
+    fn note_on(&mut self, _nt: i32, _vel: i32, _pt: i32, _tm: f32) {}
     /// Beat 演奏情報を受け取る
-    fn on_beat(&mut self, bt: i32, tm: f32);
+    fn on_beat(&mut self, _bt: i32, _tm: f32) {}
+    /// オブジェクトの位置を取得
+    fn get_obj_position(&self, _otype: usize, _num: usize) -> Vec2 {
+        (0.0, 0.0).into()
+    }
+    /// 現在のオブジェクト数を取得
+    fn get_crnt_num(&self) -> usize {
+        0
+    }
     /// Mode 情報を受け取る
-    fn set_mode(&mut self, mode: GraphMode);
+    fn set_mode(&mut self, _mode: GraphMode) {}
     /// 画面全体の描画
     fn disp(
         &self,

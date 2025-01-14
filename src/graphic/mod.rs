@@ -1,4 +1,4 @@
-pub mod beatview;
+pub mod beatlissa;
 pub mod draw_graph;
 pub mod guiev;
 pub mod lissajous;
