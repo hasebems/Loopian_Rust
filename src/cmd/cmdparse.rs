@@ -209,8 +209,11 @@ impl LoopianCmd {
                     "Changed Graphic Note Pattern!".to_string(),
                     LISSAJOUS_PATTERN,
                 )
-            } else if len == 10 && &input_text[6..10] == "beat" {
-                CmndRtn("Changed Graphic Beat Pattern!".to_string(), BEAT_PATTERN)
+            } else if len == 15 && &input_text[6..15] == "beatlissa" {
+                CmndRtn(
+                    "Changed Graphic Beat Pattern!".to_string(),
+                    BEATLISSA_PATTERN,
+                )
             } else {
                 CmndRtn("what?".to_string(), 0)
             }
