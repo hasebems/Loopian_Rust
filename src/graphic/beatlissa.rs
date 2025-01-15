@@ -21,6 +21,8 @@ pub struct BeatLissa {
     start_x: f32,
     start_y: f32,
     obj_locate: Vec<Vec2>,
+    bobj: Vec<Box<dyn BeatObj>>, // Beat Object
+    mode: GraphMode,
 }
 //*******************************************************************
 //      impl BeatLissa
@@ -31,7 +33,7 @@ const MAX_LINE: i32 = 2;
 const START_Y: f32 = 150.0;
 
 impl BeatLissa {
-    pub fn new(_tm: f32, _mode: GraphMode) -> Self {
+    pub fn new(_tm: f32, mode: GraphMode) -> Self {
         Self {
             beat: 0,
             measure_position: 0,
@@ -41,6 +43,8 @@ impl BeatLissa {
             start_x: 0.0,
             start_y: 0.0,
             obj_locate: Vec::new(),
+            bobj: Vec::new(),
+            mode,
         }
     }
     /// beatlissa にビート数を設定
@@ -67,11 +71,23 @@ impl BeatLissa {
     }
 }
 //*******************************************************************
-impl NormalView for BeatLissa {
+impl GenerativeView for BeatLissa {
     /// 画面全体の Model の更新
-    fn update_model(&mut self, _crnt_time: f32, _rs: Resize) {}
+    fn update_model(&mut self, crnt_time: f32, rs: Resize) {
+        // Beat Object の更新と削除
+        let mut retain: Vec<bool> = Vec::new();
+        for obj in self.bobj.iter_mut() {
+            retain.push(obj.update_model(crnt_time, rs.clone()));
+        }
+        for (j, rt) in retain.iter().enumerate() {
+            if !rt {
+                self.bobj.remove(j);
+                break;
+            }
+        }
+    }
     /// Beat 演奏情報を受け取る
-    fn on_beat(&mut self, bt: i32, _tm: f32) {
+    fn on_beat(&mut self, bt: i32, tm: f32, dt: f32) {
         //println!("XXXX:{},{}",bt, tm);
         self.beat = bt;
         if bt == 0 {
@@ -79,6 +95,16 @@ impl NormalView for BeatLissa {
         }
         self.crnt_obj =
             ((self.measure_position * self.max_obj_inline + self.beat) % self.max_obj) as usize;
+
+        let max_obj = self.get_crnt_num();
+        if max_obj <= 1 && self.bobj.len() > max_obj {
+            self.bobj.clear();
+        }
+        if self.bobj.len() < max_obj {
+            let loc = self.get_obj_position(0, self.bobj.len());
+            self.bobj
+                .push(Box::new(BeatLissaObj::new(tm, dt, loc.x, loc.y, self.mode)));
+        }
     }
     /// オブジェクトの位置を取得
     fn get_obj_position(&self, _otype: usize, num: usize) -> Vec2 {
@@ -88,13 +114,21 @@ impl NormalView for BeatLissa {
     fn get_crnt_num(&self) -> usize {
         self.crnt_obj + 1
     }
+    /// Mode 情報を受け取る
+    fn set_mode(&mut self, mode: GraphMode) {
+        self.mode = mode;
+    }
     /// 画面全体の描画
     fn disp(
         &self,
-        _draw: Draw,
-        _crnt_time: f32, //  const FPS(50msec) のカウンター
-        _rs: Resize,
+        draw: Draw,
+        tm: f32, //  const FPS(50msec) のカウンター
+        rs: Resize,
     ) {
+        //  Beat Object の描画
+        for obj in self.bobj.iter() {
+            obj.disp(draw.clone(), tm, rs.clone());
+        }
     }
 }
 //*******************************************************************

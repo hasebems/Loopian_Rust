@@ -8,18 +8,46 @@ use nannou::prelude::*;
 use super::draw_graph::Resize;
 use super::viewobj::*;
 
-pub struct StaticViewForVoice4 {
+pub struct Voice4 {
     font: nannou::text::Font,
+    nobj: Vec<Box<dyn NoteObj>>, // Note Object
+    mode: GraphMode,
 }
 
-impl StaticViewForVoice4 {
+impl Voice4 {
     pub fn new(font: nannou::text::Font) -> Self {
-        Self { font }
+        Self {
+            font,
+            nobj: Vec::new(),
+            mode: GraphMode::Dark,
+        }
     }
 }
-impl NormalView for StaticViewForVoice4 {
-    fn update_model(&mut self, _crnt_time: f32, _rs: Resize) {}
-    fn disp(&self, draw: Draw, _tm: f32, rs: Resize) {
+impl GenerativeView for Voice4 {
+    fn update_model(&mut self, tm: f32, rs: Resize) {
+        // Note Object の更新と削除
+        let mut retain: Vec<bool> = Vec::new();
+        for obj in self.nobj.iter_mut() {
+            retain.push(obj.update_model(tm, rs.clone()));
+        }
+        for (j, rt) in retain.iter().enumerate() {
+            if !rt {
+                self.nobj.remove(j);
+                break;
+            }
+        }
+    }
+    /// Note 演奏情報を受け取る
+    fn note_on(&mut self, nt: i32, vel: i32, pt: i32, tm: f32) {
+        self.nobj.push(Box::new(Voice4Note::new(
+            nt as f32, vel as f32, pt, tm, self.mode,
+        )));
+    }
+    /// Mode 情報を受け取る
+    fn set_mode(&mut self, mode: GraphMode) {
+        self.mode = mode;
+    }
+    fn disp(&self, draw: Draw, tm: f32, rs: Resize) {
         let x = rs.get_full_size_x() / 5.0;
         let y = rs.get_full_size_y() / 5.0;
         let part_name = ["L1", "L2", "R1", "R2"];
@@ -44,10 +72,14 @@ impl NormalView for StaticViewForVoice4 {
                 .stroke_weight(2.0)
                 .stroke(MAGENTA);
         }
+        //  Note Object の描画
+        for obj in self.nobj.iter() {
+            obj.disp(draw.clone(), tm, rs.clone());
+        }
     }
 }
 
-pub struct Voice4 {
+pub struct Voice4Note {
     note: f32, // 0.0 - 1.0
     vel: f32,
     part: i32,
@@ -55,7 +87,7 @@ pub struct Voice4 {
     mode: GraphMode,
 }
 
-impl Voice4 {
+impl Voice4Note {
     const DISAPPEAR_TIME: f32 = 5.0; // Bigger, Slower
     const THICKNESS: f32 = 20.0;
     pub fn new(nt: f32, vel: f32, pt: i32, tm: f32, mode: GraphMode) -> Self {
@@ -68,29 +100,29 @@ impl Voice4 {
         }
     }
 }
-impl NoteObj for Voice4 {
+impl NoteObj for Voice4Note {
     fn update_model(&mut self, crnt_time: f32, _rs: Resize) -> bool {
         let elapsed_time = crnt_time - self.time;
-        elapsed_time <= Voice4::DISAPPEAR_TIME
+        elapsed_time <= Self::DISAPPEAR_TIME
     }
     fn disp(&self, draw: Draw, crnt_time: f32, rs: Resize) {
         let elapsed_time = (crnt_time - self.time) * 4.0;
-        if elapsed_time > Voice4::DISAPPEAR_TIME {
+        if elapsed_time > Self::DISAPPEAR_TIME {
             return;
         }
-        let rest = Voice4::DISAPPEAR_TIME - elapsed_time;
-        let gray_scl = rest / Voice4::DISAPPEAR_TIME;
+        let rest = Self::DISAPPEAR_TIME - elapsed_time;
+        let gray_scl = rest / Self::DISAPPEAR_TIME;
         let upper = if self.part % 2 == 1 { 1.0 } else { -1.0 }; // 0,2:upper, 1,3:lower
         let left = if self.part / 2 == 0 { -1.0 } else { 1.0 }; // 0,1:left, 2,3:right
         let rotary_phase = self.note * 3840.0; // noteによる回転phase
         let ntx = rotary_phase.cos() * (self.note / 2.0 + 0.5); // 相対x座標
         let nty = rotary_phase.sin() * (self.note / 2.0 + 0.5); // 相対y座標
-        for i in 1..(Voice4::THICKNESS as usize) {
+        for i in 1..(Self::THICKNESS as usize) {
             let i_f32 = i as f32;
-            let scale = if i_f32 > Voice4::THICKNESS / 2.0 {
-                (Voice4::THICKNESS - i_f32) / (Voice4::THICKNESS / 2.0)
+            let scale = if i_f32 > Self::THICKNESS / 2.0 {
+                (Self::THICKNESS - i_f32) / (Self::THICKNESS / 2.0)
             } else {
-                i_f32 / (Voice4::THICKNESS / 2.0)
+                i_f32 / (Self::THICKNESS / 2.0)
             };
             let alpha_level = gray_scl * scale;
             let gray = if self.mode == GraphMode::Dark {

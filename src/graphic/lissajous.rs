@@ -38,7 +38,7 @@ impl Lissajous {
     }
 }
 
-impl NormalView for Lissajous {
+impl GenerativeView for Lissajous {
     fn update_model(&mut self, crnt_time: f32, _rs: Resize) {
         let past_time = self.crnt_time;
         self.crnt_time = crnt_time * Lissajous::SPEED;

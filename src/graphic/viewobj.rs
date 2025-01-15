@@ -20,13 +20,13 @@ pub enum GraphPattern {
     BeatLissa,
 }
 
-pub trait NormalView {
+pub trait GenerativeView {
     /// 画面全体の Model の更新
     fn update_model(&mut self, crnt_time: f32, rs: Resize);
     /// Note 演奏情報を受け取る
     fn note_on(&mut self, _nt: i32, _vel: i32, _pt: i32, _tm: f32) {}
     /// Beat 演奏情報を受け取る
-    fn on_beat(&mut self, _bt: i32, _tm: f32) {}
+    fn on_beat(&mut self, _bt: i32, _ct: f32, _dt: f32) {}
     /// オブジェクトの位置を取得
     fn get_obj_position(&self, _otype: usize, _num: usize) -> Vec2 {
         (0.0, 0.0).into()
