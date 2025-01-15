@@ -8,9 +8,9 @@ use std::fs::File;
 use std::io::Read;
 
 use super::beatlissa::*;
+use super::generative_view::*;
 use super::guiev::*;
 use super::lissajous::*;
-use super::generative_view::*;
 use super::voice4::*;
 use super::waterripple::WaterRipple;
 use crate::cmd::txt_common::*;

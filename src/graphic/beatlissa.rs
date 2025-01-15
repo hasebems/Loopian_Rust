@@ -14,7 +14,6 @@ use super::generative_view::*;
 pub struct BeatLissa {
     beat: i32,
     measure_position: i32,
-    crnt_obj: usize,
 
     max_obj_inline: i32,
     max_obj: i32,
@@ -37,7 +36,6 @@ impl BeatLissa {
         Self {
             beat: 0,
             measure_position: 0,
-            crnt_obj: 0,
             max_obj_inline: 0, // 1行に表示するオブジェクト数
             max_obj: 0,        // 画面全体のオブジェクト数
             start_x: 0.0,
@@ -88,31 +86,21 @@ impl GenerativeView for BeatLissa {
     }
     /// Beat 演奏情報を受け取る
     fn on_beat(&mut self, bt: i32, tm: f32, dt: f32) {
-        //println!("XXXX:{},{}",bt, tm);
         self.beat = bt;
         if bt == 0 {
             self.measure_position += 1;
         }
-        self.crnt_obj =
-            ((self.measure_position * self.max_obj_inline + self.beat) % self.max_obj) as usize;
+        let max_obj =
+            ((self.measure_position * self.max_obj_inline + self.beat) % self.max_obj + 1) as usize;
 
-        let max_obj = self.get_crnt_num();
         if max_obj <= 1 && self.bobj.len() > max_obj {
             self.bobj.clear();
         }
         if self.bobj.len() < max_obj {
-            let loc = self.get_obj_position(0, self.bobj.len());
+            let loc = self.obj_locate[self.bobj.len()];
             self.bobj
                 .push(Box::new(BeatLissaObj::new(tm, dt, loc.x, loc.y, self.mode)));
         }
-    }
-    /// オブジェクトの位置を取得
-    fn get_obj_position(&self, _otype: usize, num: usize) -> Vec2 {
-        self.obj_locate[num]
-    }
-    /// 現在のオブジェクト数を取得
-    fn get_crnt_num(&self) -> usize {
-        self.crnt_obj + 1
     }
     /// Mode 情報を受け取る
     fn set_mode(&mut self, mode: GraphMode) {
