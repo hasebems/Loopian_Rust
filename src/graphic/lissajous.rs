@@ -7,7 +7,7 @@ use nannou::prelude::*;
 use std::f32::consts::PI;
 
 use super::draw_graph::Resize;
-use super::viewobj::*;
+use super::generative_view::*;
 use crate::lpnlib::*;
 
 pub struct Lissajous {

@@ -10,7 +10,7 @@ use std::io::Read;
 use super::beatlissa::*;
 use super::guiev::*;
 use super::lissajous::*;
-use super::viewobj::*;
+use super::generative_view::*;
 use super::voice4::*;
 use super::waterripple::WaterRipple;
 use crate::cmd::txt_common::*;

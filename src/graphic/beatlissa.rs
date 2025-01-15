@@ -6,7 +6,7 @@
 use nannou::prelude::*;
 
 use super::draw_graph::Resize;
-use super::viewobj::*;
+use super::generative_view::*;
 
 //*******************************************************************
 //      define struct BeatLissa
