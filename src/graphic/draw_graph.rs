@@ -163,7 +163,7 @@ impl Graphic {
             self.graphmsg.remove(0);
         }
 
-        // Note/Beat Event を受信、viewobj へ送る
+        // Note/Beat Event を受信、generative_view へ送る
         if let Some(gev) = guiev.get_graphic_ev() {
             for ev in gev {
                 match ev {
@@ -190,7 +190,7 @@ impl Graphic {
             guiev.clear_graphic_ev();
         }
 
-        // viewobj の更新
+        // generative_view の更新
         if let Some(sv) = self.svce.as_mut() {
             sv.update_model(crnt_time, self.rs.clone());
         }
@@ -213,7 +213,7 @@ impl Graphic {
                     sv.set_mode(GraphMode::Dark);
                 }
             }
-            // ◆◆◆ Graphic Pattern が追加されたらここにも追加
+            // ◆◆◆ generative_view が追加されたらここに追加
             RIPPLE_PATTERN => {
                 self.gptn = GraphPattern::Ripple;
                 self.svce = Some(Box::new(WaterRipple::new(self.gmode)));
@@ -227,12 +227,11 @@ impl Graphic {
                 self.svce = Some(Box::new(Lissajous::new(self.gmode)));
             }
             BEATLISSA_PATTERN => {
-                self.gptn = GraphPattern::BeatLissa;
-                let mut obj = BeatLissa::new(crnt_time, self.gmode);
                 let mt = guiev.get_indicator(INDC_METER).to_string();
-                let num = split_by('/', mt);
-                obj.set_beat_inmsr(num[0].parse::<i32>().unwrap_or(0));
-                self.svce = Some(Box::new(obj));
+                let num_str = split_by('/', mt);
+                let num = num_str[0].parse::<i32>().unwrap_or(0);
+                self.gptn = GraphPattern::BeatLissa;
+                self.svce = Some(Box::new(BeatLissa::new(num, crnt_time, self.gmode)));
             }
             TEXT_VISIBLE_CTRL => {
                 self.text_visible = self.text_visible.next();

@@ -9,63 +9,49 @@ use super::draw_graph::Resize;
 use super::generative_view::*;
 
 //*******************************************************************
-//      define struct BeatLissa
+//      struct BeatLissa
 //*******************************************************************
 pub struct BeatLissa {
     beat: i32,
     measure_position: i32,
-
     max_obj_inline: i32,
     max_obj: i32,
-    start_x: f32,
-    start_y: f32,
     obj_locate: Vec<Vec2>,
     bobj: Vec<Box<dyn BeatObj>>, // Beat Object
     mode: GraphMode,
 }
 //*******************************************************************
-//      impl BeatLissa
-//*******************************************************************
 const SQUARE_SIZE: f32 = 100.0;
 const GAP: f32 = 180.0;
 const MAX_LINE: i32 = 2;
 const START_Y: f32 = 150.0;
-
 impl BeatLissa {
-    pub fn new(_tm: f32, mode: GraphMode) -> Self {
+    pub fn new(beat_inmsr: i32, _tm: f32, mode: GraphMode) -> Self {
+        //self.max_obj_inline = beat_inmsr;
+        let max_obj = beat_inmsr * MAX_LINE;
+        let start_x = -(beat_inmsr as f32 * SQUARE_SIZE + (beat_inmsr - 1) as f32 * GAP) / 2.0
+            + SQUARE_SIZE / 2.0;
+        let start_y = START_Y;
+        let mut obj_locate: Vec<Vec2> = Vec::new();
+        for i in 0..max_obj {
+            let xnum = i % beat_inmsr;
+            let ynum = (i / beat_inmsr) as f32;
+            let x = (SQUARE_SIZE + GAP) * xnum as f32 + start_x;
+            let y = start_y - ynum * (SQUARE_SIZE + GAP);
+            obj_locate.push(Vec2::new(x, y));
+        }
+        //println!(
+        //    "QQQ::beat_inmsr:{}, x:{}",beat_inmsr, start_x
+        //);
         Self {
             beat: 0,
             measure_position: 0,
-            max_obj_inline: 0, // 1行に表示するオブジェクト数
-            max_obj: 0,        // 画面全体のオブジェクト数
-            start_x: 0.0,
-            start_y: 0.0,
-            obj_locate: Vec::new(),
+            max_obj_inline: beat_inmsr, // 1行に表示するオブジェクト数
+            max_obj,                    // 画面全体のオブジェクト数
+            obj_locate,
             bobj: Vec::new(),
             mode,
         }
-    }
-    /// beatlissa にビート数を設定
-    /// 現在、生成時に設定されるのみで、拍子が変更された時に更新されない
-    pub fn set_beat_inmsr(&mut self, beat_inmsr: i32) {
-        self.max_obj_inline = beat_inmsr;
-        self.max_obj = self.max_obj_inline * MAX_LINE;
-        self.start_x = -(self.max_obj_inline as f32 * SQUARE_SIZE
-            + (self.max_obj_inline - 1) as f32 * GAP)
-            / 2.0
-            + SQUARE_SIZE / 2.0;
-        self.start_y = START_Y;
-        for i in 0..self.max_obj {
-            let xnum = i % self.max_obj_inline;
-            let ynum = (i / self.max_obj_inline) as f32;
-            let x = (SQUARE_SIZE + GAP) * xnum as f32 + self.start_x;
-            let y = self.start_y - ynum * (SQUARE_SIZE + GAP);
-            self.obj_locate.push(Vec2::new(x, y));
-        }
-        println!(
-            "QQQ::max_obj_inline:{}, x:{}",
-            self.max_obj_inline, self.start_x
-        );
     }
 }
 //*******************************************************************
@@ -120,7 +106,7 @@ impl GenerativeView for BeatLissa {
     }
 }
 //*******************************************************************
-//      define struct  BeatObj
+//      struct  BeatObj
 //*******************************************************************
 pub struct BeatLissaObj {
     phase: f32,
@@ -131,8 +117,6 @@ pub struct BeatLissaObj {
     center: Vec2,
     mode: GraphMode,
 }
-//*******************************************************************
-//      impl  BeatObj
 //*******************************************************************
 impl BeatLissaObj {
     pub fn new(crnt_time: f32, draw_time: f32, x: f32, y: f32, mode: GraphMode) -> Self {
