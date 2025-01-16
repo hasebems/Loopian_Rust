@@ -3,22 +3,45 @@
 ワークショップにご参加いただきありがとうございます！
 ワークショップ参加に先立ち、以下のお願いがございます。
 
+<details>
+
+<summary>事前準備</summary>
+
 ## PC持参でお願いします
 
 - WSでは、PCにLoopianをインストールして、それを操作することで音を出したり、作曲をしていきますので、Note PCが必要になります
 - 複数人が同時に音を出すため、各自の音をヘッドフォンを聴きながらワークショップを進めます。従って、ヘッドフォンをPCに接続して使えるようご用意をお願いします。
 - 上記の準備が難しいようでしたら、事前にご相談ください。
 
-
 ## Loopianの事前インストールをお願いいたします
 
 - 以下のページにインストールの案内がありますので、説明の通りにインストールをお願いいたします。
     - [Releaseページ](https://github.com/hasebems/Loopian_Rust/releases)
 
+</details>
 
-## データや情報のやりとりにDiscordを使用しますので、アカウント作成をお願いします
+<details>
 
-- DiscordというSNSを利用してデータや情報のやり取りを行う予定です
+<summary>WS1日目(2/1)</summary>
+
+## リンク集
+
+- [その1: Loopianのリファレンスマニュアル](https://github.com/hasebems/Loopian_Rust/blob/master/doc/howtouse.md)
+- [その2: コード確認アプリ for Loopian](https://openprocessing.org/sketch/2394744)
+
+## 注意事項
+
+
+
+</details>
+
+<details>
+
+<summary>Discordで情報交換しませんか</summary>
+
+## LoopianのことやDTMの話題を語り合う場所を作りました
+
+- DiscordというSNSを利用して、自作品を紹介したり、情報交換などをしませんか
 - 以下のサイトより説明を読んでいただき、アカウント作成をお願いします
     - アカウント作成は、サインインから、「アカウント登録」を選んでください
         - https://support.discord.com/hc/ja
@@ -26,4 +49,6 @@
         - [Discordの基本　はじめに](https://support.discord.com/hc/ja/sections/360008206871-%E3%81%AF%E3%81%98%E3%82%81%E3%81%AB)
 - 以下のサーバー（特定の仲間が集まる場所）に参加お願いします
     - [サーバーへの招待URL](https://discord.gg/4kVze52DGt)
-- このサーバーにて、WS終了後もLoopianの情報をお伝えしたり、自作品を紹介するなど、皆様の交流のために利用して頂けますが、WS終了後にご自由に退出していただいても構いません。
+
+</details>
+
