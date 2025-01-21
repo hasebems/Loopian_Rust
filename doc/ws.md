@@ -30,8 +30,12 @@
 
 - [その1: Loopianのリファレンスマニュアル](https://github.com/hasebems/Loopian_Rust/blob/master/doc/howtouse.md)
 - [その2: コード確認アプリ for Loopian](https://openprocessing.org/sketch/2394744)
+- [その3: WSの黒板](https://hackmd.io/@hasebems/rJUxyCODJx)
+- [その4: 宿題提出先メールアドレス](mailto:JCA03205@gmail.com)
 
-## 注意事項
+## メモ
+
+- WS中は、ヘッドフォンからの音とファシリテータの声を両方聞けるよう、ヘッドフォンは片耳のみにしておくと便利です
 
 
 
