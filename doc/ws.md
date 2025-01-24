@@ -24,7 +24,7 @@
 
 <details>
 
-<summary>WS1日目(2/1)</summary>
+<summary>Workshop向け情報</summary>
 
 ## リンク集
 
