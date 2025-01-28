@@ -28,10 +28,10 @@
 
 ## リンク集
 
-- ![その1: Loopianのリファレンスマニュアル](https://github.com/hasebems/Loopian_Rust/blob/master/doc/howtouse.md)
-- ![その2: コード確認アプリ for Loopian](https://openprocessing.org/sketch/2394744)
-- ![その3: WSの黒板](https://docs.google.com/spreadsheets/d/10D6Sbb5wFWlwshQl_5pLu1UBdSRoRy5o5nfh9G4ZkB0/edit?usp=sharing)
-- ![その4: 宿題提出先メールアドレス](mailto:JCA03205@gmail.com)
+- <a href="https://github.com/hasebems/Loopian_Rust/blob/master/doc/howtouse.md" target="_blank">その1: Loopianのリファレンスマニュアル</a>
+- <a href="https://openprocessing.org/sketch/2394744" target="_blank">その2: コード確認アプリ for Loopian</a>
+- <a href="https://docs.google.com/spreadsheets/d/10D6Sbb5wFWlwshQl_5pLu1UBdSRoRy5o5nfh9G4ZkB0/edit?usp=sharing" target="_blank">その3: WSの黒板</a>
+- [その4: 宿題提出先メールアドレス](mailto:JCA03205@gmail.com)
 
 ## メモ
 
