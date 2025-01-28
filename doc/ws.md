@@ -1,9 +1,9 @@
-<img src="DSC06378.jpg" width="80%">
+<img src="image/ws.jpg" width="80%">
 
 # 鴨江アートセンター2025/2/1-8開催 〜ピアノ曲をプログラミングする〜 ワークショップ参加者の方へ
 
-ワークショップにご参加いただきありがとうございます！
-ワークショップ参加に先立ち、以下のお願いがございます。
+ワークショップにご参加いただきありがとうございます！  
+ワークショップ前の準備、開催中のリンクなど、各種情報をお知らせいたします。
 
 <details>
 
@@ -28,15 +28,16 @@
 
 ## リンク集
 
-- [その1: Loopianのリファレンスマニュアル](https://github.com/hasebems/Loopian_Rust/blob/master/doc/howtouse.md)
-- [その2: コード確認アプリ for Loopian](https://openprocessing.org/sketch/2394744)
-- [その3: WSの黒板](https://docs.google.com/spreadsheets/d/10D6Sbb5wFWlwshQl_5pLu1UBdSRoRy5o5nfh9G4ZkB0/edit?usp=sharing)
-- [その4: 宿題提出先メールアドレス](mailto:JCA03205@gmail.com)
+- ![その1: Loopianのリファレンスマニュアル](https://github.com/hasebems/Loopian_Rust/blob/master/doc/howtouse.md)
+- ![その2: コード確認アプリ for Loopian](https://openprocessing.org/sketch/2394744)
+- ![その3: WSの黒板](https://docs.google.com/spreadsheets/d/10D6Sbb5wFWlwshQl_5pLu1UBdSRoRy5o5nfh9G4ZkB0/edit?usp=sharing)
+- ![その4: 宿題提出先メールアドレス](mailto:JCA03205@gmail.com)
 
 ## メモ
 
+- メモ帳、テキストエディット、あるいはお好みのエディタを立ち上げておくと便利です
+    - Loopianのテキスト入力では、`ctrl+v` でテキストを貼り付けることができます
 - WS中は、ヘッドフォンからの音とファシリテータの声を両方聞けるよう、ヘッドフォンは片耳のみにしておくと便利です
-
 
 
 </details>
