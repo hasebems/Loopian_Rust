@@ -2,15 +2,9 @@
 ![loopian_logo](loopian_logo.gif)
 -->
 
-# Loopian Alpha-version written in Rust
-
+# Loopian Reference Manual
 
 <img src="v050.png" width="80%">
-
-## about Loopian
-
-`loopian` is a sequencer for piano tones with text input that we are developing for use mostly in Live Coding.
-
 
 ## Loopian とは
 
