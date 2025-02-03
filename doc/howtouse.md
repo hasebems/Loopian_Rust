@@ -31,11 +31,9 @@ Loopian は、Live Coding などで使うために開発している、テキス
 
 ### 起動
 
-```
-./target/release/loopian_rust
-```
-起動アプリ名
-`loopian`
+起動方法
+ターミナルで、loopian アプリのあるフォルダに移動
+`./loopian`
 
 Option Switch
 - `--server` : サーバとして立ち上げる
@@ -65,13 +63,16 @@ Compile Switch (`Cargo build`)
     - ただし、ログファイルは記録されない
 
 
-### 音を出すための外部環境
+### 音を出すための環境
 
-- 外部 MIDI 音源を繋ぐ
-- マルチパートで MIDI受信するアプリを同時に起動する。以下のアプリで動作確認済。
-    - Logic : Mac で MIDI 演奏するための DAW by Apple
-    - Pianoteq8 : 物理エンジンベースのPiano音源 by MODARTT
-- 専用MIDI Controller(Loopian::ORBIT)を接続し、リアルタイム演奏も可能
+- Loopian と同じフォルダにある setting.toml の [midi] midi_out を以下の接続先の名前に変更してから Loopian を立ち上げる
+    - MIDI受信するアプリを同時に起動する
+        - Mac では以下のアプリで動作確認済
+            - Logic : Mac で MIDI 演奏するための DAW by Apple
+            - Pianoteq8 : 物理エンジンベースのPiano音源 by MODARTT
+        - Windows では、Microsoft GS Wavetable Synth で動作確認済
+    - 外部 MIDI 音源を繋ぐ
+- 専用MIDI Controller(Loopian::ORBITなど)を接続し、リアルタイム演奏も可能
 
 
 ## 基本操作コマンド
@@ -473,7 +474,7 @@ Compile Switch (`Cargo build`)
 設計資料へのリンク
 ---------------------
 
-- [詳細設計](doc/idea.md)
+- [詳細設計](idea.md)
 
 
 <!--
