@@ -33,7 +33,8 @@ Loopian は、Live Coding などで使うために開発している、テキス
 
 起動方法
 ターミナルで、loopian アプリのあるフォルダに移動
-`./loopian`
+
+`./loopian` で起動
 
 Option Switch
 - `--server` : サーバとして立ち上げる
@@ -106,7 +107,7 @@ Compile Switch (`Cargo build`)
         - R2=G4-F#5
 
 
-### Phrase 追加
+### Phrase 指定
 
 * `[note].fn1().fn2()` : phrase 入力の書式
     - *note*: 音符ごとの階名、音価表現、音量情報を入力する
@@ -118,10 +119,17 @@ Compile Switch (`Cargo build`)
     - `[.....//]` : 最後に // が二つあった場合は LOOP せず、Phrase の再生が止まる
         - 後述する variation には適用されない
 
-* noteは移動ドで表現する
-    - `d,r,m,f,s,l,t` : ド、レ、ミ、ファ、ソ、ラ、シ
-    - `di,ri,fi,si,li` : ド#、レ#、ファ#、ソ#、ラ# (iをつけると半音高くなる)
-    - `ra,ma,sa,la,ta`: レb、ミb、ソb、ラb、シb (aをつけると半音低くなる)
+* 音程は移動ドで表現
+    - iをつけると半音高くなる
+    - aをつけると半音低くなる
+
+|階名|ド|レ|ミ|ファ|ソ|ラ|シ|
+|-|-|-|-|-|-|-|-|
+|表記|d|r|m|f|s|l|t|
+|半音上|di|ri|mi|fi|si|li|ti|
+|半音下|da|ra|ma|fa|sa|la|ta|
+
+* Phrase の詳細記法
     - `-d` : 下のド
     - `+d` : 上のド
     - `--d`: 二つ下
@@ -187,12 +195,16 @@ Compile Switch (`Cargo build`)
         - コードが変わるごとにペダルは踏み直される
         - 小節が変わるごとにペダルは踏み直される
 
+* コードの根音(root)指定方法
+
+|主音からの距離|一度|二度|三度|四度|五度|六度|七度|
+|-|-|-|-|-|-|-|-|
+|根音の表記|I|II|III|IV|V|VI|VII|
 
 * コード記述方法
     - `X` : original phrase(no pedal)
     - `O` : original phrase(pedal)
     - `I` : `dms` (Iの和音)
-        - ローマ数字: `I,II,III,IV,V, VI,VII` で根音(root)を指定
     - `I#` : `dimisi` (数字の後に # を付けると半音高いコードになる。b は半音)
     - `Iion` : Iを主音としたイオニアンスケール(Ionian)
     - `lydian` : 現在のkeyを主音としたリディアンスケール
@@ -202,46 +214,48 @@ Compile Switch (`Cargo build`)
 
 * コード・スケールの種類
     - 読み方
-        - アンダーバー`_`にはI-VII(root)が入る
-        - []内に、根音から順に対象音`o`か、非対象音`x`かを示す
-    - `_` : `[oxxx-oxxo-xxxx]`
-    - `_m` : `[oxxo-xxxo-xxxx]`
-    - `_7` : `[oxxx-oxxo-xxox]`
-    - `_m7` : `[oxxo-xxxo-xxox]`
-    - `_6` : `[oxxx-oxxo-xoxx]`
-    - `_m6` : `[oxxo-xxxo-xoxx]`
-    - `_M7`,`_maj7` : `[oxxx-oxxo-xxxo]`
-    - `_mM7`,`-mmaj7` : `[oxxo-xxxo-xxxo]`
-    - `_add9` : `[oxox-oxxo-xxxx]`
-    - `_9` : `[oxox-oxxo-xxox]`
-    - `_m9` : `[oxxo-xxxo-xxox]`
-    - `_M9`,`_maj9` : `[oxox-oxxo-xxxo]`
-    - `_mM9` : `[oxoo-xxxo-xxxo]`
-    - `_+5`,`_aug` : `[oxxx-oxxx-oxxx]`
-    - `_7+5`,`_aug7` : `[oxxx-oxxx-oxox]`
-    - `_7-9` : `[ooxx-oxxo-xxox]`
-    - `_7+9` : `[oxxo-oxxo-xxox]`
-    - `_dim` : `[oxxo-xxox-xxxx]`
-    - `_dim7` : `[oxxo-xxox-xoxx]`
-    - `_m7-5` : `[oxxo-xxox-xxox]`
-    - `_sus4` : `[oxxx-xoxo-xxxx]`
-    - `_7sus4` : `[oxxx-xoxo-xxox]`
-    - `_chr` : `[oooo-oooo-oooo]`
-    - `_ion` : `[oxox-ooxo-xoxo]`
-    - `_dor` : `[oxoo-xoxo-xoxo]`
-    - `_lyd` : `[oxox-oxoo-xoxo]`
-    - `_mix` : `[oxox-ooxo-xoox]`
-    - `_aeo` : `[oxoo-xoxo-oxox]`
-    - `diatonic` : `[oxox-ooxo-xoxo]` rootは指定できない
-    - `dorian` : `[oxoo-xoxo-xoxo]` rootは指定できない
-    - `lydian` : `[oxox-oxoo-xoxo]` rootは指定できない
-    - `mixolydian` : `[oxox-ooxo-xoox]` rootは指定できない
-    - `aeolian` : `[oxoo-xoxo-oxox]` rootは指定できない
-    - `comdim` : `[oxoo-xoox-ooxo]` rootは指定できない
-    - `pentatonic` : `[oxox-oxxo-xoxx]` rootは指定できない
-    - `blues` : `[oxxo-xooo-xxox]` rootは指定できない
-    - `O` : `[oooo-oooo-oooo]` rootは指定できない
-    - `X` : `[oooo-oooo-oooo]`  rootは指定できない、pedal無し
+        - アンダーバー`_`には root(I-VII) が入る
+        - 構成音ではrootから順に対象音`o`か、非対象音`x`かを示す
+
+    |和音名|和音の表記|和音の構成音|
+    |-|-|-|
+    |長三和音|_|`oxxx-oxxo-xxxx`|
+    |短三和音|_m|`oxxo-xxxo-xxxx`|
+    |属七+長三和音|_7|`oxxx-oxxo-xxox`|
+    |六の和音|_6|`oxxx-oxxo-xoxx`|
+    |属七+短三和音|_m7|`oxxo-xxxo-xxox`|
+    |長七和音|_M7,_maj7|`oxxx-oxxo-xxxo`|
+    |長七+短三和音|_mM7|`oxxo-xxxo-xxxo`|
+    |add9th|_add9|`oxox-oxxo-xxxx`|
+    |属九和音|_9|`oxox-oxxo-xxox`|
+    |属九+短三和音|_m9|`oxxo-xxxo-xxox`|
+    |長九和音|_M9,_maj9|`oxox-oxxo-xxxo`|
+    |長九+短三和音|_mM9|`oxoo-xxxo-xxxo`|
+    |増三和音|_+5,_aug|`oxxx-oxxx-oxxx`|
+    |増七和音|_7+5|`oxxx-oxxx-oxox`|
+    |増三長七和音|_aug7|`oxxx-oxxx-oxox`|
+    |減九+属七和音|_7-9|`ooxx-oxxo-xxox`|
+    |増九+属七和音|_7+9|`oxxo-oxxo-xxox`|
+    |減七和音|_dim|`oxxo-xxox-xxxx`|
+    |導七和音|_m7-5|`oxxo-xxox-xxox`|
+    |`suspended4th`|_sus4|`oxxx-xoxo-xxxx`|
+    |属七suspended4th|_7sus4|`oxxx-xoxo-xxox`|
+    |全半音|_chr|`oooo-oooo-oooo`|
+    |イオニア|_ion|`oxox-ooxo-xoxo`|
+    |ドリアン|_dor|`oxoo-xoxo-xoxo`|
+    |リディアン|_lyd|`oxox-oxoo-xoxo`|
+    |ミクソリディアン|_mix|`oxox-ooxo-xoox`|
+    |エオリアン|_aeo|`oxoo-xoxo-oxox`|
+    |ダイアトニック|diatonic|`oxox-ooxo-xoxo`| rootは指定できない
+    |ドリアン|dorian|`oxoo-xoxo-xoxo`| rootは指定できない
+    |リディアン|lydian|`oxox-oxoo-xoxo`| rootは指定できない
+    |ミクソリディアン|mixolydian|`oxox-ooxo-xoox`| rootは指定できない
+    |エオリア|aeolian|`oxoo-xoxo-oxox`| rootは指定できない
+    |コンディミ|comdim|`oxoo-xoox-ooxo`| rootは指定できない
+    |ペンタトニック|pentatonic|`oxox-oxxo-xoxx`| rootは指定できない
+    |ブルース|blues|`oxxo-xooo-xxox`| rootは指定できない
+    |スルー|O|`oooo-oooo-oooo`| rootは指定できない
+    |スルー、pedal無し|X|`oooo-oooo-oooo`|  rootは指定できない
 
 
 ### 調、テンポ、拍子、音量
