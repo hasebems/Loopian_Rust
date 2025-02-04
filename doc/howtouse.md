@@ -211,7 +211,6 @@ Compile Switch (`Cargo build`)
     - `!` をコードの最後に追加すると、当てはまる音が等距離の場合、上側を採用する（通常は下側を採用）
     - コードやスケールが判断不能の場合、エラーとなり調の主音しか出ない
 
-
 * コード・スケールの種類
     - 読み方
         - アンダーバー`_`には root(I-VII) が入る
@@ -221,41 +220,40 @@ Compile Switch (`Cargo build`)
     |-|-|-|
     |長三和音|_|`oxxx-oxxo-xxxx`|
     |短三和音|_m|`oxxo-xxxo-xxxx`|
-    |属七+長三和音|_7|`oxxx-oxxo-xxox`|
+    |属七和音|_7|`oxxx-oxxo-xxox`|
     |六の和音|_6|`oxxx-oxxo-xoxx`|
-    |属七+短三和音|_m7|`oxxo-xxxo-xxox`|
+    |短七和音|_m7|`oxxo-xxxo-xxox`|
     |長七和音|_M7,_maj7|`oxxx-oxxo-xxxo`|
     |長七+短三和音|_mM7|`oxxo-xxxo-xxxo`|
     |add9th|_add9|`oxox-oxxo-xxxx`|
     |属九和音|_9|`oxox-oxxo-xxox`|
-    |属九+短三和音|_m9|`oxxo-xxxo-xxox`|
+    |長九+短七和音|_m9|`oxxo-xxxo-xxox`|
     |長九和音|_M9,_maj9|`oxox-oxxo-xxxo`|
-    |長九+短三和音|_mM9|`oxoo-xxxo-xxxo`|
+    |長九長七+短三和音|_mM9|`oxoo-xxxo-xxxo`|
     |増三和音|_+5,_aug|`oxxx-oxxx-oxxx`|
-    |増七和音|_7+5|`oxxx-oxxx-oxox`|
-    |増三長七和音|_aug7|`oxxx-oxxx-oxox`|
-    |減九+属七和音|_7-9|`ooxx-oxxo-xxox`|
+    |増三長七和音|_7+5,_aug7|`oxxx-oxxx-oxox`|
+    |短九+属七和音|_7-9|`ooxx-oxxo-xxox`|
     |増九+属七和音|_7+9|`oxxo-oxxo-xxox`|
     |減七和音|_dim|`oxxo-xxox-xxxx`|
     |導七和音|_m7-5|`oxxo-xxox-xxox`|
-    |`suspended4th`|_sus4|`oxxx-xoxo-xxxx`|
-    |属七suspended4th|_7sus4|`oxxx-xoxo-xxox`|
+    |suspended4th|_sus4|`oxxx-xoxo-xxxx`|
+    |属七+suspended4th|_7sus4|`oxxx-xoxo-xxox`|
     |全半音|_chr|`oooo-oooo-oooo`|
     |イオニア|_ion|`oxox-ooxo-xoxo`|
     |ドリアン|_dor|`oxoo-xoxo-xoxo`|
     |リディアン|_lyd|`oxox-oxoo-xoxo`|
     |ミクソリディアン|_mix|`oxox-ooxo-xoox`|
     |エオリアン|_aeo|`oxoo-xoxo-oxox`|
-    |ダイアトニック|diatonic|`oxox-ooxo-xoxo`| rootは指定できない
-    |ドリアン|dorian|`oxoo-xoxo-xoxo`| rootは指定できない
-    |リディアン|lydian|`oxox-oxoo-xoxo`| rootは指定できない
-    |ミクソリディアン|mixolydian|`oxox-ooxo-xoox`| rootは指定できない
-    |エオリア|aeolian|`oxoo-xoxo-oxox`| rootは指定できない
-    |コンディミ|comdim|`oxoo-xoox-ooxo`| rootは指定できない
-    |ペンタトニック|pentatonic|`oxox-oxxo-xoxx`| rootは指定できない
-    |ブルース|blues|`oxxo-xooo-xxox`| rootは指定できない
-    |スルー|O|`oooo-oooo-oooo`| rootは指定できない
-    |スルー、pedal無し|X|`oooo-oooo-oooo`|  rootは指定できない
+    |ダイアトニック(rootなし)|diatonic|`oxox-ooxo-xoxo`|
+    |ドリアン(rootなし)|dorian|`oxoo-xoxo-xoxo`|
+    |リディアン(rootなし)|lydian|`oxox-oxoo-xoxo`|
+    |ミクソリディアン(rootなし)|mixolydian|`oxox-ooxo-xoox`|
+    |エオリア(rootなし)|aeolian|`oxoo-xoxo-oxox`|
+    |コンディミ(rootなし)|comdim|`oxoo-xoox-ooxo`|
+    |ペンタトニック(rootなし)|pentatonic|`oxox-oxxo-xoxx`|
+    |ブルース(rootなし)|blues|`oxxo-xooo-xxox`|
+    |スルー(rootなし)|O|`oooo-oooo-oooo`|
+    |スルー、pedal無し(rootなし)|X|`oooo-oooo-oooo`| 
 
 
 ### 調、テンポ、拍子、音量
