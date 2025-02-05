@@ -4,8 +4,6 @@
 
 # Loopian Reference Manual
 
-<img src="v050.png" width="80%">
-
 ## Loopian とは
 
 Loopian は、Live Coding などで使うために開発している、テキスト入力によるピアノ音色用シーケンサです。
@@ -45,6 +43,8 @@ Compile Switch (`Cargo build`)
 
 ### コマンド入力
 
+<img src="image/v050_exp.png" width="80%">
+
 - アプリを立ち上げると、画面下の Input Window に下記のような入力用プロンプトが表示される
     - `000: L1>` : 入力用プロンプト
 - 000: は入力したコマンドヒストリーの現在の順番を表している
@@ -66,13 +66,14 @@ Compile Switch (`Cargo build`)
 
 ### 音を出すための環境
 
-- Loopian と同じフォルダにある setting.toml の [midi] midi_out を以下の接続先の名前に変更してから Loopian を立ち上げる
-    - MIDI受信するアプリを同時に起動する
+- Loopian はMIDI出力のみなので、別途音源が必要
+- PC内のMIDI音源や、外部MIDI音源を選択でき、Loopian と同じフォルダにある setting.toml にて設定する。
+    - setting.toml の [midi] midi_out を接続先の名前に変更してから Loopian を立ち上げる
+    - 動作確認済みのPC音源
         - Mac では以下のアプリで動作確認済
-            - Logic : Mac で MIDI 演奏するための DAW by Apple
+            - Garage Band / Logic : Mac で MIDI 演奏するための DAW by Apple
             - Pianoteq8 : 物理エンジンベースのPiano音源 by MODARTT
         - Windows では、Microsoft GS Wavetable Synth で動作確認済
-    - 外部 MIDI 音源を繋ぐ
 - 専用MIDI Controller(Loopian::ORBITなど)を接続し、リアルタイム演奏も可能
 
 
@@ -420,10 +421,10 @@ Compile Switch (`Cargo build`)
 
 - `graph.light` : 白基調の画面に変化
 - `graph.dark`  : 黒基調の画面に変化
-- `graph.ripple`: 水紋の画面に変化
-- `graph.voice` : 各声部が分割される画面に変化
-- `graph.lissa` : リサジュー波形を表示する画面に変化
-- `graph.beat` : Beat で表示するパターン（実装中）
+- `graph.ripple`: 水紋パターン(default)
+- `graph.voice` : 分割された各声部が円で表示されるパターン
+- `graph.lissa` : 二つのリサジューを結んだ線を表示するパターン
+- `graph.beatlissa` : Beat でリサジュー波形を表示するパターン
 - shift + space で、以下のように4段階で表示する Text の状況を変化させられる。4の次は1に戻る。
     - 1: 通常の表示。Graphic は文字の後ろのレイヤーとして表示。
     - 2: Scroll Text が少し薄くなる。Graphic は文字の前のレイヤーとして表示。
