@@ -8,7 +8,7 @@
 
 Loopian は、Live Coding などで使うために開発している、テキスト入力によるピアノ音色用シーケンサです。
 以下の特徴があります
-- テキストは1行単位で入力し、フレーズや和音を指定したり、演奏全体をコントロールするコマンドを指定
+- テキストをInput Windowsに1行単位で入力し、その中でフレーズや和音を指定したり、演奏全体をコントロールするコマンドを指定
 - ある程度自然な演奏になるように、ベロシティや和音変換時の音程、ダンパーペダルを自動算出
 - フレーズは移動ドにて指定
 
@@ -68,7 +68,7 @@ Compile Switch (`Cargo build`)
 
 - Loopian はMIDI出力のみなので、別途音源が必要
 - PC内のMIDI音源や、外部MIDI音源を選択でき、Loopian と同じフォルダにある setting.toml にて設定する。
-    - setting.toml の [midi] midi_out を接続先の名前に変更してから Loopian を立ち上げる
+    - setting.toml の [midi] midi_out を接続先の名前に変更してから Loopian を立ち上げる(後述)
     - 動作確認済みのPC音源
         - Mac では以下のアプリで動作確認済
             - Garage Band / Logic : Mac で MIDI 演奏するための DAW by Apple
@@ -431,8 +431,17 @@ Compile Switch (`Cargo build`)
     - 3: Scroll Text がかなり薄くなり、Input Window が非表示となる。Graphic は文字の前のレイヤー。
     - 4: Graphic Pattern のみになり、Scroll Text と Input Window が非表示となる。Graphic は文字の前のレイヤー。
 
+## setting.toml の記述
+- [window_size] では、アプリを立ち上げた時のデフォルトのウィンドウサイズを設定できる
+- [midi] では、Loopian のMIDI環境を設定できる
+    - `midi_out =` 以降に、Loopianから出力されるMIDIで発音する音源のdevice名を記載する
+    - `midi_ext_out =` 以降は、Loopian::ORBITにMIDIを出力する際、Loopian::ORBITに繋げるMIDI OUT端子を持ったdevice名を記載する
+    - `midi_device =` 以降は、Loopian::ORBITからMIDIを入力する際、MIDIを出力するdevice名を記載する
+    - 上記device名は、Loopianを立ち上げた際、以下のようにターミナル上に出力される
+        - `--MIDI Output List--` と書かれた行の後に、Loopianが出力できるMIDI Deviceが一覧で表示される
+        - `--MIDI Input List--` と書かれた行の後に、Loopianに入力できるMIDI Deviceが一覧できる 
 
-## データの再生方法
+## [usecase]データの再生方法
 
 * load フォルダ内のデータは以下の手順で再生する
     1. loopianを立ち上げる
@@ -446,7 +455,7 @@ Compile Switch (`Cargo build`)
     1. `resume` で再生
 
 
-## データの打ち込み方法
+## [usecase]データの打ち込み方法
 
 * 曲データを打ち込む際は、以下の手順で行う
     1. loadフォルダ以下に必要に応じて新しいフォルダを作成し、`xxx.lpn` というテキストファイルを作成
