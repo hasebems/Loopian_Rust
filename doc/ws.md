@@ -44,7 +44,7 @@
 
 ## 当日の資料
 - [2/1のパワポ資料](https://github.com/hasebems/Loopian_Rust/blob/master/doc/event/202502ws1.pptx)
-
+- [2/8のパワポ資料](https://github.com/hasebems/Loopian_Rust/blob/master/doc/event/202502ws2.pptx)
 
 </details>
 
