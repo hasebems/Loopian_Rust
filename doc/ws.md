@@ -33,6 +33,8 @@
 - <a href="https://openprocessing.org/sketch/2394744" target="_blank">その3: コード確認アプリ for Loopian</a>
 - <a href="https://docs.google.com/spreadsheets/d/10D6Sbb5wFWlwshQl_5pLu1UBdSRoRy5o5nfh9G4ZkB0/edit?usp=sharing" target="_blank">その4: WSの黒板</a>
 - [その5: 宿題提出先メールアドレス](mailto:JCA03205@gmail.com)
+- [その6: アンケート](https://docs.google.com/forms/d/e/1FAIpQLScmrjCen8_jbf5WjzzMSWrdS3Eruym9A6wL5lEDnB_xijEmGA/viewform)
+
 
 ## メモ
 

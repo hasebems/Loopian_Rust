@@ -335,7 +335,7 @@ NoteObj <|-- WaterRipple
 
 ### 8.Note/Damper 処理
 
-![note](note.png)
+![note](image/note.png)
 
 - Note 処理
     - octave は、Phrase生成時に足しこむ

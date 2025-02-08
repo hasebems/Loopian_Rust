@@ -36,7 +36,7 @@
 
 ## MIDI仕様
 
-<img src="orbit_system_design.png" width="80%">
+<img src="image/orbit_system_design.png" width="80%">
 
 - ORBIT::Sub は、MIDI ch = 13 でNote情報(number:00-5Fh)/Damper情報/PC情報(0-17)を送る
 - ORBIT::Main は、MIDI ch = 12 でNote情報(number:00-5Fh)/Damper情報/PC情報(0-17)を送る
