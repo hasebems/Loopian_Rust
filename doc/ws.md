@@ -43,8 +43,8 @@
 - WS中は、ヘッドフォンからの音とファシリテータの声を両方聞けるよう、ヘッドフォンは片耳のみにしておくと便利です
 
 ## 当日の資料
-- [2/1のパワポ資料](https://github.com/hasebems/Loopian_Rust/blob/master/doc/event/202502ws1.pptx)
-- [2/8のパワポ資料](https://github.com/hasebems/Loopian_Rust/blob/master/doc/event/202502ws2.pptx)
+- [2/1のパワポ資料](https://github.com/hasebems/Loopian_Rust/blob/master/doc/event/202502ws1.pdf)
+- [2/8のパワポ資料](https://github.com/hasebems/Loopian_Rust/blob/master/doc/event/202502ws2.pdf)
 
 </details>
 
