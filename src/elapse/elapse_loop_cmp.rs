@@ -185,35 +185,6 @@ impl CompositionLoop {
             println!("Chord Data: {}, {}, {}", self.chord_name, cd.root, cd.tbl);
         }
     }
-    pub fn set_forward(&mut self, crnt_: &CrntMsrTick, elapsed_msr: i32) {
-        let elapsed_tick = elapsed_msr * crnt_.tick_for_onemsr;
-        let mut next_tick: i32;
-        let mut trace: usize = self.play_counter;
-        let cmps = self.cmps_dt.to_vec();
-        let max_ev = self.cmps_dt.len();
-        loop {
-            if max_ev <= trace {
-                next_tick = END_OF_DATA; // means sequence finished
-                break;
-            }
-            next_tick = cmps[trace].tick as i32;
-            if next_tick >= elapsed_tick {
-                break;
-            }
-            trace += 1;
-        }
-        self.play_counter = trace;
-        self.next_tick_in_cmps = next_tick;
-        let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_cmps);
-        // next_tick を 1tick 前に設定
-        if tick == 0 {
-            self.next_msr = msr - 1;
-            self.next_tick = crnt_.tick_for_onemsr - 1;
-        } else {
-            self.next_msr = msr;
-            self.next_tick = tick - 1;
-        }
-    }
     fn _reset_note_translation(&mut self) { /*<<DoItLater>>*/
     }
 }
@@ -314,5 +285,35 @@ impl Loop for CompositionLoop {
     }
     fn first_msr_num(&self) -> i32 {
         self.first_msr_num
+    }
+    /// Loopの途中から再生するための小節数を設定
+    fn set_forward(&mut self, crnt_: &CrntMsrTick, elapsed_msr: i32) {
+        let elapsed_tick = elapsed_msr * crnt_.tick_for_onemsr;
+        let mut next_tick: i32;
+        let mut trace: usize = self.play_counter;
+        let cmps = self.cmps_dt.to_vec();
+        let max_ev = self.cmps_dt.len();
+        loop {
+            if max_ev <= trace {
+                next_tick = END_OF_DATA; // means sequence finished
+                break;
+            }
+            next_tick = cmps[trace].tick as i32;
+            if next_tick >= elapsed_tick {
+                break;
+            }
+            trace += 1;
+        }
+        self.play_counter = trace;
+        self.next_tick_in_cmps = next_tick;
+        let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_cmps);
+        // next_tick を 1tick 前に設定
+        if tick == 0 {
+            self.next_msr = msr - 1;
+            self.next_tick = crnt_.tick_for_onemsr - 1;
+        } else {
+            self.next_msr = msr;
+            self.next_tick = tick - 1;
+        }
     }
 }

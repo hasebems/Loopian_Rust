@@ -83,4 +83,6 @@ pub trait Loop: Elapse {
         let msr = self.first_msr_num() + srtick / crnt_.tick_for_onemsr;
         (msr, tick)
     }
+    /// Loopの途中から再生するための小節数を設定
+    fn set_forward(&mut self, crnt_: &CrntMsrTick, elapsed_msr: i32);
 }
