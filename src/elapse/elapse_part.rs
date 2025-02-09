@@ -8,7 +8,8 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::elapse_loop::*;
+use super::elapse_loop_phr::*;
+use super::elapse_loop_cmp::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::elapse::elapse_flow::Flow;
@@ -478,7 +479,12 @@ impl CmpsLoopManager {
                 self.new_loop(crnt_, estk, pbp);
             } else {
                 // 現在の Loop Obj が終了していない時
-                // state_reserve は持ち越す
+                // 現在の Phrase より新しい Phrase の whole_tick が大きい場合、
+                // 新しい Phrase を早送りして更新する
+                if self.new_data_stock.whole_tick as i32 >= self.whole_tick {
+                    self.state_reserve = false;
+                    self.proc_forward_cmps_by_evt(crnt_, estk, pbp);
+                }
             }
         } else if self.max_loop_msr != 0
             && (crnt_.msr - self.first_msr_num) % self.max_loop_msr == 0
@@ -557,6 +563,51 @@ impl CmpsLoopManager {
             self.whole_tick = 0;
             self.state_reserve = true;
             self.loop_cmps = None;
+        }
+    }
+    fn proc_forward_cmps_by_evt(
+        &mut self,
+        crnt_: &CrntMsrTick,
+        estk: &mut ElapseStack,
+        pbp: PartBasicPrm,
+    ) {
+        // delete current loop
+        if let Some(cmps) = self.loop_cmps.as_mut() {
+            cmps.borrow_mut().set_destroy();
+        }
+
+        // その時の beat 情報で、whole_tick を loop_measure に換算
+        self.whole_tick = self.new_data_stock.whole_tick as i32;
+        let tick_for_onemsr = crnt_.tick_for_onemsr;
+        let plus_one = if self.whole_tick % tick_for_onemsr == 0 {
+            0
+        } else {
+            1
+        };
+        self.max_loop_msr = self.whole_tick / tick_for_onemsr + plus_one;
+
+        // Composition の新規生成
+        self.loop_id += 1;
+
+        let lp = CompositionLoop::new(
+            self.loop_id,
+            pbp.part_num,
+            pbp.keynote,
+            self.first_msr_num,
+            self.new_data_stock.evts.to_vec(),
+            self.whole_tick,
+        );
+
+        // Composition の更新
+        self.loop_cmps = Some(Rc::clone(&lp));
+        estk.add_elapse(lp);
+        #[cfg(feature = "verbose")]
+        println!("Replace Composition Loop! --whole tick: {}", self.whole_tick);
+
+        // 新しい Phrase を早送りする
+        if let Some(cmps) = self.loop_cmps.as_mut() {
+            let elapsed_msr = crnt_.msr - self.first_msr_num;
+            cmps.borrow_mut().set_forward(crnt_, elapsed_msr);
         }
     }
 }

@@ -34,6 +34,10 @@ pub enum ElapseMsg {
     _MsgNone,
 }
 
+
+//*******************************************************************
+//          Elapse Struct
+//*******************************************************************
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct ElapseId {
     pub pid: u32, // parent
@@ -62,4 +66,21 @@ pub trait Elapse {
     fn rcv_sp(&mut self, msg: ElapseMsg, msg_data: u8);
     /// 自クラスが役割を終えた時に True を返す
     fn destroy_me(&self) -> bool;
+}
+
+//*******************************************************************
+//          Loop Struct
+//*******************************************************************
+pub trait Loop: Elapse {
+    fn destroy(&self) -> bool;
+    fn set_destroy(&mut self);
+    fn first_msr_num(&self) -> i32;
+    fn calc_serial_tick(&self, crnt_: &CrntMsrTick) -> i32 {
+        (crnt_.msr - self.first_msr_num()) * crnt_.tick_for_onemsr + crnt_.tick
+    }
+    fn gen_msr_tick(&self, crnt_: &CrntMsrTick, srtick: i32) -> (i32, i32) {
+        let tick = srtick % crnt_.tick_for_onemsr;
+        let msr = self.first_msr_num() + srtick / crnt_.tick_for_onemsr;
+        (msr, tick)
+    }
 }

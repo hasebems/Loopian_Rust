@@ -75,7 +75,7 @@ impl DynamicPattern {
         let arp_available = ptn.mtype == TYPE_ARP;
 
         #[cfg(feature = "verbose")]
-        println!("New DP: para:{}", para);
+        println!("New DynaPtn: para:{}", para);
 
         // new Dynamic Pattern
         Rc::new(RefCell::new(Self {
@@ -113,18 +113,35 @@ impl DynamicPattern {
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
         let root: i16;
-        let tblptr: &[i16];
         if let Some(cmps) = estk.get_cmps(self.part as usize) {
             // 和音情報を読み込む
             let (rt, tbl) = cmps.borrow().get_chord();
             root = ROOT2NTNUM[rt as usize];
-            let (ctbl, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
-            tblptr = ctbl;
+            if tbl == NO_TABLE {
+                #[cfg(feature = "verbose")]
+                println!("DynamicPattern: No Chord Table!!");
+            } else {
+                #[cfg(feature = "verbose")]
+                println!("DynamicPattern: root-{}, table-{}", root, tbl);
+                self.gen_each_note(crnt_, estk, root, tbl)
+            }
+            // 次回 tick 算出と終了の確認
+            let next_tick = self.next_tick + self.ptn_each_dur;
+            if next_tick >= crnt_.tick_for_onemsr || next_tick >= self.whole_tick {
+                END_OF_DATA
+            } else {
+                next_tick
+            }
         } else {
             #[cfg(feature = "verbose")]
             println!("DynamicPattern: No Chord Data!!");
-            return END_OF_DATA;
+            END_OF_DATA
         }
+    }
+    fn gen_each_note(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, root: i16, tbl: i16) {
+        let (tblptr, _take_upper) = txt2seq_cmps::get_table(
+            tbl as usize
+        );
         let vel = self.calc_dynamic_vel(
             crnt_.tick_for_onemsr,
             estk.get_bpm(),
@@ -139,14 +156,6 @@ impl DynamicPattern {
             self.play_cluster(estk, root, tblptr, vel);
         }
         self.play_counter += 1;
-
-        // 次回 tick 算出と終了の確認
-        let next_tick = self.next_tick + self.ptn_each_dur;
-        if next_tick >= crnt_.tick_for_onemsr || next_tick >= self.whole_tick {
-            END_OF_DATA
-        } else {
-            next_tick
-        }
     }
     fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
         let mut vel: i16 = self.ptn_vel as i16;
