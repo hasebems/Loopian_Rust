@@ -17,7 +17,8 @@ impl LoopianCmd {
                     "what?".to_string()
                 }
             } else if cmd == "oct" {
-                if self.change_oct(prm) {
+                let part_num = self.get_input_part();
+                if self.change_oct(prm, part_num) {
                     "Octave has changed!".to_string()
                 } else {
                     "what?".to_string()
@@ -25,11 +26,7 @@ impl LoopianCmd {
             } else if cmd == "bpm" {
                 match prm.parse::<i16>() {
                     Ok(msg) => {
-                        self.dtstk.change_bpm(msg);
-                        self.sndr
-                            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_BPM, msg]));
-                        self.sndr
-                            .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
+                        self.change_bpm(msg);
                         "BPM has changed!".to_string()
                     }
                     Err(e) => {
@@ -44,11 +41,7 @@ impl LoopianCmd {
                 } else {
                     match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
                         (Ok(numerator), Ok(denomirator)) => {
-                            self.dtstk.change_beat(numerator, denomirator);
-                            self.sndr
-                                .send_msg_to_elapse(ElpsMsg::SetMeter([numerator, denomirator]));
-                            self.sndr
-                                .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
+                            self.change_meter(numerator, denomirator);
                             "Meter has changed!".to_string()
                         }
                         _ => "Number is wrong.".to_string(),
@@ -93,7 +86,7 @@ impl LoopianCmd {
         }
     }
     //*************************************************************************
-    fn change_key(&mut self, key_text: &str) -> bool {
+    pub fn change_key(&mut self, key_text: &str) -> bool {
         let mut key = END_OF_DATA;
         let length = key_text.len();
         match key_text.chars().nth(0) {
@@ -151,15 +144,11 @@ impl LoopianCmd {
             false
         }
     }
-    fn change_oct(&mut self, oct_txt: &str) -> bool {
-        let mut oct = FULL;
+    pub fn change_oct(&mut self, oct_txt: &str, part_num: usize) -> bool {
         if let Ok(oct_num) = oct_txt.parse::<i32>() {
-            oct = oct_num;
-        }
-        if oct != FULL {
-            if self.dtstk.change_oct(oct, true, self.get_input_part()) {
+            if self.dtstk.change_oct(oct_num, true, part_num) {
                 self.sndr
-                    .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
+                    .send_all_vari_and_phrase(part_num, &self.dtstk);
                 true
             } else {
                 false
@@ -167,6 +156,20 @@ impl LoopianCmd {
         } else {
             false
         }
+    }
+    pub fn change_bpm(&mut self, bpm: i16) {
+        self.dtstk.change_bpm(bpm);
+        self.sndr
+            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_BPM, bpm]));
+        self.sndr
+            .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
+    }
+    pub fn change_meter(&mut self, numerator: i16, denomirator : i16) {
+        self.dtstk.change_beat(numerator, denomirator);
+        self.sndr
+            .send_msg_to_elapse(ElpsMsg::SetMeter([numerator, denomirator]));
+        self.sndr
+            .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);        
     }
     fn change_input_mode(&mut self, imd: &str) -> bool {
         if imd == "fixed" {

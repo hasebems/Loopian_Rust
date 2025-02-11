@@ -126,9 +126,9 @@ impl LoopianCmd {
                 self.clear_part(self.input_part);
                 "designated part data erased!".to_string()
             } else {
-                let part_letter = &input_text[6..];
-                println!("clear>>{}", part_letter);
-                if let Some(pnum) = Self::detect_part(part_letter) {
+                let remaining_letter = &input_text[6..];
+                if let Some(pnum) = Self::detect_part(remaining_letter) {
+                    println!("clear>>{}", remaining_letter);
                     self.clear_part(pnum);
                     match pnum {
                         LEFT1 => "part L1 data erased!".to_string(),
@@ -137,6 +137,14 @@ impl LoopianCmd {
                         RIGHT2 => "part R2 data erased!".to_string(),
                         _ => "some part data erased!".to_string(),
                     }
+                } else if remaining_letter == "env" {
+                    self.change_key("C");
+                    self.change_bpm(100);
+                    self.change_meter(4, 4);
+                    for i in 0..MAX_KBD_PART {
+                        self.change_oct("0", i);
+                    }
+                    "Environment data erased!".to_string()
                 } else {
                     "what?".to_string()
                 }

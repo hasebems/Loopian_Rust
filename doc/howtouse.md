@@ -208,6 +208,8 @@ Compile Switch (`Cargo build`)
     - `I` : `dms` (Iの和音)
     - `I#` : `dimisi` (数字の後に # を付けると半音高いコードになる。b は半音)
     - `Iion` : Iを主音としたイオニアンスケール(Ionian)
+        - `_ion, _dor, _lyd, _mix, _aeo` という教会旋法を指定した場合、通常のコードとは動作が違っている
+        - `Iion, IIdor, IVlyd, Vmix, VIaeo` がその調のダイアトニックスケールになり、それ以外の root が指定された場合、その差分分だけ並行移動する。
     - `lydian` : 現在のkeyを主音としたリディアンスケール
     - `!` をコードの最後に追加すると、当てはまる音が等距離の場合、上側を採用する（通常は下側を採用）
     - コードやスケールが判断不能の場合、エラーとなり調の主音しか出ない
@@ -333,6 +335,7 @@ Compile Switch (`Cargo build`)
 * `clear` : データの中身を消去
     - 引数がない場合、全パート消去し、再生も止まる
     - `clear.L1` : L1パートの中身を消去。同様に L2,R1,R2 も指定可
+    - `clear.env` : データではなく key, meter, bpm, oct をデフォルト値に戻す
 * `efct` : MIDI Controller の出力
     - `efct.cc70(nn)` : cc70に対して nn(0-127) を送る
     - `efct.dmp(nn)` : cc64のDamperが on になったとき、nn(0-127) を送る
