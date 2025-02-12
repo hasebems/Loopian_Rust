@@ -61,8 +61,8 @@ impl InputText {
     pub fn get_indicator_key_stock(&self) -> String {
         self.cmd.get_indicator_key_stock()
     }
-    pub fn set_and_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
-        self.cmd.set_and_responce(input_text)
+    pub fn put_and_get_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
+        self.cmd.put_and_get_responce(input_text)
     }
     pub fn get_input_text(&self) -> String {
         self.input_text[self.visible_locate..].to_string()
@@ -391,7 +391,7 @@ impl InputText {
     }
     fn one_command(&mut self, time: String, itxt: String, verbose: bool) -> i16 {
         // 通常のコマンド入力
-        if let Some(answer) = self.cmd.set_and_responce(&itxt) {
+        if let Some(answer) = self.cmd.put_and_get_responce(&itxt) {
             // normal command
             self.history_cnt = self
                 .history

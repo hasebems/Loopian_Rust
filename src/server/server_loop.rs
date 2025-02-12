@@ -59,7 +59,7 @@ impl LoopianServer {
             let fname = format!("{}.lpn", pc_num);
             let command_stk = self.load_lpn_when_pc(fname);
             for one_cmd in command_stk.iter() {
-                let _answer = self.itxt.set_and_responce(one_cmd);
+                let _answer = self.itxt.put_and_get_responce(one_cmd);
             }
         }
     }
@@ -108,7 +108,7 @@ pub fn cui_loop() {
             if input == "q" || input == "quit" {
                 break; // 終了
             }
-            if let Some(answer) = srv.itxt.set_and_responce(&input) {
+            if let Some(answer) = srv.itxt.put_and_get_responce(&input) {
                 println!("{}", answer.0);
             }
         } else {

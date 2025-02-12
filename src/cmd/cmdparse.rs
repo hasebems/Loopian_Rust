@@ -13,7 +13,7 @@ use crate::lpnlib::*;
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
 //  2. 解析に送る/elapseに送る
-//  3. eguiに返事を返す
+//  3. guiに返事を返す
 pub struct LoopianCmd {
     during_play: bool,
     recursive: bool,
@@ -67,7 +67,7 @@ impl LoopianCmd {
             .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
     }
     //*************************************************************************
-    pub fn set_and_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
+    pub fn put_and_get_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
         if input_text.is_empty() {
             return None;
         }
@@ -273,7 +273,7 @@ impl LoopianCmd {
             self.input_part = RIGHT2;
             "Changed current part to right2.".to_string()
         } else if len >= 4 && &input_text[0..4] == "rit." {
-            self.set_rit(input_text)
+            self.apply_rit(input_text)
         } else if len >= 9 && &input_text[0..9] == "reconnect" {
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
@@ -342,7 +342,7 @@ impl LoopianCmd {
                     msr = 1;
                 }
                 if let Some(additional) =
-                    self.set_phrase(self.input_part, PhraseAs::Measure(msr), &split_txt[1])
+                    self.put_phrase(self.input_part, PhraseAs::Measure(msr), &split_txt[1])
                 {
                     if additional {
                         "Keep Phrase as being unified phrase!".to_string()
@@ -359,7 +359,7 @@ impl LoopianCmd {
                     self.dtstk.set_cluster_memory(split_txt[1].to_string());
                     return "Set a cluster memory!".to_string();
                 } else if vari > 0 {
-                    if let Some(additional) = self.set_phrase(
+                    if let Some(additional) = self.put_phrase(
                         self.input_part,
                         PhraseAs::Variation(vari as usize),
                         &split_txt[1],
@@ -383,7 +383,7 @@ impl LoopianCmd {
         }
     }
     fn letter_bracket(&mut self, input_text: &str) -> String {
-        if let Some(addtional) = self.set_phrase(self.input_part, PhraseAs::Normal, input_text) {
+        if let Some(addtional) = self.put_phrase(self.input_part, PhraseAs::Normal, input_text) {
             if addtional {
                 "Keep Phrase as being unified phrase!".to_string()
             } else {
@@ -552,14 +552,14 @@ impl LoopianCmd {
         let org_part = self.input_part;
         self.recursive = true;
         self.input_part = part_num;
-        if let Some(ans) = self.set_and_responce(input_text) {
+        if let Some(ans) = self.put_and_get_responce(input_text) {
             rtn_str = ans.0;
         }
         self.input_part = org_part;
         self.recursive = false;
 
         /*if first_letter == "[" {
-            if self.set_phrase(part_num, 0, rest_text) {
+            if self.put_phrase(part_num, 0, rest_text) {
                 rtn_str = "Set Phrase!".to_string();
             }
         }
@@ -571,7 +571,7 @@ impl LoopianCmd {
         }*/
         rtn_str
     }
-    fn set_phrase(&mut self, part_num: usize, vari: PhraseAs, input_text: &str) -> Option<bool> {
+    fn put_phrase(&mut self, part_num: usize, vari: PhraseAs, input_text: &str) -> Option<bool> {
         if let Some(additional) =
             self.dtstk
                 .set_raw_phrase(part_num, vari.clone(), input_text.to_string())
@@ -600,7 +600,7 @@ impl LoopianCmd {
         }
         self.dtstk.change_oct(0, true, part_num);
     }
-    fn set_rit(&self, input_text: &str) -> String {
+    fn apply_rit(&self, input_text: &str) -> String {
         let mut aft_rit: i16 = MSG2_RIT_ATMP;
         let mut strength_value: i16 = MSG_RIT_NRM;
         let mut bar_num: i16 = 0;
