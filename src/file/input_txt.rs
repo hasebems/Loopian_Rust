@@ -29,6 +29,7 @@ pub struct InputText {
     cmd: LoopianCmd,
     shift_pressed: bool,
     ctrl_pressed: bool,
+    just_after_hokan: bool,
 }
 impl InputText {
     const CURSOR_MAX_VISIBLE_LOCATE: usize = 65;
@@ -47,6 +48,7 @@ impl InputText {
             cmd: LoopianCmd::new(msg_hndr),
             shift_pressed: false,
             ctrl_pressed: false,
+            just_after_hokan: false,
         }
     }
     pub fn get_history_locate(&self) -> usize {
@@ -126,6 +128,10 @@ impl InputText {
                     self.input_locate -= 1;
                     self.input_text.remove(self.input_locate);
                     self.update_visible_locate();
+                    if self.just_after_hokan {
+                        self.input_text.remove(self.input_locate);
+                        self.update_visible_locate();
+                    }
                 }
             }
             &Key::Left => {
@@ -180,6 +186,7 @@ impl InputText {
             }
             _ => {}
         }
+        self.just_after_hokan = false;
     }
     fn key_released(&mut self, key: &Key) {
         if key == &Key::LShift || key == &Key::RShift {
@@ -198,10 +205,15 @@ impl InputText {
         // 括弧の補完
         if *ltr == '(' {
             self.input_text.insert(self.input_locate, ')');
+            self.just_after_hokan = true;
         } else if *ltr == '[' {
             self.input_text.insert(self.input_locate, ']');
+            self.just_after_hokan = true;
         } else if *ltr == '{' {
             self.input_text.insert(self.input_locate, '}');
+            self.just_after_hokan = true;
+        } else {
+            self.just_after_hokan = false;
         }
         // space を . に変換
         if self.input_text.chars().any(|x| x == ' ') {
