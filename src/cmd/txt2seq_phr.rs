@@ -254,6 +254,7 @@ fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
 //*******************************************************************
 ///          recombine_to_internal_format
 //*******************************************************************
+#[derive(Clone, Debug)]
 struct AddNoteParam {
     mes_top: bool,
     dur: i32,
@@ -667,7 +668,7 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> 
                     if return_rcmb[search_idx].tick == last_tick {
                         let dur = return_rcmb[search_idx].dur;
                         return_rcmb[search_idx].dur = dur + prm.dur as i16;
-                        return_rcmb[search_idx].vel = prm.vel;
+                        //return_rcmb[search_idx].vel = prm.vel; // タイの場合、前の音符の音量を使う
                         return_rcmb[search_idx].artic = prm.artic;
                     } else {
                         break;
