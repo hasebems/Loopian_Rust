@@ -8,8 +8,8 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::elapse_loop_phr::*;
 use super::elapse_loop_cmp::*;
+use super::elapse_loop_phr::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::elapse::elapse_flow::Flow;
@@ -602,7 +602,10 @@ impl CmpsLoopManager {
         self.loop_cmps = Some(Rc::clone(&lp));
         estk.add_elapse(lp);
         #[cfg(feature = "verbose")]
-        println!("Replace Composition Loop! --whole tick: {}", self.whole_tick);
+        println!(
+            "Replace Composition Loop! --whole tick: {}",
+            self.whole_tick
+        );
 
         // 新しい Phrase を早送りする
         if let Some(cmps) = self.loop_cmps.as_mut() {

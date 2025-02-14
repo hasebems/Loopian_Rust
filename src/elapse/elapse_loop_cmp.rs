@@ -7,10 +7,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use crate::lpnlib::*;
 use super::stack_elapse::ElapseStack;
-use crate::cmd::txt2seq_cmps::{self, NO_LOOP};
 use super::tickgen::CrntMsrTick;
+use crate::cmd::txt2seq_cmps::{self, NO_LOOP};
+use crate::lpnlib::*;
 
 //*******************************************************************
 //          Composition Loop Struct

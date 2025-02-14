@@ -147,8 +147,7 @@ impl LoopianCmd {
     pub fn change_oct(&mut self, oct_txt: &str, part_num: usize) -> bool {
         if let Ok(oct_num) = oct_txt.parse::<i32>() {
             if self.dtstk.change_oct(oct_num, true, part_num) {
-                self.sndr
-                    .send_all_vari_and_phrase(part_num, &self.dtstk);
+                self.sndr.send_all_vari_and_phrase(part_num, &self.dtstk);
                 true
             } else {
                 false
@@ -164,12 +163,12 @@ impl LoopianCmd {
         self.sndr
             .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
     }
-    pub fn change_meter(&mut self, numerator: i16, denomirator : i16) {
+    pub fn change_meter(&mut self, numerator: i16, denomirator: i16) {
         self.dtstk.change_beat(numerator, denomirator);
         self.sndr
             .send_msg_to_elapse(ElpsMsg::SetMeter([numerator, denomirator]));
         self.sndr
-            .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);        
+            .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
     }
     fn change_input_mode(&mut self, imd: &str) -> bool {
         if imd == "fixed" {

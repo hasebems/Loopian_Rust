@@ -4,7 +4,10 @@ fn general1() {
     //let (_txui, rxui) = std::sync::mpsc::channel();
     let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
 
-    assert_eq!(cmd.put_and_get_responce("ABC").unwrap().0, "what?".to_string());
+    assert_eq!(
+        cmd.put_and_get_responce("ABC").unwrap().0,
+        "what?".to_string()
+    );
 }
 #[test]
 fn pedal() {
