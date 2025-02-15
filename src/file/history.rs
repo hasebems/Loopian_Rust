@@ -4,12 +4,10 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 
-use chrono::Local;
 use std::fs;
-use std::fs::File;
 use std::io::Write;
-use std::path::Path;
 
+use super::lpn_file::*;
 use crate::cmd::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
@@ -20,10 +18,9 @@ pub struct History {
     loaded_text: Vec<String>,
 }
 
-impl History {
-    const LOG_FOLDER: &'static str = "log";
-    const LOAD_FOLDER: &'static str = "load";
+impl LpnFile for History {}
 
+impl History {
     pub fn new() -> Self {
         Self {
             input_lines: Vec::new(),
@@ -33,20 +30,19 @@ impl History {
     }
     /// ログファイルを生成する (num: 何行目からのログを出力するか)
     pub fn gen_log(&mut self, num: usize, fname: String) {
-        // フォルダ作成
-        self.make_folder(Self::LOG_FOLDER);
+        // 無ければフォルダ作成
+        self.make_log_folder();
 
         // 時間をファイル名に使う
-        let file = if fname.is_empty() {
-            Local::now().format("%Y-%m-%d_%H-%M-%S.lpn").to_string()
+        let fname = if fname.is_empty() {
+            //Local::now().format("%Y-%m-%d_%H-%M-%S.lpn").to_string()
+            self.default_file_name()
         } else {
             fname + ".lpn"
         };
-        let mut path_str = String::from(Self::LOG_FOLDER);
-        path_str += "/";
-        path_str += &file;
-        let path = Path::new(&path_str);
-        let display = path.display();
+        let fn_with_path = &(String::from(LOG_FOLDER) + "/" + &fname);
+        let file_handler = self.path_str(fn_with_path);
+        let display = file_handler.display();
         // log収集
         let mut whole_txt: String = String::new();
         let mut txt_exist = false;
@@ -63,7 +59,7 @@ impl History {
         }
         if txt_exist {
             // ファイル作成
-            let mut file = match File::create(path) {
+            let mut file = match fs::File::create(file_handler) {
                 Err(why) => panic!("couldn't create {}: {}", display, why),
                 Ok(file) => file,
             };
@@ -84,17 +80,13 @@ impl History {
         self.update_history_ptr()
     }
     pub fn load_lpn(&mut self, fname: String, path: Option<&str>, blk: Option<String>) -> bool {
-        self.loaded_text = Vec::new();
-        self.make_folder(Self::LOAD_FOLDER); // フォルダ作成
-        let mut real_path = Self::LOAD_FOLDER.to_string();
-        if let Some(lp) = path {
-            real_path = real_path + "/" + lp;
-        }
-        println!("Path: {}", real_path);
-        println!("File: {}", fname.clone() + ".lpn");
+        let fp_string = self.gen_lpn_file_name(fname, path);
+        let fp = self.path_str(&fp_string);
+
         let enable_blk = blk.clone().is_some();
         let mut inside_blk = !enable_blk;
-        match fs::read_to_string(real_path + "/" + &fname + ".lpn") {
+        self.loaded_text = Vec::new();
+        match fs::read_to_string(fp) {
             Ok(content) => {
                 for line in content.lines() {
                     let mut lodable = true;
@@ -138,7 +130,7 @@ impl History {
         path: Option<&str>,
         num: usize,
     ) -> Option<String> {
-        let mut real_path = Self::LOAD_FOLDER.to_string();
+        let mut real_path = LOAD_FOLDER.to_string();
         if let Some(lp) = path {
             real_path = real_path + "/" + lp;
         }
@@ -246,11 +238,5 @@ impl History {
     fn update_history_ptr(&mut self) -> usize {
         self.history_ptr = self.input_lines.len();
         self.history_ptr
-    }
-    fn make_folder(&self, folder_name: &str) {
-        let path = Path::new(folder_name);
-        if !path.is_dir() {
-            fs::create_dir_all(path).unwrap();
-        }
     }
 }

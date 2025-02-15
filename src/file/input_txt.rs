@@ -7,6 +7,7 @@ use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use nannou::prelude::*;
 use std::sync::mpsc;
 
+use super::cnv_file;
 use super::history::History;
 use crate::cmd::cmdparse::*;
 use crate::cmd::txt_common::*;
@@ -243,13 +244,18 @@ impl InputText {
         self.input_text = "".to_string();
         self.input_locate = 0;
         self.visible_locate = 0;
-        let len = itxt.chars().count();
         let chr = itxt.chars().nth(0).unwrap_or(' ');
         if chr != '!' {
             // Normal Input
             let msg = self.one_command(get_crnt_date_txt(), itxt, true);
             self.set_graphic_msg(msg, graphmsg);
-        } else if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
+        } else {
+            self.non_logged_command(itxt.clone(), graphmsg);
+        }
+    }
+    fn non_logged_command(&mut self, itxt: String, graphmsg: &mut Vec<i16>) {
+        let len = itxt.chars().count();
+        if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
             // The end of the App
             self.cmd.send_quit();
             self.gen_log(0, "".to_string());
@@ -258,9 +264,9 @@ impl InputText {
         } else if (len >= 2 && &itxt[0..2] == "!l") || (len >= 5 && &itxt[0..5] == "!load") {
             // Load File
             self.load_file(&itxt[0..], graphmsg);
-        } else if (len >= 6 && &itxt[0..6] == "!clear")
-            || (len >= 4 && &itxt[0..4] == "!clr")
-            || (len >= 2 && &itxt[0..2] == "!c")
+        } else if (len == 6 && &itxt[0..6] == "!clear") // no parameter
+            || (len == 4 && &itxt[0..4] == "!clr")
+            || (len == 2 && &itxt[0..2] == "!c")
         {
             // clear loaded file data
             self.clear_loaded_data();
@@ -305,6 +311,17 @@ impl InputText {
                 num,
             ) {
                 self.input_text = cmd;
+            }
+        } else if len >= 7 && &itxt[0..7] == "!cnv2tl" {
+            println!("Convert to Timeline File");
+            let itxts = split_by('.', itxt);
+            if itxts.len() >= 2 {
+                cnv_file::convert_to_timeline(itxts[1].clone(), self.cmd.get_path().as_deref());
+                self.scroll_lines.push((
+                    TextAttribute::Answer,
+                    "".to_string(),
+                    "Converted to Timeline File!".to_string(),
+                ));
             }
         }
     }
