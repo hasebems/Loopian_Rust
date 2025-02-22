@@ -512,7 +512,13 @@ impl CmpsLoopManager {
     }
     pub fn gen_chord_name(&self) -> String {
         if let Some(cmps) = &self.loop_cmps {
-            cmps.borrow().get_chord_name()
+            let num = cmps.borrow().get_vari_num();
+            let num_str = if num == 0 {
+                "".to_string()
+            } else {
+                "@".to_string() + cmps.borrow().get_vari_num().to_string().as_str()
+            };
+            cmps.borrow().get_chord_name() + &num_str
         } else {
             String::from("")
         }

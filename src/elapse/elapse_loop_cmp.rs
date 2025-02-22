@@ -31,6 +31,7 @@ pub struct CompositionLoop {
     just_after_start: bool,
     already_end: bool,
     no_loop: bool,
+    vari_num: i16,
 
     // for super's member
     whole_tick: i32,
@@ -66,6 +67,7 @@ impl CompositionLoop {
             just_after_start: false,
             already_end: false,
             no_loop: false,
+            vari_num: 0,
 
             // for super's member
             whole_tick,
@@ -77,6 +79,9 @@ impl CompositionLoop {
     }
     pub fn get_chord(&self) -> (i16, i16) {
         (self.root, self.translation_tbl)
+    }
+    pub fn get_vari_num(&self) -> i16 {
+        self.vari_num
     }
     pub fn get_chord_name(&self) -> String {
         self.chord_name.clone()
@@ -125,6 +130,7 @@ impl CompositionLoop {
         let mut trace: usize = self.play_counter;
         let mut next_tick: i32;
         let cmps = self.cmps_dt.to_vec();
+        self.vari_num = 0;
         loop {
             if cmps.len() <= trace {
                 next_tick = END_OF_DATA; // means sequence finished
@@ -142,6 +148,7 @@ impl CompositionLoop {
                     self.prepare_note_translation(cd, _estk);
                 } else if cd.mtype == TYPE_VARI {
                     _estk.set_phrase_vari(self.id.pid as usize, cd.root as usize);
+                    self.vari_num = cd.root;
                 }
             } else {
                 break;
