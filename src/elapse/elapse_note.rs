@@ -144,7 +144,9 @@ impl Note {
     fn auto_duration(bpm: i16, meter: Meter, dur: i32) -> i32 {
         // 0.3 秒以内の音価なら、音価はそのまま
         // それ以上の音価なら、10%程度短くなる
-        let beat_per_sec = (bpm as f32) / 60.0;
+        // bpm が 30 ～ 300 の範囲に収まるように調整(fermata のbpm=0に反応しない)
+        let bpm = bpm.clamp(30, 300) as f32;
+        let beat_per_sec = bpm / 60.0;
         let note_per_beat = (dur as f32) / (1920.0 / (meter.1 as f32));
         let sec = note_per_beat / beat_per_sec;
         let real_sec = if sec > 0.3 {
@@ -152,7 +154,7 @@ impl Note {
         } else {
             sec
         };
-        (real_sec * (bpm as f32) * 1920.0 / (60.0 * (meter.1 as f32))) as i32
+        (real_sec * bpm * 1920.0 / (60.0 * (meter.1 as f32))) as i32
     }
 }
 impl Elapse for Note {
