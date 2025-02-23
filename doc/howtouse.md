@@ -84,7 +84,8 @@ Compile Switch (`Cargo build`)
 * `play` or `p` : シーケンス開始(1小節目から)
 * `fermata` : 次の小節の頭の拍を再生してbeatを止める
 * `resume` : beatが止まっているとき、その小節の先頭から再生を再開する
-* `stop` or `fine` : 直ちにシーケンス終了
+* `fine` : 現在の小節が終わったらシーケンス終了
+* `stop` : 直ちにシーケンス終了
 * `panic` : 今鳴っている音を消音する
 
 

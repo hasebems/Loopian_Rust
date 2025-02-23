@@ -246,7 +246,7 @@ pub enum ElpsMsg {
 pub const MSG_CTRL_QUIT: i16 = -1;
 pub const MSG_CTRL_START: i16 = -16; //  1byte msg
 pub const MSG_CTRL_STOP: i16 = -15;
-//pub const MSG_CTRL_FERMATA: i16  = -14;
+pub const MSG_CTRL_FINE: i16  = -14;
 pub const MSG_CTRL_PANIC: i16 = -13;
 pub const MSG_CTRL_RESUME: i16 = -12;
 pub const MSG_CTRL_CLEAR: i16 = -11; // Elapse Objectの内容をクリア

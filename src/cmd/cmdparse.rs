@@ -188,8 +188,8 @@ impl LoopianCmd {
     fn letter_f(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "fine" {
-            // stop
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            // fine
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE));
             self.during_play = false;
             "Fine.".to_string()
         } else if len == 7 && &input_text[0..7] == "fermata" {

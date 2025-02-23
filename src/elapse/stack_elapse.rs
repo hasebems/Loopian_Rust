@@ -47,6 +47,7 @@ pub struct ElapseStack {
     crnt_time: Instant,
     bpm_stock: i16,
     beat_stock: Meter,
+    fine_stock: bool,
 
     during_play: bool,
     display_time: Instant,
@@ -112,6 +113,7 @@ impl ElapseStack {
             crnt_time: Instant::now(),
             bpm_stock: DEFAULT_BPM,
             beat_stock: Meter(4, 4),
+            fine_stock: false,
             during_play: false,
             display_time: Instant::now(),
             tg: TickGen::new(RitType::Sigmoid),
@@ -209,7 +211,12 @@ impl ElapseStack {
             let (msrtop, beattop, beatnum) = self.tg.gen_tick(self.crnt_time);
             crnt_ = self.tg.get_crnt_msr_tick();
             if msrtop {
-                self.measure_top(&mut crnt_);
+                if self.fine_stock {
+                    self.stop();
+                    self.fine_stock = false;
+                } else {
+                    self.measure_top(&mut crnt_);
+                }
             }
             if beattop {
                 self.send_msg_to_ui(UiMsg::NewBeat(beatnum));
@@ -318,6 +325,8 @@ impl ElapseStack {
             self.start(false);
         } else if msg == MSG_CTRL_STOP {
             self.stop();
+        } else if msg == MSG_CTRL_FINE {
+            self.fine(msg);
         } else if msg == MSG_CTRL_PANIC {
             self.panic();
         } else if msg == MSG_CTRL_RESUME {
@@ -426,7 +435,13 @@ impl ElapseStack {
             self.send_msg_to_rx(Ctrl(MSG_CTRL_MIDI_RECONNECT));
         }
     }
-    //fn fermata(&mut self, _msg: Vec<i16>) {self.fermata_stock = true;}
+    fn fine(&mut self, _msg: i16) {
+        if self.tg().get_bpm() == 0 {
+            self.stop();
+        } else {
+            self.fine_stock = true;
+        }
+    }
     fn sync(&mut self, part: i16) {
         let mut sync_part = [false; MAX_KBD_PART];
         if part < MAX_KBD_PART as i16 {
