@@ -77,7 +77,7 @@ impl InputText {
     pub fn send_reconnect(&self) {
         self.cmd.send_reconnect();
     }
-    pub fn window_event(&mut self, event: Event, graphmsg: &mut Vec<i16>) {
+    pub fn window_event(&mut self, event: Event, graphmsg: &mut Vec<GraphicMsg>) {
         match event {
             Event::WindowEvent {
                 simple: Some(WindowEvent::ReceivedCharacter(c)),
@@ -105,7 +105,7 @@ impl InputText {
             _ => {}
         }
     }
-    fn key_pressed(&mut self, key: &Key, graphmsg: &mut Vec<i16>) {
+    fn key_pressed(&mut self, key: &Key, graphmsg: &mut Vec<GraphicMsg>) {
         match key {
             &Key::LShift | &Key::RShift => {
                 self.shift_pressed = true;
@@ -182,7 +182,7 @@ impl InputText {
             &Key::RWin => {}
             &Key::Space => {
                 if self.shift_pressed {
-                    self.set_graphic_msg(TEXT_VISIBLE_CTRL, graphmsg);
+                    self.set_graphic_msg(GraphicMsg::TextVisibleCtrl, graphmsg);
                 }
             }
             _ => {}
@@ -236,7 +236,7 @@ impl InputText {
             self.input_locate
         }
     }
-    fn pressed_enter(&mut self, graphmsg: &mut Vec<i16>) {
+    fn pressed_enter(&mut self, graphmsg: &mut Vec<GraphicMsg>) {
         let itxt = self.input_text.clone();
         if itxt.is_empty() {
             return;
@@ -253,7 +253,7 @@ impl InputText {
             self.non_logged_command(itxt.clone(), graphmsg);
         }
     }
-    fn non_logged_command(&mut self, itxt: String, graphmsg: &mut Vec<i16>) {
+    fn non_logged_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>) {
         let len = itxt.chars().count();
         if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
             // The end of the App
@@ -325,7 +325,7 @@ impl InputText {
             }
         }
     }
-    fn load_file(&mut self, itxt: &str, graphmsg: &mut Vec<i16>) {
+    fn load_file(&mut self, itxt: &str, graphmsg: &mut Vec<GraphicMsg>) {
         let blk_exists = |fnm: String| -> (Option<String>, Option<usize>) {
             let mut ltr = None;
             let mut num = None;
@@ -389,7 +389,7 @@ impl InputText {
         }
     }
     /// Auto Load  called from main::update()
-    pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<i16>) {
+    pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<GraphicMsg>) {
         if let Some(nmt) = self.next_msr_tick {
             let crnt: CrntMsrTick = guiev.get_msr_tick();
             if nmt.msr != LAST
@@ -401,7 +401,11 @@ impl InputText {
             }
         }
     }
-    fn get_loaded_text(&mut self, mt: CrntMsrTick, graphmsg: &mut Vec<i16>) -> Option<CrntMsrTick> {
+    fn get_loaded_text(
+        &mut self,
+        mt: CrntMsrTick,
+        graphmsg: &mut Vec<GraphicMsg>,
+    ) -> Option<CrntMsrTick> {
         let loaded = self.history.get_loaded_text(mt);
         for onecmd in loaded.0.iter() {
             let msg = self.one_command(get_crnt_date_txt(), onecmd.clone(), false);
@@ -418,7 +422,7 @@ impl InputText {
         self.file_name_stock = String::new();
         self.next_msr_tick = None;
     }
-    fn one_command(&mut self, time: String, itxt: String, verbose: bool) -> i16 {
+    fn one_command(&mut self, time: String, itxt: String, verbose: bool) -> GraphicMsg {
         // 通常のコマンド入力
         if let Some(answer) = self.cmd.put_and_get_responce(&itxt) {
             // normal command
@@ -433,9 +437,9 @@ impl InputText {
             }
             return answer.1;
         }
-        NO_MSG
+        GraphicMsg::NoMsg
     }
-    fn set_graphic_msg(&mut self, msg: i16, graphmsg: &mut Vec<i16>) {
+    fn set_graphic_msg(&mut self, msg: GraphicMsg, graphmsg: &mut Vec<GraphicMsg>) {
         graphmsg.push(msg);
     }
 }

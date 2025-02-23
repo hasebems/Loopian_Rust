@@ -246,7 +246,7 @@ pub enum ElpsMsg {
 pub const MSG_CTRL_QUIT: i16 = -1;
 pub const MSG_CTRL_START: i16 = -16; //  1byte msg
 pub const MSG_CTRL_STOP: i16 = -15;
-pub const MSG_CTRL_FINE: i16  = -14;
+pub const MSG_CTRL_FINE: i16 = -14;
 pub const MSG_CTRL_PANIC: i16 = -13;
 pub const MSG_CTRL_RESUME: i16 = -12;
 pub const MSG_CTRL_CLEAR: i16 = -11; // Elapse Objectの内容をクリア
@@ -316,17 +316,21 @@ pub enum UiMsg {
 //          Command Definition
 //*******************************************************************
 // return msg from command receiving job
-pub struct CmndRtn(pub String, pub i16);
+pub struct CmndRtn(pub String, pub GraphicMsg);
 
 // Graphic Message
-pub const NO_MSG: i16 = -1;
-pub const LIGHT_MODE: i16 = 1;
-pub const DARK_MODE: i16 = 2;
-pub const TEXT_VISIBLE_CTRL: i16 = 3;
-pub const RIPPLE_PATTERN: i16 = 10;
-pub const VOICE_PATTERN: i16 = 11;
-pub const LISSAJOUS_PATTERN: i16 = 12;
-pub const BEATLISSA_PATTERN: i16 = 13;
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum GraphicMsg {
+    What,
+    NoMsg,
+    LightMode,
+    DarkMode,
+    TextVisibleCtrl,
+    RipplePattern,
+    VoicePattern,
+    LissajousPattern,
+    BeatLissaPattern(i32),
+}
 //-------------------------------------------------------------------
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum InputMode {

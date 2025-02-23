@@ -84,7 +84,7 @@ impl TextVisible {
     }
 }
 pub struct Graphic {
-    graphmsg: Vec<i16>,
+    graphmsg: Vec<GraphicMsg>,
     font_nrm: nannou::text::Font,
     font_italic: nannou::text::Font,
     font_newyork: nannou::text::Font,
@@ -142,7 +142,7 @@ impl Graphic {
         // バイト列からフォントを作成
         nannou::text::Font::from_bytes(font_data).expect("Failed to analyze font file")
     }
-    pub fn graph_msg(&mut self) -> &mut Vec<i16> {
+    pub fn graph_msg(&mut self) -> &mut Vec<GraphicMsg> {
         &mut self.graphmsg
     }
     pub fn set_rs(&mut self, rs: Resize) {
@@ -199,41 +199,41 @@ impl Graphic {
         self.update_scroll_text(itxt);
     }
     /// Graphic Command の受信
-    fn rcv_graph_command(&mut self, guiev: &mut GuiEv, crnt_time: f32, msg: i16) {
+    fn rcv_graph_command(&mut self, guiev: &mut GuiEv, crnt_time: f32, msg: GraphicMsg) {
         match msg {
-            LIGHT_MODE => {
+            GraphicMsg::LightMode => {
                 self.gmode = GraphMode::Light;
                 if let Some(sv) = self.svce.as_mut() {
                     sv.set_mode(GraphMode::Light);
                 }
             }
-            DARK_MODE => {
+            GraphicMsg::DarkMode => {
                 self.gmode = GraphMode::Dark;
                 if let Some(sv) = self.svce.as_mut() {
                     sv.set_mode(GraphMode::Dark);
                 }
             }
             // ◆◆◆ generative_view が追加されたらここに追加
-            RIPPLE_PATTERN => {
+            GraphicMsg::RipplePattern => {
                 self.gptn = GraphPattern::Ripple;
                 self.svce = Some(Box::new(WaterRipple::new(self.gmode)));
             }
-            VOICE_PATTERN => {
+            GraphicMsg::VoicePattern => {
                 self.gptn = GraphPattern::Voice4;
                 self.svce = Some(Box::new(Voice4::new(self.font_nrm.clone())));
             }
-            LISSAJOUS_PATTERN => {
+            GraphicMsg::LissajousPattern => {
                 self.gptn = GraphPattern::Lissajous;
                 self.svce = Some(Box::new(Lissajous::new(self.gmode)));
             }
-            BEATLISSA_PATTERN => {
+            GraphicMsg::BeatLissaPattern(md) => {
                 let mt = guiev.get_indicator(INDC_METER).to_string();
                 let num_str = split_by('/', mt);
                 let num = num_str[0].parse::<i32>().unwrap_or(0);
                 self.gptn = GraphPattern::BeatLissa;
-                self.svce = Some(Box::new(BeatLissa::new(num, crnt_time, self.gmode)));
+                self.svce = Some(Box::new(BeatLissa::new(num, crnt_time, md, self.gmode)));
             }
-            TEXT_VISIBLE_CTRL => {
+            GraphicMsg::TextVisibleCtrl => {
                 self.text_visible = self.text_visible.next();
             }
             _ => (),

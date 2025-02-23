@@ -74,39 +74,39 @@ impl LoopianCmd {
         println!("Set Text: {}", input_text);
         let first_letter = &input_text[0..1];
         if first_letter == "@" {
-            Some(CmndRtn(self.letter_at(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_at(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "[" {
-            Some(CmndRtn(self.letter_bracket(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_bracket(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "{" {
-            Some(CmndRtn(self.letter_brace(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_brace(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "." {
-            Some(CmndRtn(self.letter_dot(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_dot(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "c" {
-            Some(CmndRtn(self.letter_c(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_c(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "e" {
-            Some(CmndRtn(self.letter_e(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_e(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "f" {
-            Some(CmndRtn(self.letter_f(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_f(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "g" {
             Some(self.letter_g(input_text))
         } else if first_letter == "l" {
-            Some(CmndRtn(self.letter_l(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_l(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "p" {
-            Some(CmndRtn(self.letter_p(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_p(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "r" {
-            Some(CmndRtn(self.letter_r(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_r(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "s" {
-            Some(CmndRtn(self.letter_s(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_s(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "L"
             || first_letter == "R"
             || first_letter == "F"
             || first_letter == "A"
         {
-            Some(CmndRtn(self.letter_part(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_part(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "h" {
-            Some(CmndRtn(self.letter_h(input_text), NO_MSG))
+            Some(CmndRtn(self.letter_h(input_text), GraphicMsg::NoMsg))
         } else {
-            Some(CmndRtn("what?".to_string(), NO_MSG))
+            Some(CmndRtn("what?".to_string(), GraphicMsg::NoMsg))
         }
     }
     fn letter_c(&mut self, input_text: &str) -> String {
@@ -205,28 +205,39 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 6 && &input_text[0..5] == "graph" {
             if len == 11 && &input_text[6..11] == "light" {
-                CmndRtn("Changed Graphic!".to_string(), LIGHT_MODE)
+                CmndRtn("Changed Graphic!".to_string(), GraphicMsg::LightMode)
             } else if len == 10 && &input_text[6..10] == "dark" {
-                CmndRtn("Changed Graphic!".to_string(), DARK_MODE)
+                CmndRtn("Changed Graphic!".to_string(), GraphicMsg::DarkMode)
             } else if len == 12 && &input_text[6..12] == "ripple" {
-                CmndRtn("Changed Graphic Note Pattern!".to_string(), RIPPLE_PATTERN)
+                CmndRtn(
+                    "Changed Graphic Note Pattern!".to_string(),
+                    GraphicMsg::RipplePattern,
+                )
             } else if len == 11 && &input_text[6..11] == "voice" {
-                CmndRtn("Changed Graphic Note Pattern!".to_string(), VOICE_PATTERN)
+                CmndRtn(
+                    "Changed Graphic Note Pattern!".to_string(),
+                    GraphicMsg::VoicePattern,
+                )
             } else if len == 11 && &input_text[6..11] == "lissa" {
                 CmndRtn(
                     "Changed Graphic Note Pattern!".to_string(),
-                    LISSAJOUS_PATTERN,
+                    GraphicMsg::LissajousPattern,
                 )
-            } else if len == 15 && &input_text[6..15] == "beatlissa" {
-                CmndRtn(
-                    "Changed Graphic Beat Pattern!".to_string(),
-                    BEATLISSA_PATTERN,
-                )
+            } else if len >= 16 && &input_text[6..16] == "beatlissa(" {
+                let cmd = &input_text[15..];
+                if let Some(blmd) = extract_number_from_parentheses(cmd) {
+                    CmndRtn(
+                        "Changed Graphic Beat Pattern!".to_string(),
+                        GraphicMsg::BeatLissaPattern(blmd as i32),
+                    )
+                } else {
+                    CmndRtn("what?".to_string(), GraphicMsg::What)
+                }
             } else {
-                CmndRtn("what?".to_string(), 0)
+                CmndRtn("what?".to_string(), GraphicMsg::What)
             }
         } else {
-            CmndRtn("what?".to_string(), 0)
+            CmndRtn("what?".to_string(), GraphicMsg::What)
         }
     }
     fn letter_l(&mut self, input_text: &str) -> String {
