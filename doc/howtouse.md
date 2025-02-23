@@ -323,8 +323,9 @@ Compile Switch (`Cargo build`)
 * `rit.` : テンポをだんだん遅くして、次の小節の頭で元のテンポ
     - `rit.poco` : 遅さが弱い
     - `rit.molto` : 遅さが強い 
-    - `rit.bpm(fermata)`  : rit.の次の小節の頭の拍を再生して停止(stopで終わる)
-    - `rit.molto.bpm(fermata)`
+    - `rit.fermata`  : rit.の次の小節の頭の拍を再生して停止
+        - そのまま演奏終了ならば `fine` 再開するなら `resume` を指定する
+    - `rit.molto.fermata`
     - `rit.bpm(120)`   : rit.の次の小節をテンポ120で開始
     - `rit.bar(2)` : 2小節rit.をつける
         - `rit.poco.bar(2)`

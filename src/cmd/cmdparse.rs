@@ -616,9 +616,7 @@ impl LoopianCmd {
                             bar_num -= 1;
                         }
                     } else if cmd == "bpm" {
-                        if prm == "fermata" {
-                            aft_rit = MSG2_RIT_FERMATA;
-                        } else if let Ok(tmp) = prm.parse::<i16>() {
+                        if let Ok(tmp) = prm.parse::<i16>() {
                             aft_rit = tmp;
                         } else {
                             return "Number is wrong.".to_string();
@@ -629,6 +627,8 @@ impl LoopianCmd {
                 strength_value = MSG_RIT_MLT;
             } else if rit_txt[0] == "poco" {
                 strength_value = MSG_RIT_POCO;
+            } else if rit_txt[0] == "fermata" {
+                aft_rit = MSG2_RIT_FERMATA;
             }
             rit_txt.remove(0);
         }
