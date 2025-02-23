@@ -140,7 +140,11 @@ impl TickGen {
             }
         }
         let beat_num = self.crnt_tick_inmsr / self.tick_for_beat;
-        let new_beat = beat_num != former_tick / self.tick_for_beat;
+        let new_beat = if new_msr {
+            true
+        } else {
+            beat_num != former_tick / self.tick_for_beat
+        };
         (new_msr, new_beat, beat_num)
     }
     pub fn get_crnt_msr_tick(&self) -> CrntMsrTick {
