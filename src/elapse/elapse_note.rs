@@ -3,7 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use rand::prelude::{thread_rng, Distribution};
+use rand;
+use rand::prelude::Distribution;
 use rand_distr::Normal;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -131,7 +132,7 @@ impl Note {
         (min_value..=max_value).contains(&num)
     }
     fn random_velocity(&self, input_vel: u8) -> u8 {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         // std_dev: 標準偏差
         let dist = Normal::<f64>::new(0.0, 3.0).unwrap();
         let diff = dist.sample(&mut rng) as i32;

@@ -4,7 +4,6 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use nannou::prelude::*;
-use rand::Rng;
 
 use super::draw_graph::Resize;
 use super::generative_view::*;
@@ -166,7 +165,6 @@ impl BeatLissaObj {
         mode: GraphMode,
     ) -> Self {
         let thickness = if size == SQUARE_BIG_SIZE { 5.0 } else { 4.0 };
-        let mut rng = rand::thread_rng();
         Self {
             phase: crnt_time * DRAW_SPEED,
             first_time: crnt_time,
@@ -177,10 +175,10 @@ impl BeatLissaObj {
             size,
             thickness,
             mode,
-            phase_x: rng.gen::<f32>() + 0.5,
-            phase_y: rng.gen::<f32>() + 0.5,
-            ratio_x: rng.gen::<f32>() + 0.5,
-            ratio_y: rng.gen::<f32>() + 0.5,
+            phase_x: random::<f32>() + 0.5,
+            phase_y: random::<f32>() + 0.5,
+            ratio_x: random::<f32>() + 0.5,
+            ratio_y: random::<f32>() + 0.5,
         }
     }
 }

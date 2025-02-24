@@ -4,7 +4,6 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use nannou::prelude::*;
-use rand::{thread_rng, Rng};
 
 use super::draw_graph::Resize;
 use super::generative_view::*;
@@ -78,7 +77,7 @@ impl WaterRippleNote {
     pub fn new(nt: f32, vel: f32, time: f32, mode: GraphMode) -> Self {
         Self {
             para1: nt / 128.0,
-            para2: thread_rng().gen(),
+            para2: random(),
             para3: (vel * vel / 16384.0), // velは小さい時に薄くするため二乗
             start_time: time,
             mode,
