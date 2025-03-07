@@ -255,5 +255,5 @@ Loopianは、基本的にループ再生します。
 
 ### リンク
 
-- [Loopian詳細仕様](doc/howtouse.md)
+- [Loopian Reference Manual](doc/manual.md)
 - [Loopianで音符を書いてみよう(note記事)](https://note.com/hasebems/n/n0cd822840e51)
