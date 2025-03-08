@@ -7,12 +7,22 @@
 - [起動と終了](#起動と終了)
 - [基本操作コマンド](#基本操作コマンド)
 - [Phrase 指定](#phrase-指定)
+    - [基本構文](#基本構文)
+    - [音程の指定方法](#音程の指定方法)
+    - [音価の指定](#音価の指定)
+    - [noteの音量とアーティキュレーション指定](#noteの音量とアーティキュレーション指定)
+    - [Phraseに後続する関数表記](#Phraseに後続する関数表記)
+    - [Dynamic Pattern](#Dynamic-Pattern)
+    - [parallel指定](#parallel指定)
+    - [Part指定書法](#Part指定書法)
+    - [複数Phrase追加入力機能](#複数Phrase追加入力機能)
+    - [Variation機能](#Variation機能)
 - [Composition 指定](#composition-指定)
 - [再生コントロールの拡張仕様](#再生コントロールの拡張仕様)
 - [ファイルのロード・セーブ](#ファイルのロードセーブ)
 - [再生コントロールの拡張仕様](#再生コントロールの拡張仕様)
 - [Graphic](#graphic)
-- [設定ファイル (setting.toml)](#settingtoml-の記述)
+- [setting.tomlの記述](#setting.tomlの記述)
 - [Loopian::ORBIT での演奏](#loopianorbit-での演奏)
 - [usecase](#usecase)
 - [アプリの内部で自動的に行われること](#アプリの内部で自動的に行われること)
@@ -127,19 +137,6 @@ cd /path/to/loopian
 
 
 ## Phrase 指定
-
-Phrase 指定目次
-
-- [基本構文](#基本構文)
-- [音程の指定方法](#音程の指定方法)
-- [音価の指定](#音価の指定)
-- [noteの音量とアーティキュレーション指定](#noteの音量とアーティキュレーション指定)
-- [Phraseに後続する関数表記](#Phraseに後続する関数表記)
-- [Dynamic Pattern](#Dynamic-Pattern)
-- [parallel指定](#parallel指定)
-- [Part指定書法](#Part指定書法)
-- [複数Phrase追加入力機能](#複数Phrase追加入力機能)
-- [Variation機能](#Variation機能)
 
 ### 基本構文
 - `[note].fn1().fn2()` : phrase 入力の書式
@@ -488,7 +485,7 @@ Phrase 指定目次
     - 3: Scroll Text がかなり薄くなり、Input Window が非表示となる。Graphic は文字の前のレイヤー。
     - 4: Graphic Pattern のみになり、Scroll Text と Input Window が非表示となる。Graphic は文字の前のレイヤー。
 
-## setting.toml の記述
+## setting.tomlの記述
 - [window_size] では、アプリを立ち上げた時のデフォルトのウィンドウサイズを設定できる
 - [midi] では、Loopian のMIDI環境を設定できる
     - `midi_out =` 以降に、Loopianから出力されるMIDIで発音する音源のdevice名を記載する
