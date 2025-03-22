@@ -36,7 +36,7 @@ L2.[qx,ed,d/f,f,m,m/r,r,d,d/r,r,d,d/t,t,qx].stacc(50).dyn(mp)
 
 !msr(24)
 R1.[qr,s/l,ed,t/ql,et,d/qr,et,d].dyn(mp)
-R2.[qx,d/fo/_q,r/es^',s^',s^',s'].dyn(mf)
+R2.[qx,d/fo/_q,r/es^!,s^!,s^!,s!].dyn(mf)
 
 !msr(28)
 L2.[+ed^,d,t^,t/t,t,l^,l/l,l,s,s/d^,d,t,t%/l,l%,s%,s%].stacc(50).dyn(mp)
@@ -58,7 +58,7 @@ R1.[hfi/qs^^,fi^/m^,d/qx,em,fi/qs,fi/m,d].dyn(mp)
 L2.[el^^,l^^,l^^,l/qx,em,m/+d^~,t%,d^~,t%/t^^,t^^,t^^,t].stacc(50).dyn(mf)
 
 !msr(42)
-R2.[hl^/_h/_q,s^/fi^,ti^/d^,em,r/qd^,er,m/fi,fi',r,m].dyn(mf)
+R2.[hl^/_h/_q,s^/fi^,ti^/d^,em,r/qd^,er,m/fi,fi!,r,m].dyn(mf)
 
 !msr(44)
 L2.[qx,-em,m/l^,l,s,s/fi^,fi,m^,m^/fi^^,fi^,m^,m^/r^^,r^^,hx//].stacc(50).dyn(mf)
@@ -91,7 +91,7 @@ R1.[qt,l/s,+m/x,es,l/qt,l/s,m].dyn(mp)
 L2.[qx,es,s/d^,d,t,t/l^,l,s,s/l^,l,s^,s^/fi^^,fi^,qx].stacc(50).dyn(mf)
 
 !msr(64)
-R1.[qx,+s/hd^/_q,l^/er^',r^',r^',r'].dyn(mf)
+R1.[qx,+s/hd^/_q,l^/er^!,r^!,r^!,r!].dyn(mf)
 
 !msr(65)
 R2.[qm,es,fi/qm^,efi,s/ql^^,efi^,s^/hl^^/hs^^/hfi^].dyn(mf)
@@ -192,14 +192,14 @@ L2.[qx,ef^,f/ta^,ta,l,l/s^,s,f,f].stacc(50).dyn(mp)
 !msr(125)
 L2.[em,m,r^,r/r,r,d^,d/d,d,ta,ta/l,l,qx].stacc(50).dyn(mf)
 R1.[qs,el%,ta%/qf^,es,l/qm^^,ef^,s^/ql^^^,x].dyn(mp)
-R2.[hf/m^/r^^/qdi^^^,em^^',m^'/m',m%',qx].dyn(mp)
+R2.[hf/m^/r^^/qdi^^^,em^^!,m^!/m!,m%!,qx].dyn(mp)
 
 !msr(129)
 L2.[qx,em^,m/m,m,qx/-el^,l,+s,s/r^,r,fi,fi/di,di,qx].stacc(50).dyn(p)
 R1.[em^^,m^^,m^^,m/qx,-el,l].stacc(50).dyn(mp)
 
 !msr(130)
-R2.[el',l',+fi,m/fi,m,qr/di,t/l,qx].legato(120).dyn(p)
+R2.[el!,l!,+fi,m/fi,m,qr/di,t/l,qx].legato(120).dyn(p)
 
 !msr(131)
 R1.[el,s,fi,s/ql,edi,r/qm,x].dyn(p)
@@ -224,10 +224,10 @@ R2.[qx,-ed,d/f,f,m,m/r,r,d,d].stacc(50).dyn(mf)
 R1.[hl/_h].dyn(mp)
 
 !msr(141)
-L2.[qx,-ef',f'/-ht^^/m^/r^/d^^/_h/_h/_h//].dyn(f)
+L2.[qx,-ef!,f!/-ht^^/m^/r^/d^^/_h/_h/_h//].dyn(f)
 
 !msr(142)
-R1.[qx,r^/d^,r^/d^,el',l'/r',r',d',d'/t',t',l',l'/hs/_h//].dyn(mf)
+R1.[qx,r^/d^,r^/d^,el!,l!/r!,r!,d!,d!/t!,t!,l!,l!/hs/_h//].dyn(mf)
 R2.[qx,l/m,f/hs/f/_h/_q,em,r/hm//].dyn(f)
 
 !msr(145)

@@ -24,7 +24,7 @@ R1
 @msr(52)=[+es^,s^,s^,s/qx,-ed,d/+l^~,s%,l^~,s%/s^,s^,s^,s].stacc(50).dyn(p)
 @msr(56)=[qx,ed,d/f^,f,m,m/r^,r,d,d].stacc(50).dyn(mp)
 @msr(59)=[qt,l/s,+m/x,es,l/qt,l/s,m].dyn(mp)
-@msr(64)=[qx,+s/hd^/_q,l^/er^',r^',r^',r'].dyn(mf)
+@msr(64)=[qx,+s/hd^/_q,l^/er^!,r^!,r^!,r!].dyn(mf)
 @msr(68)=[+qt^~,ed,r/ql^~,et,d/qs^~,el,t].dyn(mf)
 @msr(71)=[+ed^,d,t,t/l^,l,m,m/l^,l,s,s/f^,f,s,s].stacc(50).dyn(mf)
 @msr(75)=[hra/_q,d/hra/_h/_q,d/ta,ma/f,es,la].dyn(mp)
@@ -46,7 +46,7 @@ R1
 @msr(131)=[el,s,fi,s/ql,edi,r/qm,x].dyn(p)
 @msr(133)=[A2:el^^,s^/hf/_q,m%/_q,r%/hd%%/_q,x//].dyn(mf)
 @msr(140)=[hl/_h].dyn(mp)
-@msr(142)=[qx,r^/d^,r^/d^,el',l'/r',r',d',d'/t',t',l',l'/hs/_h//].dyn(mf)
+@msr(142)=[qx,r^/d^,r^/d^,el!,l!/r!,r!,d!,d!/t!,t!,l!,l!/hs/_h//].dyn(mf)
 
 R2
 // Theme
@@ -54,12 +54,12 @@ R2
 @msr(12)=[qx,es,s/d^,d,t,t/l^,l,s,s/l^,l,s,s/f^,f,qx].stacc(50).dyn(mp)
 @msr(17)=[+es^,s,f^,f/f,f,m,m].stacc(50).dyn(mf)
 @msr(19)=[qm,r/d,l/x,ed,r/qm,r/d,l].dyn(mp)
-@msr(24)=[qx,d/fo/_q,r/es^',s^',s^',s'].dyn(mf)
+@msr(24)=[qx,d/fo/_q,r/es^!,s^!,s^!,s!].dyn(mf)
 @msr(28)=[qm^,ef,s/qr,em,f/qd%,er%,m%%//].dyn(mf)
 // Theme
 @msr(33)=[em^,m^,m^,m/qx,-el,l/+f~,m%,f~,m%/m^,m^,m^,m].stacc(50).dyn(p)
 @msr(37)=[qx,el,l/r^,r,d,d/t^,t,l^,l^^/_h/_q~,s^~].stacc(50).dyn(mp)
-@msr(42)=[hl^/_h/_q,s^/fi^,ti^/d^,em,r/qd^,er,m/fi,fi',r,m].dyn(mf)
+@msr(42)=[hl^/_h/_q,s^/fi^,ti^/d^,em,r/qd^,er,m/fi,fi!,r,m].dyn(mf)
 @msr(49)=[ef^^,f^,m^,m^/m^^,m,r^,r%/r,r%,d%,d%%].stacc(50).dyn(mf)
 @msr(52)=[-qm,r/d,l].dyn(mp)
 @msr(54)=[qx,ed,r/qm,r/d,l].dyn(mp)
@@ -80,8 +80,8 @@ R2
 // Theme
 @msr(117)=[+eta^,ta^,ta^,ta/qx,ef,f/+r^~,d%,r^~,d%].stacc(50).dyn(p)
 @msr(120)=[qx,ef,f/ta,ta,l,l/s,s,f,f//].stacc(50).dyn(p)
-@msr(125)=[hf/m^/r^^/qdi^^^,em^^',m^'/m',m%',qx].dyn(mp)
-@msr(130)=[el',l',+fi,m/fi,m,qr/di,t/l,qx].legato(120).dyn(p)
+@msr(125)=[hf/m^/r^^/qdi^^^,em^^!,m^!/m!,m%!,qx].dyn(mp)
+@msr(130)=[el!,l!,+fi,m/fi,m,qr/di,t/l,qx].legato(120).dyn(p)
 @msr(133)=[A2:qm/_q,r/d,el,s//].dyn(f)
 @msr(136)=[-hf/_q,m/r,d].dyn(p)
 @msr(139)=[qx,-ed,d/f,f,m,m/r,r,d,d].stacc(50).dyn(mf)
@@ -119,4 +119,4 @@ L2
 @msr(129)=[qx,em^,m/m,m,qx/-el^,l,+s,s/r^,r,fi,fi/di,di,qx].stacc(50).dyn(p)
 @msr(134)=[es^^,s^,s,s%/qx,-ed,d/+l^~,s%,l^~,s%/s^^,s^^,s^^,s].stacc(50).dyn(f)
 @msr(138)=[qx,-ed,d/f,f,m,m/r,r,d,d].stacc(50).dyn(mp)
-@msr(141)=[qx,-ef',f'/-ht^^/m^/r^/d^^/_h/_h/_h//].dyn(f)
+@msr(141)=[qx,-ef!,f!/-ht^^/m^/r^/d^^/_h/_h/_h//].dyn(f)

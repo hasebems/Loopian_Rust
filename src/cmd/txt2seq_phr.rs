@@ -84,7 +84,7 @@ fn divide_arrow_bracket(nt: String) -> String {
                     mark = '~';
                     omit = true;
                 }
-                if mark == 'p' || mark == '\'' || mark == '~' || mark == 'n' {
+                if mark == 'p' || mark == '!' || mark == '~' || mark == 'n' {
                     for j in i + 1..end_arrow {
                         let nx = nt.chars().nth(j).unwrap_or(' ');
                         if nx == ',' || nx == '|' || nx == '/' {
@@ -476,7 +476,7 @@ fn gen_dur_info(mut ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, 
         if e == '~' {
             artic = 120;
             ntext1.pop();
-        } else if e == '\'' {
+        } else if e == '!' {
             artic = 50;
             ntext1.pop();
         }

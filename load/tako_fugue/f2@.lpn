@@ -18,7 +18,7 @@ L2
 @msr(49)=[+mo/_e^,s,d,x/vx,-ma,sa,ta,x,-f,l,d/f,ma,r,d,eta,ta/x,l,x,s/f,m,vr,ma,sa,ta/ema,m,l,-l].dyn(mp).stacc()
 @msr(56)=[q'x,em/lo/_e^~,-r,qs/_e^~,-d,f,<vdi,ri>/em,-si,+m,<vd,di>].dyn(mp).stacc()
 @msr(61)=[eri,-fi,+ri,-m/+ri,-ri,+di,t/-edi,<vd,ta>,qd/_v,r,m,f,s,l,t,d/er,m,f,x].dyn(mp).stacc()
-@msr(66)=[q'x,em'/l',f',qta/ta,ta/ta,ta/ed',r',m',-m'].dyn(f)
+@msr(66)=[q'x,em!/l!,f!,qta/ta,ta/ta,ta/ed!,r!,m!,-m!].dyn(f)
 @msr(71)=[<+vl^,t>,ed,-m,+d/<vl^,t>,ed,-m,+d/<vl^,t>,ed,-m,+d/<vl^,t>,ed,-m,+d].dyn(f).stacc()
 @msr(75)=[ex,m,ql/ex,m,ql/ex,f,la,ta/d,r,ri,-m^/l^,vs,f,m,r,d,t/el^~,x..//].dyn(f).stacc()
 R1
