@@ -63,7 +63,7 @@ Loopian は、Live Coding などで使うために開発している、テキス
 - loop : loopian は基本的に、phrase/composition を繰り返す。この繰り返し単位。
 - part : phrase/composition はそれぞれ独立した４つの Loop 再生が可能である。そのphraseとcompositionがセットになったものを part と呼ぶ。
 
-<img src="./image/part_spec.jpg" width="70%">
+<img src="./image/design_part.png" width="80%">
 
 ## 起動と終了
 
@@ -88,7 +88,7 @@ cd /path/to/loopian
 
 ### コマンド入力
 
-<img src="./image/v050_exp.png" width="80%">
+<img src="./image/v050_exp.png" width="70%">
 
 - アプリを立ち上げると、画面下の Input Window に下記のような入力用プロンプトが表示される
     - `NNN: L1>` : 入力用プロンプト
@@ -140,18 +140,11 @@ cd /path/to/loopian
 * `left2` or `L2` : 入力パートをleft2 にする
 * `right1` or `R1` : 入力パートをright1 にする
 * `right2` or `R2` : 入力パートをright2 にする
-* 各partの動作
-    - 1 part あたり、一つの phrase と一つの composition が個別の周期で loop する
-    - input(fixed)のとき、key(C)なら、+-の無い音程は以下の範囲
-        - L1=C2-B2
-        - L2=C3-B3
-        - R1=C4-B4
-        - R2=C5-B5
-    - input(closer)のとき、key(C)なら、フレーズ最初の+-の無い音程は以下の範囲
-        - L1=G1-F#2
-        - L2=G2-F#3
-        - R1=G3-F#4
-        - R2=G4-F#5
+* 下記の図に音程のオクターブ指定方法を示す
+
+<img src="./image/design_octfixed.png" width="70%">
+
+<img src="./image/design_octcloser.png" width="70%">
 
 
 ## テンポ、拍子、調などの設定
@@ -517,7 +510,8 @@ cd /path/to/loopian
 - `graph.ripple`: 水紋パターン(default)
 - `graph.voice` : 分割された各声部が円で表示されるパターン
 - `graph.lissa` : 二つのリサジューを結んだ線を表示するパターン
-- `graph.beatlissa` : Beat でリサジュー波形を表示するパターン
+- `graph.beatlissa(n)` : Beat でリサジュー波形を表示するパターン
+    - `n`: 0-一つ、それ以外-拍数
 - shift + space で、以下のように4段階で表示する Text の状況を変化させられる。4の次は1に戻る。
     - 1: 通常の表示。Graphic は文字の後ろのレイヤーとして表示。
     - 2: Scroll Text が少し薄くなる。Graphic は文字の前のレイヤーとして表示。
