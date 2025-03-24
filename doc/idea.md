@@ -31,20 +31,8 @@
 1. Interactive Art(with Device)
 
 ## Spec.
-### 1.Part
 
-- Input Part は4つ
-    - L1, L2, R1, R2
-    - Pedal 用隠しパートが一つ
-    - Flow 用隠しパートが一つ
-- MIDI
-    - Note On/Off
-    - Sustain CC#64
-    - Reverb Depth CC#91(未実装)
-    - Volume CC#7(未実装)
-    - MIDI ch. は一つ
-
-### 2.Command入力
+### 1.Command体系
 
 - 全般的なコマンド体系
     - Object.Command.Fn() の形に統一
@@ -129,7 +117,7 @@
     - dmp() : on,off,half などdamper pedal奏法
     - trns() : para などコード変換方法の指定
 
-### 3.MIDI Flow(Server)機能
+### 2.MIDI Flow(Server)機能
 
 - Loopian は、Window上で動作するGUI Modeと、CUI Modeで動作する二つの状態があり、起動時にオプションスイッチで指定する
     - GUI Modeは、大きさを変えられるWindowと、その中には8つのインジケータ、音に合わせたビジュアライズ機能もある
@@ -158,8 +146,7 @@
 
 ### 1.Generated Document
 
-cargo doc で自動生成
-../target/doc/loopian_rust/index.html
+[cargo doc で自動生成](../target/doc/loopian/index.html)
 
 
 ### 2.Class diagram
@@ -520,8 +507,6 @@ NoteObj <|-- WaterRipple
 - clear 機能追加 11/18 済
 - light mode 追加 12/3 済
 - 入力文字数の制限をなくす 12/29 済
--->
-
 - c=xx による cluster memory 機能 1/3 済
 - >x で parallel、<xxx> で、その区間 parallel 1/3 済
 - 同時複数音入力の時、コード指定で重複して音がなるのを回避 1/3 済
@@ -579,6 +564,7 @@ NoteObj <|-- WaterRipple
 - !rd(n) でファイル内の !rd(n): 以降を、Input Window に呼び出す(11/2)
 - efct.dmp(),cc70() を追加(11/21)
 - 以降はリリース情報に追記 //
+-->
 
 パス
 - cd "/Users/hasebems/Library/Mobile Documents/com~apple~CloudDocs/coding/LiveCoding/"
@@ -595,17 +581,11 @@ NoteObj <|-- WaterRipple
 次の対応、考えられる新機能
 - Tempo/Beat を打ち込みたい（変拍子、rit打ち込み）
     - COND partを作るより、loadの仕方で対応した方が簡単かも
-- スタカートや音価の操作
-    - stacatoを Main Thread ではなく、Play Thread の elapse note でリアルタイムに制御したい
 - Tempoを微分ベースで
     - テンポが設定された過去からの時間で割り算するのではなく、もっと短い時間で tick 計算する
     - 上記のやり方で rit. をより動的に変化させられる
     - 外部 F8 同期も可能にする
-- >>d で変換しない、<<xxx>> で、その区間変換しない
-- @0=[] は fermata の時に再生する特別な variation とする
-
-
-先の話
+- fermata の時に再生する特別な variation が欲しい
 - さらなる humanized アルゴリズムの追加
 - さらなるアニメーションの追加
 
