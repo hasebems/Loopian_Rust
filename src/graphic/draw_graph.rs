@@ -179,7 +179,8 @@ impl Graphic {
                         let bpm = guiev
                             .get_indicator(INDC_BPM)
                             .parse::<f32>()
-                            .unwrap_or(100.0);
+                            .unwrap_or(100.0)
+                            .clamp(20.0, 300.0); // 20 - 300 bpm の範囲
                         let draw_time = (60.0 / bpm) + 0.1;
                         if let Some(sv) = self.svce.as_mut() {
                             sv.on_beat(beat, crnt_time, draw_time);
