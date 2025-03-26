@@ -1,9 +1,11 @@
 # Loopian Reference Manual
 
+[English Version is here](manual_en.md)
+
 ## 目次
 
 - [Loopian とは](#loopianとは)
-- [用語集](#用語集-glossary)
+- [用語集](#用語集)
 - [起動と終了](#起動と終了)
     - [起動方法](#起動方法)
     - [コマンド入力](#コマンド入力)
@@ -12,25 +14,26 @@
 - [基本操作コマンド](#基本操作コマンド)
     - [再生コントロール](#再生コントロール)
     - [パートの切り替えとオクターブ動作](#パートの切り替えとオクターブ動作)
-- [テンポ、拍子、調などの設定](#テンポ、拍子、調などの設定)
+- [テンポ、拍子、調などの設定](#テンポ-拍子-調などの設定)
 - [Phrase 指定](#phrase-指定)
     - [基本書式](#基本書式)
     - [音程の指定方法](#音程の指定方法)
     - [音価の指定](#音価の指定)
     - [noteの音量とアーティキュレーション指定](#noteの音量とアーティキュレーション指定)
-    - [Phraseに後続する関数表記](#Phraseに後続する関数表記)
-    - [Dynamic Pattern](#Dynamic-Pattern)
-    - [parallel指定](#parallel指定)
-    - [Part指定書法](#Part指定書法)
-    - [複数Phrase追加入力機能](#複数Phrase追加入力機能)
-    - [Variation機能](#Variation機能)
+    - [Phraseに後続する関数表記](#phraseに後続する関数表記)
+    - [Dynamic Pattern](#dynamic-pattern)
+    - [複数Phrase追加入力機能](#複数phrase追加入力機能)
 - [Composition 指定](#composition-指定)
-    - [Composition基本書式](#Composition基本書式)
+    - [Composition基本書式](#composition基本書式)
     - [コード持続時間の指定方法](#コード持続時間の指定方法)
-    - [コードの根音(root)指定方法](#コードの根音(root)指定方法)
+    - [コードの根音(root)指定方法](#コードの根音-root-指定方法)
     - [コード記述方法](#コード記述方法)
-    - [コード・スケールの種類](#コード・スケールの種類)
-- [ファイルのロード・セーブ](#ファイルのロードセーブ)
+    - [コード・スケールの種類](#コードスケールの種類)
+- [Part/Compositionの共通仕様、及びその連携](#partcompositionの共通仕様-及びその連携)
+    - [Part指定書法](#part指定書法)
+    - [Phraseのparallel指定](#phraseのparallel指定)
+    - [Variation機能](#variation機能)
+- [ファイルのロード、セーブ](#ファイルのロード-セーブ)
     - [ログファイルのセーブ](#ログファイルのセーブ)
     - [ファイルのロード](#ファイルのロード)
     - [ファイルに記述できる特殊記法](#ファイルに記述できる特殊記法)
@@ -38,7 +41,7 @@
     - [ファイル変換](#ファイル変換)
 - [再生コントロールの拡張仕様](#再生コントロールの拡張仕様)
 - [Graphic](#graphic)
-- [setting.tomlの記述](#setting.tomlの記述)
+- [setting.tomlの記述](#settingtomlの記述)
 - [Loopian::ORBIT での演奏](#loopianorbit-での演奏)
 - [usecase](#usecase)
     - [データ再生方法](#データ再生方法)
@@ -55,7 +58,7 @@ Loopian は、Live Coding などで使うために開発している、テキス
 
 本ドキュメントでは、Loopianの全機能について説明します。
 
-## 用語集 (Glossary)
+## 用語集
 
 - 階名 : 移動ドによる音程呼称。ドレミファソラシ(`drmfslt`)が示す音は、調によって移動する。
 - phrase : メロディや和音など、時系列の音符情報
@@ -418,7 +421,6 @@ cd /path/to/loopian
 - 特定の小節で再生するとき `@msr(M)=[..]` と表記し、M の部分に小節の条件を記述する
     - M が数字のとき、その小節番号になったら再生される
 - Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
-
 
 ## ファイルのロード、セーブ
 
