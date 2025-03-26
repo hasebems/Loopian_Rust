@@ -6,7 +6,7 @@
 - Text is input line by line, allowing you to specify phrases, chords, or control the overall performance with commands.
 - To achieve a somewhat natural performance, the velocity, pitch during chord changes, and damper pedal usage are automatically calculated.
 - Phrases are specified using movable-do solfège.
-
+- [Loopian Reference Manual](doc/manual_en.md)
 
 # Loopian とは
 
@@ -15,6 +15,7 @@ Loopian は、Live Coding などで使うために開発している、テキス
 - テキストは1行単位で入力し、フレーズや和音を指定したり、演奏全体をコントロールするコマンドを指定
 - ある程度自然な演奏になるように、ベロシティや和音変換時の音程、ダンパーペダルを自動算出
 - フレーズは移動ドにて指定
+- [Loopian Reference Manual](doc/manual.md)
 
 
 # Loopian のインストールと起動方法

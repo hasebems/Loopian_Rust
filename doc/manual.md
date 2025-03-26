@@ -11,7 +11,7 @@
     - [音を出すための環境](#音を出すための環境)
 - [基本操作コマンド](#基本操作コマンド)
     - [再生コントロール](#再生コントロール)
-    - [パートの切り替えと動作](#パートの切り替えと動作)
+    - [パートの切り替えとオクターブ動作](#パートの切り替えとオクターブ動作)
 - [テンポ、拍子、調などの設定](#テンポ、拍子、調などの設定)
 - [Phrase 指定](#phrase-指定)
     - [基本書式](#基本書式)
@@ -134,13 +134,13 @@ cd /path/to/loopian
 * `panic` : 今鳴っている音を消音する
 
 
-### パートの切り替えと動作
+### パートの切り替えとオクターブ動作
 
 * `left1` or `L1` : 入力パートをleft1 にする
 * `left2` or `L2` : 入力パートをleft2 にする
 * `right1` or `R1` : 入力パートをright1 にする
 * `right2` or `R2` : 入力パートをright2 にする
-* 下記の図に音程のオクターブ指定方法を示す
+* 下図に各パートのオクターブ指定方法を示す
 
 <img src="./image/design_octfixed.png" width="70%">
 
@@ -283,30 +283,10 @@ cd /path/to/loopian
 - 基本的には小節をまたがない
 
 
-### parallel指定
-- 和音変換時、root に合わせて Phrase が並行移動する
-- `{IV}` の場合だと、Phase 全体が完全四度移動した上で、和音構成音への変換が行われる
-- note単位の和音変換指定が可能
-    - `[>d,s,d,m,d,>>s]` : `>` はparallel動作、 `>>` は変換しない
-    - 複数音を parallel 指定する場合、`<...>p` と複数音を `< >p` で囲む
-        - `[<d,m,s,d,s,m>p]` : 全フレーズが parallel
-        - `[<d,s>p,m,d,s,m]` : 最初の d,s の2音が parallel
-    - 複数音を無変換にしたい場合、`<...>n` とする
-
-
-### Part指定書法
-- Phrase / Composition ともに、冒頭でパート指定することで、プロンプトのパートと違うパートも入力することができる
-    - `L1.[...]`  : left1パート
-    - `L12.[...]` : left1,left2パート二つ同時に同じ Phrase をセット
-    - `ALL.[...]` : 全パートに同じ Phrase をセット
-    - `L1!.[...]` : left1パート以外全て
-
-
 ### cluster_memory機能
 - 一拍分の音符を、Phraseに使うために事前に登録することができる
 - `@c=dms` : ドミソの和音を同時に発音する
 - `[ec,x,x,c,c,x,x,c]` : 前に設定した和音を c のタイミングで発音する
-
 
 ### 複数Phrase追加入力機能
 - `[...]+` と Phrase にプラスを書いた後に return しても再生されず、次回の Phrase の入力を待つ状態になる
@@ -314,20 +294,6 @@ cd /path/to/loopian
     - 単純に二つの文字列が足されるため、`[a,b,c,]+` というように、`c` の後ろにも `,` や `/` が必要となる。
 - `[ax].rpt(2)+` というように、rpt()+ を後ろに入力したら `[axaxax]` と同じ入力がされたとみなす
     - `L1.[...]+` のように、パート指定と同時に使った場合はエラーとなる
-
-
-### Variation機能
-- Variation 機能とは、一つのパートに複数の Phrase を入力し、それらの再生順を Composition で指定したり、特定の小節で再生することができる機能である
-    - これにより Loop 内で、定期的に異なる Phrase を再生することができる
-- `@n=[..]` : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
-- 追加された Variation Phrase は、Composition で以下のように指定する
-    - `{I/II@n}` Chord指定の後に `@n`(n:1-9) と書くと、この小節冒頭から Variation Phrase が再生される
-    - chord指定せずに直接 `@n` のみを書いた場合、Chord は何も書かなかった時と同じ扱いになる 
-    - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
-    - Phrase より Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
-- 特定の小節で再生するとき `@msr(M)=[..]` と表記し、M の部分に小節の条件を記述する
-    - M が数字のとき、その小節番号になったら再生される
-- Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
 
 
 ## Composition 指定
@@ -421,6 +387,37 @@ cd /path/to/loopian
     |スルー(rootなし)|O|`oooo-oooo-oooo`|
     |スルー、pedal無し(rootなし)|X|`oooo-oooo-oooo`| 
 
+## Part/Compositionの共通仕様、及びその連携
+
+### Part指定書法
+- Phrase / Composition ともに、冒頭でパート指定することで、プロンプトのパートと違うパートも入力することができる
+    - `L1.[...]`  : left1パート
+    - `L12.[...]` : left1,left2パート二つ同時に同じ Phrase をセット
+    - `ALL.[...]` : 全パートに同じ Phrase をセット
+    - `L1!.[...]` : left1パート以外全て
+
+### Phraseのparallel指定
+- 和音変換時、root に合わせて Phrase が並行移動する
+- `{IV}` の場合だと、Phase 全体が完全四度移動した上で、和音構成音への変換が行われる
+- note単位の和音変換指定が可能
+    - `[>d,s,d,m,d,>>s]` : `>` はparallel動作、 `>>` は変換しない
+    - 複数音を parallel 指定する場合、`<...>p` と複数音を `< >p` で囲む
+        - `[<d,m,s,d,s,m>p]` : 全フレーズが parallel
+        - `[<d,s>p,m,d,s,m]` : 最初の d,s の2音が parallel
+    - 複数音を無変換にしたい場合、`<...>n` とする
+
+### Variation機能
+- Variation 機能とは、一つのパートに複数の Phrase を入力し、それらの再生順を Composition で指定したり、特定の小節で再生することができる機能である
+    - これにより Loop 内で、定期的に異なる Phrase を再生することができる
+- `@n=[..]` : Phrase 指定の冒頭に @n(nは1から9までの数値)を付け足すことで、Variation を追加できる
+- 追加された Variation Phrase は、Composition で以下のように指定する
+    - `{I/II@n}` Chord指定の後に `@n`(n:1-9) と書くと、この小節冒頭から Variation Phrase が再生される
+    - chord指定せずに直接 `@n` のみを書いた場合、Chord は何も書かなかった時と同じ扱いになる 
+    - Composition で指定した場合、前の Phrase が途中でも中断し、Variation Phrase を再生する
+    - Phrase より Composition が先に終了しても、Variation Phrase が残っていれば、そのまま再生を続ける
+- 特定の小節で再生するとき `@msr(M)=[..]` と表記し、M の部分に小節の条件を記述する
+    - M が数字のとき、その小節番号になったら再生される
+- Variation Phrase が終了後、新しい Variation 指定がなければ、通常の Phrase が再生される
 
 
 ## ファイルのロード、セーブ
