@@ -3,10 +3,10 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use super::txt_common::*;
 use super::txt2seq_ana::*;
 use super::txt2seq_cmps::*;
 use super::txt2seq_phr::*;
-use super::txt_common::*;
 use crate::lpnlib::*;
 
 //*******************************************************************

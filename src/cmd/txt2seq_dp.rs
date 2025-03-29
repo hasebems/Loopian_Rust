@@ -3,8 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use super::txt2seq_phr::*;
 use super::txt_common::*;
+use super::txt2seq_phr::*;
 use crate::lpnlib::*;
 
 pub fn available_for_dp(text: &str) -> bool {
@@ -90,11 +90,7 @@ fn calc_dur(durstr: &str) -> i16 {
     let ch0 = durstr.chars().next().unwrap_or(' ');
     let dot = if durstr.len() > 1 {
         let c = durstr.chars().nth(1).unwrap_or(' ');
-        if c == '\'' {
-            3
-        } else {
-            2
-        }
+        if c == '\'' { 3 } else { 2 }
     } else {
         2
     };

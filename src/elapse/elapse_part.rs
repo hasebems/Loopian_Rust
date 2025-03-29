@@ -168,7 +168,7 @@ impl PhrLoopManager {
         if let Some(phr) = &self.loop_phrase {
             let denomirator = self.max_loop_msr;
             let numerator = crnt_msr - phr.borrow().first_msr_num() + 1; // 1origin
-                                                                         //format!("{}/{}", numerator, denomirator)
+            //format!("{}/{}", numerator, denomirator)
             Some((numerator, denomirator))
         } else {
             None

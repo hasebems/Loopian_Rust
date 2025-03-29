@@ -70,11 +70,7 @@ impl MidiRx {
             #[cfg(feature = "raspi")]
             uart: None,
         };
-        if this.set_connect() {
-            Some(this)
-        } else {
-            None
-        }
+        if this.set_connect() { Some(this) } else { None }
     }
     fn set_connect(&mut self) -> bool {
         // USB MIDI 変数初期化

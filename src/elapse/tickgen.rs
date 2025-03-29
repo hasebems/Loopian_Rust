@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib::{Meter, DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE};
+use crate::lpnlib::{DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, Meter};
 use std::time::{Duration, Instant};
 
 //*******************************************************************
@@ -284,7 +284,7 @@ pub trait Rit {
         &mut self,
         crnt_time: Instant, // 現在の時間
     ) -> (i32, bool, bool); // (経過tick, true/false: 小節を超えたか？, true/false: rit終了したか)
-                            // 2小節以上のrit.の場合、経過tickはrit開始小節からの累積tick
+    // 2小節以上のrit.の場合、経過tickはrit開始小節からの累積tick
 
     //  現在の bpm を得る
     fn get_real_bpm(&self) -> i16; // 現在のテンポ

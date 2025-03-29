@@ -121,7 +121,7 @@ pub const ARTIC: i16 = 14; // cnt に Staccato/legato の長さを書く(1-200%)
 pub const TRNS_COM: i16 = 0; // Common 変換
 pub const TRNS_PARA: i16 = 10000; // Parallel 変換
 pub const TRNS_NONE: i16 = 10001; // 変換しない
-                                  //  -n .. +n  : ARP のときの Note 差分
+//  -n .. +n  : ARP のときの Note 差分
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct AnaEvt {
     pub mtype: i16, // message type
@@ -269,8 +269,8 @@ pub const MSG_SET_BPM: i16 = 1;
 pub const MSG_SET_KEY: i16 = 2;
 pub const MSG_SET_TURN: i16 = 3;
 pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
-                                     //  Set BEAT  : numerator, denomirator
-                                     //  Effect
+//  Set BEAT  : numerator, denomirator
+//  Effect
 pub const MSG_EFCT_DMP: i16 = 1;
 pub const MSG_EFCT_CC70: i16 = 2;
 
