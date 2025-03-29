@@ -103,6 +103,7 @@ impl Flow {
         locate: u8,
         vel: u8,
     ) {
+        let locate = locate - 18;
         #[cfg(feature = "verbose")]
         println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
         if !self.during_play {
@@ -120,8 +121,8 @@ impl Flow {
             } else if (4..92).contains(&locate) {
                 // locate >= 4 && locate < 92
                 // 外部から Chord 情報が来ていない時
-                // 4->21 A0, 91->108 C8
-                estk_.midi_out_flow(status, locate + 17, vel);
+                // 3->21 A0, 90->108 C8
+                estk_.midi_out_flow(status, locate + 18, vel);
             }
         } else {
             self.raw_ev
