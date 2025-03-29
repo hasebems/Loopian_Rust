@@ -7,12 +7,12 @@ use nannou::prelude::*;
 use std::fs::File;
 use std::io::Read;
 
-use super::beatlissa::*;
 use super::generative_view::*;
 use super::guiev::*;
-use super::lissajous::*;
-use super::voice4::*;
-use super::waterripple::WaterRipple;
+use super::view_beatlissa::*;
+use super::view_lissajous::*;
+use super::view_voice4::*;
+use super::view_waterripple::WaterRipple;
 use crate::cmd::txt_common::*;
 use crate::file::input_txt::InputText;
 use crate::lpnlib::*;
