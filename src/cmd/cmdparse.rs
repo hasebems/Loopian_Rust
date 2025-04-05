@@ -8,6 +8,7 @@ use std::sync::mpsc;
 use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
+use crate::graphic::generative_view::GRAPHIC_PATTERN_NAME;
 use crate::lpnlib::*;
 
 //  LoopianCmd の責務
@@ -208,33 +209,20 @@ impl LoopianCmd {
                 CmndRtn("Changed Graphic!".to_string(), GraphicMsg::LightMode)
             } else if len == 10 && &input_text[6..10] == "dark" {
                 CmndRtn("Changed Graphic!".to_string(), GraphicMsg::DarkMode)
-            } else if len == 12 && &input_text[6..12] == "ripple" {
-                CmndRtn(
-                    "Changed Graphic Note Pattern!".to_string(),
-                    GraphicMsg::RipplePattern,
-                )
-            } else if len == 11 && &input_text[6..11] == "voice" {
-                CmndRtn(
-                    "Changed Graphic Note Pattern!".to_string(),
-                    GraphicMsg::VoicePattern,
-                )
-            } else if len == 11 && &input_text[6..11] == "lissa" {
-                CmndRtn(
-                    "Changed Graphic Note Pattern!".to_string(),
-                    GraphicMsg::LissajousPattern,
-                )
-            } else if len >= 16 && &input_text[6..16] == "beatlissa(" {
-                let cmd = &input_text[15..];
-                if let Some(blmd) = extract_number_from_parentheses(cmd) {
-                    CmndRtn(
-                        "Changed Graphic Beat Pattern!".to_string(),
-                        GraphicMsg::BeatLissaPattern(blmd as i32),
-                    )
+            } else {
+                let mut matched_msg = None;
+                for ptn in GRAPHIC_PATTERN_NAME.iter() {
+                    let ptn_len = ptn.2.len();
+                    if len == ptn_len + 6 && &input_text[6..(ptn_len + 6)] == ptn.2 {
+                        matched_msg = Some(ptn.1);
+                        break;
+                    }
+                }
+                if let Some(msg) = matched_msg {
+                    CmndRtn("Changed Graphic!".to_string(), msg)
                 } else {
                     CmndRtn("what?".to_string(), GraphicMsg::What)
                 }
-            } else {
-                CmndRtn("what?".to_string(), GraphicMsg::What)
             }
         } else {
             CmndRtn("what?".to_string(), GraphicMsg::What)

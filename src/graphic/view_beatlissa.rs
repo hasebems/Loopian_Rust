@@ -6,7 +6,8 @@
 use nannou::prelude::*;
 
 use super::draw_graph::Resize;
-use super::generative_view::*;
+use super::generative_view::{BeatObj, GenerativeView};
+use crate::lpnlib::GraphMode;
 
 //*******************************************************************
 //      struct BeatLissa

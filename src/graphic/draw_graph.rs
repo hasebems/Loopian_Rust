@@ -7,10 +7,11 @@ use nannou::prelude::*;
 use std::fs::File;
 use std::io::Read;
 
-use super::generative_view::*;
+use super::generative_view::{GRAPHIC_PATTERN_NAME, GenerativeView};
 use super::guiev::*;
 use super::view_beatlissa::*;
 use super::view_lissajous::*;
+use super::view_sinewave::*;
 use super::view_voice4::*;
 use super::view_waterripple::WaterRipple;
 use crate::cmd::txt_common::*;
@@ -91,7 +92,7 @@ pub struct Graphic {
     rs: Resize,
     svce: Option<Box<dyn GenerativeView>>, // Generaative View
     gmode: GraphMode,                      // Graph Mode  (Light or Dark)
-    gptn: GraphPattern,                    // Graph Pattern
+    gptn: GraphicPattern,                  // Graph Pattern
     text_visible: TextVisible,
     crnt_time: f32,
     top_visible_line: usize,
@@ -121,7 +122,7 @@ impl Graphic {
             rs: Resize::default(),
             svce: Some(Box::new(WaterRipple::new(GraphMode::Dark))),
             gmode: GraphMode::Dark,
-            gptn: GraphPattern::Ripple,
+            gptn: GraphicPattern::Ripple,
             text_visible: TextVisible::Full,
             crnt_time: 0.0,
             top_visible_line: 0,
@@ -214,28 +215,32 @@ impl Graphic {
                     sv.set_mode(GraphMode::Dark);
                 }
             }
+            GraphicMsg::TextVisibleCtrl => {
+                self.text_visible = self.text_visible.next();
+            }
             // ◆◆◆ generative_view が追加されたらここに追加
             GraphicMsg::RipplePattern => {
-                self.gptn = GraphPattern::Ripple;
+                self.gptn = GRAPHIC_PATTERN_NAME[0].0; //GraphicPattern::Ripple;
                 self.svce = Some(Box::new(WaterRipple::new(self.gmode)));
             }
             GraphicMsg::VoicePattern => {
-                self.gptn = GraphPattern::Voice4;
+                self.gptn = GRAPHIC_PATTERN_NAME[1].0;
                 self.svce = Some(Box::new(Voice4::new(self.font_nrm.clone())));
             }
             GraphicMsg::LissajousPattern => {
-                self.gptn = GraphPattern::Lissajous;
+                self.gptn = GRAPHIC_PATTERN_NAME[2].0;
                 self.svce = Some(Box::new(Lissajous::new(self.gmode)));
             }
             GraphicMsg::BeatLissaPattern(md) => {
                 let mt = guiev.get_indicator(INDC_METER).to_string();
                 let num_str = split_by('/', mt);
                 let num = num_str[0].parse::<i32>().unwrap_or(0);
-                self.gptn = GraphPattern::BeatLissa;
+                self.gptn = GRAPHIC_PATTERN_NAME[3].0;
                 self.svce = Some(Box::new(BeatLissa::new(num, crnt_time, md, self.gmode)));
             }
-            GraphicMsg::TextVisibleCtrl => {
-                self.text_visible = self.text_visible.next();
+            GraphicMsg::SineWavePattern => {
+                self.gptn = GRAPHIC_PATTERN_NAME[5].0;
+                self.svce = Some(Box::new(SineWave::new(self.gmode)));
             }
             _ => (),
         }

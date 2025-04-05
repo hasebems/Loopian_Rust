@@ -6,19 +6,33 @@
 use nannou::prelude::*;
 
 use super::draw_graph::Resize;
+use crate::lpnlib::*;
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum GraphMode {
-    Dark,
-    Light,
-}
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum GraphPattern {
-    Ripple,
-    Voice4,
-    Lissajous,
-    BeatLissa,
-}
+pub struct GraphicPatternName(pub GraphicPattern, pub GraphicMsg, pub &'static str);
+pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 6] = [
+    GraphicPatternName(GraphicPattern::Ripple, GraphicMsg::RipplePattern, "ripple"),
+    GraphicPatternName(GraphicPattern::Voice4, GraphicMsg::VoicePattern, "voice"),
+    GraphicPatternName(
+        GraphicPattern::Lissajous,
+        GraphicMsg::LissajousPattern,
+        "lissa",
+    ),
+    GraphicPatternName(
+        GraphicPattern::BeatLissa,
+        GraphicMsg::BeatLissaPattern(0),
+        "beatlissa(0)",
+    ),
+    GraphicPatternName(
+        GraphicPattern::BeatLissa,
+        GraphicMsg::BeatLissaPattern(1),
+        "beatlissa(1)",
+    ),
+    GraphicPatternName(
+        GraphicPattern::SineWave,
+        GraphicMsg::SineWavePattern,
+        "sinewave",
+    ),
+];
 
 pub trait GenerativeView {
     /// 画面全体の Model の更新

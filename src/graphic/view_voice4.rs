@@ -7,6 +7,7 @@ use nannou::prelude::*;
 
 use super::draw_graph::Resize;
 use super::generative_view::*;
+use crate::lpnlib::GraphMode;
 
 pub struct Voice4 {
     font: nannou::text::Font,
