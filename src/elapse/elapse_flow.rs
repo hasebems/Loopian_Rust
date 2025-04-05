@@ -212,8 +212,7 @@ impl Flow {
         }
 
         real_note += self.keynote;
-        let _ = real_note.clamp(MIN_NOTE_NUMBER, MAX_NOTE_NUMBER);
-        real_note
+        real_note.clamp(MIN_NOTE_NUMBER, MAX_NOTE_NUMBER)
     }
     fn same_note_index(&self, rnote: u8) -> Option<usize> {
         for (i, x) in self.gen_stock.iter().enumerate() {
