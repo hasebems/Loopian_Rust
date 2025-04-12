@@ -490,7 +490,8 @@ This document explains all features of Loopian.
 - `graph.voice`: Pattern showing divided voices in circles
 - `graph.lissa`: Pattern showing line connecting two Lissajous figures
 - `graph.beatlissa(n)`: Pattern showing Lissajous waveform with Beat
-    - `n`: 0-one, others-number of beats
+    - `n`: 0-one, 1-number of beats
+- `graph.sinewave`: Sine wave synchronized with the sound.
 - Pressing shift + space changes Text display status in 4 stages as follows. After 4 returns to 1.
     - 1: Normal display. Graphic displays as layer behind text.
     - 2: Scroll Text becomes slightly transparent. Graphic displays as layer in front of text.

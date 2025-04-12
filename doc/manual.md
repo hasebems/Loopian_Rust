@@ -510,7 +510,8 @@ cd /path/to/loopian
 - `graph.voice` : 分割された各声部が円で表示されるパターン
 - `graph.lissa` : 二つのリサジューを結んだ線を表示するパターン
 - `graph.beatlissa(n)` : Beat でリサジュー波形を表示するパターン
-    - `n`: 0-一つ、それ以外-拍数
+    - `n`: 0-一つ、1-拍数
+- `graph.sinewave` : 音に合わせたサイン波
 - shift + space で、以下のように4段階で表示する Text の状況を変化させられる。4の次は1に戻る。
     - 1: 通常の表示。Graphic は文字の後ろのレイヤーとして表示。
     - 2: Scroll Text が少し薄くなる。Graphic は文字の前のレイヤーとして表示。
