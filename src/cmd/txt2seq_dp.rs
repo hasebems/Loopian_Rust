@@ -87,23 +87,30 @@ fn gen_dp_pattern(nt: &str, case_arp: bool) -> Vec<i16> {
 }
 fn calc_dur(durstr: &str) -> i16 {
     let mut dur = 480;
-    let ch0 = durstr.chars().next().unwrap_or(' ');
-    let dot = if durstr.len() > 1 {
+    let mut val = durstr.chars().next().unwrap_or(' ');
+    let mut dot = 2;
+    let mut div = 2;
+    if val == '5' {
+        div = 5;
+        val = durstr.chars().nth(1).unwrap_or(' ');        
+    } else if val == '3' {
+        div = 3;
+        val = durstr.chars().nth(1).unwrap_or(' ');
+    } else if durstr.len() > 1 {
         let c = durstr.chars().nth(1).unwrap_or(' ');
-        if c == '\'' { 3 } else { 2 }
-    } else {
-        2
-    };
-    if ch0 == 'h' {
-        dur = 960;
-    } else if ch0 == 'q' {
-        dur = 480;
-    } else if ch0 == 'e' {
-        dur = 240;
-    } else if ch0 == 'v' {
-        dur = 120;
+        if c == '\'' {
+            dot = 3;
+        }
     }
-    dur * dot / 2
+    match val {
+        'h' => dur = 960,
+        'q' => dur = 480,
+        'e' => dur = 240,
+        'v' => dur = 120,
+        'w' => dur = 60,
+        _ => {}
+    }
+    dur * dot / div
 }
 fn arp_pattern(ptn: &str) -> i16 {
     match ptn {
