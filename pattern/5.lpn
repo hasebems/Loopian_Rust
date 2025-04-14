@@ -4,12 +4,12 @@ set.bpm(72)
 set.turnnote(10)
 efct.dmp(80)
 L1
-[qd^,ex,s,d!,qd^,es].dyn(mf).para()
+[qd^,ex,s,d!,qd^,es].dyn(mp).para()
 {I/VIm/IIm/VIIb.,V7}
 R1
-[erms^,-d%,rms,-d%,rms^,-d,s,d%].dyn(mp)
-@1=[emfl^,-r%,mfl,-r%,mfl^,-r,l,r%].dyn(mp)
-@2=[emfl^,-r%,mfl,-r%,drs^,-l,trs,-s%].dyn(mp)
+[erms^,-d%,rms,-d%,rms^,-d,s,d%].dyn(p)
+@1=[emfl^,-r%,mfl,-r%,mfl^,-r,l,r%].dyn(p)
+@2=[emfl^,-r%,mfl,-r%,drs^,-l,trs,-s%].dyn(p)
 {X/X/X@1/X@2}
 FLOW.{IM9/VIm9/IIm9/VIIb9.,V9}
 play

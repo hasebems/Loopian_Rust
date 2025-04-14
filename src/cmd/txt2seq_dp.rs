@@ -92,7 +92,7 @@ fn calc_dur(durstr: &str) -> i16 {
     let mut div = 2;
     if val == '5' {
         div = 5;
-        val = durstr.chars().nth(1).unwrap_or(' ');        
+        val = durstr.chars().nth(1).unwrap_or(' ');
     } else if val == '3' {
         div = 3;
         val = durstr.chars().nth(1).unwrap_or(' ');
