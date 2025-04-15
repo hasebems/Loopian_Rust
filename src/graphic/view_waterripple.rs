@@ -93,25 +93,35 @@ impl NoteObj for WaterRippleNote {
     }
     fn disp(&self, draw: Draw, _crnt_time: f32, rs: Resize) {
         const THICKNESS: f32 = 3.0;
+        let ripple_fsize_inv = 1.0 / Self::RIPPLE_FSIZE;
+        let disappear_time_inv = 1.0 / Self::DISAPPEAR_TIME;
+        let full_size_x = rs.get_full_size_x();
+        let full_size_y = rs.get_full_size_y();
+        let x_offset = ((self.para1 - 0.5) * 2.0 * 1.4) * full_size_x;
+        let y_offset = (self.para2 - 0.5) * (full_size_y * 0.6);
+
         for i in 0..Self::RIPPLE_SIZE {
-            let phase = std::f32::consts::PI * (i as f32) / Self::DENSITY; // 波の密度
-            let gray = Self::BRIGHTNESS * (0.5 + phase.sin() / 2.0); // 波パターンの関数(sinの絶対値)
+            let phase = std::f32::consts::PI * (i as f32) / Self::DENSITY;
+            let gray = Self::BRIGHTNESS * (0.5 + phase.sin() / 2.0);
             let alpha_level = gray
                 * self.para3
-                * ((Self::RIPPLE_FSIZE - (i as f32)) / Self::RIPPLE_FSIZE).powf(Self::LENGTH)
-                * ((Self::DISAPPEAR_TIME - self.elapsed_time) / Self::DISAPPEAR_TIME); // 消えゆく速さ
+                * ((Self::RIPPLE_FSIZE - (i as f32)) * ripple_fsize_inv).powf(Self::LENGTH)
+                * ((Self::DISAPPEAR_TIME - self.elapsed_time) * disappear_time_inv);
+
+            if alpha_level <= 0.0 {
+                continue;
+            }
+
             let gray_scal = if self.mode == GraphMode::Dark {
                 rgba(1.0, 1.0, 1.0, alpha_level)
             } else {
                 rgba(0.0, 0.0, 0.0, alpha_level)
             };
+
             let radius_sz = self.elapsed_time * Self::SPREAD_SPEED - (i as f32) * THICKNESS;
             if radius_sz > 0.0 {
                 draw.ellipse()
-                    .x_y(
-                        ((self.para1 - 0.5) * 2.0 * 1.4) * rs.get_full_size_x(),
-                        (self.para2 - 0.5) * (rs.get_full_size_y() * 0.6),
-                    )
+                    .x_y(x_offset, y_offset)
                     .no_fill()
                     .stroke_weight(THICKNESS)
                     .stroke(gray_scal)
