@@ -260,11 +260,11 @@ This document explains all features of Loopian.
     - Can omit lowercase letters: `C(), A()`
     - Write in Phrase like `[hCls(),hArp()]`, showing overall note value before Pattern
 - For `Cls(a,b,c)`, parameters mean:
-    - a: Note value. Can choose h,q,e,v,w and their dots (default:q)
+    - a: Note value. Can choose h,q,e,v,w and their triplet, quintuplets, and dots (default:q)
     - b: Number of chord notes (2-5)(default:4)
     - c: Position of lowest note (-6 - 7)(default:0)
 - For `Arp(a,b,c)`, parameters mean:
-    - a: Note value. Can choose h,q,e,v,w and their dots (default:q)
+    - a: Note value. Can choose h,q,e,v,w and their triplet, quintuplets, and dots (default:q)
     - b: u for ascending pattern, d for descending, ux for cross ascending, dx for cross descending
     - c: Position of lowest note (-6 - 7)(default:0)
 - Can add same functions as Phrase at the end
