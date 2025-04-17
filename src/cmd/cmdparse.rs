@@ -69,7 +69,8 @@ impl LoopianCmd {
     }
     //*************************************************************************
     pub fn put_and_get_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
-        if input_text.is_empty() {
+        if input_text.is_empty() || !input_text.is_ascii() {
+            // option + space などの無効な文字列
             return None;
         }
         println!("Set Text: {}", input_text);
