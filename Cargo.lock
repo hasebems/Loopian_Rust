@@ -1208,7 +1208,7 @@ dependencies = [
 
 [[package]]
 name = "loopian"
-version = "0.5.8"
+version = "0.5.9"
 dependencies = [
  "chrono",
  "cli-clipboard",
