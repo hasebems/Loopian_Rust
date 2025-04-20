@@ -331,19 +331,12 @@ pub enum GraphicMsg {
     LissajousPattern,
     BeatLissaPattern(i32),
     SineWavePattern,
+    RainEffectPattern,
 }
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum GraphMode {
     Dark,
     Light,
-}
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum GraphicPattern {
-    Ripple,
-    Voice4,
-    Lissajous,
-    BeatLissa,
-    SineWave,
 }
 //-------------------------------------------------------------------
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

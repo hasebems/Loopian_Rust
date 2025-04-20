@@ -7,14 +7,9 @@ use nannou::prelude::*;
 use std::fs::File;
 use std::io::Read;
 
-use super::generative_view::{GRAPHIC_PATTERN_NAME, GenerativeView};
+use super::generative_view::*;
 use super::guiev::*;
-use super::view_beatlissa::*;
-use super::view_lissajous::*;
-use super::view_sinewave::*;
-use super::view_voice4::*;
 use super::view_waterripple::WaterRipple;
-use crate::cmd::txt_common::*;
 use crate::file::input_txt::InputText;
 use crate::lpnlib::*;
 
@@ -218,31 +213,17 @@ impl Graphic {
             GraphicMsg::TextVisibleCtrl => {
                 self.text_visible = self.text_visible.next();
             }
-            // ◆◆◆ generative_view が追加されたらここに追加
-            GraphicMsg::RipplePattern => {
-                self.gptn = GRAPHIC_PATTERN_NAME[0].0; //GraphicPattern::Ripple;
-                self.svce = Some(Box::new(WaterRipple::new(self.gmode)));
+            _ => {
+                // graphic pattern の変更
+                let (gptn, svce) =
+                    get_view_instance(guiev, crnt_time, msg, self.gmode, self.font_nrm.clone());
+                if let Some(gptn) = gptn {
+                    self.gptn = gptn;
+                    if let Some(svce) = svce {
+                        self.svce = Some(svce);
+                    }
+                }
             }
-            GraphicMsg::VoicePattern => {
-                self.gptn = GRAPHIC_PATTERN_NAME[1].0;
-                self.svce = Some(Box::new(Voice4::new(self.font_nrm.clone())));
-            }
-            GraphicMsg::LissajousPattern => {
-                self.gptn = GRAPHIC_PATTERN_NAME[2].0;
-                self.svce = Some(Box::new(Lissajous::new(self.gmode)));
-            }
-            GraphicMsg::BeatLissaPattern(md) => {
-                let mt = guiev.get_indicator(INDC_METER).to_string();
-                let num_str = split_by('/', mt);
-                let num = num_str[0].parse::<i32>().unwrap_or(0);
-                self.gptn = GRAPHIC_PATTERN_NAME[3].0;
-                self.svce = Some(Box::new(BeatLissa::new(num, crnt_time, md, self.gmode)));
-            }
-            GraphicMsg::SineWavePattern => {
-                self.gptn = GRAPHIC_PATTERN_NAME[5].0;
-                self.svce = Some(Box::new(SineWave::new(self.gmode)));
-            }
-            _ => (),
         }
     }
     pub fn get_bgcolor(&self) -> Srgb<u8> {
