@@ -109,14 +109,7 @@ impl DamperPart {
 
         let mut chord_map = vec![false; beat_num];
         if let Some(_fl) = estk.get_flow() {
-            chord_map = DamperPart::merge_chord_map(
-                crnt_,
-                estk,
-                FLOW_PART,
-                tick_for_onemsr,
-                tick_for_onebeat,
-                chord_map,
-            );
+            chord_map = DamperPart::merge_chord_map(crnt_, estk, FLOW_PART, chord_map);
         }
         for i in 0..MAX_KBD_PART {
             if let Some(phr) = estk.get_phr(i) {
@@ -125,14 +118,7 @@ impl DamperPart {
                     chord_map = vec![false; beat_num];
                     break;
                 } else {
-                    chord_map = DamperPart::merge_chord_map(
-                        crnt_,
-                        estk,
-                        i,
-                        tick_for_onemsr,
-                        tick_for_onebeat,
-                        chord_map,
-                    );
+                    chord_map = DamperPart::merge_chord_map(crnt_, estk, i, chord_map);
                 }
             } else {
                 continue;
@@ -147,16 +133,14 @@ impl DamperPart {
         crnt_: &CrntMsrTick,
         estk: &mut ElapseStack,
         part_num: usize,
-        tick_for_onemsr: i32,
-        tick_for_onebeat: i32,
         mut chord_map: Vec<bool>,
     ) -> Vec<bool> {
-        if let Some(cmps) = estk.get_cmps(part_num) {
-            let ba = cmps
-                .borrow()
-                .get_chord_map(crnt_.msr, tick_for_onemsr, tick_for_onebeat);
-            for (i, x) in chord_map.iter_mut().enumerate() {
-                *x |= ba[i];
+        if let Some(pt) = estk.part(part_num as u32) {
+            if let Some(cmp_med) = pt.borrow().get_cmps_med() {
+                let ba = cmp_med.borrow().get_chord_map(crnt_);
+                for (i, x) in chord_map.iter_mut().enumerate() {
+                    *x |= ba[i];
+                }
             }
         }
         chord_map

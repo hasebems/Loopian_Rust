@@ -112,32 +112,36 @@ impl DynamicPattern {
         }))
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
-        let root: i16;
-        if let Some(cmps) = estk.get_cmps(self.part as usize) {
-            // 和音情報を読み込む
-            let (rt, tbl) = cmps.borrow().get_chord();
-            root = ROOT2NTNUM[rt as usize];
-            if tbl == NO_TABLE {
-                #[cfg(feature = "verbose")]
-                println!("DynamicPattern: No Chord Table!!");
-            } else {
-                #[cfg(feature = "verbose")]
-                println!("DynamicPattern: root-{}, table-{}", root, tbl);
-                self.gen_each_note(crnt_, estk, root, tbl)
+        if let Some(pt) = estk.part(self.part) {
+            if let Some(cmp_med) = pt.borrow().get_cmps_med() {
+                // 和音情報を読み込む
+                let (rt, tbl) = cmp_med.borrow().get_chord(crnt_);
+                let root = ROOT2NTNUM[rt as usize];
+                if tbl == NO_TABLE {
+                    #[cfg(feature = "verbose")]
+                    println!("DynamicPattern: No Chord Table!!");
+                } else {
+                    #[cfg(feature = "verbose")]
+                    println!("DynamicPattern: root-{}, table-{}", root, tbl);
+                    self.gen_each_note(crnt_, estk, root, tbl)
+                }
             }
-            // 次回 tick 算出と終了の確認
-            let next_tick = self.next_tick + self.ptn_each_dur;
-            if next_tick >= crnt_.tick_for_onemsr || next_tick >= self.whole_tick {
-                END_OF_DATA
-            } else {
-                next_tick
-            }
-        } else {
-            #[cfg(feature = "verbose")]
-            println!("DynamicPattern: No Chord Data!!");
+        }
+
+        // 次回 tick 算出と終了の確認
+        let next_tick = self.next_tick + self.ptn_each_dur;
+        if next_tick >= crnt_.tick_for_onemsr || next_tick >= self.whole_tick {
             END_OF_DATA
+        } else {
+            next_tick
         }
     }
+    // else {
+    //    #[cfg(feature = "verbose")]
+    //    println!("DynamicPattern: No Chord Data!!");
+    //    END_OF_DATA
+    //}
+    //}
     fn gen_each_note(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, root: i16, tbl: i16) {
         let (tblptr, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
         let vel = self.calc_dynamic_vel(

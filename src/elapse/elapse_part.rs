@@ -8,10 +8,10 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::elapse_loop_cmp::*;
 use super::elapse_loop_phr::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
+use super::unfold_cmp::*;
 use crate::elapse::elapse_flow::Flow;
 use crate::lpnlib::*;
 
@@ -58,7 +58,7 @@ impl PhrLoopManager {
     }
     /// Phrase Loop の処理 (Phrase Loop の生成、更新)
     /// 小節先頭でコールされる
-    pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+    pub fn msrtop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         if self.proc_auftakt(crnt_, estk, pbp) {
             // auftakt は別枠
             //return;
@@ -424,203 +424,6 @@ impl PhrLoopManager {
 }
 
 //*******************************************************************
-//          Composition Loop Manager Struct
-//*******************************************************************
-struct CmpsLoopManager {
-    first_msr_num: i32,
-    max_loop_msr: i32,
-    whole_tick: i32,
-    loop_id: u32, // loop sid
-    new_data_stock: ChordData,
-    loop_cmps: Option<Rc<RefCell<CompositionLoop>>>,
-    state_reserve: bool,
-    do_loop: bool,
-}
-impl CmpsLoopManager {
-    pub fn new() -> Self {
-        Self {
-            first_msr_num: 0,
-            max_loop_msr: 0,
-            whole_tick: 0,
-            loop_id: 0,
-            new_data_stock: ChordData::empty(),
-            loop_cmps: None,
-            state_reserve: false,
-            do_loop: true,
-        }
-    }
-    pub fn start(&mut self) {
-        self.clear_cmp_prm();
-        self.state_reserve = true;
-    }
-    pub fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        if self.state_reserve {
-            // 前小節にて phrase/pattern 指定された時
-            if crnt_.msr == 0 {
-                // 今回 start したとき
-                self.state_reserve = false;
-                self.new_loop(crnt_, estk, pbp);
-            } else if self.max_loop_msr == 0 {
-                // データのない状態で start し、今回初めて指定された時
-                self.state_reserve = false;
-                self.new_loop(crnt_, estk, pbp);
-            } else if self.max_loop_msr != 0
-                && (crnt_.msr - self.first_msr_num) % (self.max_loop_msr) == 0
-            {
-                // 前小節にて Loop Obj が終了した時
-                self.state_reserve = false;
-                self.new_loop(crnt_, estk, pbp);
-            } else if self.max_loop_msr != 0 && pbp.sync_flag {
-                // sync コマンドによる強制リセット
-                self.state_reserve = false;
-                if let Some(phr) = self.loop_cmps.as_mut() {
-                    phr.borrow_mut().set_destroy();
-                }
-                self.new_loop(crnt_, estk, pbp);
-            } else {
-                // 現在の Loop Obj が終了していない時
-                // 現在の Phrase より新しい Phrase の whole_tick が大きい場合、
-                // 新しい Phrase を早送りして更新する
-                if self.new_data_stock.whole_tick as i32 >= self.whole_tick {
-                    self.state_reserve = false;
-                    self.proc_forward_cmps_by_evt(crnt_, estk, pbp);
-                }
-            }
-        } else if self.max_loop_msr != 0
-            && (crnt_.msr - self.first_msr_num) % self.max_loop_msr == 0
-        {
-            if self.do_loop {
-                // 同じ Loop.Obj を生成する
-                self.new_loop(crnt_, estk, pbp);
-            } else {
-                self.clear_cmp_prm();
-            }
-        }
-    }
-    pub fn rcv_cmp(&mut self, msg: ChordData) {
-        self.do_loop = msg.do_loop;
-        if msg.evts.is_empty() && msg.whole_tick == 0 {
-            self.new_data_stock = ChordData::empty();
-        } else {
-            self.new_data_stock = msg;
-        }
-        self.state_reserve = true;
-        //self.whole_tick_stock = msg.whole_tick;
-    }
-    pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
-        self.loop_cmps.clone() // 重いclone()?
-    }
-    pub fn gen_chord_name(&self) -> String {
-        if let Some(cmps) = &self.loop_cmps {
-            let num = cmps.borrow().get_vari_num();
-            let num_str = if num == 0 {
-                "".to_string()
-            } else {
-                "@".to_string() + cmps.borrow().get_vari_num().to_string().as_str()
-            };
-            cmps.borrow().get_chord_name() + &num_str
-        } else {
-            String::from("")
-        }
-    }
-    fn clear_cmp_prm(&mut self) {
-        self.first_msr_num = 0;
-        self.max_loop_msr = 0;
-        self.whole_tick = 0;
-        self.loop_cmps = None;
-        self.do_loop = true;
-    }
-    fn new_loop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        // 新たに Loop Obj.を生成
-        if !self.new_data_stock.evts.is_empty() {
-            #[cfg(feature = "verbose")]
-            println!("New Composition Loop! M:{:?},T:{:?}", crnt_.msr, crnt_.tick);
-            self.first_msr_num = crnt_.msr; // 計測開始の更新
-            self.whole_tick = self.new_data_stock.whole_tick as i32;
-
-            // その時の beat 情報で、whole_tick を loop_measure に換算
-            let plus_one = if self.whole_tick % crnt_.tick_for_onemsr == 0 {
-                0
-            } else {
-                1
-            };
-            self.max_loop_msr = self.whole_tick / crnt_.tick_for_onemsr + plus_one;
-
-            if self.whole_tick == 0 {
-                self.state_reserve = true; // 次小節冒頭で呼ばれるように
-                self.loop_cmps = None;
-                return;
-            }
-
-            self.loop_id += 1;
-            let cmplp = CompositionLoop::new(
-                self.loop_id,
-                pbp.part_num,
-                pbp.keynote,
-                crnt_.msr,
-                self.new_data_stock.evts.to_vec(),
-                self.whole_tick,
-            );
-            self.loop_cmps = Some(Rc::clone(&cmplp));
-            estk.add_elapse(cmplp);
-        } else {
-            // 新しい Composition が空のとき
-            self.max_loop_msr = 0;
-            self.whole_tick = 0;
-            self.state_reserve = true;
-            self.loop_cmps = None;
-        }
-    }
-    fn proc_forward_cmps_by_evt(
-        &mut self,
-        crnt_: &CrntMsrTick,
-        estk: &mut ElapseStack,
-        pbp: PartBasicPrm,
-    ) {
-        // delete current loop
-        if let Some(cmps) = self.loop_cmps.as_mut() {
-            cmps.borrow_mut().set_destroy();
-        }
-
-        // その時の beat 情報で、whole_tick を loop_measure に換算
-        self.whole_tick = self.new_data_stock.whole_tick as i32;
-        let tick_for_onemsr = crnt_.tick_for_onemsr;
-        let plus_one = if self.whole_tick % tick_for_onemsr == 0 {
-            0
-        } else {
-            1
-        };
-        self.max_loop_msr = self.whole_tick / tick_for_onemsr + plus_one;
-
-        // Composition の新規生成
-        self.loop_id += 1;
-
-        let lp = CompositionLoop::new(
-            self.loop_id,
-            pbp.part_num,
-            pbp.keynote,
-            self.first_msr_num,
-            self.new_data_stock.evts.to_vec(),
-            self.whole_tick,
-        );
-
-        // Composition の更新
-        self.loop_cmps = Some(Rc::clone(&lp));
-        estk.add_elapse(lp);
-        #[cfg(feature = "verbose")]
-        println!(
-            "Replace Composition Loop! --whole tick: {}",
-            self.whole_tick
-        );
-
-        // 新しい Phrase を早送りする
-        if let Some(cmps) = self.loop_cmps.as_mut() {
-            let elapsed_msr = crnt_.msr - self.first_msr_num;
-            cmps.borrow_mut().set_forward(crnt_, elapsed_msr);
-        }
-    }
-}
-//*******************************************************************
 //          Part Struct
 //*******************************************************************
 pub struct Part {
@@ -632,7 +435,7 @@ pub struct Part {
     next_msr: i32,
     next_tick: i32,
     pm: PhrLoopManager,
-    cm: CmpsLoopManager,
+    cm: CmpsLoopMediator,
     flow: Option<Rc<RefCell<Flow>>>,
     sync_next_msr_flag: bool,
     start_flag: bool,
@@ -652,7 +455,7 @@ impl Part {
             next_msr: 0,
             next_tick: 0,
             pm: PhrLoopManager::new(),
-            cm: CmpsLoopManager::new(),
+            cm: CmpsLoopMediator::new(num),
             flow,
             sync_next_msr_flag: false,
             start_flag: false,
@@ -671,14 +474,18 @@ impl Part {
     pub fn del_phr(&mut self) {
         self.pm.del_phr();
     }
-    pub fn rcv_cmps_msg(&mut self, msg: ChordData) {
-        self.cm.rcv_cmp(msg);
+    pub fn rcv_cmps_msg(&mut self, msg: ChordData, (msr, tick): (i32, i32)) {
+        self.cm.rcv_cmp(msg, msr, tick);
     }
+    /// CmpsLoopMediator を取得する
+    pub fn get_cmps_med(&self) -> Option<Rc<RefCell<CmpsLoopMediator>>> {
+        Some(Rc::new(RefCell::new(self.cm.clone())))
+    }
+    //pub fn get_cmps(&self) -> Option<Box<UnfoldedComposition>> {
+    //    self.cm.get_cmps()
+    //}
     pub fn get_phr(&self) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.pm.get_phr()
-    }
-    pub fn get_cmps(&self) -> Option<Rc<RefCell<CompositionLoop>>> {
-        self.cm.get_cmps()
     }
     pub fn get_flow(&self) -> Option<Rc<RefCell<Flow>>> {
         self.flow.clone()
@@ -692,7 +499,7 @@ impl Part {
         self.cm.state_reserve = true;
         self.sync_next_msr_flag = true;
     }
-    pub fn gen_part_indicator(&self, crnt_: &CrntMsrTick) -> PartUi {
+    pub fn gen_part_indicator(&self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> PartUi {
         let mut exist = true;
         let mut flow = false;
         let mut chord_name = "".to_string();
@@ -704,9 +511,13 @@ impl Part {
             } else {
                 exist = false;
             }
-            chord_name = self.cm.gen_chord_name();
+            if let Some(cmp_med) = self.get_cmps_med() {
+                chord_name = cmp_med.borrow().get_chord_name(crnt_, estk);
+            }
         } else if self.flow.is_some() && self.during_play {
-            chord_name = self.cm.gen_chord_name().to_string();
+            if let Some(cmp_med) = self.get_cmps_med() {
+                chord_name = cmp_med.borrow().get_chord_name(crnt_, estk).to_string();
+            }
             flow = true;
         } else {
             exist = false;
@@ -731,13 +542,13 @@ impl Part {
             fl.borrow_mut().rcv_midi(estk_, crnt_, status, locate, vel);
         }
     }
-    /// Composition Loop から、次の小説の Phrase Variation を指定する
+    /// Composition Loop から、次の小節の Phrase Variation を指定する
     pub fn set_phrase_vari(&mut self, vari_num: usize) {
         self.pm.reserve_vari(vari_num);
     }
-    pub fn set_loop_end(&mut self) {
-        // nothing to do
-    }
+    //    pub fn set_loop_end(&self) {
+    //        // nothing to do
+    //    }
 }
 impl Elapse for Part {
     /// id を得る
@@ -768,7 +579,7 @@ impl Elapse for Part {
     /// 再生データを消去
     fn clear(&mut self, _estk: &mut ElapseStack) {
         self.pm = PhrLoopManager::new();
-        self.cm = CmpsLoopManager::new();
+        self.cm = CmpsLoopMediator::new(self.id.sid);
     }
     /// 再生 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
@@ -779,8 +590,8 @@ impl Elapse for Part {
         };
         if self.start_flag {
             // Start 直後
-            self.cm.process(crnt_, estk, pbp);
-            self.pm.process(crnt_, estk, pbp);
+            self.cm.msrtop(crnt_, estk, pbp);
+            self.pm.msrtop(crnt_, estk, pbp);
             self.start_flag = false;
             // 小節最後の tick をセット
             self.next_tick = crnt_.tick_for_onemsr - 1;
@@ -791,20 +602,20 @@ impl Elapse for Part {
                 tick: 0,
                 tick_for_onemsr: crnt_.tick_for_onemsr,
             };
-            self.cm.process(&cm_crnt, estk, pbp);
+            self.cm.msrtop(&cm_crnt, estk, pbp);
             // 次の小節の頭をセット
             self.next_msr += 1;
             self.next_tick = 0;
         } else {
             // 小節先頭
-            self.pm.process(crnt_, estk, pbp);
+            self.pm.msrtop(crnt_, estk, pbp);
             self.sync_next_msr_flag = false;
             // 小節最後の tick をセット
             self.next_tick = crnt_.tick_for_onemsr - 1;
         }
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
-    /// 自クラスが役割を終えた時に True を返す
+    /// 静的に存在するので、destroy はしない
     fn destroy_me(&self) -> bool {
         false
     }

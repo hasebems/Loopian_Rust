@@ -185,7 +185,7 @@ pub const UPPER: i16 = 1000;
 pub struct ChordEvt {
     pub mtype: i16, // message type
     pub tick: i16,
-    pub root: i16, // root note / TYPE_VARI: vari number
+    pub root: i16, // TYPE_CHORD: root note / TYPE_VARI: vari number
     pub tbl: i16,
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]

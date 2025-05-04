@@ -146,7 +146,13 @@ impl PhraseLoop {
                         self.same_note_msr = msr;
                         self.same_note_tick = tick;
                     }
-                    self.note_event(estk, trace, phr[trace].clone(), next_tick, msr, tick);
+                    self.note_event(
+                        estk,
+                        crnt_,
+                        trace,
+                        phr[trace].clone(),
+                        (next_tick, msr, tick),
+                    );
                 } else if tp == TYPE_CLS || tp == TYPE_ARP {
                     let mut ptn = self.phrase[trace].clone();
                     while ptn.tick >= crnt_.tick_for_onemsr as i16 {
@@ -176,23 +182,24 @@ impl PhraseLoop {
     fn note_event(
         &mut self,
         estk: &mut ElapseStack,
+        crnt_: &CrntMsrTick,
         trace: usize,
         ev: PhrEvt,
-        next_tick: i32,
-        msr: i32,
-        tick: i32,
+        tk: (i32, i32, i32), // (next_tick, msr, tick)
     ) {
         // ev: ['note', tick, duration, note, velocity]
         let mut crnt_ev = ev.clone();
         let mut deb_txt: String = "no chord".to_string();
         let (mut rt, mut ctbl) = (NO_ROOT, NO_TABLE);
-        if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
-            (rt, ctbl) = cmps.borrow().get_chord();
+        if let Some(pt) = estk.part(self.id.pid) {
+            if let Some(cmp_med) = pt.borrow().get_cmps_med() {
+                (rt, ctbl) = cmp_med.borrow().get_chord(crnt_);
+            }
         }
 
         //  Note Translation
         if rt != NO_ROOT || ctbl != NO_TABLE {
-            (crnt_ev.note, deb_txt) = self.translate_note(rt, ctbl, ev, next_tick);
+            (crnt_ev.note, deb_txt) = self.translate_note(rt, ctbl, ev, tk.0);
         }
 
         //  同タイミング重複音を鳴らさない
@@ -219,8 +226,8 @@ impl PhraseLoop {
                 &crnt_ev,
                 self.keynote,
                 deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
-                msr,
-                tick,
+                tk.1,
+                tk.2,
                 self.id.pid,
             ),
         );

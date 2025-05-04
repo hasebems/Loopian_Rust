@@ -16,7 +16,6 @@ use std::vec::Vec;
 use super::elapse_base::*;
 use super::elapse_damper::DamperPart;
 use super::elapse_flow::Flow;
-use super::elapse_loop_cmp::CompositionLoop;
 use super::elapse_loop_phr::PhraseLoop;
 use super::elapse_part::Part;
 use super::tickgen::{CrntMsrTick, RitType, TickGen};
@@ -138,8 +137,12 @@ impl ElapseStack {
             self.elapse_vec.remove(remove_index);
         }
     }
-    pub fn _get_part(&mut self, id: ElapseId) -> Option<Rc<RefCell<Part>>> {
-        if let Some(index) = self.part_vec.iter().position(|x| x.borrow().id() == id) {
+    pub fn part(&mut self, part_num: u32) -> Option<Rc<RefCell<Part>>> {
+        if let Some(index) = self
+            .part_vec
+            .iter()
+            .position(|x| x.borrow().id().sid == part_num)
+        {
             let part = Rc::clone(&self.part_vec[index]);
             Some(part)
         } else {
@@ -148,9 +151,6 @@ impl ElapseStack {
     }
     pub fn get_phr(&self, part_num: usize) -> Option<Rc<RefCell<PhraseLoop>>> {
         self.part_vec[part_num].borrow().get_phr()
-    }
-    pub fn get_cmps(&self, part_num: usize) -> Option<Rc<RefCell<CompositionLoop>>> {
-        self.part_vec[part_num].borrow().get_cmps()
     }
     pub fn get_flow(&self) -> Option<Rc<RefCell<Flow>>> {
         self.part_vec[FLOW_PART].borrow().get_flow()
@@ -176,14 +176,14 @@ impl ElapseStack {
             Ordering::Less => SameKeyState::Nothing,
         }
     }
-    pub fn set_phrase_vari(&self, part_num: usize, vari_num: usize) {
-        self.part_vec[part_num]
-            .borrow_mut()
-            .set_phrase_vari(vari_num);
-    }
-    pub fn set_loop_end(&self, part_num: usize) {
-        self.part_vec[part_num].borrow_mut().set_loop_end();
-    }
+    //    pub fn set_phrase_vari(&self, part_num: usize, vari_num: usize) {
+    //        self.part_vec[part_num]
+    //            .borrow_mut()
+    //            .set_phrase_vari(vari_num);
+    //    }
+    //    pub fn set_loop_end(&self, part_num: usize) {
+    //        self.part_vec[part_num].borrow_mut().set_loop_end();
+    //    }
     pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
         self.mdx.midi_out(status, data1, data2, true);
     }
@@ -527,7 +527,7 @@ impl ElapseStack {
         println!("Received Composition Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
-            .rcv_cmps_msg(evts);
+            .rcv_cmps_msg(evts, self.tg().get_beat_tick());
     }
     #[allow(dead_code)]
     fn del_phrase(&mut self, part_num: i16) {
@@ -538,7 +538,7 @@ impl ElapseStack {
         println!("Deleted Composition Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
-            .rcv_cmps_msg(ChordData::empty());
+            .rcv_cmps_msg(ChordData::empty(), self.tg().get_beat_tick());
     }
     //*******************************************************************
     //      Pick out playable
@@ -641,7 +641,8 @@ impl ElapseStack {
             // part
             let crnt_ = self.tg.get_crnt_msr_tick();
             for i in 0..MAX_KBD_PART {
-                let part_ui = self.part_vec[i].borrow().gen_part_indicator(&crnt_);
+                let part = Rc::clone(&self.part_vec[i]);
+                let part_ui = part.borrow().gen_part_indicator(&crnt_, self);
                 self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
             }
             self.flac = (t % 10) as u64;

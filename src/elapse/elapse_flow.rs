@@ -111,7 +111,7 @@ impl Flow {
             if self.translation_tbl != NO_TABLE {
                 if status & 0xf0 == 0x90 {
                     if vel != 0 {
-                        self.flow_note_on(estk_, locate, vel);
+                        self.flow_note_on(estk_, crnt_, locate, vel);
                     } else {
                         self.flow_note_off(estk_, locate);
                     }
@@ -141,7 +141,7 @@ impl Flow {
     ///  on なら、まずノート変換し、同じ音が現在鳴っていなければ発音
     ///  鳴っていれば、位置を新しいイベントのものに差し替え
     ///  off なら、この音を鳴らしたイベントを locate から探し、その音を消す
-    fn convert_evt(&mut self, estk: &mut ElapseStack) {
+    fn convert_evt(&mut self, estk: &mut ElapseStack, crnt_: &CrntMsrTick) {
         while let Some(ev) = self.raw_ev.pop() {
             let _ = ev.0; // warning 対策
             let ch_status = ev.2 & 0xf0;
@@ -156,7 +156,7 @@ impl Flow {
                     break;
                 }
                 self.raw_state[locate_idx] = ev.1;
-                self.flow_note_on(estk, ev.3, ev.4);
+                self.flow_note_on(estk, crnt_, ev.3, ev.4);
             } else if ch_status == 0x80 || (ch_status == 0x90 && ev.4 == 0x00) {
                 // off
                 self.raw_state[locate_idx] = NO_DATA;
@@ -165,8 +165,8 @@ impl Flow {
         }
         self.next_msr = FULL; // process() は呼ばれないようになる
     }
-    fn flow_note_on(&mut self, estk: &mut ElapseStack, locate: u8, vel: u8) {
-        let rnote = self.detect_real_note(estk, locate as i16);
+    fn flow_note_on(&mut self, estk: &mut ElapseStack, crnt_: &CrntMsrTick, locate: u8, vel: u8) {
+        let rnote = self.detect_real_note(estk, crnt_, locate as i16);
         if let Some(idx) = self.same_note_index(rnote) {
             self.gen_stock[idx].2 = locate; // locate 差し替え
         } else {
@@ -189,7 +189,7 @@ impl Flow {
             self.gen_stock.remove(idx);
         }
     }
-    fn detect_real_note(&mut self, estk: &mut ElapseStack, locate: i16) -> u8 {
+    fn detect_real_note(&mut self, estk: &mut ElapseStack, crnt_: &CrntMsrTick, locate: i16) -> u8 {
         let mut temp_note = (locate * 12) / 16;
         //if self.id.pid / 2 == 0 {
         //    temp_note += 24
@@ -201,10 +201,12 @@ impl Flow {
         }
         let mut real_note: u8 = temp_note as u8;
         if self.during_play {
-            if let Some(cmps) = estk.get_cmps(self.id.pid as usize) {
-                let (rt, ctbl) = cmps.borrow().get_chord();
-                let root: i16 = ROOT2NTNUM[rt as usize];
-                real_note = translate_note_com(root, ctbl, temp_note) as u8;
+            if let Some(pt) = estk.part(self.id.pid as u32) {
+                if let Some(cmp_med) = pt.borrow().get_cmps_med() {
+                    let (rt, ctbl) = cmp_med.borrow().get_chord(crnt_);
+                    let root: i16 = ROOT2NTNUM[rt as usize];
+                    real_note = translate_note_com(root, ctbl, temp_note) as u8;
+                }
             }
         } else {
             let root: i16 = ROOT2NTNUM[self.root as usize];
@@ -266,7 +268,7 @@ impl Elapse for Flow {
             && crnt_.tick / TICK_RESOLUTION == self.next_tick / TICK_RESOLUTION)
             || (crnt_.msr == self.next_msr + 1)
         {
-            self.convert_evt(estk);
+            self.convert_evt(estk, crnt_);
         }
         self.old_msr_tick = *crnt_;
     }

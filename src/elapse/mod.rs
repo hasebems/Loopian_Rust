@@ -1,7 +1,7 @@
 pub mod elapse_base;
 pub mod elapse_damper;
 pub mod elapse_flow;
-pub mod elapse_loop_cmp;
+//pub mod elapse_loop_cmp;
 pub mod elapse_loop_phr;
 pub mod elapse_note;
 pub mod elapse_part;
@@ -9,3 +9,4 @@ pub mod elapse_pattern;
 pub mod note_translation;
 pub mod stack_elapse;
 pub mod tickgen;
+pub mod unfold_cmp;

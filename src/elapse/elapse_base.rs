@@ -9,8 +9,7 @@ use super::tickgen::CrntMsrTick;
 // Timing Priority(pri) 数値が小さいほど優先度が高い（同じtickなら先に再生される）
 pub const _PRI_NONE: u32 = 1000;
 pub const PRI_PART: u32 = 100;
-pub const PRI_CMPS_LOOP: u32 = 200;
-pub const PRI_FLOW: u32 = 250;
+pub const PRI_FLOW: u32 = 200;
 pub const PRI_PHR_LOOP: u32 = 300;
 pub const PRI_DYNPTN: u32 = 350;
 pub const PRI_NOTE: u32 = 400;
@@ -22,7 +21,6 @@ pub enum ElapseType {
     TpPart,
     TpDamperPart,
     TpPhraseLoop,
-    TpCompositionLoop,
     TpDynamicPattern,
     TpNote,
     TpFlow,
