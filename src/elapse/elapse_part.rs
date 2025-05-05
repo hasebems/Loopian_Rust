@@ -588,7 +588,8 @@ impl Elapse for Part {
             self.pm.msrtop(crnt_, estk, pbp);
             self.start_flag = false;
             // 小節最後の tick をセット
-            self.next_tick = crnt_.tick_for_onemsr - 1;
+            self.next_msr += 1;
+            self.next_tick = 0;
         } else {
             // 小節先頭
             self.cm.msrtop(crnt_, estk, pbp);

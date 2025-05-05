@@ -192,9 +192,9 @@ impl ElapseStack {
     }
     pub fn midi_out_ext(&mut self, status: u8, data1: u8, data2: u8) {
         // DIN MIDI OUT
-        //self.mdx.midi_out_only_for_another(status, data1, data2);
+        self.mdx.midi_out_only_for_another(status, data1, data2);
         // IAC MIDI OUT
-        self.mdx.midi_out(status, data1, data2, true);
+        //self.mdx.midi_out(status, data1, data2, true);
     }
     //*******************************************************************
     //      Periodic
@@ -210,8 +210,10 @@ impl ElapseStack {
 
         //  新tick計算
         let mut crnt_ = CrntMsrTick::default();
+        let mut beattop_flag = false;
         if self.during_play {
             let (msrtop, beattop, beatnum) = self.tg.gen_tick(self.crnt_time);
+            beattop_flag = beattop;
             crnt_ = self.tg.get_crnt_msr_tick();
             if msrtop {
                 if self.fine_stock {
@@ -223,7 +225,6 @@ impl ElapseStack {
             }
             if beattop {
                 self.send_msg_to_ui(UiMsg::NewBeat(beatnum));
-                self.midi_chord_out(&crnt_);
             }
         };
 
@@ -250,6 +251,12 @@ impl ElapseStack {
                 debcnt += 1;
                 assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
             }
+
+            if beattop_flag {
+                // Flow Part の和音を MIDI OUT する
+                self.midi_chord_out(&crnt_); // process の後でコールしないとハングする
+            }
+
             if self.limit_for_deb < debcnt {
                 self.limit_for_deb = debcnt;
             }

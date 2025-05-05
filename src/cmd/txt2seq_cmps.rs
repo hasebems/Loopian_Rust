@@ -138,8 +138,6 @@ pub fn get_root_name(idx_num: usize) -> &'static str {
 }
 pub fn get_table(idx_num: usize) -> (&'static [i16], bool) {
     let mut idx = idx_num;
-    #[cfg(feature = "verbose")]
-    println!(">>> Chord Table index: {}", idx_num);
     let mut upper = false;
     if idx > UPPER as usize {
         idx -= UPPER as usize;

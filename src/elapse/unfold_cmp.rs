@@ -9,7 +9,7 @@ use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_cmps::*;
 use crate::lpnlib::*;
 
-// - Meter が変更されたとき、拍数が増えるとエラー
+// - Meter が変更されたとき、拍数が増えると elapse_damper でエラー
 //*******************************************************************
 //          Composition Loop Struct
 //*******************************************************************
@@ -23,17 +23,12 @@ pub struct UnfoldedComposition {
     root_for_ui: i16,
     tbl_for_ui: i16,
     vari_num: i16,
-    //whole_tick: i32,
+    whole_tick: i32,
     max_msr: usize,
     max_beat: usize,
 }
 impl UnfoldedComposition {
-    pub fn new(
-        evts: Vec<ChordEvt>,
-        whole_tick: i32,
-        max_msr: usize,
-        max_beat: usize,
-    ) -> Self {
+    pub fn new(evts: Vec<ChordEvt>, whole_tick: i32, max_msr: usize, max_beat: usize) -> Self {
         let cmps_map = Self::unfold_cmp_evt(evts, max_msr, max_beat, whole_tick);
         Self {
             cmps_map,
@@ -42,7 +37,7 @@ impl UnfoldedComposition {
             root_for_ui: NO_ROOT,
             tbl_for_ui: NO_TABLE,
             vari_num: 0,
-            //whole_tick,
+            whole_tick,
             max_msr,
             max_beat,
         }
@@ -96,9 +91,9 @@ impl UnfoldedComposition {
     pub fn set_first_msr_num(&mut self, first_msr_num: i32) {
         self.first_msr_num = first_msr_num;
     }
-    //pub fn whole_tick(&self) -> i32 {
-    //    self.whole_tick
-    //}
+    pub fn whole_tick(&self) -> i32 {
+        self.whole_tick
+    }
     fn check_msr_beat(msr: isize, beat: isize) -> (isize, isize) {
         if !(0..=100).contains(&msr) || !(0..=20).contains(&beat) {
             // ありえない値
@@ -171,7 +166,7 @@ impl UnfoldedComposition {
                 break;
             }
         }
-        println!("$$$Chord Data -> root:{}, tbl:{}", root, tbl);
+        //println!("$$$Chord Data -> root:{}, tbl:{}", root, tbl);
         (root, tbl)
     }
     /// 表示用に定期的に呼ばれ、root と tbl を更新する
@@ -238,14 +233,11 @@ impl UnfoldedComposition {
 pub struct CmpsLoopMediator {
     pub state_reserve: bool,
     first_msr_num: i32,
-    whole_tick: i32,
     loop_id: u32, // loop sid
     cmps: Option<Box<UnfoldedComposition>>,
     do_loop: bool,
     max_msr: i32,
     max_beat: i32,
-
-    next_whole_tick: i32,
     next_cmps: Option<Box<UnfoldedComposition>>,
 }
 impl CmpsLoopMediator {
@@ -253,13 +245,11 @@ impl CmpsLoopMediator {
         Self {
             state_reserve: false,
             first_msr_num: 0,
-            whole_tick: 0,
             loop_id: 0,
             cmps: None,
             do_loop: true,
             max_msr: 0,
             max_beat: 0,
-            next_whole_tick: 0,
             next_cmps: None,
         }
     }
@@ -290,7 +280,17 @@ impl CmpsLoopMediator {
                 // 現在の Loop Obj が終了していない時
                 // 現在の Phrase より新しい Phrase の whole_tick が大きい場合、
                 // 新しい Phrase に更新する
-                if self.next_whole_tick >= self.whole_tick {
+                let next_whole_tick = if let Some(ref nxcmps) = self.next_cmps {
+                    nxcmps.whole_tick()
+                } else {
+                    0
+                };
+                let whole_tick = if let Some(ref cmp) = self.cmps {
+                    cmp.whole_tick()
+                } else {
+                    0
+                };
+                if next_whole_tick >= whole_tick {
                     self.state_reserve = false;
                     self.proc_forward_cmps_by_evt(estk);
                 }
@@ -326,29 +326,27 @@ impl CmpsLoopMediator {
         );
         self.do_loop = msg.do_loop;
         self.state_reserve = true;
-        self.next_whole_tick = msg.whole_tick as i32;
     }
     fn clear_cmp_prm(&mut self) {
         self.first_msr_num = 0;
         self.max_msr = 0;
         self.max_beat = 0;
-        self.whole_tick = 0;
         self.cmps = None;
         self.next_cmps = None;
         self.do_loop = true;
     }
     /// 新たに Loop Obj.を生成
     fn new_loop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        if self.next_cmps.is_some() {
+        if let Some(ref nxcmps) = self.next_cmps {
             #[cfg(feature = "verbose")]
             println!("New Composition Loop! M:{:?},T:{:?}", crnt_.msr, crnt_.tick);
             self.first_msr_num = crnt_.msr; // 計測開始の更新
-            self.whole_tick = self.next_whole_tick;
+            let whole_tick = nxcmps.whole_tick();
             let (tick_for_onemsr, tick_for_beat) = estk.tg().get_beat_tick();
             (self.max_msr, self.max_beat) =
-                self.calc_msr_beat(self.whole_tick, tick_for_onemsr, tick_for_beat);
+                self.calc_msr_beat(whole_tick, tick_for_onemsr, tick_for_beat);
 
-            if self.whole_tick == 0 {
+            if whole_tick == 0 {
                 self.state_reserve = true; // 次小節冒頭で呼ばれるように
                 self.cmps = None;
             } else {
@@ -375,10 +373,14 @@ impl CmpsLoopMediator {
     /// 新しい Phrase を早送りして更新する
     fn proc_forward_cmps_by_evt(&mut self, estk: &mut ElapseStack) {
         // その時の beat 情報で、whole_tick を loop_measure に換算
-        self.whole_tick = self.next_whole_tick;
+        let whole_tick = if let Some(ref nxcmps) = self.next_cmps {
+            nxcmps.whole_tick()
+        } else {
+            0
+        };
         let (tick_for_onemsr, tick_for_beat) = estk.tg().get_beat_tick();
         (self.max_msr, self.max_beat) =
-            self.calc_msr_beat(self.whole_tick, tick_for_onemsr, tick_for_beat);
+            self.calc_msr_beat(whole_tick, tick_for_onemsr, tick_for_beat);
 
         // Composition の更新
         self.loop_id += 1;
@@ -391,10 +393,7 @@ impl CmpsLoopMediator {
             cmp.set_first_msr_num(fmsrnum);
         }
         #[cfg(feature = "verbose")]
-        println!(
-            "Replace Composition Loop! --whole tick: {}",
-            self.whole_tick
-        );
+        println!("Replace Composition Loop! --whole tick: {}", whole_tick);
     }
     fn calc_msr_beat(
         &mut self,
@@ -409,13 +408,15 @@ impl CmpsLoopMediator {
             1
         };
         (
-            self.whole_tick / tick_for_onemsr + plus_one,
+            whole_tick / tick_for_onemsr + plus_one,
             tick_for_onemsr / tick_for_beat,
         )
     }
 
     /// 一度 Mediator（仲介者）を通してから、UnfoldedComposition のサービスを利用する
-    /// Not Yet: cmps か cmps_next のどちらかを選択する
+    /// Not Yet:
+    /// いずれ、未来の小節の情報を取得できるようにする
+    /// cmps（現在）か cmps_next（未来）のどちらかを選択する
     pub fn get_chord_map(&self, crnt_: &CrntMsrTick) -> Vec<bool> {
         if let Some(ref cmp) = self.cmps {
             cmp.gen_chord_map(crnt_.msr)
@@ -433,7 +434,7 @@ impl CmpsLoopMediator {
             let (msr, beat) = cmp.loop_msr_beat(crnt_);
             cmp.scan_chord(msr as usize, beat as usize)
         } else {
-            (0, NO_PED_TBL_NUM as i16)
+            (NO_ROOT, NO_PED_TBL_NUM as i16)
         }
     }
     pub fn get_chord_name(&mut self, crnt_: &CrntMsrTick) -> String {
