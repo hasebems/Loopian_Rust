@@ -192,9 +192,9 @@ impl PhraseLoop {
         let mut deb_txt: String = "no chord".to_string();
         let (mut rt, mut ctbl) = (NO_ROOT, NO_TABLE);
         if let Some(pt) = estk.part(self.id.pid) {
-            if let Some(cmp_med) = pt.borrow().get_cmps_med() {
-                (rt, ctbl) = cmp_med.borrow().get_chord(crnt_);
-            }
+            let mut pt_borrowed = pt.borrow_mut();
+            let cmp_med = pt_borrowed.get_cmps_med();
+            (rt, ctbl) = cmp_med.get_chord(crnt_);
         }
 
         //  Note Translation

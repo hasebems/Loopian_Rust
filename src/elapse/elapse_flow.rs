@@ -95,6 +95,9 @@ impl Flow {
     pub fn set_keynote(&mut self, keynote: u8) {
         self.keynote = keynote;
     }
+    pub fn get_keynote(&self) -> u8 {
+        self.keynote
+    }
     pub fn rcv_midi(
         &mut self,
         estk_: &mut ElapseStack,
@@ -201,12 +204,12 @@ impl Flow {
         }
         let mut real_note: u8 = temp_note as u8;
         if self.during_play {
-            if let Some(pt) = estk.part(self.id.pid as u32) {
-                if let Some(cmp_med) = pt.borrow().get_cmps_med() {
-                    let (rt, ctbl) = cmp_med.borrow().get_chord(crnt_);
-                    let root: i16 = ROOT2NTNUM[rt as usize];
-                    real_note = translate_note_com(root, ctbl, temp_note) as u8;
-                }
+            if let Some(pt) = estk.part(self.id.pid) {
+                let mut pt_borrowed = pt.borrow_mut();
+                let cmp_med = pt_borrowed.get_cmps_med();
+                let (rt, ctbl) = cmp_med.get_chord(crnt_);
+                let root: i16 = ROOT2NTNUM[rt as usize];
+                real_note = translate_note_com(root, ctbl, temp_note) as u8;
             }
         } else {
             let root: i16 = ROOT2NTNUM[self.root as usize];

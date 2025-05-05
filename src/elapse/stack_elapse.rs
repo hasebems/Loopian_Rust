@@ -191,7 +191,10 @@ impl ElapseStack {
         self.mdx.midi_out(status, data1, data2, false);
     }
     pub fn midi_out_ext(&mut self, status: u8, data1: u8, data2: u8) {
-        self.mdx.midi_out_only_for_another(status, data1, data2);
+        // DIN MIDI OUT
+        //self.mdx.midi_out_only_for_another(status, data1, data2);
+        // IAC MIDI OUT
+        self.mdx.midi_out(status, data1, data2, true);
     }
     //*******************************************************************
     //      Periodic
@@ -220,6 +223,7 @@ impl ElapseStack {
             }
             if beattop {
                 self.send_msg_to_ui(UiMsg::NewBeat(beatnum));
+                self.midi_chord_out(&crnt_);
             }
         };
 
@@ -336,6 +340,19 @@ impl ElapseStack {
         } else if msg == MSG_CTRL_MIDI_RECONNECT {
             self.reconnect();
         }
+    }
+    fn midi_chord_out(&mut self, crnt_: &CrntMsrTick) {
+        // Flow Part の和音を MIDI OUT する
+        let mut keynote = 0;
+        if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+            keynote = fl.borrow().get_keynote();
+        }
+        let pt = self.part_vec[FLOW_PART].clone();
+        let mut pt_borrow = pt.borrow_mut();
+        let cmp_med = pt_borrow.get_cmps_med();
+        let (root, tbl) = cmp_med.get_chord(crnt_);
+        self.midi_out_ext(0xa0, 0x7f, keynote);
+        self.midi_out_ext(0xa0, root as u8, tbl as u8);
     }
     fn send_msg_to_ui(&self, msg: UiMsg) {
         if let Err(e) = self.ui_hndr.send(msg) {
@@ -642,7 +659,7 @@ impl ElapseStack {
             let crnt_ = self.tg.get_crnt_msr_tick();
             for i in 0..MAX_KBD_PART {
                 let part = Rc::clone(&self.part_vec[i]);
-                let part_ui = part.borrow().gen_part_indicator(&crnt_, self);
+                let part_ui = part.borrow_mut().gen_part_indicator(&crnt_);
                 self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
             }
             self.flac = (t % 10) as u64;

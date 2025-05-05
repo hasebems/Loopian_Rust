@@ -136,11 +136,11 @@ impl DamperPart {
         mut chord_map: Vec<bool>,
     ) -> Vec<bool> {
         if let Some(pt) = estk.part(part_num as u32) {
-            if let Some(cmp_med) = pt.borrow().get_cmps_med() {
-                let ba = cmp_med.borrow().get_chord_map(crnt_);
-                for (i, x) in chord_map.iter_mut().enumerate() {
-                    *x |= ba[i];
-                }
+            let mut pt_borrowed = pt.borrow_mut();
+            let cmp_med = pt_borrowed.get_cmps_med();
+            let ba = cmp_med.get_chord_map(crnt_);
+            for (i, x) in chord_map.iter_mut().enumerate() {
+                *x |= ba[i];
             }
         }
         chord_map

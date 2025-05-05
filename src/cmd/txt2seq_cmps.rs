@@ -148,12 +148,20 @@ pub fn get_table(idx_num: usize) -> (&'static [i16], bool) {
     assert!(idx < MAX_CHORD_TABLE);
     (CHORD_TABLE[idx].table, upper)
 }
-pub fn get_table_name(mut idx_num: usize) -> &'static str {
-    if idx_num > UPPER as usize {
-        idx_num -= UPPER as usize;
+pub fn get_table_name(idx_num: i16) -> &'static str {
+    if idx_num == NO_TABLE {
+        return "";
     }
-    assert!(idx_num < MAX_CHORD_TABLE);
-    CHORD_TABLE[idx_num].name
+    let idx: usize = if idx_num > UPPER {
+        (idx_num - UPPER) as usize
+    } else {
+        idx_num as usize
+    };
+    if idx >= MAX_CHORD_TABLE {
+        eprintln!("Error: idx_num out of bounds: {}", idx); // idx_num を表示
+        panic!("Assertion failed: idx_num < MAX_CHORD_TABLE");
+    }
+    CHORD_TABLE[idx].name
 }
 pub fn get_table_num(kind: &str) -> i16 {
     let mut table: i16 = (MAX_CHORD_TABLE - 2) as i16;
