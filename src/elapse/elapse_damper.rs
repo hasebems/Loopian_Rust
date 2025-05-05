@@ -109,7 +109,7 @@ impl DamperPart {
 
         let mut chord_map = vec![false; beat_num];
         if let Some(_fl) = estk.get_flow() {
-            chord_map = DamperPart::merge_chord_map(crnt_, estk, FLOW_PART, chord_map);
+            chord_map = DamperPart::merge_chord_map(crnt_, estk, FLOW_PART, chord_map, beat_num);
         }
         for i in 0..MAX_KBD_PART {
             if let Some(phr) = estk.get_phr(i) {
@@ -118,7 +118,7 @@ impl DamperPart {
                     chord_map = vec![false; beat_num];
                     break;
                 } else {
-                    chord_map = DamperPart::merge_chord_map(crnt_, estk, i, chord_map);
+                    chord_map = DamperPart::merge_chord_map(crnt_, estk, i, chord_map, beat_num);
                 }
             } else {
                 continue;
@@ -134,11 +134,17 @@ impl DamperPart {
         estk: &mut ElapseStack,
         part_num: usize,
         mut chord_map: Vec<bool>,
+        beat_num: usize,
     ) -> Vec<bool> {
         if let Some(pt) = estk.part(part_num as u32) {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
-            let ba = cmp_med.get_chord_map(crnt_);
+            let ba = cmp_med.get_chord_map(crnt_, beat_num);
+            if ba.len() != chord_map.len() {
+                // もし長さが違ったら、エラー
+                println!("<<< part{}/beat{}: {}->{}", part_num, beat_num, chord_map.len(), ba.len());
+                panic!("DamperPart::merge_chord_map: length mismatch");
+            }
             for (i, x) in chord_map.iter_mut().enumerate() {
                 *x |= ba[i];
             }

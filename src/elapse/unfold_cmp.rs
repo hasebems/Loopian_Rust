@@ -9,7 +9,6 @@ use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_cmps::*;
 use crate::lpnlib::*;
 
-// - Meter が変更されたとき、拍数が増えると elapse_damper でエラー
 //*******************************************************************
 //          Composition Loop Struct
 //*******************************************************************
@@ -85,6 +84,26 @@ impl UnfoldedComposition {
         }
         cmps_map
     }
+    pub fn reunfold(&mut self, new_beat: i32, whole_tick: i32) {
+        // beat の変更に伴い、cmps_map を再構築する
+        let mut new_cmps_map = vec![vec![Vec::new(); new_beat as usize]; self.max_msr];
+        for (i, msr_map) in new_cmps_map.iter_mut().enumerate() {
+            for (j, beat_map) in msr_map.iter_mut().enumerate() {
+                if j >= self.max_beat {
+                    for evt in &self.cmps_map[i][self.max_beat-1] {
+                        beat_map.push((evt.0.clone(), evt.1));
+                    }
+                } else {
+                    for evt in &self.cmps_map[i][j] {
+                        beat_map.push((evt.0.clone(), evt.1));
+                    }
+                }
+            }
+        }
+        self.cmps_map = new_cmps_map;
+        self.max_beat = new_beat as usize;
+        self.whole_tick = whole_tick;
+    }
     pub fn first_msr_num(&self) -> i32 {
         self.first_msr_num
     }
@@ -107,9 +126,9 @@ impl UnfoldedComposition {
         let msr = (crnt_.msr - self.first_msr_num) as isize;
         Self::check_msr_beat(msr, beat)
     }
-    pub fn gen_chord_map(&self, crnt_msr: i32) -> Vec<bool> {
-        let cmsr = (crnt_msr - self.first_msr_num) as usize;
-        let mut chord_map = vec![false; self.max_beat];
+    pub fn gen_chord_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
+        let cmsr = (crnt_.msr - self.first_msr_num) as usize;
+        let mut chord_map = vec![false; max_beat];
         if self.max_msr > cmsr {
             for (j, chord) in chord_map.iter_mut().enumerate() {
                 for evt in &self.cmps_map[cmsr][j] {
@@ -280,17 +299,7 @@ impl CmpsLoopMediator {
                 // 現在の Loop Obj が終了していない時
                 // 現在の Phrase より新しい Phrase の whole_tick が大きい場合、
                 // 新しい Phrase に更新する
-                let next_whole_tick = if let Some(ref nxcmps) = self.next_cmps {
-                    nxcmps.whole_tick()
-                } else {
-                    0
-                };
-                let whole_tick = if let Some(ref cmp) = self.cmps {
-                    cmp.whole_tick()
-                } else {
-                    0
-                };
-                if next_whole_tick >= whole_tick {
+                if self.next_whole_tick() >= self.whole_tick() {
                     self.state_reserve = false;
                     self.proc_forward_cmps_by_evt(estk);
                 }
@@ -344,7 +353,7 @@ impl CmpsLoopMediator {
             let whole_tick = nxcmps.whole_tick();
             let (tick_for_onemsr, tick_for_beat) = estk.tg().get_beat_tick();
             (self.max_msr, self.max_beat) =
-                self.calc_msr_beat(whole_tick, tick_for_onemsr, tick_for_beat);
+                Self::calc_msr_beat(whole_tick, tick_for_onemsr, tick_for_beat);
 
             if whole_tick == 0 {
                 self.state_reserve = true; // 次小節冒頭で呼ばれるように
@@ -359,8 +368,22 @@ impl CmpsLoopMediator {
         } else {
             // 新しい Composition が空のとき、self.cmps をそのまま再生
             self.first_msr_num = crnt_.msr;
+            let mut max_msr = 0;
+            let mut max_beat = 0;
             if let Some(ref mut cmp) = self.cmps {
                 cmp.set_first_msr_num(self.first_msr_num);
+                max_msr = cmp.max_msr as i32;
+                max_beat = cmp.max_beat as i32;
+            }
+            let (tick_for_onemsr, tick_for_beat) = estk.tg().get_beat_tick();
+            let whole_tick = max_msr * tick_for_onemsr;
+            let (_new_msr, new_beat) =
+                Self::calc_msr_beat(whole_tick, tick_for_onemsr, tick_for_beat);
+            if max_beat != new_beat {
+                // 拍子が変わっていたら、Chord Map を更新する
+                if let Some(ref mut cmp) = self.cmps {
+                    cmp.reunfold(new_beat, whole_tick);
+                }
             }
         }
     }
@@ -380,7 +403,7 @@ impl CmpsLoopMediator {
         };
         let (tick_for_onemsr, tick_for_beat) = estk.tg().get_beat_tick();
         (self.max_msr, self.max_beat) =
-            self.calc_msr_beat(whole_tick, tick_for_onemsr, tick_for_beat);
+            Self::calc_msr_beat(whole_tick, tick_for_onemsr, tick_for_beat);
 
         // Composition の更新
         self.loop_id += 1;
@@ -395,12 +418,7 @@ impl CmpsLoopMediator {
         #[cfg(feature = "verbose")]
         println!("Replace Composition Loop! --whole tick: {}", whole_tick);
     }
-    fn calc_msr_beat(
-        &mut self,
-        whole_tick: i32,
-        tick_for_onemsr: i32,
-        tick_for_beat: i32,
-    ) -> (i32, i32) {
+    fn calc_msr_beat(whole_tick: i32, tick_for_onemsr: i32, tick_for_beat: i32) -> (i32, i32) {
         // その時の beat 情報で、whole_tick を loop_measure に換算
         let plus_one = if whole_tick % tick_for_onemsr == 0 {
             0
@@ -412,21 +430,30 @@ impl CmpsLoopMediator {
             tick_for_onemsr / tick_for_beat,
         )
     }
+    fn next_whole_tick(&self) -> i32 {
+        if let Some(ref nxcmps) = self.next_cmps {
+            nxcmps.whole_tick()
+        } else {
+            0
+        }
+    }
+    fn whole_tick(&self) -> i32 {
+        if let Some(ref cmp) = self.cmps {
+            cmp.whole_tick()
+        } else {
+            0
+        }
+    }
 
     /// 一度 Mediator（仲介者）を通してから、UnfoldedComposition のサービスを利用する
     /// Not Yet:
     /// いずれ、未来の小節の情報を取得できるようにする
     /// cmps（現在）か cmps_next（未来）のどちらかを選択する
-    pub fn get_chord_map(&self, crnt_: &CrntMsrTick) -> Vec<bool> {
+    pub fn get_chord_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
         if let Some(ref cmp) = self.cmps {
-            cmp.gen_chord_map(crnt_.msr)
+            cmp.gen_chord_map(crnt_, max_beat)
         } else {
-            let beat = if self.max_beat == 0 {
-                (crnt_.tick_for_onemsr / DEFAULT_TICK_FOR_QUARTER) as usize
-            } else {
-                self.max_beat as usize
-            };
-            vec![false; beat]
+            vec![false; max_beat]
         }
     }
     pub fn get_chord(&self, crnt_: &CrntMsrTick) -> (i16, i16) {
