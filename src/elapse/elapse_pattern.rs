@@ -116,7 +116,7 @@ impl DynamicPattern {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
             // 和音情報を読み込む
-            let (rt, tbl) = cmp_med.get_chord(crnt_);
+            let (rt, tbl) = cmp_med.get_chord(crnt_, crnt_);
             let root = ROOT2NTNUM[rt as usize];
             if tbl == NO_TABLE {
                 #[cfg(feature = "verbose")]

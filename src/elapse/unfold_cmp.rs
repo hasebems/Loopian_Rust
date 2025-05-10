@@ -456,7 +456,7 @@ impl CmpsLoopMediator {
             vec![false; max_beat]
         }
     }
-    pub fn get_chord(&self, crnt_: &CrntMsrTick) -> (i16, i16) {
+    pub fn get_chord(&self, crnt_: &CrntMsrTick, _future: &CrntMsrTick) -> (i16, i16) {
         if let Some(ref cmp) = self.cmps {
             let (msr, beat) = cmp.loop_msr_beat(crnt_);
             cmp.scan_chord(msr as usize, beat as usize)
