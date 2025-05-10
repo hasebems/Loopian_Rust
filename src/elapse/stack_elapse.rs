@@ -354,10 +354,11 @@ impl ElapseStack {
         if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
             keynote = fl.borrow().get_keynote();
         }
-        let pt = self.part_vec[FLOW_PART].clone();
-        let mut pt_borrow = pt.borrow_mut();
-        let cmp_med = pt_borrow.get_cmps_med();
-        let (root, tbl) = cmp_med.get_chord(crnt_);
+        let (root, tbl) = {
+            let mut pt_borrow = self.part_vec[FLOW_PART].borrow_mut();
+            let cmp_med = pt_borrow.get_cmps_med();
+            cmp_med.get_chord(crnt_)
+        };
         self.midi_out_ext(0xa0, 0x7f, keynote);
         self.midi_out_ext(0xa0, root as u8, tbl as u8);
     }
