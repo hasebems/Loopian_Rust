@@ -132,7 +132,7 @@ impl UnfoldedComposition {
         if self.max_msr > cmsr {
             for (j, chord) in chord_map.iter_mut().enumerate() {
                 for evt in &self.cmps_map[cmsr][j] {
-                    if evt.1 && evt.0.mtype == TYPE_CHORD && evt.0.tbl != NO_PED_TBL_NUM as i16 {
+                    if evt.1 && evt.0.mtype == TYPE_CHORD && evt.0.tbl != NO_PED_TBL_NUM {
                         *chord = true;
                     }
                 }
@@ -157,7 +157,7 @@ impl UnfoldedComposition {
     /// 現在のタイミングに合った Chord の root/table を探す
     pub fn scan_chord(&self, crnt_msr: usize, crnt_beat: usize) -> (i16, i16) {
         let mut root: i16 = 0;
-        let mut tbl: i16 = NO_PED_TBL_NUM as i16;
+        let mut tbl: i16 = NO_PED_TBL_NUM;
         let mut find: bool = false;
         let mut msr = crnt_msr as isize;
         let mut beat = crnt_beat as isize;
@@ -461,7 +461,7 @@ impl CmpsLoopMediator {
             let (msr, beat) = cmp.loop_msr_beat(crnt_);
             cmp.scan_chord(msr as usize, beat as usize)
         } else {
-            (NO_ROOT, NO_PED_TBL_NUM as i16)
+            (NO_ROOT, NO_PED_TBL_NUM)
         }
     }
     pub fn get_chord_name(&mut self, crnt_: &CrntMsrTick) -> String {

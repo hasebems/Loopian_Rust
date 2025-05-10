@@ -86,7 +86,6 @@ const CHORD_TABLE: [ChordTable; 58] = [
 
 pub const NO_LOOP: i16 = (CHORD_TABLE.len() - 1) as i16;
 pub const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
-pub const NO_PED_TBL_NUM: usize = 0; // 'X'
 const THRU: [i16; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const MAJOR: [i16; 3] = [0, 4, 7];
 const MINOR: [i16; 3] = [0, 3, 7];

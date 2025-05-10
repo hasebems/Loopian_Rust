@@ -21,6 +21,7 @@ pub const LAST: i32 = 10000;
 
 pub const NO_ROOT: i16 = 0; // root = 1:Ib,2:I,3:I# ...
 pub const NO_TABLE: i16 = 10000;
+pub const NO_PED_TBL_NUM: i16 = 0; // 'X'
 pub const _CANCEL: i16 = -1;
 pub const NOTHING: i16 = -1;
 
