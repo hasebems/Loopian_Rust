@@ -142,7 +142,13 @@ impl DamperPart {
             let ba = cmp_med.get_chord_map(crnt_, beat_num);
             if ba.len() != chord_map.len() {
                 // もし長さが違ったら、エラー
-                println!("<<< part{}/beat{}: {}->{}", part_num, beat_num, chord_map.len(), ba.len());
+                println!(
+                    "<<< part{}/beat{}: {}->{}",
+                    part_num,
+                    beat_num,
+                    chord_map.len(),
+                    ba.len()
+                );
                 panic!("DamperPart::merge_chord_map: length mismatch");
             }
             for (i, x) in chord_map.iter_mut().enumerate() {

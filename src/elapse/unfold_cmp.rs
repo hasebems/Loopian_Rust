@@ -90,7 +90,7 @@ impl UnfoldedComposition {
         for (i, msr_map) in new_cmps_map.iter_mut().enumerate() {
             for (j, beat_map) in msr_map.iter_mut().enumerate() {
                 if j >= self.max_beat {
-                    for evt in &self.cmps_map[i][self.max_beat-1] {
+                    for evt in &self.cmps_map[i][self.max_beat - 1] {
                         beat_map.push((evt.0.clone(), evt.1));
                     }
                 } else {
