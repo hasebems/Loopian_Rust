@@ -333,6 +333,7 @@ pub enum GraphicMsg {
     BeatLissaPattern(i32),
     SineWavePattern,
     RainEffectPattern,
+    FishPattern,
 }
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum GraphMode {
