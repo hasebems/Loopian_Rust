@@ -247,7 +247,7 @@ pub struct PhraseDataStock {
     raw: String,
     cmpl_nt: Vec<String>,
     cmpl_ex: Vec<String>,
-    phr: Vec<PhrEvt>,
+    phr: Vec<PhrEvtx>,
     ana: Vec<AnaEvt>,
     atrb: Vec<bool>,
     do_loop: bool,
@@ -271,7 +271,7 @@ impl PhraseDataStock {
         // for test
         &self.cmpl_nt
     }
-    pub fn get_phr(&self) -> &Vec<PhrEvt> {
+    pub fn get_phr(&self) -> &Vec<PhrEvtx> {
         &self.phr
     }
     pub fn get_final(&self, part: i16, vari: PhraseAs) -> ElpsMsg {

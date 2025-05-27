@@ -21,7 +21,7 @@ pub fn treat_dp(
     crnt_tick: i32, // 小節内の現在 tick
     rest_tick: i32, // 小節内の残り tick
     exp_vel: i32,   // dynなどを反省した velocity
-) -> (PhrEvt, i32) {
+) -> (PhrEvtx, i32) {
     // Cluster or Arpeggio?
     let mut case_arp = true;
     if text.contains("C") {
@@ -39,51 +39,88 @@ pub fn treat_dp(
     }
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
 
-    let mut ev = PhrEvt::default();
-    let dp_pattern = gen_dp_pattern(&ntext4, case_arp);
-    ev.mtype = dp_pattern[0];
-    ev.tick = crnt_tick as i16;
-    ev.each_dur = dp_pattern[3];
-    ev.note = dp_pattern[1] + base_note as i16;
-    ev.trns = dp_pattern[2];
-    ev.vel = velo_limits(exp_vel + diff_vel, 1);
-    ev.dur = duration as i16;
+    let vel = velo_limits(exp_vel + diff_vel, 1);
+    let ev = gen_dp_pattern(
+        &ntext4,
+        case_arp,
+        base_note as i16,
+        crnt_tick as i16,
+        vel,
+        duration as i16,
+    );
+    //let mut ev = NoteEvt::default();
+    //ev.mtype = dp_pattern[0];
+    //ev.tick = crnt_tick as i16;
+    //ev.each_dur = dp_pattern[3];
+    //ev.note = dp_pattern[1] + base_note as i16;
+    //ev.trns = dp_pattern[2];
+    //ev.vel = velo_limits(exp_vel + diff_vel, 1);
+    //ev.dur = duration as i16;
 
     if bdur_tie != 0 {
         bdur = bdur_tie;
     }
     (ev, bdur)
 }
-fn gen_dp_pattern(nt: &str, case_arp: bool) -> Vec<i16> {
+fn gen_dp_pattern(
+    nt: &str,
+    case_arp: bool,
+    base_note: i16,
+    tick: i16,
+    vel: i16,
+    dur: i16,
+) -> PhrEvtx {
     let params = extract_texts_from_parentheses(nt);
     let param = split_by('@', params.to_string());
     let pnum = param.len();
-    let mut mtype = TYPE_CLS;
-    if case_arp {
-        mtype = TYPE_ARP;
-    }
+    let each_dur = if pnum == 0 {
+        DEFAULT_TICK_FOR_QUARTER as i16
+    } else {
+        calc_dur(&param[0])
+    };
+    let mut lowest = if pnum > 2 {
+        param[2].parse::<i16>().unwrap_or(0)
+    } else {
+        0 // default note
+    } + base_note;
 
-    let mut note = 0;
-    let mut trns = 4;
-    let mut each_dur = DEFAULT_TICK_FOR_QUARTER as i16;
-    if pnum > 0 {
-        each_dur = calc_dur(&param[0]);
-    }
-    if pnum > 1 {
-        if case_arp {
-            trns = arp_pattern(&param[1]);
+    let evt: PhrEvtx = if case_arp {
+        let figure = if pnum > 1 {
+            arp_pattern(&param[1])
         } else {
-            trns = param[1].parse::<i16>().unwrap_or(4);
+            4 // default arp pattern
+        };
+        if (figure % 2) == 1 {
+            lowest += 12; // - note;
         }
-    }
-    if pnum > 2 {
-        note = param[2].parse::<i16>().unwrap_or(0);
-        if case_arp && ((trns % 2) == 1) {
-            note += 12; // - note;
-        }
-    }
-
-    vec![mtype, note, trns, each_dur]
+        PhrEvtx::Pattern(DynPatternEvt {
+            broken: true,
+            tick,
+            vel,
+            dur,
+            lowest,
+            figure,
+            each_dur,
+            ..DynPatternEvt::default()
+        })
+    } else {
+        let max_count = if pnum > 1 {
+            param[1].parse::<i16>().unwrap_or(4)
+        } else {
+            4 // default chord count
+        };
+        PhrEvtx::Pattern(DynPatternEvt {
+            broken: false,
+            tick,
+            vel,
+            dur,
+            lowest,
+            max_count,
+            each_dur,
+            ..DynPatternEvt::default()
+        })
+    };
+    evt
 }
 fn calc_dur(durstr: &str) -> i16 {
     let mut dur = 480;

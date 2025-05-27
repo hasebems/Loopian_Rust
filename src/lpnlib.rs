@@ -65,48 +65,82 @@ pub const DEFAULT_ARTIC: i16 = 100;
 //          UI->ELPS Message
 //              []: meaning, < >: index, (a/b/c): selection
 //*******************************************************************
-// MSG_PHR
-/// for mtype
-pub const TYPE_NONE: i16 = 0; // 共用
-pub const _TYPE_ID: i16 = 1000; // for TYPE
-pub const TYPE_NOTE: i16 = 1001; // for index TYPE
-pub const TYPE_CLS: i16 = 1010;
-pub const TYPE_ARP: i16 = 1020;
-pub const TYPE_INFO: i16 = 1090; // タイミングを持つ演奏以外の情報
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct PhrEvt {
-    pub mtype: i16, // message type
-    pub tick: i16,
-    pub dur: i16, // duration
-    pub note: i16,
-    // TYPE_NOTE: note number
-    // TYPE_CLS/ARP:  -7..0..7: lowest note
-    // TYPE_INFO: RPT_HEAD
-    pub vel: i16,  // velocity
-    pub trns: i16, // translation
-    // TYPE_CLS: number of notes: 2-5
-    // TYPE_ARP: u/d/xu/xd(0-3) figure of arpeggio
-    pub each_dur: i16, // each duration for special purpose
-    // TYPE_CLS/ARP: each note's duration
+pub struct NoteEvt {
+    pub tick: i16,  // tick
+    pub dur: i16,   // duration
+    pub note: u8,   // note number
+    pub vel: i16,   // velocity
+    pub trns: i16,  // translation
     pub artic: i16, // 0..100..200[%] staccato/legato
 }
-impl PhrEvt {
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct DynPatternEvt {
+    pub broken: bool,   // true: broken chord, false: chord
+    pub tick: i16,      // tick
+    pub dur: i16,       // duration
+    pub lowest: i16,    // lowest note number -7..0..7
+    pub vel: i16,       // velocity
+    pub max_count: i16, // max note count: 2-5
+    pub figure: i16,    // figure of arpeggio: u/d/xu/xd(0-3)
+    pub each_dur: i16,  // each note's duration
+    pub artic: i16,     // 0..100..200[%] staccato/legato
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct InfoEvt {
+    pub tick: i16, // tick
+    pub dur: i16,  // duration
+    pub info: i16, // RPT_HEAD
+}
+impl InfoEvt {
     pub fn gen_repeat(tick: i16) -> Self {
         Self {
-            mtype: TYPE_INFO,
             tick,
             dur: 0,
-            note: RPT_HEAD as i16,
-            vel: 0,
-            trns: TRNS_NONE,
-            each_dur: 0,
-            artic: 100,
+            info: RPT_HEAD as i16, // default is repeat head
+        }
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PhrEvtx {
+    Note(NoteEvt),
+    Pattern(DynPatternEvt),
+    Info(InfoEvt),
+}
+impl PhrEvtx {
+    pub fn dur(&self) -> i16 {
+        match self {
+            PhrEvtx::Note(e) => e.dur,
+            PhrEvtx::Pattern(e) => e.dur,
+            PhrEvtx::Info(e) => e.dur,
+        }
+    }
+    pub fn set_dur(&mut self, dur: i16) {
+        match self {
+            PhrEvtx::Note(e) => e.dur = dur,
+            PhrEvtx::Pattern(e) => e.dur = dur,
+            PhrEvtx::Info(e) => e.dur = dur,
+        }
+    }
+    pub fn tick(&self) -> i16 {
+        match self {
+            PhrEvtx::Note(e) => e.tick,
+            PhrEvtx::Pattern(e) => e.tick,
+            PhrEvtx::Info(e) => e.tick,
+        }
+    }
+    pub fn set_artic(&mut self, artic: i16) {
+        match self {
+            PhrEvtx::Note(e) => e.artic = artic,
+            PhrEvtx::Pattern(e) => e.artic = artic,
+            PhrEvtx::Info(_) => {} // InfoEvt does not have artic
         }
     }
 }
 //-------------------------------------------------------------------
 // MSG_ANA
 /// for mtype
+pub const TYPE_NONE: i16 = 0; // 共用
 pub const TYPE_BEAT: i16 = 1200; // for message TYPE
 pub const TYPE_EXP: i16 = 1210; // for message TYPE
 pub const _TYPE_DUR: i16 = 1211; // for message TYPE
@@ -157,7 +191,7 @@ pub enum PhraseAs {
 pub struct PhrData {
     pub whole_tick: i16,
     pub do_loop: bool,
-    pub evts: Vec<PhrEvt>,
+    pub evts: Vec<PhrEvtx>,
     pub ana: Vec<AnaEvt>,
     pub vari: PhraseAs,
     pub auftakt: i16, // 0:no auftakt, 1..:auftakt(beat number)

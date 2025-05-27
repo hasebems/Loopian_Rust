@@ -19,7 +19,7 @@ use crate::lpnlib::*;
 //*******************************************************************
 pub struct NoteParam<'a> {
     _estk: &'a mut ElapseStack,
-    ev: &'a PhrEvt,
+    ev: &'a NoteEvt,
     keynote: u8,
     _deb_txt: String,
     msr: i32,
@@ -29,7 +29,7 @@ pub struct NoteParam<'a> {
 impl<'a> NoteParam<'a> {
     pub fn new(
         _estk: &'a mut ElapseStack,
-        ev: &'a PhrEvt,
+        ev: &'a NoteEvt,
         keynote: u8,
         _deb_txt: String,
         msr: i32,

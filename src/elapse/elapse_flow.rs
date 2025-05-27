@@ -209,11 +209,11 @@ impl Flow {
                 let cmp_med = pt_borrowed.get_cmps_med();
                 let (rt, ctbl) = cmp_med.get_chord(crnt_, crnt_);
                 let root: i16 = ROOT2NTNUM[rt as usize];
-                real_note = translate_note_com(root, ctbl, temp_note) as u8;
+                real_note = translate_note_com(root, ctbl, temp_note as u8);
             }
         } else {
             let root: i16 = ROOT2NTNUM[self.root as usize];
-            real_note = translate_note_com(root, self.translation_tbl, temp_note) as u8;
+            real_note = translate_note_com(root, self.translation_tbl, temp_note as u8);
         }
 
         real_note += self.keynote;

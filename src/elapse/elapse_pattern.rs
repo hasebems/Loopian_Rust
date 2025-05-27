@@ -55,7 +55,7 @@ impl DynamicPattern {
         part: u32, // loop pid
         keynote: u8,
         msr: i32, // crnt_msr
-        ptn: PhrEvt,
+        ptn: DynPatternEvt,
         ana: Vec<AnaEvt>,
     ) -> Rc<RefCell<Self>> {
         // generate para_note_base
@@ -72,7 +72,7 @@ impl DynamicPattern {
                 staccato_rate = x.cnt as i32;
             }
         });
-        let arp_available = ptn.mtype == TYPE_ARP;
+        let arp_available = ptn.broken;
 
         #[cfg(feature = "verbose")]
         println!("New DynaPtn: para:{}", para);
@@ -87,14 +87,14 @@ impl DynamicPattern {
             arp_available,
             priority: PRI_DYNPTN,
             ptn_tick: ptn.tick as i32,
-            ptn_min_nt: ptn.note,
+            ptn_min_nt: ptn.lowest,
             ptn_vel: ptn.vel as i32,
             ptn_each_dur: ptn.each_dur as i32,
-            ptn_max_vce: ptn.trns as i32,
-            ptn_arp_type: ptn.trns as i32,
+            ptn_max_vce: ptn.max_count as i32,
+            ptn_arp_type: ptn.figure as i32,
             next_index: 0,
             oct_up: 0,
-            note_close_to: ptn.note,
+            note_close_to: ptn.lowest,
             analys: ana,
             part,
             keynote,
@@ -282,11 +282,11 @@ impl DynamicPattern {
         self.gen_note_ev(estk, note, vel);
     }
     fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16, vel: i16) {
-        let mut crnt_ev = PhrEvt {
+        let mut crnt_ev = NoteEvt {
             dur: self.ptn_each_dur as i16,
-            note,
+            note: note as u8,
             vel,
-            ..PhrEvt::default()
+            ..NoteEvt::default()
         };
 
         //  Generate Note Struct

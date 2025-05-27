@@ -280,7 +280,7 @@ pub fn recombine_to_internal_format(
     imd: InputMode,
     base_note: i32,
     tick_for_onemsr: i32,
-) -> (i32, bool, Vec<PhrEvt>) {
+) -> (i32, bool, Vec<PhrEvtx>) {
     let (exp_vel, _exp_others) = get_dyn_info(expvec.to_vec());
     let mut read_ptr = 0;
     let mut last_nt: i32 = 0;
@@ -309,7 +309,7 @@ pub fn recombine_to_internal_format(
         let rest_tick = whole_msr_tick - crnt_tick;
         if note_text == "$RPT" {
             // complement時に入れた、繰り返しを表す特殊マーク$
-            let nt_data = PhrEvt::gen_repeat(crnt_tick as i16);
+            let nt_data = PhrEvtx::Info(InfoEvt::gen_repeat(crnt_tick as i16));
             rcmb.push(nt_data);
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else if available_for_dp(&note_text) {
@@ -324,7 +324,7 @@ pub fn recombine_to_internal_format(
             );
             base_dur = bdur;
             if crnt_tick < whole_msr_tick {
-                crnt_tick += ca_ev.dur as i32;
+                crnt_tick += ca_ev.dur() as i32;
                 rcmb.push(ca_ev);
             }
         } else {
@@ -652,7 +652,7 @@ pub fn gen_diff_vel(nt: String) -> (String, i32) {
     }
     (ntext, diff_vel)
 }
-fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> Vec<PhrEvt> {
+fn add_note(rcmb: Vec<PhrEvtx>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> Vec<PhrEvtx> {
     let mut return_rcmb = rcmb.clone();
     for note in notes.iter() {
         if *note == REST {
@@ -663,13 +663,13 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> 
                 // 小節先頭にタイがあった場合、前の音の音価を増やす
                 // 前回の入力が和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
                 let mut search_idx = l - 1;
-                let last_tick = return_rcmb[search_idx].tick;
+                let last_tick = return_rcmb[search_idx].tick();
                 loop {
-                    if return_rcmb[search_idx].tick == last_tick {
-                        let dur = return_rcmb[search_idx].dur;
-                        return_rcmb[search_idx].dur = dur + prm.dur as i16;
+                    if return_rcmb[search_idx].tick() == last_tick {
+                        let dur = return_rcmb[search_idx].dur();
+                        return_rcmb[search_idx].set_dur(dur + prm.dur as i16);
                         //return_rcmb[search_idx].vel = prm.vel; // タイの場合、前の音符の音量を使う
-                        return_rcmb[search_idx].artic = prm.artic;
+                        return_rcmb[search_idx].set_artic(prm.artic);
                     } else {
                         break;
                     }
@@ -682,16 +682,14 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> 
                 continue;
             }
         } else {
-            let nt_data = PhrEvt {
-                mtype: TYPE_NOTE,
+            let nt_data = PhrEvtx::Note(NoteEvt {
                 tick: tick as i16,
                 dur: prm.dur as i16,
-                note: *note as i16,
+                note: *note,
                 vel: prm.vel,
                 trns: prm.trns,
                 artic: prm.artic,
-                ..Default::default()
-            };
+            });
             return_rcmb.push(nt_data);
         }
     }

@@ -32,16 +32,14 @@ fn pedal() {
                 Phr(_m0, dt) => {
                     assert_eq!(
                         dt.evts[0],
-                        PhrEvt {
-                            mtype: TYPE_NOTE,
+                        PhrEvtx::Note(NoteEvt {
                             tick: 0,
                             dur: 440,
                             note: 60,
                             vel: 72,
                             trns: 0,
-                            each_dur: 0,
                             artic: 100,
-                        }
+                        })
                     );
                 }
                 _ => {}

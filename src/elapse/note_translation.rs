@@ -18,8 +18,8 @@ pub const ROOT2NTNUM: [i16; 22] = [
 //*******************************************************************
 //          Func
 //*******************************************************************
-pub fn translate_note_parascl(para_note: i16, ctbl: i16, ntev: i16) -> i16 {
-    let input_nt = ntev + para_note;
+pub fn translate_note_parascl(para_note: i16, ctbl: i16, ntev: u8) -> u8 {
+    let input_nt = (ntev as i16) + para_note;
     let input_doremi = input_nt % 12;
     let input_oct = input_nt / 12;
     let mut output_doremi = 0;
@@ -46,9 +46,17 @@ pub fn translate_note_parascl(para_note: i16, ctbl: i16, ntev: i16) -> i16 {
             }
         }
     }
-    output_doremi + input_oct * 12
+    output_doremi += input_oct * 12;
+    while output_doremi < 0 {
+        output_doremi += 12;
+    }
+    while output_doremi >= 128 {
+        output_doremi -= 12;
+    }
+    output_doremi as u8
 }
-pub fn translate_note_com(root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
+pub fn translate_note_com(root: i16, ctbl: i16, tgt_nt: u8) -> u8 {
+    let tgt_nt = tgt_nt as i16;
     let mut proper_nt = tgt_nt;
     let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     let real_root = root + DEFAULT_NOTE_NUMBER as i16;
@@ -88,7 +96,13 @@ pub fn translate_note_com(root: i16, ctbl: i16, tgt_nt: i16) -> i16 {
             _ => {}
         }
     }
-    proper_nt
+    while proper_nt < 0 {
+        proper_nt += 12;
+    }
+    while proper_nt >= 128 {
+        proper_nt -= 12;
+    }
+    proper_nt as u8
 }
 pub fn _translate_note_arp(root: i16, ctbl: i16, nt_diff: i16, last_note: i16) -> i16 {
     // nt_diff: User Input による、前に発音したノートとの差分
@@ -138,7 +152,8 @@ pub fn _translate_note_arp(root: i16, ctbl: i16, nt_diff: i16, last_note: i16) -
         }
     }
 }
-pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16, last_note: i16) -> i16 {
+pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: u8, nt_diff: i16, last_note: i16) -> u8 {
+    let tgt_nt = tgt_nt as i16;
     let mut proper_nt = tgt_nt;
     let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     let real_root = root + DEFAULT_NOTE_NUMBER as i16;
@@ -192,7 +207,13 @@ pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: i16, nt_diff: i16, last
         }
         _ => {}
     }
-    proper_nt
+    while proper_nt < 0 {
+        proper_nt += 12;
+    }
+    while proper_nt >= 128 {
+        proper_nt -= 12;
+    }
+    proper_nt as u8
 }
 fn search_scale_nt_just_above(root: i16, tbl: &[i16], nt: i16) -> i16 {
     // nt の音程より上にある(nt含む)、一番近い root/tbl の音程を探す

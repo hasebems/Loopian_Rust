@@ -9,7 +9,7 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          analyse_data
 //*******************************************************************
-pub fn analyse_data(generated: &[PhrEvt], exps: &[String]) -> Vec<AnaEvt> {
+pub fn analyse_data(generated: &[PhrEvtx], exps: &[String]) -> Vec<AnaEvt> {
     let mut exp_analysis = put_exp_data(exps);
     let mut beat_analysis = analyse_beat(generated);
     exp_analysis.append(&mut beat_analysis);
@@ -58,8 +58,8 @@ fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
 //              note count が１より大きい時、note num には最も高い音程の音が記録される
 //      atype   NOTHING
 //*******************************************************************
-fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
-    let get_hi = |na: Vec<i16>| -> i16 {
+fn analyse_beat(phr_evts: &[PhrEvtx]) -> Vec<AnaEvt> {
+    let get_hi = |na: Vec<u8>| -> u8 {
         match na.iter().max() {
             Some(x) => *x,
             None => 0,
@@ -81,38 +81,44 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
     let mut crnt_dur = 0;
     let mut crnt_trns = TRNS_COM;
     let mut repeat_head_tick: i16 = NOTHING;
-    let mut note_all: Vec<i16> = Vec::new();
+    let mut note_all: Vec<u8> = Vec::new();
     let mut beat_analysis = Vec::new();
     for phr in phr_evts.iter() {
-        if phr.mtype != TYPE_NOTE {
-            if phr.mtype == TYPE_INFO && phr.note == RPT_HEAD as i16 {
-                repeat_head_tick = phr.tick;
+        match phr {
+            PhrEvtx::Note(e) => {
+                if e.tick == crnt_tick {
+                    note_cnt += 1;
+                    note_all.push(e.note);
+                    if crnt_trns != TRNS_COM {
+                        crnt_trns = e.trns; // 和音で一つに限定
+                    }
+                } else {
+                    if note_cnt > 0 {
+                        // 一つ前の Note （あるいは和音の最高音）を記録
+                        let (arp, rht) = get_arp(crnt_tick, repeat_head_tick, crnt_trns);
+                        repeat_head_tick = rht;
+                        beat_analysis.push(AnaEvt {
+                            mtype: TYPE_BEAT,
+                            tick: crnt_tick,
+                            dur: crnt_dur,
+                            note: get_hi(note_all.clone()) as i16,
+                            cnt: note_cnt,
+                            atype: arp,
+                        })
+                    }
+                    crnt_tick = e.tick;
+                    crnt_dur = e.dur;
+                    crnt_trns = e.trns;
+                    note_cnt = 1;
+                    note_all = vec![e.note];
+                }
             }
-        } else if phr.tick == crnt_tick {
-            note_cnt += 1;
-            note_all.push(phr.note);
-            if crnt_trns != TRNS_COM {
-                crnt_trns = phr.trns; // 和音で一つに限定
+            PhrEvtx::Info(i) => {
+                if i.info == RPT_HEAD as i16 {
+                    repeat_head_tick = i.tick;
+                }
             }
-        } else {
-            if note_cnt > 0 {
-                // 一つ前の Note （あるいは和音の最高音）を記録
-                let (arp, rht) = get_arp(crnt_tick, repeat_head_tick, crnt_trns);
-                repeat_head_tick = rht;
-                beat_analysis.push(AnaEvt {
-                    mtype: TYPE_BEAT,
-                    tick: crnt_tick,
-                    dur: crnt_dur,
-                    note: get_hi(note_all.clone()),
-                    cnt: note_cnt,
-                    atype: arp,
-                })
-            }
-            crnt_tick = phr.tick;
-            crnt_dur = phr.dur;
-            crnt_trns = phr.trns;
-            note_cnt = 1;
-            note_all = vec![phr.note];
+            _ => (),
         }
     }
     if note_cnt > 0 {
@@ -121,7 +127,7 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
             mtype: TYPE_BEAT,
             tick: crnt_tick,
             dur: crnt_dur,
-            note: get_hi(note_all),
+            note: get_hi(note_all) as i16,
             cnt: note_cnt,
             atype: arp,
         });
@@ -260,11 +266,11 @@ const MIN_BPM: i16 = 60;
 const MIN_AVILABLE_VELO: i16 = 30;
 const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
 pub fn beat_filter(
-    rcmb: &[PhrEvt],
+    rcmb: &[PhrEvtx],
     bpm: i16,
     tick_for_onemsr: i32,
     tick_for_beat: i32,
-) -> Vec<PhrEvt> {
+) -> Vec<PhrEvtx> {
     if bpm < MIN_BPM {
         return rcmb.to_owned();
     }
@@ -273,26 +279,23 @@ pub fn beat_filter(
     let mut all_dt = rcmb.to_vec();
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in all_dt.iter_mut() {
-            if dt.mtype != TYPE_NOTE {
-                continue;
+            if let PhrEvtx::Note(e) = dt {
+                e.vel = calc_vel_for4(e.vel, e.tick as f32, bpm);
             }
-            dt.vel = calc_vel_for4(dt.vel, dt.tick as f32, bpm);
         }
     } else if tick_for_onemsr == TICK_3_4 as i32 && tick_for_beat == DEFAULT_TICK_FOR_QUARTER {
         for dt in all_dt.iter_mut() {
-            if dt.mtype != TYPE_NOTE {
-                continue;
+            if let PhrEvtx::Note(e) = dt {
+                e.vel = calc_vel_for3(e.vel, e.tick as f32, bpm);
             }
-            dt.vel = calc_vel_for3(dt.vel, dt.tick as f32, bpm);
         }
     } else if (tick_for_onemsr % (DEFAULT_TICK_FOR_QUARTER / 2)) % 3 == 0
         && tick_for_beat == DEFAULT_TICK_FOR_QUARTER / 2
     {
         for dt in all_dt.iter_mut() {
-            if dt.mtype != TYPE_NOTE {
-                continue;
+            if let PhrEvtx::Note(dt) = dt {
+                dt.vel = calc_vel_for3_8(dt.vel, dt.tick as f32, bpm);
             }
-            dt.vel = calc_vel_for3_8(dt.vel, dt.tick as f32, bpm);
         }
     }
     all_dt
