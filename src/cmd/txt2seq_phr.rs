@@ -280,7 +280,7 @@ pub fn recombine_to_internal_format(
     imd: InputMode,
     base_note: i32,
     tick_for_onemsr: i32,
-) -> (i32, bool, Vec<PhrEvtx>) {
+) -> (i32, bool, Vec<PhrEvt>) {
     let (exp_vel, _exp_others) = get_dyn_info(expvec.to_vec());
     let mut read_ptr = 0;
     let mut last_nt: i32 = 0;
@@ -309,7 +309,7 @@ pub fn recombine_to_internal_format(
         let rest_tick = whole_msr_tick - crnt_tick;
         if note_text == "$RPT" {
             // complement時に入れた、繰り返しを表す特殊マーク$
-            let nt_data = PhrEvtx::Info(InfoEvt::gen_repeat(crnt_tick as i16));
+            let nt_data = PhrEvt::Info(InfoEvt::gen_repeat(crnt_tick as i16));
             rcmb.push(nt_data);
             last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else if available_for_dp(&note_text) {
@@ -652,7 +652,7 @@ pub fn gen_diff_vel(nt: String) -> (String, i32) {
     }
     (ntext, diff_vel)
 }
-fn add_note(rcmb: Vec<PhrEvtx>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> Vec<PhrEvtx> {
+fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> Vec<PhrEvt> {
     let mut return_rcmb = rcmb.clone();
     for note in notes.iter() {
         if *note == REST {
@@ -682,7 +682,7 @@ fn add_note(rcmb: Vec<PhrEvtx>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) ->
                 continue;
             }
         } else {
-            let nt_data = PhrEvtx::Note(NoteEvt {
+            let nt_data = PhrEvt::Note(NoteEvt {
                 tick: tick as i16,
                 dur: prm.dur as i16,
                 note: *note,

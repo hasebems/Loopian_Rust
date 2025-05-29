@@ -21,7 +21,7 @@ use crate::lpnlib::*;
 pub struct PhraseLoopParam {
     keynote: u8,
     msr: i32,
-    phr: Vec<PhrEvtx>,
+    phr: Vec<PhrEvt>,
     ana: Vec<AnaEvt>,
     whole_tick: i32,
     turnnote: i16,
@@ -30,7 +30,7 @@ impl PhraseLoopParam {
     pub fn new(
         keynote: u8,
         msr: i32,
-        phr: Vec<PhrEvtx>,
+        phr: Vec<PhrEvt>,
         ana: Vec<AnaEvt>,
         whole_tick: i32,
         turnnote: i16,
@@ -49,7 +49,7 @@ pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
 
-    phrase: Vec<PhrEvtx>,
+    phrase: Vec<PhrEvt>,
     analys: Vec<AnaEvt>,
     keynote: u8,
     play_counter: usize,
@@ -140,7 +140,7 @@ impl PhraseLoop {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                 let evtx = phr[trace].clone();
                 match evtx {
-                    PhrEvtx::Note(ev) => {
+                    PhrEvt::Note(ev) => {
                         if self.same_note_msr != msr || self.same_note_tick != tick {
                             // 設定されているタイミングが少しでも違えば、同タイミング重複音検出をクリア
                             self.same_note_stuck = Vec::new();
@@ -149,7 +149,7 @@ impl PhraseLoop {
                         }
                         self.note_event(estk, crnt_, trace, ev, (next_tick, msr, tick));
                     }
-                    PhrEvtx::Pattern(mut ev) => {
+                    PhrEvt::Pattern(mut ev) => {
                         while ev.tick >= crnt_.tick_for_onemsr as i16 {
                             // pattern は１小節内で完結
                             ev.tick -= crnt_.tick_for_onemsr as i16;
@@ -266,7 +266,7 @@ impl PhraseLoop {
         self.last_note = trans_note as i16;
         //crnt_ev[NOTE] = trans_note;
         (
-            trans_note.clamp(0, 127) as u8,
+            trans_note.clamp(0, 127),
             deb_txt + &(root.to_string() + "-" + &ctbl.to_string()),
         )
     }

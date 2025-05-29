@@ -102,38 +102,38 @@ impl InfoEvt {
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum PhrEvtx {
+pub enum PhrEvt {
     Note(NoteEvt),
     Pattern(DynPatternEvt),
     Info(InfoEvt),
 }
-impl PhrEvtx {
+impl PhrEvt {
     pub fn dur(&self) -> i16 {
         match self {
-            PhrEvtx::Note(e) => e.dur,
-            PhrEvtx::Pattern(e) => e.dur,
-            PhrEvtx::Info(e) => e.dur,
+            PhrEvt::Note(e) => e.dur,
+            PhrEvt::Pattern(e) => e.dur,
+            PhrEvt::Info(e) => e.dur,
         }
     }
     pub fn set_dur(&mut self, dur: i16) {
         match self {
-            PhrEvtx::Note(e) => e.dur = dur,
-            PhrEvtx::Pattern(e) => e.dur = dur,
-            PhrEvtx::Info(e) => e.dur = dur,
+            PhrEvt::Note(e) => e.dur = dur,
+            PhrEvt::Pattern(e) => e.dur = dur,
+            PhrEvt::Info(e) => e.dur = dur,
         }
     }
     pub fn tick(&self) -> i16 {
         match self {
-            PhrEvtx::Note(e) => e.tick,
-            PhrEvtx::Pattern(e) => e.tick,
-            PhrEvtx::Info(e) => e.tick,
+            PhrEvt::Note(e) => e.tick,
+            PhrEvt::Pattern(e) => e.tick,
+            PhrEvt::Info(e) => e.tick,
         }
     }
     pub fn set_artic(&mut self, artic: i16) {
         match self {
-            PhrEvtx::Note(e) => e.artic = artic,
-            PhrEvtx::Pattern(e) => e.artic = artic,
-            PhrEvtx::Info(_) => {} // InfoEvt does not have artic
+            PhrEvt::Note(e) => e.artic = artic,
+            PhrEvt::Pattern(e) => e.artic = artic,
+            PhrEvt::Info(_) => {} // InfoEvt does not have artic
         }
     }
 }
@@ -191,7 +191,7 @@ pub enum PhraseAs {
 pub struct PhrData {
     pub whole_tick: i16,
     pub do_loop: bool,
-    pub evts: Vec<PhrEvtx>,
+    pub evts: Vec<PhrEvt>,
     pub ana: Vec<AnaEvt>,
     pub vari: PhraseAs,
     pub auftakt: i16, // 0:no auftakt, 1..:auftakt(beat number)

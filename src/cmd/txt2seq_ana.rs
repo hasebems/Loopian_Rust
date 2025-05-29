@@ -9,7 +9,7 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          analyse_data
 //*******************************************************************
-pub fn analyse_data(generated: &[PhrEvtx], exps: &[String]) -> Vec<AnaEvt> {
+pub fn analyse_data(generated: &[PhrEvt], exps: &[String]) -> Vec<AnaEvt> {
     let mut exp_analysis = put_exp_data(exps);
     let mut beat_analysis = analyse_beat(generated);
     exp_analysis.append(&mut beat_analysis);
@@ -58,7 +58,7 @@ fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
 //              note count が１より大きい時、note num には最も高い音程の音が記録される
 //      atype   NOTHING
 //*******************************************************************
-fn analyse_beat(phr_evts: &[PhrEvtx]) -> Vec<AnaEvt> {
+fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
     let get_hi = |na: Vec<u8>| -> u8 {
         match na.iter().max() {
             Some(x) => *x,
@@ -85,7 +85,7 @@ fn analyse_beat(phr_evts: &[PhrEvtx]) -> Vec<AnaEvt> {
     let mut beat_analysis = Vec::new();
     for phr in phr_evts.iter() {
         match phr {
-            PhrEvtx::Note(e) => {
+            PhrEvt::Note(e) => {
                 if e.tick == crnt_tick {
                     note_cnt += 1;
                     note_all.push(e.note);
@@ -113,7 +113,7 @@ fn analyse_beat(phr_evts: &[PhrEvtx]) -> Vec<AnaEvt> {
                     note_all = vec![e.note];
                 }
             }
-            PhrEvtx::Info(i) => {
+            PhrEvt::Info(i) => {
                 if i.info == RPT_HEAD as i16 {
                     repeat_head_tick = i.tick;
                 }
@@ -266,11 +266,11 @@ const MIN_BPM: i16 = 60;
 const MIN_AVILABLE_VELO: i16 = 30;
 const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
 pub fn beat_filter(
-    rcmb: &[PhrEvtx],
+    rcmb: &[PhrEvt],
     bpm: i16,
     tick_for_onemsr: i32,
     tick_for_beat: i32,
-) -> Vec<PhrEvtx> {
+) -> Vec<PhrEvt> {
     if bpm < MIN_BPM {
         return rcmb.to_owned();
     }
@@ -279,13 +279,13 @@ pub fn beat_filter(
     let mut all_dt = rcmb.to_vec();
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in all_dt.iter_mut() {
-            if let PhrEvtx::Note(e) = dt {
+            if let PhrEvt::Note(e) = dt {
                 e.vel = calc_vel_for4(e.vel, e.tick as f32, bpm);
             }
         }
     } else if tick_for_onemsr == TICK_3_4 as i32 && tick_for_beat == DEFAULT_TICK_FOR_QUARTER {
         for dt in all_dt.iter_mut() {
-            if let PhrEvtx::Note(e) = dt {
+            if let PhrEvt::Note(e) = dt {
                 e.vel = calc_vel_for3(e.vel, e.tick as f32, bpm);
             }
         }
@@ -293,7 +293,7 @@ pub fn beat_filter(
         && tick_for_beat == DEFAULT_TICK_FOR_QUARTER / 2
     {
         for dt in all_dt.iter_mut() {
-            if let PhrEvtx::Note(dt) = dt {
+            if let PhrEvt::Note(dt) = dt {
                 dt.vel = calc_vel_for3_8(dt.vel, dt.tick as f32, bpm);
             }
         }

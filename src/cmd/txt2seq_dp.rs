@@ -21,7 +21,7 @@ pub fn treat_dp(
     crnt_tick: i32, // 小節内の現在 tick
     rest_tick: i32, // 小節内の残り tick
     exp_vel: i32,   // dynなどを反省した velocity
-) -> (PhrEvtx, i32) {
+) -> (PhrEvt, i32) {
     // Cluster or Arpeggio?
     let mut case_arp = true;
     if text.contains("C") {
@@ -69,7 +69,7 @@ fn gen_dp_pattern(
     tick: i16,
     vel: i16,
     dur: i16,
-) -> PhrEvtx {
+) -> PhrEvt {
     let params = extract_texts_from_parentheses(nt);
     let param = split_by('@', params.to_string());
     let pnum = param.len();
@@ -84,7 +84,7 @@ fn gen_dp_pattern(
         0 // default note
     } + base_note;
 
-    let evt: PhrEvtx = if case_arp {
+    let evt: PhrEvt = if case_arp {
         let figure = if pnum > 1 {
             arp_pattern(&param[1])
         } else {
@@ -93,7 +93,7 @@ fn gen_dp_pattern(
         if (figure % 2) == 1 {
             lowest += 12; // - note;
         }
-        PhrEvtx::Pattern(DynPatternEvt {
+        PhrEvt::Pattern(DynPatternEvt {
             broken: true,
             tick,
             vel,
@@ -109,7 +109,7 @@ fn gen_dp_pattern(
         } else {
             4 // default chord count
         };
-        PhrEvtx::Pattern(DynPatternEvt {
+        PhrEvt::Pattern(DynPatternEvt {
             broken: false,
             tick,
             vel,

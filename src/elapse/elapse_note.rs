@@ -83,7 +83,7 @@ impl Note {
                 elps_type: ElapseType::TpNote,
             },
             priority: PRI_NOTE,
-            note_num: prm.ev.note as u8,
+            note_num: prm.ev.note,
             velocity: prm.ev.vel as u8,
             duration: prm.ev.dur as i32,
             keynote: prm.keynote,
