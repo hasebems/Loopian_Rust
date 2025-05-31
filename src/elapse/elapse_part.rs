@@ -56,10 +56,111 @@ impl PhrLoopManager {
         self.clear_phr_prm();
         self.state_reserve = true;
     }
+
+    pub fn msrtop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        let mut phr = &self.new_data_stock[0]; // Normal Phrase
+
+        let auftakt_cond_vari = || -> bool {
+            // variation 再生時の弱起auftaktの条件
+            self.max_loop_msr != 0 &&
+            (crnt_.msr - self.first_msr_num)%(self.max_loop_msr) < self.max_loop_msr && // 残り１小節以上
+            phr.whole_tick as i32 >= crnt_.tick_for_onemsr*2 // 新しい Phrase が２小節以上
+        };
+        let auftakt_cond = || -> bool {
+            // 通常の弱起auftaktの条件
+            self.max_loop_msr != 0
+                && (crnt_.msr - self.first_msr_num) % (self.max_loop_msr) == self.max_loop_msr - 1
+                && phr.whole_tick as i32 >= crnt_.tick_for_onemsr * 2 // 新しい Phrase が２小節以上
+        };
+
+        if let Some(i) = self.exist_msr_phr(crnt_) {
+            // Measure 指定があった場合
+            self.active_phr = i;
+            self.proc_replace_loop(crnt_, estk, pbp);
+        } else if self.vari_reserve != 0 {
+            if let Some(i) = self.exist_vari_phr(self.vari_reserve) {
+                // Variation 指定があった場合
+                self.active_phr = i;
+                phr = &self.new_data_stock[i];
+                if phr.auftakt != 0 {
+                    // variation : 今再生している Phrase が残り１小節以上
+                    if auftakt_cond_vari() {
+                        let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+                        self.active_phr = self.vari_reserve;
+                        self.new_loop(prm, estk, pbp);
+                    }
+                } else {
+                    // Variation 指定があった場合
+                    self.active_phr = i;
+                    let sr = self.state_reserve; // イベントがあれば保持
+                    self.proc_replace_loop(crnt_, estk, pbp);
+                    self.state_reserve = sr;
+                }
+            }
+            self.vari_reserve = 0;
+        } else if self.state_reserve {
+            if phr.auftakt == 0 {
+                // User による Phrase 入力があった場合
+                self.active_phr = 0;
+                if crnt_.msr == 0 {
+                    // 今回 start したとき
+                    self.proc_new_loop_by_evt(crnt_, estk, pbp);
+                } else if self.max_loop_msr == 0 {
+                    // データのない状態から、今回初めて指定された時
+                    self.proc_new_loop_by_evt(crnt_, estk, pbp);
+                } else if self.check_last_msr(crnt_) {
+                    // 前小節にて Loop Obj が終了した時
+                    self.proc_new_loop_by_evt(crnt_, estk, pbp);
+                } else if self.max_loop_msr != 0 && pbp.sync_flag {
+                    // sync コマンドによる強制リセット
+                    self.proc_replace_loop(crnt_, estk, pbp);
+                } else {
+                    // 現在の Loop Obj が終了していない時
+                    // 現在の Phrase より新しい Phrase の whole_tick が大きい場合、
+                    // 新しい Phrase を早送りして更新する
+                    if self.new_data_stock[0].whole_tick as i32 >= self.whole_tick {
+                        self.proc_forward_by_evt(crnt_, estk, pbp);
+                    }
+                }
+            } else if auftakt_cond() {
+                self.state_reserve = false;
+                let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+                self.vari_reserve = 0;
+                self.new_loop(prm, estk, pbp);
+            }
+        } else if self.new_data_stock.len() <= self.active_phr {
+            phr = &self.new_data_stock[self.active_phr];
+            if phr.whole_tick == 0 {
+                self.msrtop_with_no_events(crnt_, estk, pbp);
+            } else if auftakt_cond() && phr.do_loop {
+                let prm = (crnt_.msr, crnt_.tick_for_onemsr);
+                self.vari_reserve = 0;
+                self.new_loop(prm, estk, pbp);
+            }
+        } else {
+            self.msrtop_with_no_events(crnt_, estk, pbp);
+        }
+    }
+    fn msrtop_with_no_events(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        if self.new_data_stock[0].do_loop {
+            // 何も外部からのトリガーがなく、loop 指定の場合
+            if self.check_last_msr(crnt_) {
+                // 今の Loop が終わったので、新しい Loop.Obj を生成する
+                self.active_phr = 0;
+                self.proc_new_loop_repeatedly(crnt_, estk, pbp);
+            } else {
+                // 通常の Loop 中
+            }
+        } else if self.check_last_msr(crnt_) {
+            // loop 指定でない場合
+            self.clear_phr_prm();
+        }
+    }
+
     /// Phrase Loop の処理 (Phrase Loop の生成、更新)
     /// 小節先頭でコールされる
-    pub fn msrtop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        if self.proc_auftakt(crnt_, estk, pbp) {
+    pub fn _msrtop_before(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
+        if self._proc_auftakt(crnt_, estk, pbp) {
             // auftakt は別枠
             //return;
         } else if let Some(i) = self.exist_msr_phr(crnt_) {
@@ -229,7 +330,7 @@ impl PhrLoopManager {
     }
     /// Normal, Variation に Auftakt 指定があった場合、再生中の Phrase の最後の小節か判断、新しい Phrase を生成する。
     /// @msr() 機能を使う場合、この関数を通過しなくても Auftakt 動作する
-    fn proc_auftakt(
+    fn _proc_auftakt(
         &mut self,
         crnt_: &CrntMsrTick,
         estk: &mut ElapseStack,
