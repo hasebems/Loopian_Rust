@@ -37,6 +37,7 @@ struct PhrLoopManager {
     state_reserve: bool,
     turnnote: i16,
 }
+//*******************************************************************
 impl PhrLoopManager {
     pub fn new() -> Self {
         Self {
@@ -77,8 +78,9 @@ impl PhrLoopManager {
             self.phr_idx = idx;
             self.proc_replace_loop(crnt_, estk, pbp);
         } else if let Some(vr) = self.vari_reserve {
+            // Variation 指定があった場合
             if let Some(idx) = self.exist_vari_phr(vr) {
-                // Variation 指定があった場合
+                // 指定された Variation が存在した場合
                 self.phr_idx = idx;
                 phr = &self.phr_stock[idx];
                 if phr.auftakt != 0 {
@@ -95,13 +97,13 @@ impl PhrLoopManager {
             }
             self.vari_reserve = None; // 予約は解除
         } else if self.state_reserve {
+            // User による Phrase 入力イベントがあった場合
             if phr.auftakt != 0 && auftakt_cond() { // ◆◆ Auftakt ◆◆
                 self.state_reserve = false;
                 let prm = (crnt_.msr, crnt_.tick_for_onemsr);
                 self.vari_reserve = None; // 予約は解除
                 self.new_loop(prm, estk, pbp);
             } else {
-                // User による Phrase 入力があった場合
                 self.phr_idx = 0;
                 if crnt_.msr == 0 {
                     // 今回 start したとき
@@ -125,10 +127,9 @@ impl PhrLoopManager {
                 }
             } 
         } else if self.phr_stock.len() > self.phr_idx {
+            // イベントがない場合
             phr = &self.phr_stock[self.phr_idx];
-            if phr.whole_tick == 0 {
-                self.msrtop_with_no_events(crnt_, estk, pbp);
-            } else if auftakt_cond() && phr.do_loop { // ◆◆ Auftakt ◆◆
+            if phr.whole_tick != 0 && auftakt_cond() && phr.do_loop { // ◆◆ Auftakt ◆◆
                 let prm = (crnt_.msr, crnt_.tick_for_onemsr);
                 self.vari_reserve = None; // 予約は解除
                 self.new_loop(prm, estk, pbp);
@@ -210,6 +211,7 @@ impl PhrLoopManager {
             self.vari_reserve = Some(vari_num); // 1-9
         }
     }
+//*******************************************************************
     fn exists_same_vari(&self, vari: PhraseAs) -> Option<usize> {
         self.phr_stock.iter().enumerate().find_map(
             |(i, phr)| {
@@ -411,6 +413,7 @@ pub struct Part {
     sync_next_msr_flag: bool,
     start_flag: bool,
 }
+//*******************************************************************
 impl Part {
     pub fn new(num: u32, flow: Option<Rc<RefCell<Flow>>>) -> Rc<RefCell<Part>> {
         let new_id = ElapseId {
@@ -514,6 +517,7 @@ impl Part {
         self.pm.reserve_vari(vari_num);
     }
 }
+//*******************************************************************
 impl Elapse for Part {
     /// id を得る
     fn id(&self) -> ElapseId {
