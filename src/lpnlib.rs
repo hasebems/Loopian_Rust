@@ -61,6 +61,22 @@ pub const VEL_UP: i32 = 10;
 pub const VEL_DOWN: i32 = -20;
 pub const DEFAULT_ARTIC: i16 = 100;
 
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TrnsType {
+    #[default]
+    Com, // TRNS_COM: Common 変換
+    Para, // TRNS_PARA: Parallel 変換
+    Arp(i16), // ARP: Arpeggio 変換, -n .. +n  : Note 差分
+    NoTrns, // 変換しない
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub enum ExpType { // TYPE_EXP のときの atype
+    #[default]
+    Noped, // TYPE_BEAT の Note情報より先に置く
+    ParaRoot, // note に並行移動の基本rootの値を書く(0-11)
+    Artic, // cnt に Staccato/legato の長さを書く(1-200%)
+}
+
 //*******************************************************************
 //          UI->ELPS Message
 //              []: meaning, < >: index, (a/b/c): selection
@@ -71,7 +87,7 @@ pub struct NoteEvt {
     pub dur: i16,   // duration
     pub note: u8,   // note number
     pub vel: i16,   // velocity
-    pub trns: i16,  // translation
+    pub trns: TrnsType, // translation
     pub artic: i16, // 0..100..200[%] staccato/legato
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
@@ -139,26 +155,52 @@ impl PhrEvt {
 }
 //-------------------------------------------------------------------
 // MSG_ANA
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct AnaBeatEvt {
+    pub tick: i16,
+    pub dur: i16,  // duration
+    pub note: i16, // highest note
+    pub cnt: i16,  // same timing note number
+    pub trns: TrnsType, 
+        // Com, Para, NoTrns,
+        // Arp: -n .. +n ARP のときの Note 差分
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct AnaExpEvt {
+    pub tick: i16,
+    pub dur: i16,  // duration
+    pub note: i16, // note
+    pub cnt: i16,  // value
+    pub atype: ExpType,
+        // NOPED: TYPE_BEAT の Note情報より先に置く
+        // PARA_ROOT: note に並行移動の基本rootの値を書く(0-11)
+        // ARTIC: cnt に Staccato/legato の長さを書く(1-200%)
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AnaEvt {
+    Beat(AnaBeatEvt),
+    Exp(AnaExpEvt),
+}
 /// for mtype
-pub const TYPE_NONE: i16 = 0; // 共用
-pub const TYPE_BEAT: i16 = 1200; // for message TYPE
-pub const TYPE_EXP: i16 = 1210; // for message TYPE
+pub const _TYPE_NONE: i16 = 0; // 共用
+pub const _TYPE_BEAT: i16 = 1200; // for message TYPE
+pub const _TYPE_EXP: i16 = 1210; // for message TYPE
 pub const _TYPE_DUR: i16 = 1211; // for message TYPE
 /// mtype: TYPE_EXP のとき
 /// atype
-pub const NOPED: i16 = 10; // TYPE_BEAT の Note情報より先に置く
-pub const PARA_ROOT: i16 = 12; // note に並行移動の基本rootの値を書く(0-11)
-pub const ARTIC: i16 = 14; // cnt に Staccato/legato の長さを書く(1-200%)
+pub const _NOPED: i16 = 10; // TYPE_BEAT の Note情報より先に置く
+pub const _PARA_ROOT: i16 = 12; // note に並行移動の基本rootの値を書く(0-11)
+pub const _ARTIC: i16 = 14; // cnt に Staccato/legato の長さを書く(1-200%)
 /// mtype: TYPE_BEAT のとき
 ///   note: highest note,
 ///   cnt: same timing note number
 /// atype、PhrEvt.trns, Arpeggio
-pub const TRNS_COM: i16 = 0; // Common 変換
-pub const TRNS_PARA: i16 = 10000; // Parallel 変換
-pub const TRNS_NONE: i16 = 10001; // 変換しない
+pub const _TRNS_COM: i16 = 0; // Common 変換
+pub const _TRNS_PARA: i16 = 10000; // Parallel 変換
+pub const _TRNS_NONE: i16 = 10001; // 変換しない
 //  -n .. +n  : ARP のときの Note 差分
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct AnaEvt {
+pub struct _AnaEvt {
     pub mtype: i16, // message type
     pub tick: i16,
     pub dur: i16,   // duration
@@ -166,18 +208,7 @@ pub struct AnaEvt {
     pub cnt: i16,   // value for something
     pub atype: i16, // type for something
 }
-impl AnaEvt {
-    pub fn new() -> Self {
-        Self {
-            mtype: TYPE_NONE,
-            tick: 0,
-            dur: 0,
-            note: 0,
-            cnt: 0,
-            atype: 0,
-        }
-    }
-}
+
 //-------------------------------------------------------------------
 // Phrase DATA
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
@@ -252,7 +283,7 @@ pub struct DmprEvt {
 impl DmprEvt {
     pub fn _new() -> Self {
         Self {
-            mtype: TYPE_NONE,
+            mtype: _TYPE_NONE,
             tick: 0,
             dur: 0,
             position: 0,

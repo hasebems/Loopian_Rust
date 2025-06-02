@@ -72,21 +72,27 @@ pub struct PhraseLoop {
 }
 impl PhraseLoop {
     pub fn new(sid: u32, pid: u32, prm: PhraseLoopParam) -> Rc<RefCell<Self>> {
-        let noped = prm
-            .ana
-            .clone()
-            .iter()
-            .any(|x| x.mtype == TYPE_EXP && x.atype == NOPED);
+        let noped = prm.ana.clone().iter().any(|x| {
+            if let AnaEvt::Exp(e) = x {
+                e.atype == ExpType::Noped
+            } else {
+                false
+            }
+        });
         let mut para_root_base = 0;
         prm.ana.iter().for_each(|x| {
-            if x.mtype == TYPE_EXP && x.atype == PARA_ROOT {
-                para_root_base = x.note;
+            if let AnaEvt::Exp(e) = x {
+                if e.atype == ExpType::ParaRoot {
+                    para_root_base = e.note;
+                }
             }
         });
         let mut staccato_rate = 100;
         prm.ana.iter().for_each(|x| {
-            if x.mtype == TYPE_EXP && x.atype == ARTIC {
-                staccato_rate = x.cnt as i32;
+            if let AnaEvt::Exp(e) = x {
+                if e.atype == ExpType::Artic {
+                    staccato_rate = e.cnt as i32;
+                }
             }
         });
         Rc::new(RefCell::new(Self {
@@ -242,25 +248,28 @@ impl PhraseLoop {
             deb_txt = "para_sc:".to_string();
         } else {
             let option = self.specify_trans_option(next_tick, ev.note);
-            if option == TRNS_PARA {
-                let para_root = root - self.para_root_base;
-                let mut tgt_nt = ev.note as i16 + para_root;
-                if root > self.turnnote {
-                    tgt_nt -= 12;
+            match option {
+                TrnsType::Para => {
+                    let para_root = root - self.para_root_base;
+                    let mut tgt_nt = ev.note as i16 + para_root;
+                    if root > self.turnnote {
+                        tgt_nt -= 12;
+                    }
+                    trans_note = translate_note_com(root, ctbl, tgt_nt as u8);
+                    deb_txt = "para:".to_string();
                 }
-                trans_note = translate_note_com(root, ctbl, tgt_nt as u8);
-                deb_txt = "para:".to_string();
-            } else if option == TRNS_COM {
-                trans_note = translate_note_com(root, ctbl, ev.note);
-                deb_txt = "com:".to_string();
-            } else if option == TRNS_NONE {
-                trans_note = ev.note;
-                deb_txt = "none:".to_string();
-            } else {
-                // Arpeggio
-                //trans_note = NoteTranslation::translate_note_arp(root, ctbl, option);
-                trans_note = translate_note_arp2(root, ctbl, ev.note, option, self.last_note);
-                deb_txt = "arp:".to_string();
+                TrnsType::Com => {
+                    trans_note = translate_note_com(root, ctbl, ev.note);
+                    deb_txt = "com:".to_string();
+                }
+                TrnsType::NoTrns => {
+                    trans_note = ev.note;
+                    deb_txt = "none:".to_string();
+                }
+                TrnsType::Arp(nt_diff) => {
+                    trans_note = translate_note_arp2(root, ctbl, ev.note, nt_diff, self.last_note);
+                    deb_txt = "arp:".to_string();
+                }
             }
         }
         self.last_note = trans_note as i16;
@@ -270,16 +279,15 @@ impl PhraseLoop {
             deb_txt + &(root.to_string() + "-" + &ctbl.to_string()),
         )
     }
-    fn specify_trans_option(&self, next_tick: i32, note: u8) -> i16 {
+    fn specify_trans_option(&self, next_tick: i32, note: u8) -> TrnsType {
         for anaone in self.analys.iter() {
-            if anaone.mtype == TYPE_BEAT
-                && anaone.tick == next_tick as i16
-                && anaone.note == note as i16
-            {
-                return anaone.atype;
+            if let AnaEvt::Beat(b) = anaone {
+                if b.tick == next_tick as i16 && b.note == note as i16 {
+                    return b.trns;
+                }
             }
         }
-        TRNS_COM
+        TrnsType::Com
     }
 }
 impl Elapse for PhraseLoop {

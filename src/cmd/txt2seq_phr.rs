@@ -259,7 +259,7 @@ struct AddNoteParam {
     mes_top: bool,
     dur: i32,
     vel: i16,
-    trns: i16,
+    trns: TrnsType,
     artic: i16,
 }
 impl Default for AddNoteParam {
@@ -268,7 +268,7 @@ impl Default for AddNoteParam {
             mes_top: false,
             dur: 0,
             vel: 0,
-            trns: 0,
+            trns: TrnsType::Com,
             artic: DEFAULT_ARTIC,
         }
     }
@@ -378,13 +378,13 @@ fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     }
     (vel, retvec)
 }
-fn extract_trans_info(origin: String) -> (String, i16) {
+fn extract_trans_info(origin: String) -> (String, TrnsType) {
     if origin.len() > 2 && &origin[0..2] == ">>" {
-        (origin[2..].to_string(), TRNS_NONE)
+        (origin[2..].to_string(), TrnsType::NoTrns)
     } else if &origin[0..1] == ">" {
-        (origin[1..].to_string(), TRNS_PARA)
+        (origin[1..].to_string(), TrnsType::Para)
     } else {
-        (origin, TRNS_COM)
+        (origin, TrnsType::Com)
     }
 }
 /// カンマで区切られた単位の文字列を解析し、ノート番号、tick、velocity を確定する

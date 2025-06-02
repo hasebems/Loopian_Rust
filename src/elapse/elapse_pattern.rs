@@ -61,15 +61,19 @@ impl DynamicPattern {
         // generate para_note_base
         let mut para = false;
         ana.iter().for_each(|x| {
-            if x.mtype == TYPE_EXP && x.atype == TRNS_PARA {
-                para = true;
+            if let AnaEvt::Exp(e) = x {
+                if e.atype == ExpType::ParaRoot {
+                    para = true;
+                }
             }
         });
         // generate staccato rate
         let mut staccato_rate = 90;
         ana.iter().for_each(|x| {
-            if x.mtype == TYPE_EXP && x.atype == ARTIC {
-                staccato_rate = x.cnt as i32;
+            if let AnaEvt::Exp(e) = x {
+                if e.atype == ExpType::ParaRoot {
+                    staccato_rate = e.cnt as i32;
+                }
             }
         });
         let arp_available = ptn.broken;

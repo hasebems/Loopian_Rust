@@ -28,16 +28,18 @@ fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
     let asmin = exps.iter().any(|exp| exp == "asMin()" || exp == "as(VI)");
     let mut exp = Vec::new();
     if noped {
-        let mut anev = AnaEvt::new();
-        anev.mtype = TYPE_EXP;
-        anev.atype = NOPED;
+        let anev = AnaEvt::Exp(AnaExpEvt {
+            atype: ExpType::Noped,
+            ..Default::default()
+        });
         exp.push(anev);
     }
     if asmin {
-        let mut anev = AnaEvt::new();
-        anev.mtype = TYPE_EXP;
-        anev.note = -3; // VI
-        anev.atype = PARA_ROOT;
+        let anev = AnaEvt::Exp(AnaExpEvt {
+            note: -3, // VI
+            atype: ExpType::ParaRoot,
+            ..Default::default()
+        });
         exp.push(anev);
     }
     exp //.copy_to()
@@ -65,21 +67,20 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
             None => 0,
         }
     };
-    let get_arp = |crnt_t: i16, repeat_head_t: i16, trns: i16| -> (i16, i16) {
-        if trns != TRNS_COM {
+    let get_arp = |crnt_t: i16, repeat_head_t: i16, trns: TrnsType| -> (TrnsType, i16) {
+        if trns != TrnsType::Com {
             (trns, NOTHING)
         } else if crnt_t == repeat_head_t {
-            (TRNS_COM, NOTHING)
-        }
-        // RPT_HEAD の直後には、TRNS_COM を記録しておく
-        else {
-            (NOTHING, repeat_head_t)
+            // RPT_HEAD の直後には、TRNS_COM を記録しておく
+            (TrnsType::Com, NOTHING)
+        } else {
+            (TrnsType::NoTrns, repeat_head_t)
         } // Arpeggio 候補
     };
     let mut crnt_tick = NOTHING;
     let mut note_cnt = 0;
     let mut crnt_dur = 0;
-    let mut crnt_trns = TRNS_COM;
+    let mut crnt_trns = TrnsType::Com;
     let mut repeat_head_tick: i16 = NOTHING;
     let mut note_all: Vec<u8> = Vec::new();
     let mut beat_analysis = Vec::new();
@@ -89,7 +90,7 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
                 if e.tick == crnt_tick {
                     note_cnt += 1;
                     note_all.push(e.note);
-                    if crnt_trns != TRNS_COM {
+                    if crnt_trns != TrnsType::Com {
                         crnt_trns = e.trns; // 和音で一つに限定
                     }
                 } else {
@@ -97,14 +98,13 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
                         // 一つ前の Note （あるいは和音の最高音）を記録
                         let (arp, rht) = get_arp(crnt_tick, repeat_head_tick, crnt_trns);
                         repeat_head_tick = rht;
-                        beat_analysis.push(AnaEvt {
-                            mtype: TYPE_BEAT,
+                        beat_analysis.push(AnaEvt::Beat(AnaBeatEvt {
                             tick: crnt_tick,
                             dur: crnt_dur,
                             note: get_hi(note_all.clone()) as i16,
                             cnt: note_cnt,
-                            atype: arp,
-                        })
+                            trns: arp,
+                        }));
                     }
                     crnt_tick = e.tick;
                     crnt_dur = e.dur;
@@ -123,14 +123,13 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
     }
     if note_cnt > 0 {
         let (arp, _rht) = get_arp(crnt_tick, repeat_head_tick, crnt_trns);
-        beat_analysis.push(AnaEvt {
-            mtype: TYPE_BEAT,
+        beat_analysis.push(AnaEvt::Beat(AnaBeatEvt {
             tick: crnt_tick,
             dur: crnt_dur,
             note: get_hi(note_all) as i16,
             cnt: note_cnt,
-            atype: arp,
-        });
+            trns: arp,
+        }));
     }
     beat_analysis
 }
@@ -152,9 +151,10 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
     let mut total_tick = 0;
     let mut all_dt = beat_analysis.clone();
     for ana in all_dt.iter_mut() {
-        if ana.mtype != TYPE_BEAT {
-            continue;
-        }
+        let ana = match ana {
+            AnaEvt::Beat(b) => b,
+            _ => continue,
+        };
 
         // total_tick の更新
         if total_tick != ana.tick {
@@ -187,8 +187,8 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
         );
         if para {
             // 強制的に para
-            ana.atype = TRNS_PARA; // para
-        } else if ana.atype == NOTHING {
+            ana.trns = TrnsType::Para;
+        } else if ana.trns == TrnsType::NoTrns {
             if last_note <= MAX_NOTE_NUMBER
                 && last_cnt == 1
                 && crnt_note <= MAX_NOTE_NUMBER
@@ -197,10 +197,10 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
                 && (crnt_note as i32) - (last_note as i32) < 10
             {
                 // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
-                ana.atype = crnt_note as i16 - last_note as i16; // arp
+                ana.trns = TrnsType::Arp((crnt_note - last_note) as i16); // arp
             } else {
                 // NOTHING で ARP にならなかったものは TRNS_COM
-                ana.atype = TRNS_COM;
+                ana.trns = TrnsType::Com;
             }
         }
         last_cnt = crnt_cnt;
@@ -208,9 +208,10 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
     }
     if para {
         // Note情報がない場合、Dynamic Pattern 用にpara指定メッセージを作成
-        let mut ae = AnaEvt::new();
-        ae.mtype = TYPE_EXP; // 上では TYPE_BEAT （音符単位）に TRNS_PARA が付く
-        ae.atype = TRNS_PARA;
+        let ae = AnaEvt::Exp(AnaExpEvt {
+            atype: ExpType::ParaRoot, //TRNS_PARA
+            ..Default::default()
+        });
         all_dt.push(ae);
     }
     all_dt
@@ -233,10 +234,11 @@ pub fn crispy_tick(exp_others: &[String]) -> Vec<AnaEvt> {
             if rate >= 100 {
                 rate = 100;
             }
-            let mut anev = AnaEvt::new();
-            anev.mtype = TYPE_EXP;
-            anev.cnt = rate as i16;
-            anev.atype = ARTIC;
+            let anev = AnaEvt::Exp(AnaExpEvt {
+                cnt: rate as i16,
+                atype: ExpType::Artic,
+                ..Default::default()
+            });
             ana.push(anev);
         }
     });
@@ -249,10 +251,11 @@ pub fn crispy_tick(exp_others: &[String]) -> Vec<AnaEvt> {
                 rate = 120;
             }
             rate = rate.clamp(100, 200);
-            let mut anev = AnaEvt::new();
-            anev.mtype = TYPE_EXP;
-            anev.cnt = rate as i16;
-            anev.atype = ARTIC;
+            let anev = AnaEvt::Exp(AnaExpEvt {
+                cnt: rate as i16,
+                atype: ExpType::Artic,
+                ..Default::default()
+            });
             ana.push(anev);
         }
     });
