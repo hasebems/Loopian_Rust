@@ -255,20 +255,26 @@ This document explains all features of Loopian.
     - `asMin()` or `as(VI)`: When parallel is specified, treat Phrase as VI scale and move in parallel based on difference from VI
 
 ### Dynamic Pattern
-- Dynamic Pattern automatically generates chord or arpeggio playback without specifying actual pitches in the Phrase
-- Multiple simultaneous notes (Cluster) are written as `Cls()`, and Arpeggio as `Arp()`
-    - Can omit lowercase letters: `C(), A()`
-    - Write in Phrase like `[hCls(),hArp()]`, showing overall note value before Pattern
-- For `Cls(a,b,c)`, parameters mean:
-    - a: Note value. Can choose h,q,e,v,w and their triplet, quintuplets, and dots (default:q)
-    - b: Number of chord notes (2-5)(default:4)
-    - c: Position of lowest note (-6 - 7)(default:0)
-- For `Arp(a,b,c)`, parameters mean:
-    - a: Note value. Can choose h,q,e,v,w and their triplet, quintuplets, and dots (default:q)
-    - b: u for ascending pattern, d for descending, ux for cross ascending, dx for cross descending
-    - c: Position of lowest note (-6 - 7)(default:0)
-- Can add same functions as Phrase at the end
-- Basically doesn't cross measures
+- Dynamic Pattern automatically generates simultaneous or broken chords without explicitly specifying the pitches in a Phrase.
+- For simultaneous chords, use `Cls()` (Cluster), and for broken chords, use `Arp()` (Arpeggio).
+    - You may omit lowercase letters, e.g. `C(), A()`.
+    - Specify the overall duration of the pattern before the function as in `[hCls(),hArp()]`.
+- `Cls(a,b,c)` takes up to three comma-separated parameters:
+    - Excess parameters beyond three are ignored.
+    - If fewer than three parameters are provided, default values are applied.
+    - a: duration symbol (choose from h, q, e, v, w and their triplet, quintuplet, or dotted variations; default: q).
+    - b: number of chord notes (allowed range 2–5; default: 4).
+    - c: lowest note position (range -6 to 7; default: 0).
+    - Prefixing with `$` (e.g. `$C()`) indicates that the chord should be arpeggiated:
+        - `$SC` for a slow arpeggio.
+        - `$QC` for a quick arpeggio.
+        - (Note: Although the naming may conflict with `Arp()`, the `$` denotes an arpeggio symbol in notation.)
+- `Arp(a,b,c)` parameters are as follows:
+    - a: duration symbol (choose from h, q, e, v, w and their triplet, quintuplet, or dotted variations; default: q).
+    - b: form indicator, where u means ascending, d descending, ux cross-ascending, and dx cross-descending.
+    - c: lowest note position (range -6 to 7; default: 0).
+- Additional functions can be appended to the Phrase.
+- Generally, the Dynamic Pattern does not span across measures.
 
 ### Cluster Memory Function
 - You can pre-register one beat's worth of notes to use in Phrases
@@ -492,6 +498,8 @@ This document explains all features of Loopian.
 - `graph.beatlissa(n)`: Pattern showing Lissajous waveform with Beat
     - `n`: 0-one, 1-number of beats
 - `graph.sinewave`: Sine wave synchronized with the sound.
+- `graph.rain` : A pattern that simulates the appearance of falling rain
+- `graph.fish` : A pattern that simulates the appearance of fish swimming
 - Pressing shift + space changes Text display status in 4 stages as follows. After 4 returns to 1.
     - 1: Normal display. Graphic displays as layer behind text.
     - 2: Scroll Text becomes slightly transparent. Graphic displays as layer in front of text.
