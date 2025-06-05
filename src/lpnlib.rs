@@ -181,34 +181,6 @@ pub enum AnaEvt {
     Beat(AnaBeatEvt),
     Exp(AnaExpEvt),
 }
-/// for mtype
-pub const _TYPE_NONE: i16 = 0; // 共用
-pub const _TYPE_BEAT: i16 = 1200; // for message TYPE
-pub const _TYPE_EXP: i16 = 1210; // for message TYPE
-pub const _TYPE_DUR: i16 = 1211; // for message TYPE
-/// mtype: TYPE_EXP のとき
-/// atype
-pub const _NOPED: i16 = 10; // TYPE_BEAT の Note情報より先に置く
-pub const _PARA_ROOT: i16 = 12; // note に並行移動の基本rootの値を書く(0-11)
-pub const _ARTIC: i16 = 14; // cnt に Staccato/legato の長さを書く(1-200%)
-/// mtype: TYPE_BEAT のとき
-///   note: highest note,
-///   cnt: same timing note number
-/// atype、PhrEvt.trns, Arpeggio
-pub const _TRNS_COM: i16 = 0; // Common 変換
-pub const _TRNS_PARA: i16 = 10000; // Parallel 変換
-pub const _TRNS_NONE: i16 = 10001; // 変換しない
-//  -n .. +n  : ARP のときの Note 差分
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct _AnaEvt {
-    pub mtype: i16, // message type
-    pub tick: i16,
-    pub dur: i16,   // duration
-    pub note: i16,  // note
-    pub cnt: i16,   // value for something
-    pub atype: i16, // type for something
-}
-
 //-------------------------------------------------------------------
 // Phrase DATA
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
@@ -279,16 +251,6 @@ pub struct DmprEvt {
     pub tick: i16,
     pub dur: i16,      // duration
     pub position: i16, // damper position
-}
-impl DmprEvt {
-    pub fn _new() -> Self {
-        Self {
-            mtype: _TYPE_NONE,
-            tick: 0,
-            dur: 0,
-            position: 0,
-        }
-    }
 }
 pub const TYPE_DAMPER: i16 = 1003;
 //-------------------------------------------------------------------
