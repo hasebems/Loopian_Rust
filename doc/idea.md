@@ -13,8 +13,7 @@
 - Loopian System
     - Loopian::APP : 本アプリケーション
     - Loopian::ORBIT : PCに接続する専用ハードウェア
-    - Loopian::script : Loopian記法、スクリプト言語、及び記述されたテキスト
-    - Loopian::inst : 将来作られる楽器の音源
+    - Loopian::QUBIT : HW小型版
 - Loopian::ORBIT を使ってリアルタイム演奏が可能
     - 一つの Part を、リアルタイム用に指定
     - 演奏を自動的にコード指定に合わせて MIDI 出力する
@@ -51,11 +50,12 @@
         - ! がついた場合、log には記述されない
         - !quit/!q : アプリ終了
         - !load/!l : ファイルロード
-        - !msr()    : loadを特定の拍まで止める。lpnファイル内にしか書けない
+        - !msr() : loadを特定の拍まで止める。lpnファイル内にしか書けない
         - !blk() : loadの特定部分しか読まない。lpnファイル内にしか書けない
     - part(ALL,L1,L12など) の Command
-        - [], {}, sync, clear
-    - Control系の Command
+        - [], {}
+        - sync, clear
+    - Play系の Command
         - play/p, fermata, fine, stop, resume, rit, clear
     - Set系は、set.Fn() という形式になる
     - graph の Command
@@ -71,7 +71,7 @@
 |[APP系]|!quit/!q||アプリ終了|
 |↑|!load/!l||ファイルロード|
 |↑|!clear/!c||データクリア|
-|[Control系]|play/p/resume||開始、再開|
+|[Play系]|play/p/resume||開始、再開|
 |↑|stop/fine||中止、終了|
 |↑|fermata||小節頭で停止|
 |↑|rit/rit.poco/rit.molto|bar(...)|小節数|
@@ -91,9 +91,9 @@
 |↑|{...}||Composition|
 |↑|sync|||
 |↑|clear|||
-|FLOW|{...}|||
-|graph|light/dark|||
-|↑|ripple/voice|||
+|[FLOW]|{...}|||
+|[graph]|light/dark|||
+|↑|ripple/voice/|||
 |||||
 
 
@@ -158,30 +158,39 @@ LoopianApp *-- ElapseStack
 LoopianApp *-- Graphic
 InputText *-- LoopianCmd
 InputText *-- History
-Elapse <|-- Part
-Elapse <|-- DamperPart
-Elapse <|-- Loop
-Loop <|-- PhraseLoop
-Loop <|-- CompositionLoop
-Elapse <|-- Note
-Elapse <|-- DynamicPattern
-Elapse <|-- Damper
-Elapse <|-- Flow
-ElapseStack *-- Part
-ElapseStack *-- DamperPart
-ElapseStack *-- MidiTx
-ElapseStack o-- Elapse
 LoopianCmd *-- SeqDataStock
 LoopianCmd *-- MessageSender
 SeqDataStock *-- PhraseDataStock
 SeqDataStock *-- CompositionDataStock
+Elapse <|-- Part
+Elapse <|-- DamperPart
+Elapse <|-- Loop
+Elapse <|-- Note
+Elapse <|-- DynamicPattern
+Elapse <|-- Damper
+Elapse <|-- Flow
+Loop <|-- PhraseLoop
+ElapseStack *-- Part
+ElapseStack *-- DamperPart
+ElapseStack *-- MidiTx
+ElapseStack o-- Elapse
+PhrLoopManager o-- PhraseLoop
+CmpsLoopManager o-- UnfoldedComposition
 Part *-- PhrLoopManager
 Part *-- CmpsLoopManager
 Part o-- Flow
-PhrLoopManager o-- PhraseLoop
-CmpsLoopManager o-- CompositionLoop
+Graphic *-- GenerativeView
 Graphic o-- NoteObj
-NoteObj <|-- WaterRipple
+GenerativeView <|-- WaterRipple
+GenerativeView <|-- Voice4
+GenerativeView <|-- SineWave
+GenerativeView <|-- Lissajous
+GenerativeView <|-- BeatLissa
+GenerativeView <|-- SineWave
+GenerativeView <|-- RainEffect
+GenerativeView <|-- SchoolOfFish
+NoteObj <|-- WaterRippleNote
+NoteObj <|-- Voice4Note
 ```
 - MidiRx は、gen_midirx_thread() 内で生成される
 - LoopianServer は、cui_loop() 内で生成される
@@ -231,7 +240,16 @@ NoteObj <|-- WaterRipple
 - 入力文字一覧
     - 全体区切り: [],{},@
     - 複数音符を跨ぐ、あるいは区切る指定子: /,|,*,<>:
-    - 一音符内の指定子: (0:>)(1:',",w,v,e,q,h,3,5,`)(2:-,+)(3:d,r,m,f,s,l,t,x,c)(3':i,a)(4:^,%)(5:.,o)(6:',~)
+    - 一音符内の指定子:
+        0:>
+        1:-,+               : Octave
+        1': $,$L,$Q
+        2:w,v,e,q,h,3,5,'   : 音価
+        3:d,r,m,f,s,l,t,x,c : 階名
+        3':i,a              : 階名
+        4:^,%   : 強弱
+        5:.,o   : 音価
+        6:',~   : staccato, legato
         - 3と3'を合わせたものは、連続して音符を書くことで同時発音を表現できる
         - 1と2は順序が逆でも動作する
     - ーノート変換子内の指定子: (1:@[n]:)(2:I,V)(3:#,b)(4:[table name])(5:!)(6:.,~,')
@@ -288,33 +306,6 @@ NoteObj <|-- WaterRipple
     - LoopianApp::new() で二つの mspc::channel() がつくられ、各スレッドが受信するよう設定される
 - Main から Elps へのメッセージ
     - enum ElpsMsg で定義されたメッセージを送信する
-<!--
-    - [] は中から選択
-    - () は対応する数値
-    - 大文字は定数、小文字は変数
-
-    |内容|1st|2nd|3rd,4th...|
-    |-|-|-|-|
-    |アプリ終了|MSG_QUIT|─|─|
-    |再生開始|MSG_START|─|─|
-    |再生停止|MSG_STOP|─|─|
-    |フェルマータ|MSG_FERMATA|─|─|
-    |同期|MSG_SYNC|[0-3/MSG2_LFT/MSG2_RGT/MSG2_ALL]|─|
-    |MIDI対応|MSG_FLOW|(0-3)|─|
-    |rit.|MSG_RIT|[MSG2_NRM/MSG2_POCO/MSG2_MLT]|[MSG3_ATP/MSG3_FERMATA/(tempo)]|
-    |テンポ|MSG_SET|MSG2_BPM|(bpm)|
-    |拍子||MSG2_BEAT|(分子),(分母)|
-    |調||MSG2_KEY|(key:0-11)|
-    |折り返し||MSG2_TURN|(turnnote:0-11)|
-    |Phrase|MSG_PHR+vari*10+part|(whole_tick)|TYPE_NOTE,(TICK),(DURATION),(NOTE),(VELOCITY)×repeat|
-    ||||TYPE_INFO,(TICK),(info_type),0,0|
-    |Composition|MSG_CMP+part|(whole_tick)|TYPE_CHORD,(TICK),(CD_ROOT),(CD_TABLE)×repeat|
-    ||||TYPE_VARI,(TICK),(variation),0|
-    |Analyze|MSG_ANA+vari*10+part||(TYPE),(TICK),(DURATION),(NOTE),(ntcnt),(arp_type)×repeat|
-    |DelPhrase|MSG_PHR_X+part|─|─|
-    |DelComposition|MSG_CMP_X+part|─|─|
-    |DelAnalyze|MSG_ANA_X+part|─|─|
--->
 - Elps から Main へのメッセージ
     - 8 indicator に表示する値
     - 画面に表示する Note On 情報（Note Offは使わない）
@@ -425,6 +416,47 @@ NoteObj <|-- WaterRipple
             - 前のループの、次の拍に鳴るはずだった音を鳴らさせないため
         - 同じ時間のループ内にloopは回収される
 
+- Tempo の揺れを作る機能
+
+
+
+### 13.Auftakt/Arpeggio の対応 -> Loop と Phrase の長さとの関係の変更
+
+#### 下記は新しい前提
+
+- ヴェロシティだけでなく、タイミングもランダムにずらす
+    - 拍ぴったしで鳴らなくなり、タイミングが前後にずれる
+    - Phrase の冒頭も前の小節にかかる場合がある
+- start の小節位置は 0:1:000 だが、Auftakt がなければ、1:1:000 の近くまで速いテンポですぐに移動
+    - Auftakt がある場合は、0:2:000, 0:3:000, 0:4:000 の近くまで速いテンポで移動（四拍子の場合）
+
+#### 実現したい仕様
+
+- 和音同時演奏の冒頭に $ を書くと、Arpeggioになる
+- このとき、和音の各音の発音タイミングを微妙にずらす
+    - 基本的には beat の前にずらす
+- command 部では、Arpeggio フラグ(gioFlag)を立てるだけで、実動作は Elapse 部で行う
+    - Phrase の冒頭が Arpeggio になるとき、Auftakt 小節が増える扱いとする
+- Elapseで、次の音符に gioFlag が立っていたら、以下の処理を行う
+    - 同タイミングの他の gioFlag が立っている音符を探す
+    - bpm や音価から各音のばらけのタイミングを算出
+    - それらの音符をいったんgioスタックに入れて、そこから再生する
+- そもそも gioFlag が立っていなくても、タイミングずらしを行う
+
+#### Phrase 管理の方法(floating loop)
+
+- あらたに begin_cnct, end_cnct という位置を設ける
+    - phrase 先頭(begin_phr)から begin_cnct まで1小節
+    - end_cnct から phrase 終了(end_phr)まで1小節
+    - end_cnct が、次の Loop の begin_cnct と繋がる
+    - 従って phrase は少なくとも最低3小節は持つ
+        - tick_for_onemsr * 3 := minimum whole_tick
+- Auftakt は、begin_phr から begin_cnct までの間に演奏される
+- 入力時は楽譜通りのタイミングだが、elapseで時間軸のずらしを行う
+    - 前後に足す小節は、code入力時には意識させない
+    - 現在再生中の Loop が最終小節のときに、新しい Phrase を入力した場合、以下のように再生する
+        - Auftakt がある場合はその直前 X tick、ない場合は最後の X tick(20以下?)までなら早送り再生
+        - 上記を超えたら、現 Loop をそのまま再生し、新しい Pharase は予約となる
 
 
 
