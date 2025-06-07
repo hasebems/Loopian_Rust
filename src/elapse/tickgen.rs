@@ -30,11 +30,29 @@ pub struct TickGen {
     start_mt: CrntMsrTick,
     ritgen: Box<dyn Rit>,
 }
-#[derive(Clone, Copy, PartialEq, Default, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct CrntMsrTick {
     pub msr: i32,
     pub tick: i32,
     pub tick_for_onemsr: i32,
+}
+impl Default for CrntMsrTick {
+    fn default() -> Self {
+        Self {
+            msr: 0,
+            tick: 0,
+            tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+        }
+    }
+}
+impl CrntMsrTick {
+    pub fn new() -> Self {
+        Self {
+            msr: -1, // not during_play
+            tick: 0,
+            tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+        }
+    }
 }
 #[allow(dead_code)]
 pub enum RitType {

@@ -44,6 +44,7 @@ pub struct ElapseStack {
     mdx: MidiTx,
 
     crnt_time: Instant,
+    last_msr_tick: CrntMsrTick,
     bpm_stock: i16,
     beat_stock: Meter,
     fine_stock: bool,
@@ -110,6 +111,7 @@ impl ElapseStack {
             tx_ctrl,
             mdx: c,
             crnt_time: Instant::now(),
+            last_msr_tick: CrntMsrTick::new(),
             bpm_stock: DEFAULT_BPM,
             beat_stock: Meter(4, 4),
             fine_stock: false,
@@ -150,7 +152,7 @@ impl ElapseStack {
         }
     }
     pub fn get_phr(&self, part_num: usize) -> Option<Rc<RefCell<PhraseLoop>>> {
-        self.part_vec[part_num].borrow().get_phr()
+        self.part_vec[part_num].borrow().get_phr().cloned()
     }
     pub fn get_flow(&self) -> Option<Rc<RefCell<Flow>>> {
         self.part_vec[FLOW_PART].borrow().get_flow()
@@ -209,12 +211,14 @@ impl ElapseStack {
         }
 
         //  新tick計算
-        let mut crnt_ = CrntMsrTick::default();
-        let mut beattop_flag = false;
+        let mut crnt_ = CrntMsrTick::new();
+        let (mut msrtop, mut beattop, mut beatnum) = (false, false, 0);
         if self.during_play {
-            let (msrtop, beattop, beatnum) = self.tg.gen_tick(self.crnt_time);
-            beattop_flag = beattop;
+            //  再生中ならば、現在の tick を更新
+            (msrtop, beattop, beatnum) = self.tg.gen_tick(self.crnt_time);
             crnt_ = self.tg.get_crnt_msr_tick();
+            self.last_msr_tick = crnt_;
+            // 小節先頭、Beat 先頭の処理
             if msrtop {
                 if self.fine_stock {
                     self.stop();
@@ -235,30 +239,12 @@ impl ElapseStack {
         self.check_rcv_midi(&crnt_);
 
         if self.during_play {
-            let mut debcnt = 0;
-            while let Some(felps) = self.pick_up_first(&crnt_) {
-                // 現measure/tick より前のイベントを持つ obj を返す
-                #[cfg(feature = "verbose")]
-                {
-                    let et = felps.borrow().id();
-                    let mt = felps.borrow().next();
-                    println!(
-                        "<{:>02}:{:>04}> pid: {:?}, sid: {:?}, type: {:?}, nmsr: {:?}, ntick: {:?}",
-                        crnt_.msr, crnt_.tick, et.pid, et.sid, et.elps_type, mt.0, mt.1
-                    );
-                }
-                felps.borrow_mut().process(&crnt_, self);
-                debcnt += 1;
-                assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
-            }
+            //  Elapse の処理
+            self.play_elapse(&crnt_);
 
-            if beattop_flag {
+            if beattop {
                 // Flow Part の和音を MIDI OUT する
                 self.midi_chord_out(&crnt_); // process の後でコールしないとハングする
-            }
-
-            if self.limit_for_deb < debcnt {
-                self.limit_for_deb = debcnt;
             }
 
             // remove ended obj
@@ -291,6 +277,28 @@ impl ElapseStack {
         }
         // for GUI(8indicator)
         self.update_gui_at_msrtop();
+    }
+    fn play_elapse(&mut self, crnt_: &CrntMsrTick) {
+        // すべての Elapse Obj. のうち、現在の measure/tick より前のイベントを持つものを処理する
+        let mut debcnt = 0;
+        while let Some(felps) = self.pick_up_first(&crnt_) {
+            // 現measure/tick より前のイベントを持つ obj を返す
+            #[cfg(feature = "verbose")]
+            {
+                let et = felps.borrow().id();
+                let mt = felps.borrow().next();
+                println!(
+                    "<{:>02}:{:>04}> pid: {:?}, sid: {:?}, type: {:?}, nmsr: {:?}, ntick: {:?}",
+                    crnt_.msr, crnt_.tick, et.pid, et.sid, et.elps_type, mt.0, mt.1
+                );
+            }
+            felps.borrow_mut().process(&crnt_, self);
+            debcnt += 1;
+            assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
+            if self.limit_for_deb < debcnt {
+                self.limit_for_deb = debcnt;
+            }
+        }        
     }
     //*******************************************************************
     //      handle message
@@ -439,6 +447,7 @@ impl ElapseStack {
             return;
         }
         self.during_play = false;
+        self.last_msr_tick = CrntMsrTick::new();
         let stop_vec = self.elapse_vec.to_vec();
         for elps in stop_vec.iter() {
             elps.borrow_mut().stop(self);
@@ -544,9 +553,9 @@ impl ElapseStack {
     }
     fn phrase(&mut self, part_num: i16, evts: PhrData) {
         println!("Received Phrase Message! Part: {}", part_num);
-        self.part_vec[part_num as usize]
-            .borrow_mut()
-            .rcv_phr_msg(evts);
+        let crnt_ = self.last_msr_tick.clone();
+        let pt = self.part_vec[part_num as usize].clone();
+        pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
     }
     fn composition(&mut self, part_num: i16, evts: ChordData) {
         println!("Received Composition Message! Part: {}", part_num);
