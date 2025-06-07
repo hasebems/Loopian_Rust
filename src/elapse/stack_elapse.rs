@@ -212,10 +212,11 @@ impl ElapseStack {
 
         //  新tick計算
         let mut crnt_ = CrntMsrTick::new();
-        let (mut msrtop, mut beattop, mut beatnum) = (false, false, 0);
+        let mut beattop_ev: bool = false;
         if self.during_play {
             //  再生中ならば、現在の tick を更新
-            (msrtop, beattop, beatnum) = self.tg.gen_tick(self.crnt_time);
+            let (msrtop, beattop, beatnum) = self.tg.gen_tick(self.crnt_time);
+            beattop_ev = beattop;
             crnt_ = self.tg.get_crnt_msr_tick();
             self.last_msr_tick = crnt_;
             // 小節先頭、Beat 先頭の処理
@@ -242,7 +243,7 @@ impl ElapseStack {
             //  Elapse の処理
             self.play_elapse(&crnt_);
 
-            if beattop {
+            if beattop_ev {
                 // Flow Part の和音を MIDI OUT する
                 self.midi_chord_out(&crnt_); // process の後でコールしないとハングする
             }
@@ -281,7 +282,7 @@ impl ElapseStack {
     fn play_elapse(&mut self, crnt_: &CrntMsrTick) {
         // すべての Elapse Obj. のうち、現在の measure/tick より前のイベントを持つものを処理する
         let mut debcnt = 0;
-        while let Some(felps) = self.pick_up_first(&crnt_) {
+        while let Some(felps) = self.pick_up_first(crnt_) {
             // 現measure/tick より前のイベントを持つ obj を返す
             #[cfg(feature = "verbose")]
             {
@@ -292,7 +293,7 @@ impl ElapseStack {
                     crnt_.msr, crnt_.tick, et.pid, et.sid, et.elps_type, mt.0, mt.1
                 );
             }
-            felps.borrow_mut().process(&crnt_, self);
+            felps.borrow_mut().process(crnt_, self);
             debcnt += 1;
             assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
             if self.limit_for_deb < debcnt {
@@ -553,7 +554,7 @@ impl ElapseStack {
     }
     fn phrase(&mut self, part_num: i16, evts: PhrData) {
         println!("Received Phrase Message! Part: {}", part_num);
-        let crnt_ = self.last_msr_tick.clone();
+        let crnt_ = self.last_msr_tick;
         let pt = self.part_vec[part_num as usize].clone();
         pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
     }

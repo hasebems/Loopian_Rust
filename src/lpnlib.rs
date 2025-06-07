@@ -145,6 +145,13 @@ impl PhrEvt {
             PhrEvt::Info(e) => e.tick,
         }
     }
+    pub fn set_tick(&mut self, tick: i16) {
+        match self {
+            PhrEvt::Note(e) => e.tick = tick,
+            PhrEvt::Pattern(e) => e.tick = tick,
+            PhrEvt::Info(e) => e.tick = tick,
+        }
+    }
     pub fn set_artic(&mut self, artic: i16) {
         match self {
             PhrEvt::Note(e) => e.artic = artic,
@@ -180,6 +187,20 @@ pub struct AnaExpEvt {
 pub enum AnaEvt {
     Beat(AnaBeatEvt),
     Exp(AnaExpEvt),
+}
+impl AnaEvt {
+    pub fn tick(&self) -> i16 {
+        match self {
+            AnaEvt::Beat(e) => e.tick,
+            AnaEvt::Exp(e) => e.tick,
+        }
+    }
+    pub fn set_tick(&mut self, tick: i16) {
+        match self {
+            AnaEvt::Beat(e) => e.tick = tick,
+            AnaEvt::Exp(e) => e.tick = tick,
+        }
+    }
 }
 //-------------------------------------------------------------------
 // Phrase DATA

@@ -186,7 +186,7 @@ impl TickGen {
     }
     pub fn get_tick(&self) -> (i32, i32, i32, i32) {
         (
-            self.crnt_msr + 1,                               // measure
+            self.crnt_msr,                                   // measure
             (self.crnt_tick_inmsr / self.tick_for_beat) + 1, // beat(1,2,3...)
             self.crnt_tick_inmsr % self.tick_for_beat,       // tick
             self.tick_for_onemsr / self.tick_for_beat,

@@ -21,6 +21,7 @@ pub struct PartBasicPrm {
     pub keynote: u8,
     pub sync_flag: bool,
 }
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum LoopPhase {
     BeforeBeginPhr,
     DuringBeginPhr,
@@ -29,16 +30,16 @@ enum LoopPhase {
     BeforeEndPtr,
 }
 //*******************************************************************
-//          Phrase Loop Manager Struct
+//          Phrase Loop Wrapper Struct
 //*******************************************************************
 #[derive(Clone)]
 struct PhrLoopWrapper {
-    pub begin_phr: i32,     // measure number / first measure number
-    pub end_phr: i32,       // measure number
-    pub begin_cnct: i32,    // measure number
-    pub end_cnct: i32,      // measure number
+    pub begin_phr: i32,  // measure number / first measure number
+    pub end_phr: i32,    // measure number
+    pub begin_cnct: i32, // measure number
+    pub end_cnct: i32,   // measure number
     pub whole_tick: i32,
-    pub max_loop_msr: i32,  // from whole_tick
+    pub max_loop_msr: i32, // from whole_tick
     pub phrase: Rc<RefCell<PhraseLoop>>,
     //auftakt: Option<i32>,       // 1-: Beat Number
 }
@@ -50,15 +51,27 @@ impl PhrLoopWrapper {
         turnnote: i16,
         phr_stock: PhrData,
     ) -> Self {
-        let org_whole_tick = phr_stock.whole_tick as i32;
-        let max_loop_msr = if org_whole_tick == 0 {
+        let mut repeat_tick = phr_stock.whole_tick as i32;
+        let max_loop_msr = if repeat_tick == 0 {
             0
         } else {
-            let plus_one = if org_whole_tick % crnt_.tick_for_onemsr == 0 { 0 } else { 1 };
-            org_whole_tick / crnt_.tick_for_onemsr + plus_one
+            repeat_tick -= 2 * crnt_.tick_for_onemsr; // 2 小節分
+            if repeat_tick > 0 {
+                let plus_one = if repeat_tick % crnt_.tick_for_onemsr == 0 {
+                    0
+                } else {
+                    1
+                };
+                (repeat_tick / crnt_.tick_for_onemsr) + plus_one
+            } else {
+                0
+            }
         };
-        let whole_tick = org_whole_tick + crnt_.tick_for_onemsr * 2;
-
+        #[cfg(feature = "verbose")]
+        println!(
+            "**** PhrLoopWrapper::new: loop_id: {}, repeat_tick: {}, max_loop_msr: {}\n**** Phrase: {:?}",
+            loop_id, repeat_tick, max_loop_msr, phr_stock
+        );
         let phrase = PhraseLoop::new(
             loop_id,
             pbp.part_num,
@@ -67,7 +80,7 @@ impl PhrLoopWrapper {
                 crnt_.msr,
                 phr_stock.evts.to_vec(),
                 phr_stock.ana.to_vec(),
-                whole_tick,
+                phr_stock.whole_tick as i32,
                 turnnote,
             ),
         );
@@ -76,26 +89,49 @@ impl PhrLoopWrapper {
             end_phr: crnt_.msr + max_loop_msr + 2,
             begin_cnct: crnt_.msr + 1,
             end_cnct: crnt_.msr + max_loop_msr + 1,
-            whole_tick,
+            whole_tick: phr_stock.whole_tick as i32,
             max_loop_msr,
             phrase: Rc::clone(&phrase),
         }
     }
-
+    /// 現在の PhraseLoop の状態を返す
+    pub fn crnt_phase(&self, crnt_: &CrntMsrTick) -> LoopPhase {
+        if crnt_.msr < self.begin_phr {
+            // Phrase Loop の開始前
+            LoopPhase::BeforeBeginPhr
+        } else if crnt_.msr == self.begin_phr {
+            // Phrase Loop の開始時
+            LoopPhase::DuringBeginPhr
+        } else if crnt_.msr < self.end_cnct - 1 {
+            // Phrase Loop の begin_cnct 後の小節
+            LoopPhase::AfterBeginCnct
+        } else if crnt_.msr == self.end_cnct - 1 {
+            // Phrase Loop の end_cnct 前の小節
+            LoopPhase::OneBarBeforeEndCnct
+        } else if crnt_.msr == self.end_cnct {
+            // Phrase Loop の end_cnct 後の小節
+            LoopPhase::BeforeEndPtr
+        } else {
+            // その他の状態
+            LoopPhase::BeforeBeginPhr // 仮の値
+        }
+    }
     // PhraseLoop に残りのイベントがあるか調べる
-
 }
 
+//*******************************************************************
+//          Phrase Loop Manager Struct
+//*******************************************************************
 // <User による Phrase 入力イベントがあった場合>
 //     LoopPhase             : Auftakt 無し  : Auftakt あり
 //  0: during stop           : Alt
 //  1: before begin_phr      : Alt
-//  2: during begin_phr      : Rpr          : Rpr / A後なら begin_cnct から追いかけ再生     
+//  2: during begin_phr      : Rpr          : Rpr / A後なら begin_cnct から追いかけ再生
 //  3: after begin_cnct      : Rpr 次の小節から追いかけ再生
 //  4: 1bar before end_cnct  : Alt          : Alt / A後なら begin_cnct から追いかけ再生
 //  5: before end_phr        : 3 と同じ
 //  Alt: instance_a,bを交互に使う  Rpr: 同じ instance に上書き
-
+//
 struct PhrLoopManager {
     loop_id: u32,            // loop sid
     phr_stock: Vec<PhrData>, // 0: Normal
@@ -103,7 +139,7 @@ struct PhrLoopManager {
     phr_instance_a: Option<PhrLoopWrapper>,
     phr_instance_b: Option<PhrLoopWrapper>,
     vari_reserve: Option<usize>, // 1-9: rsv, None: Normal
-    a_is_active: bool, // true: instance_a, false: instance_b
+    a_is_gened_last: bool,       // true: instance_a, false: instance_b
     begin_phr_ev: bool,
     begin_cnct_ev: bool,
     turnnote: i16,
@@ -117,7 +153,7 @@ impl PhrLoopManager {
             phr_instance_a: None,
             phr_instance_b: None,
             vari_reserve: None,
-            a_is_active: true,
+            a_is_gened_last: false,
             begin_phr_ev: false,
             begin_cnct_ev: false,
             turnnote: DEFAULT_TURNNOTE,
@@ -133,32 +169,51 @@ impl PhrLoopManager {
             if let Some(idx) = self.exist_vari_phr(vr) {
                 self.phr_idx = idx;
                 self.gen_phr_alternately(crnt_, estk, pbp);
-            }        
+            }
         } else if self.begin_phr_ev {
-            // 次の小節が begin_phr_ev になるとき
-
+            // この小節が begin_phr になるとき
+            self.gen_phr_alternately(crnt_, estk, pbp); // Alternate
+            self.begin_phr_ev = false;
+        } else if self.if_end_prpr(crnt_) {
+            // この小節が end_prpr になるとき
+            self.gen_phr_alternately(crnt_, estk, pbp); // Alternate
+            self.begin_phr_ev = false;
+            self.begin_cnct_ev = true; // 次の小節が begin_cnct
         } else if self.begin_cnct_ev {
-            // begin_cnct
+            // TODO: この小節が begin_cnct
+            self.begin_cnct_ev = false;
         }
     }
     pub fn start(&mut self) {
-        self.begin_cnct_ev = true;
+        if self.phr_stock.len() >= self.phr_idx && self.phr_stock[self.phr_idx].whole_tick != 0 {
+            // instance_a を使用
+            self.begin_phr_ev = true;
+            self.begin_cnct_ev = false;
+        }
     }
-    pub fn sync(&mut self) {
-        // 次の小節を begin_cnct として、再生し直す
-        self.begin_cnct_ev = true;
-    }
-    pub fn rcv_phrase(&mut self, msg: PhrData, crnt_: &CrntMsrTick, estk_: &mut ElapseStack, pbp: PartBasicPrm) {
+    //    pub fn sync(&mut self) {
+    //        // 次の小節を begin_cnct として、再生し直す
+    //        self.begin_phr_ev = false;
+    //        self.begin_cnct_ev = true;
+    //    }
+    pub fn rcv_phrase(
+        &mut self,
+        msg: PhrData,
+        crnt_: &CrntMsrTick,
+        estk_: &mut ElapseStack,
+        pbp: PartBasicPrm,
+        during_play: bool,
+    ) {
         if msg.evts.is_empty() && msg.whole_tick == 0 {
             // phrase = [] の時の処理
             self.delete_phrase(msg);
         } else {
             // Phrase 入力イベントがあった場合
-            self.append_phrase(msg, crnt_, estk_, pbp);
+            self.append_phrase(msg, crnt_, estk_, pbp, during_play);
         }
     }
     pub fn get_phr(&self) -> Option<&Rc<RefCell<PhraseLoop>>> {
-        if self.a_is_active {
+        if self.a_is_gened_last {
             if let Some(inst) = &self.phr_instance_a {
                 return Some(&inst.phrase);
             }
@@ -168,7 +223,7 @@ impl PhrLoopManager {
         None
     }
     pub fn gen_msrcnt(&self, crnt_msr: i32) -> Option<(i32, i32)> {
-        if self.a_is_active {
+        if self.a_is_gened_last {
             if let Some(inst) = &self.phr_instance_a {
                 let denomirator = inst.max_loop_msr;
                 let numerator = crnt_msr - inst.phrase.borrow().first_msr_num() + 1; // 1origin
@@ -188,17 +243,27 @@ impl PhrLoopManager {
     }
     pub fn del_phrase(&mut self) {
         if self.phr_instance_a.is_some() {
-            self.phr_instance_a.as_ref().unwrap().phrase.borrow_mut().set_destroy();
+            self.phr_instance_a
+                .as_ref()
+                .unwrap()
+                .phrase
+                .borrow_mut()
+                .set_destroy();
         }
         if self.phr_instance_b.is_some() {
-            self.phr_instance_b.as_ref().unwrap().phrase.borrow_mut().set_destroy();
+            self.phr_instance_b
+                .as_ref()
+                .unwrap()
+                .phrase
+                .borrow_mut()
+                .set_destroy();
         }
         self.phr_stock = vec![PhrData::empty()];
         self.phr_idx = 0;
         self.phr_instance_a = None;
         self.phr_instance_b = None;
         self.vari_reserve = None;
-        self.a_is_active = true; // instance_a を使用
+        self.a_is_gened_last = true; // instance_a を使用
         self.begin_phr_ev = false;
         self.begin_cnct_ev = false;
     }
@@ -211,7 +276,7 @@ impl PhrLoopManager {
         }
     }
     pub fn whole_tick(&self) -> i32 {
-        if self.a_is_active {
+        if self.a_is_gened_last {
             if let Some(inst) = &self.phr_instance_a {
                 return inst.whole_tick;
             }
@@ -221,33 +286,70 @@ impl PhrLoopManager {
         0
     }
     //---------------------------------------------------------------
-    fn append_phrase(&mut self, msg: PhrData, crnt_: &CrntMsrTick, estk_: &mut ElapseStack, pbp: PartBasicPrm) {
+    fn append_phrase(
+        &mut self,
+        msg: PhrData,
+        crnt_: &CrntMsrTick,
+        estk_: &mut ElapseStack,
+        pbp: PartBasicPrm,
+        during_play: bool,
+    ) {
         // whole_tick: 前後に１小節分追加
+        let msg = self.add_float_part(msg, crnt_.tick_for_onemsr as i16);
+
         match msg.vari {
             PhraseAs::Normal => {
                 // Normal Phrase
                 self.phr_stock[0] = msg;
                 self.phr_idx = 0;
-                self.gen_phr_alternately(crnt_, estk_, pbp);
+                let phase = self.get_crnt_phr_phase(crnt_);
+                println!("PhrLoopManager::append_phrase: phase: {:?}", phase);
+                if during_play {
+                    match phase {
+                        LoopPhase::BeforeBeginPhr => {
+                            // Phrase Loop の開始前
+                            self.begin_phr_ev = true;
+                            self.begin_cnct_ev = false;
+                        }
+                        LoopPhase::DuringBeginPhr => {
+                            // Phrase Loop の開始時
+                            self.begin_phr_ev = false;
+                            self.begin_cnct_ev = true;
+                            self.gen_phr_alternately(crnt_, estk_, pbp); // Replace
+                        }
+                        LoopPhase::AfterBeginCnct => {
+                            // Phrase Loop の begin_cnct 後の小節
+                            self.begin_phr_ev = false;
+                            self.begin_cnct_ev = false;
+                            // TODO: Phrase Loop の begin_cnct から追いかけ再生
+                        }
+                        LoopPhase::OneBarBeforeEndCnct => {
+                            // Phrase Loop の end_cnct 前の小節
+                            self.begin_phr_ev = false;
+                            self.begin_cnct_ev = true;
+                            self.gen_phr_alternately(crnt_, estk_, pbp); // Alternate
+                        }
+                        //LoopPhase::BeforeEndPtr => {
+                        _ => {
+                            // Phrase Loop の end_cnct 以降の小節
+                            self.begin_phr_ev = false;
+                            self.begin_cnct_ev = true;
+                            self.gen_phr_alternately(crnt_, estk_, pbp); // Alternate
+                        }
+                    }
+                }
             }
             PhraseAs::Variation(_v) => {
                 // Variation Phrase
                 if let Some(idx) = self.exists_same_vari(msg.vari.clone()) {
-                    // 上書き
-                    self.phr_stock[idx] = msg;
-                    if idx == 0 {
-                        //self.state_reserve = true; // Normal Phrase が上書きされた
-                    }
+                    self.phr_stock[idx] = msg; // 上書き
                 } else {
-                    // 新規追加
-                    self.phr_stock.push(msg);
+                    self.phr_stock.push(msg); // 新規追加
                 }
             }
-            PhraseAs::Measure(msr) => {
+            PhraseAs::Measure(_m) => {
                 // Measure 指定 Phrase
-                let mut msg_modified = msg.clone();
-                msg_modified.vari = PhraseAs::Measure(msr);
-                self.phr_stock.push(msg_modified);
+                self.phr_stock.push(msg);
             }
         }
     }
@@ -283,7 +385,7 @@ impl PhrLoopManager {
     }
     fn exist_msr_phr(&self, crnt_: &CrntMsrTick) -> Option<usize> {
         for (i, phr) in self.phr_stock.iter().enumerate() {
-            if phr.vari == PhraseAs::Measure(crnt_.msr as usize) {
+            if phr.vari == PhraseAs::Measure((crnt_.msr as usize) + 1) {
                 return Some(i);
             }
         }
@@ -297,10 +399,43 @@ impl PhrLoopManager {
         }
         None
     }
-    fn get_crnt_phr_info(&self) -> LoopPhase {
+    fn if_end_prpr(&self, crnt_: &CrntMsrTick) -> bool {
+        if self.get_crnt_phr_phase(crnt_) == LoopPhase::OneBarBeforeEndCnct {
+            // Phrase Loop の end_cnct 前の小節
+            return true;
+        }
+        false
+    }
+    fn add_float_part(&self, mut msg: PhrData, tick_for_onemsr: i16) -> PhrData {
+        // whole_tick: 前後に１小節分追加
+        if msg.whole_tick != 0 {
+            if msg.auftakt == 0 {
+                msg.whole_tick += 2 * tick_for_onemsr; // 2 小節分
+                msg.evts.iter_mut().for_each(|evt| {
+                    evt.set_tick(evt.tick() + tick_for_onemsr); // 1 小節分
+                });
+                msg.ana.iter_mut().for_each(|ana| {
+                    ana.set_tick(ana.tick() + tick_for_onemsr); // 1 小節分
+                });
+            } else {
+                // auftakt がある場合は、auftakt の分を引く
+                let rest = msg.whole_tick % tick_for_onemsr;
+                msg.whole_tick = msg.whole_tick - rest + 2 * tick_for_onemsr;
+            }
+        }
+        msg
+    }
+    fn get_crnt_phr_phase(&self, crnt_: &CrntMsrTick) -> LoopPhase {
+        if self.a_is_gened_last {
+            if let Some(inst) = &self.phr_instance_a {
+                return inst.crnt_phase(crnt_);
+            }
+        } else if let Some(inst) = &self.phr_instance_b {
+            return inst.crnt_phase(crnt_);
+        }
         LoopPhase::BeforeBeginPhr
     }
-    /// PhrLoopWrapper を生成し、PhraseLoop を ElapseStack に追加する
+    /// 現在動作中の instance とは違う PhrLoopWrapper を生成する(交互)
     fn gen_phr_alternately(
         &mut self,
         crnt_: &CrntMsrTick,
@@ -308,9 +443,9 @@ impl PhrLoopManager {
         pbp: PartBasicPrm,
     ) {
         let phr: PhrData = self.phr_stock[self.phr_idx].clone();
-        if self.a_is_active {
+        if self.a_is_gened_last {
             // instance_b を使用
-            self.a_is_active = false;
+            self.a_is_gened_last = false;
             let pinst = PhrLoopWrapper::new(
                 crnt_,
                 pbp,
@@ -322,7 +457,7 @@ impl PhrLoopManager {
             estk.add_elapse(pinst.phrase);
         } else {
             // instance_a を使用
-            self.a_is_active = true;
+            self.a_is_gened_last = true;
             let pinst = PhrLoopWrapper::new(
                 crnt_,
                 pbp,
@@ -333,7 +468,7 @@ impl PhrLoopManager {
             self.phr_instance_a = Some(pinst.clone());
             estk.add_elapse(pinst.phrase);
         }
-        //estk.add_elapse(phrloop);
+        self.loop_id += 1; // loop_id をインクリメント
     }
 }
 
@@ -389,7 +524,7 @@ impl Part {
             keynote: self.keynote,
             sync_flag: self.sync_next_msr_flag,
         };
-        self.pm.rcv_phrase(msg, crnt_, estk_, pbp);
+        self.pm.rcv_phrase(msg, crnt_, estk_, pbp, self.during_play);
     }
     pub fn del_phr(&mut self) {
         self.pm.del_phrase();

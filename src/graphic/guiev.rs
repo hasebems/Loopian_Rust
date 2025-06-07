@@ -89,7 +89,7 @@ impl GuiEv {
             }
             UiMsg::TickUi(during_play, m, b, t) => {
                 let p = if during_play { ">" } else { " " };
-                let msr = if m != 0 { m } else { 1 };
+                let msr = if m >= 0 { m } else { 0 };
                 self.indicator[INDC_TICK] = format!("{}{}:{}:{:>03}", p, msr, b, t);
                 self.during_play = during_play;
                 self.crnt_msr.msr = m;
