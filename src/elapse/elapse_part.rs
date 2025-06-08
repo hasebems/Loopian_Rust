@@ -37,6 +37,7 @@ struct PhrLoopWrapper {
     pub end_cnct: i32,  // measure number
     pub whole_tick: i32,
     pub max_loop_msr: i32, // from whole_tick
+    pub auftakt: i16, // !0: auftaktあり
     pub phrase: Rc<RefCell<PhraseLoop>>,
 }
 impl PhrLoopWrapper {
@@ -47,6 +48,7 @@ impl PhrLoopWrapper {
         pbp: PartBasicPrm,
         loop_id: u32,
         turnnote: i16,
+        auftakt: i16,
         phr_stock: PhrData,
     ) -> Self {
         let mut repeat_tick = phr_stock.whole_tick as i32;
@@ -87,6 +89,7 @@ impl PhrLoopWrapper {
             end_cnct: crnt_msr + max_loop_msr + 1,
             whole_tick: phr_stock.whole_tick as i32,
             max_loop_msr,
+            auftakt,
             phrase: Rc::clone(&phrase),
         }
     }
@@ -252,6 +255,13 @@ impl PhrLoopManager {
             0
         }
     }
+    pub fn auftakt(&self) -> i16 {
+        if let Some(phr) = self.crnt_phr() {
+            phr.auftakt
+        } else {
+            0
+        }
+    }
     //---------------------------------------------------------------
     fn crnt_phr(&self) -> Option<PhrLoopWrapper> {
         if self.a_is_gened_last {
@@ -284,18 +294,16 @@ impl PhrLoopManager {
                 println!("PhrLoopManager::append_phrase: phase: {:?}", phase);
                 if during_play {
                     match phase {
-                        LoopPhase::BeforeBeginPhr => {
+                        //LoopPhase::BeforeBeginPhr => {
                             // Phrase Loop の開始前
-                            self.begin_phr_ev = true;
-                        }
-                        LoopPhase::DuringBeginPhr => {
+                        //    self.begin_phr_ev = true;
+                        //}
+                        LoopPhase::BeforeBeginPhr | LoopPhase::DuringBeginPhr => {
                             // Phrase Loop の開始時
-                            self.begin_phr_ev = false;
                             self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Replace
                         }
                         LoopPhase::AfterBeginCnct => {
                             // Phrase Loop の begin_cnct 後の小節
-                            self.begin_phr_ev = false;
                             if self.whole_tick() <= self.phr_stock[0].whole_tick as i32 {
                                 // 新しい Phrase の方が長い場合
                                 self.chasing_play = true;
@@ -303,13 +311,11 @@ impl PhrLoopManager {
                         }
                         LoopPhase::OneBarBeforeEndCnct => {
                             // Phrase Loop の end_cnct 前の小節
-                            self.begin_phr_ev = false;
                             self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Alternate
                         }
                         //LoopPhase::BeforeEndPtr => {
                         _ => {
                             // Phrase Loop の end_cnct 以降の小節
-                            self.begin_phr_ev = false;
                             self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Alternate
                         }
                     }
@@ -439,6 +445,7 @@ impl PhrLoopManager {
             pbp,
             self.loop_id + 1, // loop_id をインクリメント
             self.turnnote,
+            phr.auftakt,
             phr,
         );
         if self.a_is_gened_last {
@@ -602,6 +609,16 @@ impl Part {
             fl.borrow_mut().rcv_midi(estk_, crnt_, status, locate, vel);
         }
     }
+    pub fn get_start_beat(&self) -> Option<i32> {
+        let auf = self.pm.auftakt();
+        if auf != 0 {
+            // auftakt がある場合
+            Some(auf as i32)
+        } else {
+            // auftakt がない場合
+            None
+        }
+    }
     /// Phrase Variation があるか確認し、あれば予約する
     fn check_variation(&mut self, crnt_: &CrntMsrTick) {
         let vari_num = self.get_cmps_med().get_vari_num(crnt_) as usize;
@@ -659,7 +676,9 @@ impl Elapse for Part {
         } else {
             // 小節先頭
             self.cm.msrtop(crnt_, estk, pbp);
-            self.check_variation(crnt_);
+            let mut future = *crnt_;
+            future.msr += 1;    // 次の小節の頭
+            self.check_variation(&future);
             self.pm.msrtop(crnt_, estk, pbp);
             self.sync_next_msr_flag = false;
             // 次の小節の頭をセット

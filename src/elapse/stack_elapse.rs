@@ -427,6 +427,19 @@ impl ElapseStack {
         if self.during_play && !resume {
             return;
         }
+
+        // すべての Part の開始beatを調べる
+        let mut first_beat = FULL;
+        self.part_vec
+            .iter_mut()
+            .for_each(|x| {
+                if let Some(auf) = x.borrow().get_start_beat() {
+                    if auf < first_beat {
+                        first_beat = auf;
+                    }
+                }
+        });
+
         self.during_play = true;
         self.tg.start(self.crnt_time, self.bpm_stock, resume);
         let start_msr = if resume {
@@ -438,6 +451,7 @@ impl ElapseStack {
             elps.borrow_mut().start(start_msr);
         }
         self.send_msg_to_rx(ElpsMsg::Ctrl(MSG_CTRL_START));
+        #[cfg(feature = "verbose")]
         println!("<Start Playing! in stack_elapse> M:{}", start_msr);
     }
     fn panic(&mut self) {

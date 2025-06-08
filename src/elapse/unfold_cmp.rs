@@ -123,7 +123,11 @@ impl UnfoldedComposition {
     pub fn loop_msr_beat(&self, crnt_: &CrntMsrTick) -> (isize, isize) {
         let tick_for_onebeat = crnt_.tick_for_onemsr / (self.max_beat as i32);
         let beat = (crnt_.tick / tick_for_onebeat) as isize;
-        let msr = (crnt_.msr - self.first_msr_num) as isize;
+        let loop_size = self.whole_tick as isize / crnt_.tick_for_onemsr as isize;
+        let mut msr = (crnt_.msr - self.first_msr_num) as isize;
+        while msr >= loop_size {
+            msr -= loop_size;
+        }
         Self::check_msr_beat(msr, beat)
     }
     pub fn gen_chord_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
@@ -273,7 +277,7 @@ impl CmpsLoopMediator {
         }
     }
     pub fn start(&mut self) {
-        self.first_msr_num = 0;
+        self.first_msr_num = 1; // 1小節目から開始
         self.state_reserve = true;
     }
     pub fn msrtop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
@@ -281,6 +285,9 @@ impl CmpsLoopMediator {
             // 前小節にて phrase/pattern 指定された時
             if crnt_.msr == 0 {
                 // 今回 start したとき
+                self.state_reserve = true;
+            } else if crnt_.msr == 1 {
+                // start 1小節後
                 self.state_reserve = false;
                 self.new_loop(crnt_, estk);
             } else if self.max_msr == 0 {
@@ -448,7 +455,7 @@ impl CmpsLoopMediator {
     /// 一度 Mediator（仲介者）を通してから、UnfoldedComposition のサービスを利用する
     /// Not Yet:
     /// いずれ、未来の小節の情報を取得できるようにする
-    /// cmps（現在）か cmps_next（未来）のどちらかを選択する
+    /// cmps（現在）か next_cmps（未来）のどちらかを選択する
     pub fn get_chord_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
         if let Some(ref cmp) = self.cmps {
             cmp.gen_chord_map(crnt_, max_beat)

@@ -197,7 +197,7 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
                 && (crnt_note as i32) - (last_note as i32) < 10
             {
                 // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
-                ana.trns = TrnsType::Arp((crnt_note - last_note) as i16); // arp
+                ana.trns = TrnsType::Arp(crnt_note as i16 - last_note as i16); // arp
             } else {
                 // NOTHING で ARP にならなかったものは TRNS_COM
                 ana.trns = TrnsType::Com;
