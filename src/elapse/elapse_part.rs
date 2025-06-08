@@ -37,7 +37,8 @@ struct PhrLoopWrapper {
     pub end_cnct: i32,  // measure number
     pub whole_tick: i32,
     pub max_loop_msr: i32, // from whole_tick
-    pub auftakt: i16, // !0: auftaktあり
+    pub auftakt: i16,      // !0: auftaktあり
+    pub do_loop: bool,     // true: Phrase Loop, false: Phrase
     pub phrase: Rc<RefCell<PhraseLoop>>,
 }
 impl PhrLoopWrapper {
@@ -48,7 +49,6 @@ impl PhrLoopWrapper {
         pbp: PartBasicPrm,
         loop_id: u32,
         turnnote: i16,
-        auftakt: i16,
         phr_stock: PhrData,
     ) -> Self {
         let mut repeat_tick = phr_stock.whole_tick as i32;
@@ -89,7 +89,8 @@ impl PhrLoopWrapper {
             end_cnct: crnt_msr + max_loop_msr + 1,
             whole_tick: phr_stock.whole_tick as i32,
             max_loop_msr,
-            auftakt,
+            auftakt: phr_stock.auftakt,
+            do_loop: phr_stock.do_loop,
             phrase: Rc::clone(&phrase),
         }
     }
@@ -172,15 +173,19 @@ impl PhrLoopManager {
             self.begin_phr_ev = false;
         } else if self.if_end_prpr(crnt_) {
             // この小節が end_prpr になるとき（追いかけより優先）
-            self.phr_idx = 0; // 0: Normal
-            self.gen_phr_alternately(crnt_, estk, pbp, 0); // Alternate
-            self.begin_phr_ev = false;
+            if let Some(inst) = self.crnt_phr() {
+                // Loop ありなら、もう一度同じ Phrase Loop を生成
+                if inst.do_loop {
+                    self.phr_idx = 0; // 0: Normal
+                    self.gen_phr_alternately(crnt_, estk, pbp, 0); // Alternate
+                }
+            }
             self.chasing_play = false; // 追いかけ再生フラグをリセット
         } else if self.chasing_play {
             // 追いかけ再生フラグが立っているとき
             self.chasing_play(crnt_, estk, pbp);
             self.chasing_play = false; // 追いかけ再生フラグをリセット
-            self.delete_ev();
+            self.delete_ev(); // 削除イベントのあるインスタンスを削除
         } else {
             // 何もしない
         }
@@ -294,10 +299,6 @@ impl PhrLoopManager {
                 println!("PhrLoopManager::append_phrase: phase: {:?}", phase);
                 if during_play {
                     match phase {
-                        //LoopPhase::BeforeBeginPhr => {
-                            // Phrase Loop の開始前
-                        //    self.begin_phr_ev = true;
-                        //}
                         LoopPhase::BeforeBeginPhr | LoopPhase::DuringBeginPhr => {
                             // Phrase Loop の開始時
                             self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Replace
@@ -445,7 +446,6 @@ impl PhrLoopManager {
             pbp,
             self.loop_id + 1, // loop_id をインクリメント
             self.turnnote,
-            phr.auftakt,
             phr,
         );
         if self.a_is_gened_last {
@@ -564,7 +564,6 @@ impl Part {
     }
     /// sync command 発行時にコールされる
     pub fn set_sync(&mut self) {
-        //self.pm.state_reserve = true;
         self.cm.state_reserve = true;
         self.sync_next_msr_flag = true;
     }
@@ -677,7 +676,7 @@ impl Elapse for Part {
             // 小節先頭
             self.cm.msrtop(crnt_, estk, pbp);
             let mut future = *crnt_;
-            future.msr += 1;    // 次の小節の頭
+            future.msr += 1; // 次の小節の頭
             self.check_variation(&future);
             self.pm.msrtop(crnt_, estk, pbp);
             self.sync_next_msr_flag = false;
