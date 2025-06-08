@@ -65,16 +65,17 @@ pub const DEFAULT_ARTIC: i16 = 100;
 pub enum TrnsType {
     #[default]
     Com, // TRNS_COM: Common 変換
-    Para, // TRNS_PARA: Parallel 変換
+    Para,     // TRNS_PARA: Parallel 変換
     Arp(i16), // ARP: Arpeggio 変換, -n .. +n  : Note 差分
-    NoTrns, // 変換しない
+    NoTrns,   // 変換しない
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub enum ExpType { // TYPE_EXP のときの atype
+pub enum ExpType {
+    // TYPE_EXP のときの atype
     #[default]
     Noped, // TYPE_BEAT の Note情報より先に置く
     ParaRoot, // note に並行移動の基本rootの値を書く(0-11)
-    Artic, // cnt に Staccato/legato の長さを書く(1-200%)
+    Artic,    // cnt に Staccato/legato の長さを書く(1-200%)
 }
 
 //*******************************************************************
@@ -83,12 +84,12 @@ pub enum ExpType { // TYPE_EXP のときの atype
 //*******************************************************************
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct NoteEvt {
-    pub tick: i16,  // tick
-    pub dur: i16,   // duration
-    pub note: u8,   // note number
-    pub vel: i16,   // velocity
+    pub tick: i16,      // tick
+    pub dur: i16,       // duration
+    pub note: u8,       // note number
+    pub vel: i16,       // velocity
     pub trns: TrnsType, // translation
-    pub artic: i16, // 0..100..200[%] staccato/legato
+    pub artic: i16,     // 0..100..200[%] staccato/legato
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct DynPatternEvt {
@@ -168,9 +169,9 @@ pub struct AnaBeatEvt {
     pub dur: i16,  // duration
     pub note: i16, // highest note
     pub cnt: i16,  // same timing note number
-    pub trns: TrnsType, 
-        // Com, Para, NoTrns,
-        // Arp: -n .. +n ARP のときの Note 差分
+    pub trns: TrnsType,
+    // Com, Para, NoTrns,
+    // Arp: -n .. +n ARP のときの Note 差分
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct AnaExpEvt {
@@ -179,9 +180,9 @@ pub struct AnaExpEvt {
     pub note: i16, // note
     pub cnt: i16,  // value
     pub atype: ExpType,
-        // NOPED: TYPE_BEAT の Note情報より先に置く
-        // PARA_ROOT: note に並行移動の基本rootの値を書く(0-11)
-        // ARTIC: cnt に Staccato/legato の長さを書く(1-200%)
+    // NOPED: TYPE_BEAT の Note情報より先に置く
+    // PARA_ROOT: note に並行移動の基本rootの値を書く(0-11)
+    // ARTIC: cnt に Staccato/legato の長さを書く(1-200%)
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AnaEvt {

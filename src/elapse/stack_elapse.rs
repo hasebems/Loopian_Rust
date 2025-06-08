@@ -299,7 +299,7 @@ impl ElapseStack {
             if self.limit_for_deb < debcnt {
                 self.limit_for_deb = debcnt;
             }
-        }        
+        }
     }
     //*******************************************************************
     //      handle message
