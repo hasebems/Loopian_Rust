@@ -476,7 +476,7 @@ impl CmpsLoopMediator {
             let (msr, beat) = cmp.loop_msr_beat(crnt_);
             cmp.scan_chord(msr as usize, beat as usize)
         } else {
-            (NO_ROOT, NO_PED_TBL_NUM)
+            (NO_ROOT, NO_TABLE)
         }
     }
     pub fn get_chord_name(&mut self, crnt_: &CrntMsrTick) -> String {
