@@ -124,14 +124,22 @@ impl UnfoldedComposition {
         let tick_for_onebeat = crnt_.tick_for_onemsr / (self.max_beat as i32);
         let beat = (crnt_.tick / tick_for_onebeat) as isize;
         let loop_size = self.whole_tick as isize / crnt_.tick_for_onemsr as isize;
-        let mut msr = (crnt_.msr - self.first_msr_num) as isize;
+        let mut msr = if crnt_.msr >= self.first_msr_num {
+            (crnt_.msr - self.first_msr_num) as isize
+        } else {
+            1   // 1小節目から開始
+        };
         while msr >= loop_size {
             msr -= loop_size;
         }
         Self::check_msr_beat(msr, beat)
     }
     pub fn gen_chord_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
-        let cmsr = (crnt_.msr - self.first_msr_num) as usize;
+        let cmsr = if crnt_.msr >= self.first_msr_num {
+            (crnt_.msr - self.first_msr_num) as usize
+        } else {
+            1   // 1小節目から開始
+        };
         let mut chord_map = vec![false; max_beat];
         if self.max_msr > cmsr {
             for (j, chord) in chord_map.iter_mut().enumerate() {
