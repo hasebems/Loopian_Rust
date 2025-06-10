@@ -563,6 +563,7 @@ impl ElapseStack {
         self.sync(MSG_SYNC_ALL);
         if !self.during_play {
             let tick_for_onemsr = (DEFAULT_TICK_FOR_ONE_MEASURE / msg[1] as i32) * msg[0] as i32;
+            self.last_msr_tick.tick_for_onemsr = tick_for_onemsr;
             self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
         }
     }
