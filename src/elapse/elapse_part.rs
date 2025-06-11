@@ -131,6 +131,7 @@ struct PhrLoopManager {
     vari_reserve: Option<usize>, // 1-9: rsv, None: Normal
     a_is_gened_last: bool,       // true: instance_a, false: instance_b
     begin_phr_ev: bool,
+    new_phrase: bool,   // 新しい Phrase の生成フラグ
     chasing_play: bool, // 追いかけ再生フラグ
     del_a_ev: bool,     // instance_a を削除するイベント
     del_b_ev: bool,     // instance_b を削除するイベント
@@ -147,6 +148,7 @@ impl PhrLoopManager {
             vari_reserve: None,
             a_is_gened_last: false,
             begin_phr_ev: false,
+            new_phrase: false, // 新しい Phrase の生成フラグ
             chasing_play: false, // 追いかけ再生フラグ
             del_a_ev: false,
             del_b_ev: false,
@@ -173,12 +175,10 @@ impl PhrLoopManager {
             self.begin_phr_ev = false;
         } else if self.if_end_prpr(crnt_) {
             // この小節が end_prpr になるとき（追いかけより優先）
-            if let Some(inst) = self.crnt_phr() {
-                // Loop ありなら、もう一度同じ Phrase Loop を生成
-                if inst.do_loop {
-                    self.phr_idx = 0; // 0: Normal
-                    self.gen_phr_alternately(crnt_, estk, pbp, 0); // Alternate
-                }
+            if self.do_loop() || self.new_phrase {
+                self.new_phrase = false; // 新しい Phrase の生成フラグをリセット
+                self.phr_idx = 0; // 0: Normal
+                self.gen_phr_alternately(crnt_, estk, pbp, 0); // Alternate
             }
             self.chasing_play = false; // 追いかけ再生フラグをリセット
         } else if self.chasing_play {
@@ -267,6 +267,13 @@ impl PhrLoopManager {
             0
         }
     }
+    pub fn do_loop(&self) -> bool {
+        if let Some(inst) = self.crnt_phr() {
+            inst.do_loop
+        } else {
+            false
+        }
+    }
     //---------------------------------------------------------------
     fn crnt_phr(&self) -> Option<PhrLoopWrapper> {
         if self.a_is_gened_last {
@@ -309,6 +316,7 @@ impl PhrLoopManager {
                                 // 新しい Phrase の方が長い場合
                                 self.chasing_play = true;
                             }
+                            self.new_phrase = true; // 新しい Phrase の生成フラグ
                         }
                         LoopPhase::OneBarBeforeEndCnct => {
                             // Phrase Loop の end_cnct 前の小節
