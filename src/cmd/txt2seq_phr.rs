@@ -13,7 +13,7 @@ use crate::lpnlib::*;
 pub fn complement_phrase(
     input_text: String,
     cluster_word: &str,
-) -> (Vec<String>, Vec<String>, Vec<bool>) {
+) -> (Vec<String>, Vec<String>, Vec<Option<i16>>) {
     // 1. space 削除
     let phr = input_text.trim().to_string();
 
@@ -113,11 +113,11 @@ fn divide_arrow_bracket(nt: String) -> String {
     //println!("$$$Divided letter in <>: {}", ret_str);
     ret_str
 }
-fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<bool>) {
+fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<Option<i16>>) {
     let dnum = ntdiv.len();
     let mut nt = "".to_string();
     let mut ntatrb = vec!["".to_string()];
-    let mut atrb = vec![false, false];
+    let mut atrb: Vec<Option<i16>> = vec![None];
     if dnum >= 2 {
         nt = ntdiv.pop().unwrap_or("".to_string());
         ntatrb = ntdiv;
@@ -132,7 +132,7 @@ fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<bool>) {
             #[cfg(feature = "verbose")]
             println!("Auftakt Start Beat: {}", beat);
             if beat > 0 {
-                atrb[0] = true;
+                atrb[0] = Some(beat as i16);
                 if beat > 1 {
                     let mut rest = String::from("qx");
                     for _ in 0..beat - 2 {
@@ -141,8 +141,6 @@ fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<bool>) {
                     nt = rest + "," + &nt;
                 }
             }
-        } else if a == "RT" {
-            atrb[1] = true;
         }
     }
 
@@ -154,7 +152,8 @@ fn fill_omitted_note_data(mut nf: String) -> String {
         return "".to_string();
     } else if phr_len >= 2 && nf.ends_with("//") {
         nf.pop();
-        nf += "LPEND";
+        nf.pop();
+        nf += ",LPEND";
     }
 
     let mut fill: String = "".to_string();
@@ -291,6 +290,7 @@ pub fn recombine_to_internal_format(
     let mut mes_top: bool = false;
     let (max_read_ptr, do_loop) = judge_no_loop(ntvec);
     let mut whole_msr_tick = tick_for_onemsr;
+    let mut rest_tick = 0;
 
     while read_ptr < max_read_ptr {
         let nt_origin = ntvec[read_ptr].clone();
@@ -305,8 +305,8 @@ pub fn recombine_to_internal_format(
         }
 
         // イベント抽出
+        rest_tick = whole_msr_tick - crnt_tick;
         let (note_text, trns) = extract_trans_info(nt_origin);
-        let rest_tick = whole_msr_tick - crnt_tick;
         if note_text == "$RPT" {
             // complement時に入れた、繰り返しを表す特殊マーク$
             let nt_data = PhrEvt::Info(InfoEvt::gen_repeat(crnt_tick as i16));
@@ -348,6 +348,9 @@ pub fn recombine_to_internal_format(
         }
         mes_top = false;
         read_ptr += 1; // out from repeat
+    }
+    if rest_tick > 0 {
+        crnt_tick = whole_msr_tick; // 小節線を超えていれば、次の小節の頭までをwhole_tickとする
     }
     (crnt_tick, do_loop, rcmb)
 }

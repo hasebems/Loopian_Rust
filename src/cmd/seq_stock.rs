@@ -249,7 +249,7 @@ pub struct PhraseDataStock {
     cmpl_ex: Vec<String>,
     phr: Vec<PhrEvt>,
     ana: Vec<AnaEvt>,
-    atrb: Vec<bool>,
+    atrb: Vec<Option<i16>>,
     do_loop: bool,
     whole_tick: i32,
 }
@@ -262,7 +262,7 @@ impl PhraseDataStock {
             cmpl_ex: vec!["".to_string()],
             phr: Vec::new(),
             ana: Vec::new(),
-            atrb: vec![false, false],
+            atrb: vec![None],
             do_loop: true,
             whole_tick: 0,
         }
@@ -284,7 +284,11 @@ impl PhraseDataStock {
                 evts: self.phr.clone(),
                 ana: self.ana.clone(),
                 vari,
-                auftakt: if self.atrb[0] { 1 } else { 0 },
+                auftakt: if self.atrb[0].is_some() {
+                    self.atrb[0].unwrap_or(0)
+                } else {
+                    0
+                },
             },
         )
     }

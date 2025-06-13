@@ -421,9 +421,8 @@ impl PhrLoopManager {
                     ana.set_tick(ana.tick() + tick_for_onemsr); // 1 小節分
                 });
             } else {
-                // auftakt がある場合は、auftakt の分を引く
-                let rest = msg.whole_tick % tick_for_onemsr;
-                msg.whole_tick = msg.whole_tick - rest + 2 * tick_for_onemsr;
+                // auftakt がある場合は、後ろに１小節分だけ追加
+                msg.whole_tick += tick_for_onemsr;
             }
         }
         msg
