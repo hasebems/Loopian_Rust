@@ -151,7 +151,7 @@ impl PhrLoopManager {
         }
     }
     pub fn msrtop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
-        self.delete_ev();
+        self.delete_by_del_ev();
         // Phrase Loop の状態を確認し、新 Phrase の再生開始処理などを行う
         if let Some(idx) = self.exist_msr_phr(crnt_) {
             // Measure 指定がある場合
@@ -180,7 +180,7 @@ impl PhrLoopManager {
             // 追いかけ再生フラグが立っているとき
             self.chasing_play(crnt_, estk, pbp);
             self.chasing_play = false; // 追いかけ再生フラグをリセット
-            self.delete_ev(); // 削除イベントのあるインスタンスを削除
+            self.delete_by_del_ev(); // 削除イベントのあるインスタンスを削除
         } else {
             // 何もしない
         }
@@ -208,7 +208,7 @@ impl PhrLoopManager {
     ) {
         if msg.evts.is_empty() && msg.whole_tick == 0 {
             // phrase = [] の時の処理
-            self.delete_phrase(msg);
+            self.empty_phrase(msg);
         } else {
             // Phrase 入力イベントがあった場合
             self.append_phrase(msg, crnt_, estk_, pbp, during_play);
@@ -326,6 +326,7 @@ impl PhrLoopManager {
         }
         None
     }
+    /// Phrase Loop 追加メッセージ受信時、現在の状況に応じて、Phrase を生成する
     fn append_phrase(
         &mut self,
         msg: PhrData,
@@ -386,7 +387,8 @@ impl PhrLoopManager {
         }
         //self._deb(crnt_); // デバッグ用
     }
-    fn delete_ev(&mut self) {
+    /// Phrase Loop の削除イベントを処理する
+    fn delete_by_del_ev(&mut self) {
         if self.del_a_ev {
             // instance_a を削除するイベント
             self.del_a();
@@ -397,7 +399,8 @@ impl PhrLoopManager {
             self.del_b_ev = false;
         }
     }
-    fn delete_phrase(&mut self, msg: PhrData) {
+    /// Phrase = [] の時の処理
+    fn empty_phrase(&mut self, msg: PhrData) {
         // phrase = [] の時の処理
         if let Some(idx) = self.exists_same_vari(msg.vari) {
             if idx == 0 {
@@ -406,6 +409,9 @@ impl PhrLoopManager {
             } else {
                 self.phr_stock.remove(idx);
             }
+            // 次に鳴る Phrase Loop のインスタンスを削除
+            self.del_a_ev = true;
+            self.del_b_ev = true;
         }
     }
     fn exists_same_vari(&self, vari: PhraseAs) -> Option<usize> {
