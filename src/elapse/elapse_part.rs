@@ -22,11 +22,11 @@ pub struct PartBasicPrm {
 }
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum LoopPhase {
-    BeforeBeginPhr,
-    DuringBeginPhr,
-    AfterBeginCnct,
-    OneBarBeforeEndCnct,
-    BeforeEndPtr,
+    BeforeBeginPhr,      // Phrase Loop の開始前
+    DuringBeginPhr,      // Phrase Loop の開始時
+    AfterBeginCnct,      // Phrase Loop の begin_cnct 後の小節
+    OneBarBeforeEndCnct, // Phrase Loop の end_cnct 前の小節
+    BeforeEndPtr,        // Phrase Loop の end_cnct 後の小節
 }
 //*******************************************************************
 //          Phrase Loop Wrapper Struct
@@ -97,23 +97,18 @@ impl PhrLoopWrapper {
     /// 現在の PhraseLoop の状態を返す
     pub fn crnt_phase(&self, crnt_: &CrntMsrTick) -> LoopPhase {
         if crnt_.msr < self.begin_phr {
-            // Phrase Loop の開始前
             LoopPhase::BeforeBeginPhr
         } else if crnt_.msr == self.begin_phr {
-            // Phrase Loop の開始時
             LoopPhase::DuringBeginPhr
         } else if crnt_.msr < self.end_cnct - 1 {
-            // Phrase Loop の begin_cnct 後の小節
             LoopPhase::AfterBeginCnct
         } else if crnt_.msr == self.end_cnct - 1 {
-            // Phrase Loop の end_cnct 前の小節
             LoopPhase::OneBarBeforeEndCnct
         } else if crnt_.msr == self.end_cnct {
-            // Phrase Loop の end_cnct 後の小節
             LoopPhase::BeforeEndPtr
         } else {
             // その他の状態
-            LoopPhase::BeforeBeginPhr // 仮の値
+            LoopPhase::BeforeBeginPhr
         }
     }
     // PhraseLoop に残りのイベントがあるか調べる
@@ -148,7 +143,7 @@ impl PhrLoopManager {
             vari_reserve: None,
             a_is_gened_last: false,
             begin_phr_ev: false,
-            new_phrase: false, // 新しい Phrase の生成フラグ
+            new_phrase: false,   // 新しい Phrase の生成フラグ
             chasing_play: false, // 追いかけ再生フラグ
             del_a_ev: false,
             del_b_ev: false,
@@ -199,10 +194,10 @@ impl PhrLoopManager {
             self.begin_phr_ev = true;
         }
     }
-    //    pub fn sync(&mut self) {
-    //        // 次の小節を begin_cnct として、再生し直す
-    //        self.begin_phr_ev = false;
-    //    }
+    pub fn sync(&mut self, crnt_: &CrntMsrTick, estk_: &mut ElapseStack, pbp: PartBasicPrm) {
+        self.phr_idx = 0; // 0: Normal
+        self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Alternate
+    }
     pub fn rcv_phrase(
         &mut self,
         msg: PhrData,
@@ -238,7 +233,7 @@ impl PhrLoopManager {
                 return None; // denominator が 0 の場合は None を返す
             }
             if numerator <= 0 {
-                return Some((-1, denomirator))
+                return Some((-1, denomirator));
             }
             //format!("{}/{}", numerator, denomirator)
             Some((numerator, denomirator))
@@ -285,12 +280,15 @@ impl PhrLoopManager {
         }
     }
     //---------------------------------------------------------------
-    fn _deb(&self, _crnt_: &CrntMsrTick) { 
+    fn _deb(&self, _crnt_: &CrntMsrTick) {
         if let Some(inst_a) = &self.phr_instance_a {
             if let Some(inst_b) = &self.phr_instance_b {
-                let phase_a = inst_a.crnt_phase(_crnt_); 
+                let phase_a = inst_a.crnt_phase(_crnt_);
                 let phase_b = inst_b.crnt_phase(_crnt_);
-                println!("UUUUnnnnn!!!:{:?}-{}/{:?}-{}", phase_a, inst_a.begin_phr, phase_b, inst_b.begin_phr);        
+                println!(
+                    "UUUUnnnnn!!!:{:?}-{}/{:?}-{}",
+                    phase_a, inst_a.begin_phr, phase_b, inst_b.begin_phr
+                );
             }
         }
     }
@@ -614,9 +612,18 @@ impl Part {
         self.pm.set_turnnote(tn);
     }
     /// sync command 発行時にコールされる
-    pub fn set_sync(&mut self) {
+    pub fn set_sync(&mut self, crnt_: &CrntMsrTick, estk_: &mut ElapseStack) {
         self.cm.state_reserve = true;
-        self.sync_next_msr_flag = true;
+        self.sync_next_msr_flag = true; // sync command 発行時は true
+        self.pm.sync(
+            crnt_,
+            estk_,
+            PartBasicPrm {
+                part_num: self.id.sid,
+                keynote: self.keynote,
+                sync_flag: true, // sync command 発行時は true
+            },
+        );
     }
     pub fn gen_part_indicator(&mut self, crnt_: &CrntMsrTick) -> PartUi {
         let mut exist = true;

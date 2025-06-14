@@ -430,14 +430,12 @@ impl ElapseStack {
 
         // すべての Part の開始beatを調べる
         let mut first_beat = FULL;
-        self.part_vec
-            .iter_mut()
-            .for_each(|x| {
-                if let Some(auf) = x.borrow().get_start_beat() {
-                    if auf < first_beat {
-                        first_beat = auf;
-                    }
+        self.part_vec.iter_mut().for_each(|x| {
+            if let Some(auf) = x.borrow().get_start_beat() {
+                if auf < first_beat {
+                    first_beat = auf;
                 }
+            }
         });
 
         self.during_play = true;
@@ -508,7 +506,9 @@ impl ElapseStack {
         }
         for (i, pt) in sync_part.iter().enumerate() {
             if *pt {
-                self.part_vec[i].borrow_mut().set_sync();
+                let part = self.part_vec[i].clone();
+                let crnt_ = self.last_msr_tick;
+                part.borrow_mut().set_sync(&crnt_, self);
             }
         }
     }
