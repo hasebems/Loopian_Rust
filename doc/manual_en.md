@@ -7,6 +7,7 @@
 - [Starting and Exiting](#starting-and-exiting)
     - [How to Start](#how-to-start)
     - [Command Input](#command-input)
+    - [Screen Display](#screen-display)
     - [Exiting](#exiting)
     - [Environment for Sound Output](#environment-for-sound-output)
 - [Basic Operation Commands](#basic-operation-commands)
@@ -88,16 +89,26 @@ This document explains all features of Loopian.
 
 <img src="./image/v050_exp.png" width="70%">
 
-- When launching the application, an input prompt appears in the Input Window at the bottom of the screen
-    - `NNN: L1>` : Input prompt
-- NNN: indicates the current position in the command history
-    - After exceeding 999:, the display becomes 000:, but previous history is still remembered
-- L1> indicates that the input state is Left 1
-- Commands and phrases are input at the cursor position after this prompt and confirmed with Return
-- Left and right arrow keys move the cursor during input
-- Up and down arrow keys can recall past input history
-    - To prevent cursor operation errors, history recall is not possible when the input cursor is not at the left edge
-- In Loopian, space input is converted to `.` (period)
+- When the app is launched, the following command prompt appears in the Input Window at the bottom of the screen:
+    - `NNN: L1>` : Command prompt.
+- "NNN:" indicates the current position in the command history. Once it exceeds 999, the display resets to 000, but previous history is retained.
+- "L1>" indicates that the input state is set to Left 1.
+- Enter commands or phrases at the cursor position following this prompt and press Return to confirm.
+- Use the left/right arrow keys to move the cursor during input.
+- Use the up/down arrow keys to recall previous inputs. (To prevent accidental manipulation, history recall is only available when the cursor is at the far left.)
+- In Loopian, pressing the space bar is automatically converted to a dot (`.`).
+
+### Screen Display
+
+- After text entered in the Input Window is confirmed by pressing Return, it is added to the bottom line of the Scroll Text.
+- The text added to the Scroll Text will scroll once it exceeds the number of display lines.
+- The Status Indicator at the top of the screen displays the following information:
+    - `>M:B:TTT`: Indicates that playback is in progress by showing the measure number (M), beat (B), and the tick (TTT) within the beat.
+    - `bpm:BBB`: Displays the current tempo.
+    - `meter:N/D`: Displays the current time signature.
+    - `key:N`: Displays the current key.
+    - `R2 ---`: Displays each part’s playback position (position within the loop / total measures in the loop) and chord information.
+        - If the position within the loop is `-1`, it indicates that a new Phrase is queued.
 
 ### Exiting
 

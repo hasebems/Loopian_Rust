@@ -189,8 +189,11 @@ impl PhrLoopManager {
         } else {
             // 何もしない
         }
+        //self._deb(crnt_); // デバッグ用
     }
     pub fn start(&mut self) {
+        self.del_a();
+        self.del_b();
         if self.phr_stock.len() >= self.phr_idx && self.phr_stock[self.phr_idx].whole_tick != 0 {
             // instance_a を使用
             self.begin_phr_ev = true;
@@ -226,10 +229,17 @@ impl PhrLoopManager {
         }
         None
     }
-    pub fn gen_msrcnt(&self, crnt_msr: i32) -> Option<(i32, i32)> {
-        if let Some(phrloop) = self.crnt_phr() {
+    /// GUI で表示する Phrase Loop の小節数を返す
+    pub fn gen_msrcnt(&self, crnt_: &CrntMsrTick) -> Option<(i32, i32)> {
+        if let Some(phrloop) = self.loop_phr(crnt_) {
             let denomirator = phrloop.max_loop_msr;
-            let numerator = crnt_msr - phrloop.phrase.borrow().first_msr_num() + 1; // 1origin
+            let numerator = crnt_.msr - (phrloop.phrase.borrow().first_msr_num() + 1) + 1;
+            if denomirator == 0 {
+                return None; // denominator が 0 の場合は None を返す
+            }
+            if numerator <= 0 {
+                return Some((-1, denomirator))
+            }
             //format!("{}/{}", numerator, denomirator)
             Some((numerator, denomirator))
         } else {
@@ -275,13 +285,46 @@ impl PhrLoopManager {
         }
     }
     //---------------------------------------------------------------
-    fn crnt_phr(&self) -> Option<PhrLoopWrapper> {
+    fn _deb(&self, _crnt_: &CrntMsrTick) { 
+        if let Some(inst_a) = &self.phr_instance_a {
+            if let Some(inst_b) = &self.phr_instance_b {
+                let phase_a = inst_a.crnt_phase(_crnt_); 
+                let phase_b = inst_b.crnt_phase(_crnt_);
+                println!("UUUUnnnnn!!!:{:?}-{}/{:?}-{}", phase_a, inst_a.begin_phr, phase_b, inst_b.begin_phr);        
+            }
+        }
+    }
+    fn crnt_phr(&self) -> Option<&PhrLoopWrapper> {
         if self.a_is_gened_last {
             if let Some(inst) = &self.phr_instance_a {
-                return Some(inst.clone());
+                return Some(inst);
             }
         } else if let Some(inst) = &self.phr_instance_b {
-            return Some(inst.clone());
+            return Some(inst);
+        }
+        None
+    }
+    fn loop_phr(&self, crnt_: &CrntMsrTick) -> Option<&PhrLoopWrapper> {
+        if self.a_is_gened_last {
+            if let Some(inst_a) = &self.phr_instance_a {
+                // a が DuringBeginPhr より後なら、a を返す
+                let phase_a = inst_a.crnt_phase(crnt_);
+                if phase_a != LoopPhase::DuringBeginPhr {
+                    return Some(inst_a);
+                } else if let Some(inst_b) = &self.phr_instance_b {
+                    return Some(inst_b);
+                }
+                return None;
+            }
+        } else if let Some(inst_b) = &self.phr_instance_b {
+            // b が DuringBeginPhr より後なら、b を返す
+            let phase_b = inst_b.crnt_phase(crnt_);
+            if phase_b != LoopPhase::DuringBeginPhr {
+                return Some(inst_b);
+            } else if let Some(inst_a) = &self.phr_instance_a {
+                return Some(inst_a);
+            }
+            return None;
         }
         None
     }
@@ -343,6 +386,7 @@ impl PhrLoopManager {
                 self.phr_stock.push(msg);
             }
         }
+        //self._deb(crnt_); // デバッグ用
     }
     fn delete_ev(&mut self) {
         if self.del_a_ev {
@@ -583,7 +627,7 @@ impl Part {
         if !self.during_play {
             exist = false;
         } else if self.pm.whole_tick() != 0 {
-            if let Some(a) = self.pm.gen_msrcnt(crnt_.msr) {
+            if let Some(a) = self.pm.gen_msrcnt(crnt_) {
                 (msr_in_loop, all_msrs) = a;
             } else {
                 exist = false;
