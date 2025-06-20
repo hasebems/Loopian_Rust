@@ -127,18 +127,18 @@ impl UnfoldedComposition {
         let mut msr = if crnt_.msr >= self.first_msr_num {
             (crnt_.msr - self.first_msr_num) as isize
         } else {
-            1   // 1小節目から開始
+            1 // 1小節目から開始
         };
         while msr >= loop_size {
             msr -= loop_size;
         }
         Self::check_msr_beat(msr, beat)
     }
-    pub fn gen_chord_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
+    pub fn gen_chord_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
         let cmsr = if crnt_.msr >= self.first_msr_num {
             (crnt_.msr - self.first_msr_num) as usize
         } else {
-            1   // 1小節目から開始
+            1 // 1小節目から開始
         };
         let mut chord_map = vec![false; max_beat];
         if self.max_msr > cmsr {
@@ -151,7 +151,7 @@ impl UnfoldedComposition {
             }
         }
         #[cfg(feature = "verbose")]
-        println!("<gen_chord_map for Damper> chord_map={:?}", chord_map);
+        println!("<gen_chord_ev_map for Damper> chord_map={:?}", chord_map);
         chord_map
     }
     pub fn gen_vari_num(&mut self, crnt_: &CrntMsrTick) -> i16 {
@@ -166,7 +166,7 @@ impl UnfoldedComposition {
             });
         vari_num
     }
-    /// 現在のタイミングに合った Chord の root/table を探す
+    /// 指定されたタイミングの Chord の root/table を探す
     pub fn scan_chord(&self, crnt_msr: usize, crnt_beat: usize) -> (i16, i16) {
         let mut root: i16 = 0;
         let mut tbl: i16 = NO_PED_TBL_NUM;
@@ -433,6 +433,7 @@ impl CmpsLoopMediator {
         #[cfg(feature = "verbose")]
         println!("Replace Composition Loop! --whole tick: {}", whole_tick);
     }
+    /// whole_tick を loop_measure と beat に換算する
     fn calc_msr_beat(whole_tick: i32, tick_for_onemsr: i32, tick_for_beat: i32) -> (i32, i32) {
         // その時の beat 情報で、whole_tick を loop_measure に換算
         let plus_one = if whole_tick % tick_for_onemsr == 0 {
@@ -464,16 +465,23 @@ impl CmpsLoopMediator {
     /// Not Yet:
     /// いずれ、未来の小節の情報を取得できるようにする
     /// cmps（現在）か next_cmps（未来）のどちらかを選択する
-    pub fn get_chord_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
+    pub fn get_chord_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
         if let Some(ref cmp) = self.cmps {
-            cmp.gen_chord_map(crnt_, max_beat)
+            cmp.gen_chord_ev_map(crnt_, max_beat)
         } else {
             vec![false; max_beat]
         }
     }
-    pub fn get_chord(&self, crnt_: &CrntMsrTick, _future: &CrntMsrTick) -> (i16, i16) {
+    pub fn get_chord(&self, designated_: &CrntMsrTick) -> (i16, i16) {
+        if designated_.msr >= self.first_msr_num + self.max_msr {
+            // 指定された小節が、ループサイズを超えている場合
+            if let Some(ref cmp) = self.next_cmps {
+                let (msr, beat) = cmp.loop_msr_beat(designated_);
+                return cmp.scan_chord(msr as usize, beat as usize);
+            }
+        }
         if let Some(ref cmp) = self.cmps {
-            let (msr, beat) = cmp.loop_msr_beat(crnt_);
+            let (msr, beat) = cmp.loop_msr_beat(designated_);
             cmp.scan_chord(msr as usize, beat as usize)
         } else {
             (NO_ROOT, NO_TABLE)

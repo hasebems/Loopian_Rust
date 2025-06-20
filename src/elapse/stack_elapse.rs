@@ -366,7 +366,7 @@ impl ElapseStack {
         let (root, tbl) = {
             let mut pt_borrow = self.part_vec[FLOW_PART].borrow_mut();
             let cmp_med = pt_borrow.get_cmps_med();
-            cmp_med.get_chord(crnt_, crnt_)
+            cmp_med.get_chord(crnt_)
         };
         self.midi_out_ext(0xa0, 0x7f, keynote);
         self.midi_out_ext(0xa0, root as u8, tbl as u8);

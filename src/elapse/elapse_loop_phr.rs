@@ -196,7 +196,7 @@ impl PhraseLoop {
         if let Some(pt) = estk.part(self.id.pid) {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
-            (rt, ctbl) = cmp_med.get_chord(crnt_, crnt_);
+            (rt, ctbl) = cmp_med.get_chord(crnt_);
         }
 
         //  Note Translation

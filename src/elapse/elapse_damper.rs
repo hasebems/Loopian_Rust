@@ -139,7 +139,7 @@ impl DamperPart {
         if let Some(pt) = estk.part(part_num as u32) {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
-            let ba = cmp_med.get_chord_map(crnt_, beat_num);
+            let ba = cmp_med.get_chord_ev_map(crnt_, beat_num);
             if ba.len() != chord_map.len() {
                 // もし長さが違ったら、エラー
                 println!(

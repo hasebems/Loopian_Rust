@@ -207,7 +207,7 @@ impl Flow {
             if let Some(pt) = estk.part(self.id.pid) {
                 let mut pt_borrowed = pt.borrow_mut();
                 let cmp_med = pt_borrowed.get_cmps_med();
-                let (rt, ctbl) = cmp_med.get_chord(crnt_, crnt_);
+                let (rt, ctbl) = cmp_med.get_chord(crnt_);
                 let root: i16 = ROOT2NTNUM[rt as usize];
                 real_note = translate_note_com(root, ctbl, temp_note as u8);
             }
