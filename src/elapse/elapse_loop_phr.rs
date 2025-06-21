@@ -7,13 +7,13 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::elapse_note::*;
 use super::elapse_broken_ptn::BrokenPattern;
 use super::elapse_cluster_ptn::ClusterPattern;
+use super::elapse_note::*;
+use super::floating_tick::FloatingTick;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use super::floating_tick::FloatingTick;
 use crate::cmd::txt2seq_cmps;
 use crate::lpnlib::*;
 

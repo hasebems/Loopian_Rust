@@ -7,7 +7,7 @@
 use super::tickgen::CrntMsrTick;
 
 /// FloatingTick
-/// 本クラスは、PhraseLoop の next_tick を入力すると、その値を散らして 
+/// 本クラスは、PhraseLoop の next_tick を入力すると、その値を散らして
 /// より音楽的な Tick を生成するクラスである。
 /// 以下の二つの処理を行う。
 /// 1. 同時発音する和音の Tick をずらす。
@@ -17,7 +17,6 @@ pub struct FloatingTick {
     last_notational_crnt: CrntMsrTick, //   次に呼ばれる小節とTickの情報が保持される
 }
 impl FloatingTick {
-
     const TICK_DISPERSE: i32 = 20; // Tick の散らし幅
 
     pub fn new() -> Self {

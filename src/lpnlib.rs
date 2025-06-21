@@ -140,7 +140,7 @@ impl PhrEvt {
         match self {
             PhrEvt::Note(e) => e.dur,
             PhrEvt::BrkPtn(e) => e.dur,
-            PhrEvt::ClsPtn(e) => e.dur,            
+            PhrEvt::ClsPtn(e) => e.dur,
             PhrEvt::Info(e) => e.dur,
         }
     }

@@ -29,7 +29,7 @@ pub struct ClusterPattern {
     ptn_max_vce: i32,
     analys: Vec<AnaEvt>,
     ntlist: Vec<i16>, // only for cluster
-    ntlist_vel: i16, // for cluster
+    ntlist_vel: i16,  // for cluster
 
     part: u32,
     keynote: u8,
@@ -92,7 +92,7 @@ impl ClusterPattern {
             ptn_max_vce: ptn.max_count as i32,
             analys: ana,
             ntlist: Vec::new(), // only for cluster
-            ntlist_vel: 0, // for cluster
+            ntlist_vel: 0,      // for cluster
             part,
             keynote,
             play_counter: 0,
