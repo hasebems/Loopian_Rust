@@ -18,20 +18,19 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          Dynamic Pattern Struct
 //*******************************************************************
-pub struct DynamicPattern {
+pub struct BrokenPattern {
     id: ElapseId,
     priority: u32,
 
-    arp_available: bool,
     ptn_tick: i32,
-    ptn_min_nt: i16,
+    //ptn_min_nt: i16,
     ptn_vel: i32,
     ptn_each_dur: i32,
-    ptn_max_vce: i32,
+    //ptn_max_vce: i32,
     ptn_arp_type: i32,
-    next_index: usize,  // for arp
-    oct_up: i16,        // for arp
-    note_close_to: i16, // for arp
+    next_index: usize,
+    oct_up: i16,
+    note_close_to: i16,
     analys: Vec<AnaEvt>,
 
     part: u32,
@@ -48,7 +47,7 @@ pub struct DynamicPattern {
     next_msr: i32,  //   次に呼ばれる小節番号が保持される
     next_tick: i32, //   次に呼ばれるTick数が保持される
 }
-impl DynamicPattern {
+impl BrokenPattern {
     pub fn new(
         sid: u32,
         pid: u32,
@@ -76,7 +75,6 @@ impl DynamicPattern {
                 }
             }
         });
-        let arp_available = ptn.broken;
 
         #[cfg(feature = "verbose")]
         println!("New DynaPtn: para:{}", para);
@@ -86,15 +84,14 @@ impl DynamicPattern {
             id: ElapseId {
                 pid,
                 sid,
-                elps_type: ElapseType::TpDynamicPattern,
+                elps_type: ElapseType::TpBrokenPattern,
             },
-            arp_available,
             priority: PRI_DYNPTN,
             ptn_tick: ptn.tick as i32,
-            ptn_min_nt: ptn.lowest,
+            //ptn_min_nt: ptn.lowest,
             ptn_vel: ptn.vel as i32,
             ptn_each_dur: ptn.each_dur as i32,
-            ptn_max_vce: ptn.max_count as i32,
+            //ptn_max_vce: ptn.max_count as i32,
             ptn_arp_type: ptn.figure as i32,
             next_index: 0,
             oct_up: 0,
@@ -117,6 +114,7 @@ impl DynamicPattern {
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
         if let Some(pt) = estk.part(self.part) {
+            // 対応する Part が存在する場合
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
             // 和音情報を読み込む
@@ -124,15 +122,17 @@ impl DynamicPattern {
             let root = ROOT2NTNUM[rt as usize];
             if tbl == NO_TABLE {
                 #[cfg(feature = "verbose")]
-                println!("DynamicPattern: No Chord Table!!");
+                println!("BrokenPattern: No Chord Table!!");
             } else {
                 #[cfg(feature = "verbose")]
-                println!("DynamicPattern: root-{}, table-{}", root, tbl);
-                self.gen_each_note(crnt_, estk, root, tbl)
+                println!("BrokenPattern: root-{}, table-{}", root, tbl);
+                self.gen_each_note(crnt_, estk, root, tbl);
             }
         }
-
-        // 次回 tick 算出と終了の確認
+        self.recalc_next_tick(crnt_)
+    }
+    fn recalc_next_tick(&mut self, crnt_: &CrntMsrTick) -> i32 {
+        // 次の Tick を計算する
         let next_tick = self.next_tick + self.ptn_each_dur;
         if next_tick >= crnt_.tick_for_onemsr || next_tick >= self.whole_tick {
             END_OF_DATA
@@ -140,12 +140,6 @@ impl DynamicPattern {
             next_tick
         }
     }
-    // else {
-    //    #[cfg(feature = "verbose")]
-    //    println!("DynamicPattern: No Chord Data!!");
-    //    END_OF_DATA
-    //}
-    //}
     fn gen_each_note(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, root: i16, tbl: i16) {
         let (tblptr, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
         let vel = self.calc_dynamic_vel(
@@ -153,14 +147,7 @@ impl DynamicPattern {
             estk.get_bpm(),
             estk.tg().get_meter().1,
         );
-
-        if self.arp_available {
-            // Arpeggio
-            self.play_arpeggio(estk, root, tblptr, vel);
-        } else {
-            // Cluster
-            self.play_cluster(estk, root, tblptr, vel);
-        }
+        self.play_arpeggio(estk, root, tblptr, vel);
         self.play_counter += 1;
     }
     fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
@@ -179,47 +166,7 @@ impl DynamicPattern {
         }
         vel
     }
-    fn play_cluster(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
-        // 最低ノートとpara設定から、各ノートのオクターブを算出
-        let mut ntlist: Vec<i16> = Vec::new();
-        for nt in tblptr {
-            let mut note = *nt + DEFAULT_NOTE_NUMBER as i16;
-            if self.para {
-                while note < self.ptn_min_nt {
-                    //展開
-                    note += 12;
-                }
-                //並行移動
-                note += root;
-            } else {
-                //並行移動
-                note += root;
-                while note < self.ptn_min_nt {
-                    //最低音以下の音をオクターブアップ
-                    note += 12;
-                }
-                while self.ptn_min_nt <= (note - 12) {
-                    //最低音のすぐ上に降ろす
-                    note -= 12;
-                }
-            }
-            ntlist.push(note);
-        }
-
-        // 低い順に並べ、同時発音数を決定する
-        ntlist.sort();
-        //println!("Cluster::{:?}/{}", ntlist, self.keynote);
-        let maxnt = if self.ptn_max_vce as usize > ntlist.len() {
-            ntlist.len()
-        } else {
-            self.ptn_max_vce as usize
-        };
-
-        // Cluster発音
-        for &note in ntlist.iter().take(maxnt) {
-            self.gen_note_ev(estk, note, vel);
-        }
-    }
+    /// アルペジオを再生する
     fn play_arpeggio(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
         let max_tbl_num = tblptr.len();
         let incdec_idx = |inc: bool, mut x, mut oct| -> (usize, i16) {
@@ -319,7 +266,7 @@ impl DynamicPattern {
 //*******************************************************************
 //          Elapse IF for Dynamic Pattern
 //*******************************************************************
-impl Elapse for DynamicPattern {
+impl Elapse for BrokenPattern {
     /// id を得る
     fn id(&self) -> ElapseId {
         self.id

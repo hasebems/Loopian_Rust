@@ -8,15 +8,17 @@ use std::rc::Rc;
 
 use super::elapse_base::*;
 use super::elapse_note::*;
-use super::elapse_pattern::DynamicPattern;
+use super::elapse_broken_ptn::BrokenPattern;
+use super::elapse_cluster_ptn::ClusterPattern;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
+use super::floating_tick::FloatingTick;
 use crate::cmd::txt2seq_cmps;
 use crate::lpnlib::*;
 
 //*******************************************************************
-//          Phrase Loop Struct
+//          Phrase Loop Parameter
 //*******************************************************************
 pub struct PhraseLoopParam {
     keynote: u8,
@@ -45,6 +47,9 @@ impl PhraseLoopParam {
         }
     }
 }
+//*******************************************************************
+//          Phrase Loop Struct
+//*******************************************************************
 pub struct PhraseLoop {
     id: ElapseId,
     priority: u32,
@@ -62,6 +67,7 @@ pub struct PhraseLoop {
     same_note_msr: i32,
     same_note_tick: i32,
     staccato_rate: i32,
+    flt: FloatingTick, //  FloatingTick を保持する
 
     // for super's member
     whole_tick: i32,
@@ -115,6 +121,7 @@ impl PhraseLoop {
             same_note_msr: 0,
             same_note_tick: 0,
             staccato_rate,
+            flt: FloatingTick::new(), //  FloatingTick を初期化
             // for super's member
             whole_tick: prm.whole_tick,
             destroy: false,
@@ -156,20 +163,37 @@ impl PhraseLoop {
                         self.note_event(estk, crnt_, trace, ev, (next_tick, msr, tick));
                     }
                     PhrEvt::Pattern(mut ev) => {
-                        while ev.tick >= crnt_.tick_for_onemsr as i16 {
-                            // pattern は１小節内で完結
-                            ev.tick -= crnt_.tick_for_onemsr as i16;
+                        if ev.broken {
+                            while ev.tick >= crnt_.tick_for_onemsr as i16 {
+                                // pattern は１小節内で完結
+                                ev.tick -= crnt_.tick_for_onemsr as i16;
+                            }
+                            let ptn: Rc<RefCell<dyn Elapse>> = BrokenPattern::new(
+                                crnt_.msr as u32, //  read pointer
+                                self.id.sid,      //  loop.sid -> note.pid
+                                self.id.pid,      //  part
+                                self.keynote,
+                                msr,
+                                ev,
+                                self.analys.to_vec(),
+                            );
+                            estk.add_elapse(Rc::clone(&ptn));
+                        } else {
+                            while ev.tick >= crnt_.tick_for_onemsr as i16 {
+                                // pattern は１小節内で完結
+                                ev.tick -= crnt_.tick_for_onemsr as i16;
+                            }
+                            let ptn: Rc<RefCell<dyn Elapse>> = ClusterPattern::new(
+                                crnt_.msr as u32, //  read pointer
+                                self.id.sid,      //  loop.sid -> note.pid
+                                self.id.pid,      //  part
+                                self.keynote,
+                                msr,
+                                ev,
+                                self.analys.to_vec(),
+                            );
+                            estk.add_elapse(Rc::clone(&ptn));
                         }
-                        let ptn: Rc<RefCell<dyn Elapse>> = DynamicPattern::new(
-                            crnt_.msr as u32, //  read pointer
-                            self.id.sid,      //  loop.sid -> note.pid
-                            self.id.pid,      //  part
-                            self.keynote,
-                            msr,
-                            ev,
-                            self.analys.to_vec(),
-                        );
-                        estk.add_elapse(Rc::clone(&ptn));
                     }
                     _ => (),
                 }
@@ -332,7 +356,9 @@ impl Elapse for PhraseLoop {
             return;
         }
 
-        let elapsed_tick = self.calc_serial_tick(crnt_);
+        // crnt_ を記譜上の小節数に変換し、その後 elapsed_tick を計算する
+        let ntcrnt_ = self.flt.convert_to_notational(crnt_);
+        let elapsed_tick = self.calc_serial_tick(&ntcrnt_);
         if elapsed_tick > self.whole_tick {
             self.next_msr = FULL;
             self.destroy = true;
@@ -340,15 +366,22 @@ impl Elapse for PhraseLoop {
         }
 
         if elapsed_tick >= self.next_tick_in_phrase {
-            let next_tick = self.generate_event(crnt_, estk, elapsed_tick);
+            let next_tick = self.generate_event(&ntcrnt_, estk, elapsed_tick);
             self.next_tick_in_phrase = next_tick;
             if next_tick == END_OF_DATA {
                 self.next_msr = FULL;
                 self.destroy = true;
             } else {
-                let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-                self.next_msr = msr;
-                self.next_tick = tick;
+                let (msr, tick) = self.gen_msr_tick(&ntcrnt_, self.next_tick_in_phrase);
+                let mt = CrntMsrTick {
+                    msr,
+                    tick,
+                    tick_for_onemsr: ntcrnt_.tick_for_onemsr,
+                };
+                // FloatingTick を使って、次に呼ばれる実際の小節とTickを計算する
+                let rlcrnt_ = self.flt.convert_to_real(&mt);
+                self.next_msr = rlcrnt_.msr;
+                self.next_tick = rlcrnt_.tick;
             }
         }
     }

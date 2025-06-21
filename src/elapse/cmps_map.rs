@@ -13,7 +13,7 @@ use crate::lpnlib::*;
 //          Composition Loop Struct
 //*******************************************************************
 #[derive(Clone, Debug)]
-pub struct UnfoldedComposition {
+pub struct CompositionMap {
     cmps_map: Vec<Vec<Vec<(ChordEvt, bool)>>>, // [msr][beat][num]
 
     // for Composition
@@ -26,7 +26,7 @@ pub struct UnfoldedComposition {
     max_msr: usize,
     max_beat: usize,
 }
-impl UnfoldedComposition {
+impl CompositionMap {
     pub fn new(evts: Vec<ChordEvt>, whole_tick: i32, max_msr: usize, max_beat: usize) -> Self {
         let cmps_map = Self::unfold_cmp_evt(evts, max_msr, max_beat, whole_tick);
         Self {
@@ -265,11 +265,11 @@ pub struct CmpsLoopMediator {
     pub state_reserve: bool,
     first_msr_num: i32,
     loop_id: u32, // loop sid
-    cmps: Option<Box<UnfoldedComposition>>,
+    cmps: Option<Box<CompositionMap>>,
     do_loop: bool,
     max_msr: i32,
     max_beat: i32,
-    next_cmps: Option<Box<UnfoldedComposition>>,
+    next_cmps: Option<Box<CompositionMap>>,
 }
 impl CmpsLoopMediator {
     pub fn new() -> Self {
@@ -329,14 +329,14 @@ impl CmpsLoopMediator {
             }
         }
     }
-    /// Composition Event を受け取り、UnfoldedComposition を生成する
+    /// Composition Event を受け取り、CompositionMap を生成する
     pub fn rcv_cmp(&mut self, msg: ChordData, tick_for_onemsr: i32, tick_for_onebeat: i32) {
         if msg.evts.is_empty() && msg.whole_tick == 0 {
             self.next_cmps = None;
         } else {
             let max_msr = (msg.whole_tick as i32 / tick_for_onemsr) as usize;
             let max_beat = (tick_for_onemsr / tick_for_onebeat) as usize;
-            self.next_cmps = Some(Box::new(UnfoldedComposition::new(
+            self.next_cmps = Some(Box::new(CompositionMap::new(
                 msg.evts,
                 msg.whole_tick as i32,
                 max_msr,
@@ -461,7 +461,7 @@ impl CmpsLoopMediator {
         }
     }
 
-    /// 一度 Mediator（仲介者）を通してから、UnfoldedComposition のサービスを利用する
+    /// 一度 Mediator（仲介者）を通してから、CompositionMap のサービスを利用する
     /// Not Yet:
     /// いずれ、未来の小節の情報を取得できるようにする
     /// cmps（現在）か next_cmps（未来）のどちらかを選択する

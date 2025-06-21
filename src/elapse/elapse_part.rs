@@ -10,7 +10,7 @@ use super::elapse_base::*;
 use super::elapse_loop_phr::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use super::unfold_cmp::*;
+use super::cmps_map::*;
 use crate::elapse::elapse_flow::Flow;
 use crate::lpnlib::*;
 
