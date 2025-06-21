@@ -93,15 +93,14 @@ fn gen_dp_pattern(
         if (figure % 2) == 1 {
             lowest += 12; // - note;
         }
-        PhrEvt::Pattern(DynPatternEvt {
-            broken: true,
+        PhrEvt::BrkPtn(BrkPatternEvt {
             tick,
             vel,
             dur,
             lowest,
             figure,
             each_dur,
-            ..DynPatternEvt::default()
+            ..BrkPatternEvt::default()
         })
     } else {
         let max_count = if pnum > 1 {
@@ -109,15 +108,14 @@ fn gen_dp_pattern(
         } else {
             4 // default chord count
         };
-        PhrEvt::Pattern(DynPatternEvt {
-            broken: false,
+        PhrEvt::ClsPtn(ClsPatternEvt {
             tick,
             vel,
             dur,
             lowest,
             max_count,
             each_dur,
-            ..DynPatternEvt::default()
+            ..ClsPatternEvt::default()
         })
     };
     evt

@@ -52,7 +52,7 @@ impl ClusterPattern {
         part: u32, // loop pid
         keynote: u8,
         msr: i32, // crnt_msr
-        ptn: DynPatternEvt,
+        ptn: ClsPatternEvt,
         ana: Vec<AnaEvt>,
     ) -> Rc<RefCell<Self>> {
         // generate para_note_base

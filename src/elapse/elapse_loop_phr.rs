@@ -162,38 +162,37 @@ impl PhraseLoop {
                         }
                         self.note_event(estk, crnt_, trace, ev, (next_tick, msr, tick));
                     }
-                    PhrEvt::Pattern(mut ev) => {
-                        if ev.broken {
-                            while ev.tick >= crnt_.tick_for_onemsr as i16 {
-                                // pattern は１小節内で完結
-                                ev.tick -= crnt_.tick_for_onemsr as i16;
-                            }
-                            let ptn: Rc<RefCell<dyn Elapse>> = BrokenPattern::new(
-                                crnt_.msr as u32, //  read pointer
-                                self.id.sid,      //  loop.sid -> note.pid
-                                self.id.pid,      //  part
-                                self.keynote,
-                                msr,
-                                ev,
-                                self.analys.to_vec(),
-                            );
-                            estk.add_elapse(Rc::clone(&ptn));
-                        } else {
-                            while ev.tick >= crnt_.tick_for_onemsr as i16 {
-                                // pattern は１小節内で完結
-                                ev.tick -= crnt_.tick_for_onemsr as i16;
-                            }
-                            let ptn: Rc<RefCell<dyn Elapse>> = ClusterPattern::new(
-                                crnt_.msr as u32, //  read pointer
-                                self.id.sid,      //  loop.sid -> note.pid
-                                self.id.pid,      //  part
-                                self.keynote,
-                                msr,
-                                ev,
-                                self.analys.to_vec(),
-                            );
-                            estk.add_elapse(Rc::clone(&ptn));
+                    PhrEvt::BrkPtn(mut ev) => {
+                        while ev.tick >= crnt_.tick_for_onemsr as i16 {
+                            // pattern は１小節内で完結
+                            ev.tick -= crnt_.tick_for_onemsr as i16;
                         }
+                        let ptn: Rc<RefCell<dyn Elapse>> = BrokenPattern::new(
+                            crnt_.msr as u32, //  read pointer
+                            self.id.sid,      //  loop.sid -> note.pid
+                            self.id.pid,      //  part
+                            self.keynote,
+                            msr,
+                            ev,
+                            self.analys.to_vec(),
+                        );
+                        estk.add_elapse(Rc::clone(&ptn));
+                    }
+                    PhrEvt::ClsPtn(mut ev) => {
+                        while ev.tick >= crnt_.tick_for_onemsr as i16 {
+                            // pattern は１小節内で完結
+                            ev.tick -= crnt_.tick_for_onemsr as i16;
+                        }
+                        let ptn: Rc<RefCell<dyn Elapse>> = ClusterPattern::new(
+                            crnt_.msr as u32, //  read pointer
+                            self.id.sid,      //  loop.sid -> note.pid
+                            self.id.pid,      //  part
+                            self.keynote,
+                            msr,
+                            ev,
+                            self.analys.to_vec(),
+                        );
+                        estk.add_elapse(Rc::clone(&ptn));
                     }
                     _ => (),
                 }
