@@ -8,6 +8,7 @@ use std::rc::Rc;
 
 use super::elapse_base::*;
 use super::elapse_note::*;
+use super::floating_tick::FloatingTick;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
@@ -37,6 +38,9 @@ pub struct ClusterPattern {
     last_note: i16,
     para: bool,
     staccato_rate: i32,
+    flt: FloatingTick,    //   FloatingTick を保持する
+    notational_msr: i32,  //   記譜上の小節番号
+    notational_tick: i32, //   記譜上の Tick 数
 
     // for super's member
     whole_tick: i32,
@@ -51,7 +55,7 @@ impl ClusterPattern {
         pid: u32,
         part: u32, // loop pid
         keynote: u8,
-        msr: i32, // crnt_msr
+        mst: (i32, i32, i32, i32), // (notational_msr, real_msr, real_tick, tick_for_onemsr)
         ptn: ClsPatternEvt,
         ana: Vec<AnaEvt>,
     ) -> Rc<RefCell<Self>> {
@@ -74,9 +78,23 @@ impl ClusterPattern {
             }
         });
 
-        #[cfg(feature = "verbose")]
-        println!("New DynaPtn: para:{}", para);
+        //   FloatingTick を生成する
+        let mut flt = FloatingTick::new(true);
+        flt.set_crnt(
+            &CrntMsrTick {
+                msr: mst.1,
+                tick: mst.2,
+                tick_for_onemsr: mst.3,
+            },
+            &CrntMsrTick {
+                msr: mst.0,
+                tick: 0,
+                tick_for_onemsr: mst.3,
+            },
+        );
 
+        #[cfg(feature = "verbose")]
+        println!("New ClsPtn: para:{}", para);
         // new Dynamic Pattern
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -99,13 +117,16 @@ impl ClusterPattern {
             last_note: NO_NOTE as i16,
             para,
             staccato_rate,
+            flt,
+            notational_msr: mst.0, //   記譜上の小節番号
+            notational_tick: 0,    //   記譜上の Tick 数
 
             // for super's member
             whole_tick: ptn.dur as i32,
             destroy: false,
-            first_msr_num: msr,
-            next_msr: msr,
-            next_tick: 0,
+            first_msr_num: mst.0,
+            next_msr: mst.1,
+            next_tick: mst.2,
         }))
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
@@ -114,7 +135,7 @@ impl ClusterPattern {
             self.gen_note_ev(estk, self.ntlist[0], self.ntlist_vel);
             self.ntlist.remove(0);
             if !self.ntlist.is_empty() {
-                self.next_tick
+                self.notational_tick
             } else {
                 self.ntlist = Vec::new(); // Cluster のノートリストをクリア
                 self.play_counter += 1;
@@ -130,20 +151,22 @@ impl ClusterPattern {
             if tbl == NO_TABLE {
                 #[cfg(feature = "verbose")]
                 println!("ClusterPattern: No Chord Table!!");
+                self.play_counter += 1;
+                self.recalc_next_tick(crnt_)
             } else {
                 #[cfg(feature = "verbose")]
                 println!("ClusterPattern: root-{}, table-{}", root, tbl);
                 self.gen_each_note(crnt_, estk, root, tbl);
+                // Cluster の場合は、これから数回に分けて発音リストに従って NoteOn する
+                self.notational_tick
             }
-            // Cluster の場合は、これから数回に分けて発音リストに従って NoteOn する
-            self.next_tick
         } else {
             self.recalc_next_tick(crnt_)
         }
     }
     fn recalc_next_tick(&mut self, crnt_: &CrntMsrTick) -> i32 {
         // 次の Tick を計算する
-        let next_tick = self.next_tick + self.ptn_each_dur;
+        let next_tick = self.notational_tick + self.ptn_each_dur;
         if next_tick >= crnt_.tick_for_onemsr || next_tick >= self.whole_tick {
             END_OF_DATA
         } else {
@@ -165,14 +188,26 @@ impl ClusterPattern {
         let mut vel: i16 = self.ptn_vel as i16;
         if denomi == 8 {
             if (tick_for_onemsr / (DEFAULT_TICK_FOR_QUARTER / 2)) % 3 == 0 {
-                vel = txt2seq_ana::calc_vel_for3_8(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                vel = txt2seq_ana::calc_vel_for3_8(
+                    self.ptn_vel as i16,
+                    self.notational_tick as f32,
+                    bpm,
+                );
             }
         } else {
             // denomi == 4
             if tick_for_onemsr == TICK_4_4 as i32 {
-                vel = txt2seq_ana::calc_vel_for4(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                vel = txt2seq_ana::calc_vel_for4(
+                    self.ptn_vel as i16,
+                    self.notational_tick as f32,
+                    bpm,
+                );
             } else if tick_for_onemsr == TICK_3_4 as i32 {
-                vel = txt2seq_ana::calc_vel_for3(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                vel = txt2seq_ana::calc_vel_for3(
+                    self.ptn_vel as i16,
+                    self.notational_tick as f32,
+                    bpm,
+                );
             }
         }
         vel
@@ -212,6 +247,7 @@ impl ClusterPattern {
             ntlist.truncate(self.ptn_max_vce as usize);
         }
         self.ntlist = ntlist;
+        self.flt.set_disperse_count(self.ntlist.len() as i32, 1);
         self.gen_note_ev(estk, self.ntlist[0], vel); // 最低音を発音
         self.ntlist.remove(0);
         self.ntlist_vel = vel; // 発音ベロシティを保存
@@ -231,6 +267,7 @@ impl ClusterPattern {
             crnt_ev.dur = ((old * self.staccato_rate) / 100) as i16;
         }
 
+        //println!("  >>> NoteOn: {}, vel: {}, dur: {}", crnt_ev.note, crnt_ev.vel, crnt_ev.dur);
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             self.play_counter as u32, //  read pointer
             self.id.sid,              //  loop.sid -> note.pid
@@ -278,6 +315,7 @@ impl Elapse for ClusterPattern {
         self.last_note = NO_NOTE as i16;
         self.next_msr = 0;
         self.next_tick = 0;
+        self.ntlist = Vec::new();
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
     /// 自クラスが役割を終えた時に True を返す
@@ -290,17 +328,30 @@ impl Elapse for ClusterPattern {
             return;
         }
 
-        if crnt_.msr > self.next_msr || crnt_.tick >= self.whole_tick + self.ptn_tick {
+        // crnt_ を記譜上の小節数に変換し、その後 elapsed_tick を計算する
+        let ntcrnt_ = self.flt.convert_to_notational(crnt_);
+
+        if ntcrnt_.msr > self.notational_msr || ntcrnt_.tick >= self.whole_tick + self.ptn_tick {
             self.next_msr = FULL;
             self.destroy = true;
-        } else if crnt_.tick >= self.next_tick {
-            let next_tick = self.generate_event(crnt_, estk);
-            if next_tick == END_OF_DATA {
+        } else if ntcrnt_.tick >= self.notational_tick {
+            self.notational_tick = self.generate_event(&ntcrnt_, estk);
+            if self.notational_tick == END_OF_DATA {
                 self.next_msr = FULL;
                 self.destroy = true;
             } else {
-                self.next_tick = next_tick;
+                let mt = CrntMsrTick {
+                    msr: self.notational_msr,
+                    tick: self.notational_tick,
+                    tick_for_onemsr: ntcrnt_.tick_for_onemsr,
+                };
+                // FloatingTick を使って、次に呼ばれる実際の小節とTickを計算する
+                let rlcrnt_ = self.flt.convert_to_real(&mt);
+                self.next_msr = rlcrnt_.msr;
+                self.next_tick = rlcrnt_.tick;
             }
+            //println!("^^^^^ CrntMsrTick: {}/{}, note: {}/{}, next: {}/{}",
+            //crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick, self.next_msr, self.next_tick);
         }
     }
 }

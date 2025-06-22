@@ -23,10 +23,8 @@ pub struct BrokenPattern {
     priority: u32,
 
     ptn_tick: i32,
-    //ptn_min_nt: i16,
     ptn_vel: i32,
     ptn_each_dur: i32,
-    //ptn_max_vce: i32,
     ptn_arp_type: i32,
     next_index: usize,
     oct_up: i16,
@@ -77,7 +75,7 @@ impl BrokenPattern {
         });
 
         #[cfg(feature = "verbose")]
-        println!("New DynaPtn: para:{}", para);
+        println!("New BrkPtn: para:{}", para);
 
         // new Dynamic Pattern
         Rc::new(RefCell::new(Self {
@@ -88,10 +86,8 @@ impl BrokenPattern {
             },
             priority: PRI_DYNPTN,
             ptn_tick: ptn.tick as i32,
-            //ptn_min_nt: ptn.lowest,
             ptn_vel: ptn.vel as i32,
             ptn_each_dur: ptn.each_dur as i32,
-            //ptn_max_vce: ptn.max_count as i32,
             ptn_arp_type: ptn.figure as i32,
             next_index: 0,
             oct_up: 0,

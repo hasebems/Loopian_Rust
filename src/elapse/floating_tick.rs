@@ -13,19 +13,49 @@ use super::tickgen::CrntMsrTick;
 /// 1. 同時発音する和音の Tick をずらす。
 /// 2. 通常発音の Tick にランダム性を持たせる。
 pub struct FloatingTick {
-    last_real_crnt: CrntMsrTick, //   次に呼ばれる小節とTickの情報が保持される
+    just_crnt: CrntMsrTick,            //   現在の小節とTickの情報が保持される
+    last_real_crnt: CrntMsrTick,       //   次に呼ばれる小節とTickの情報が保持される
     last_notational_crnt: CrntMsrTick, //   次に呼ばれる小節とTickの情報が保持される
+    floating: bool,                    //   FloatingTick が有効かどうか
+    max_count: Option<i32>,            //   Tick を散らす回数
+    disperse_count: i32,               //   Tick を散らす回数
 }
 impl FloatingTick {
-    const TICK_DISPERSE: i32 = 20; // Tick の散らし幅
+    const MAX_FRONT_DISPERSE: i32 = 50; // Tick の前への散らし幅
+    const EACH_DISPERSE: i32 = 50; // Tick の散らし幅の単位
 
-    pub fn new() -> Self {
+    pub fn new(floating: bool) -> Self {
         Self {
+            just_crnt: CrntMsrTick::new(),
             last_real_crnt: CrntMsrTick::new(),
             last_notational_crnt: CrntMsrTick::new(),
+            floating,
+            max_count: None,
+            disperse_count: 0,
         }
     }
+    pub fn set_crnt(&mut self, crnt_: &CrntMsrTick, ntcrnt_: &CrntMsrTick) {
+        self.last_real_crnt = *crnt_;
+        self.last_notational_crnt = *ntcrnt_;
+    }
+    pub fn turnon_floating(&mut self) {
+        self.floating = true;
+    }
+    pub fn turnoff_floating(&mut self) {
+        self.floating = false;
+    }
+    pub fn just_crnt(&self) -> &CrntMsrTick {
+        &self.just_crnt
+    }
+    /// FloatingTick を使用して、同音発音を散らす指示を受ける
+    /// max_num: 同音発音数
+    /// start: 散らし開始位置
+    pub fn set_disperse_count(&mut self, max_num: i32, start: i32) {
+        self.max_count = Some(max_num);
+        self.disperse_count = start;
+    }
     pub fn convert_to_notational(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
+        self.just_crnt = *crnt_;
         if self.last_real_crnt == *crnt_ {
             self.last_notational_crnt
         } else {
@@ -35,11 +65,33 @@ impl FloatingTick {
     pub fn convert_to_real(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
         self.last_notational_crnt = *crnt_;
         self.last_real_crnt = *crnt_;
-        if Self::TICK_DISPERSE < self.last_real_crnt.tick {
-            self.last_real_crnt.tick -= Self::TICK_DISPERSE;
-        } else {
-            self.last_real_crnt.tick = crnt_.tick_for_onemsr - Self::TICK_DISPERSE;
-            self.last_real_crnt.msr -= 1;
+        if self.floating {
+            let disperse_size;
+            if let Some(max) = self.max_count {
+                if self.disperse_count < max {
+                    let count = self.disperse_count;
+                    self.disperse_count += 1;
+                    disperse_size = Self::MAX_FRONT_DISPERSE - (count * Self::EACH_DISPERSE)
+                } else {
+                    self.max_count = None;
+                    self.disperse_count = 0;
+                    disperse_size = Self::MAX_FRONT_DISPERSE
+                }
+            } else {
+                self.disperse_count = 0;
+                disperse_size = Self::MAX_FRONT_DISPERSE
+            };
+            let tk = self.last_real_crnt.tick;
+            let real_tick = tk - disperse_size;
+            if real_tick < 0 {
+                self.last_real_crnt.tick = self.last_real_crnt.tick_for_onemsr - real_tick.abs();
+                self.last_real_crnt.msr -= 1;
+            } else if real_tick >= self.last_real_crnt.tick_for_onemsr {
+                self.last_real_crnt.msr += 1;
+                self.last_real_crnt.tick = real_tick - self.last_real_crnt.tick_for_onemsr;
+            } else {
+                self.last_real_crnt.tick = real_tick;
+            }
         }
         self.last_real_crnt
     }

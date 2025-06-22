@@ -76,6 +76,9 @@ pub struct PhraseLoop {
     next_msr: i32,  //   次に呼ばれる小節番号が保持される
     next_tick: i32, //   次に呼ばれるTick数が保持される
 }
+//*******************************************************************
+//          Phrase Loop Implementation
+//*******************************************************************
 impl PhraseLoop {
     pub fn new(sid: u32, pid: u32, prm: PhraseLoopParam) -> Rc<RefCell<Self>> {
         let noped = prm.ana.clone().iter().any(|x| {
@@ -121,7 +124,7 @@ impl PhraseLoop {
             same_note_msr: 0,
             same_note_tick: 0,
             staccato_rate,
-            flt: FloatingTick::new(), //  FloatingTick を初期化
+            flt: FloatingTick::new(false),
             // for super's member
             whole_tick: prm.whole_tick,
             destroy: false,
@@ -144,6 +147,9 @@ impl PhraseLoop {
         let phr = self.phrase.to_vec();
         let max_ev = self.phrase.len();
         loop {
+            if self.is_next_ev_cluster() {
+                self.flt.turnon_floating();
+            }
             if max_ev <= trace {
                 next_tick = END_OF_DATA; // means sequence finished
                 break;
@@ -152,6 +158,7 @@ impl PhraseLoop {
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                 let evtx = phr[trace].clone();
+                self.flt.turnoff_floating();
                 match evtx {
                     PhrEvt::Note(ev) => {
                         if self.same_note_msr != msr || self.same_note_tick != tick {
@@ -179,6 +186,7 @@ impl PhraseLoop {
                         estk.add_elapse(Rc::clone(&ptn));
                     }
                     PhrEvt::ClsPtn(mut ev) => {
+                        self.flt.turnon_floating();
                         while ev.tick >= crnt_.tick_for_onemsr as i16 {
                             // pattern は１小節内で完結
                             ev.tick -= crnt_.tick_for_onemsr as i16;
@@ -188,7 +196,12 @@ impl PhraseLoop {
                             self.id.sid,      //  loop.sid -> note.pid
                             self.id.pid,      //  part
                             self.keynote,
-                            msr,
+                            (
+                                msr,
+                                self.flt.just_crnt().msr,
+                                self.flt.just_crnt().tick,
+                                self.flt.just_crnt().tick_for_onemsr,
+                            ),
                             ev,
                             self.analys.to_vec(),
                         );
@@ -312,7 +325,19 @@ impl PhraseLoop {
         }
         TrnsType::Com
     }
+    fn is_next_ev_cluster(&self) -> bool {
+        if self.play_counter < self.phrase.len() {
+            if let PhrEvt::ClsPtn(_) = self.phrase[self.play_counter] {
+                return true;
+            }
+        }
+        false
+    }
 }
+//*******************************************************************
+//          Phrase Loop Trait Implementation
+//          Elapse Trait
+//*******************************************************************
 impl Elapse for PhraseLoop {
     /// id を得る
     fn id(&self) -> ElapseId {
@@ -363,6 +388,10 @@ impl Elapse for PhraseLoop {
             self.destroy = true;
             return;
         }
+        //println!(
+        //    "VVVVV Real: {}/{}, Note: {}/{}",
+        //    crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick
+        //);
 
         if elapsed_tick >= self.next_tick_in_phrase {
             let next_tick = self.generate_event(&ntcrnt_, estk, elapsed_tick);
@@ -385,6 +414,10 @@ impl Elapse for PhraseLoop {
         }
     }
 }
+//*******************************************************************
+//          Phrase Loop Trait Implementation
+//          Loop Trait
+//*******************************************************************
 impl Loop for PhraseLoop {
     fn destroy(&self) -> bool {
         self.destroy
