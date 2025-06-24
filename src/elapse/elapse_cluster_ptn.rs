@@ -79,7 +79,8 @@ impl ClusterPattern {
         });
 
         //   FloatingTick を生成する
-        let mut flt = FloatingTick::new(true);
+        let floating = ptn.arpeggio > 0;
+        let mut flt = FloatingTick::new(floating);
         flt.set_crnt(
             &CrntMsrTick {
                 msr: mst.1,

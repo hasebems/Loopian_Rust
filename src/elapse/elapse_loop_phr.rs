@@ -147,7 +147,7 @@ impl PhraseLoop {
         let phr = self.phrase.to_vec();
         let max_ev = self.phrase.len();
         loop {
-            if self.is_next_ev_cluster() {
+            if self.is_next_arpeggio() {
                 self.flt.turnon_floating();
             }
             if max_ev <= trace {
@@ -186,7 +186,13 @@ impl PhraseLoop {
                         estk.add_elapse(Rc::clone(&ptn));
                     }
                     PhrEvt::ClsPtn(mut ev) => {
-                        self.flt.turnon_floating();
+                        if ev.arpeggio > 0 {
+                            // アルペジオの時は FloatingTick を有効にする
+                            self.flt.turnon_floating();
+                        } else {
+                            // アルペジオでない時は FloatingTick を無効にする
+                            self.flt.turnoff_floating();
+                        }
                         while ev.tick >= crnt_.tick_for_onemsr as i16 {
                             // pattern は１小節内で完結
                             ev.tick -= crnt_.tick_for_onemsr as i16;
@@ -325,10 +331,13 @@ impl PhraseLoop {
         }
         TrnsType::Com
     }
-    fn is_next_ev_cluster(&self) -> bool {
+    fn is_next_arpeggio(&self) -> bool {
         if self.play_counter < self.phrase.len() {
-            if let PhrEvt::ClsPtn(_) = self.phrase[self.play_counter] {
-                return true;
+            if let PhrEvt::ClsPtn(e) = &self.phrase[self.play_counter] {
+                if e.arpeggio >= 0 {
+                    // クラスタパターンの arpeggio が 0 以上なら、次はアルペジオ
+                    return true;
+                }
             }
         }
         false

@@ -109,7 +109,7 @@ pub struct ClsPatternEvt {
     pub lowest: i16,    // lowest note number -7..0..7
     pub vel: i16,       // velocity
     pub max_count: i16, // max note count: 2-5
-    pub figure: i16,    // figure of arpeggio: u/d/xu/xd(0-3)
+    pub arpeggio: i16,  // figure of arpeggio: 0,1-3
     pub each_dur: i16,  // each note's duration
     pub artic: i16,     // 0..100..200[%] staccato/legato
 }

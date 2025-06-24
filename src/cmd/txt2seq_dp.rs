@@ -70,6 +70,11 @@ fn gen_dp_pattern(
     vel: i16,
     dur: i16,
 ) -> PhrEvt {
+    let arpeggio = if nt.contains("$") && !case_arp {
+        if_arpgio(nt)
+    } else {
+        0
+    };
     let params = extract_texts_from_parentheses(nt);
     let param = split_by('@', params.to_string());
     let pnum = param.len();
@@ -114,11 +119,25 @@ fn gen_dp_pattern(
             dur,
             lowest,
             max_count,
+            arpeggio,
             each_dur,
             ..ClsPatternEvt::default()
         })
     };
     evt
+}
+fn if_arpgio(nt: &str) -> i16 {
+    let clsltr = split_by('C', nt.to_string());
+    if clsltr.len() > 1 {
+        if clsltr[0] == "$Q" {
+            return 1; // Arpeggio
+        } else if clsltr[0] == "$" {
+            return 2; // Arpeggio Slow
+        } else if clsltr[0] == "$S" {
+            return 3; // Arpeggio Quick
+        }
+    }
+    0 // Cluster ではない
 }
 fn calc_dur(durstr: &str) -> i16 {
     let mut dur = 480;

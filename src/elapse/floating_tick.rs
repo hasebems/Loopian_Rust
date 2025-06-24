@@ -7,8 +7,9 @@
 use super::tickgen::CrntMsrTick;
 
 /// FloatingTick
-/// 本クラスは、PhraseLoop の next_tick を入力すると、その値を散らして
-/// より音楽的な Tick を生成するクラスである。
+/// 本クラスは、PhraseLoop の next_tick を入力すると、その値を時間方向に散らして
+/// より生演奏に近い Tick を自動生成するクラスである。
+/// 時間方向に散らすことを FloatingTick と呼ぶこととする。
 /// 以下の二つの処理を行う。
 /// 1. 同時発音する和音の Tick をずらす。
 /// 2. 通常発音の Tick にランダム性を持たせる。
@@ -34,13 +35,16 @@ impl FloatingTick {
             disperse_count: 0,
         }
     }
+    /// 現在の Tick と、Notational Tick を設定する。new で生成した後に呼び出す。
     pub fn set_crnt(&mut self, crnt_: &CrntMsrTick, ntcrnt_: &CrntMsrTick) {
         self.last_real_crnt = *crnt_;
         self.last_notational_crnt = *ntcrnt_;
     }
+    /// Floating を有効にする
     pub fn turnon_floating(&mut self) {
         self.floating = true;
     }
+    /// Floating を無効にする
     pub fn turnoff_floating(&mut self) {
         self.floating = false;
     }
@@ -54,6 +58,7 @@ impl FloatingTick {
         self.max_count = Some(max_num);
         self.disperse_count = start;
     }
+    /// 現実の Tick を Notational Tick に変換する。
     pub fn convert_to_notational(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
         self.just_crnt = *crnt_;
         if self.last_real_crnt == *crnt_ {
@@ -62,27 +67,27 @@ impl FloatingTick {
             *crnt_
         }
     }
+    /// Notational Tick を現実の Tick に変換する。
     pub fn convert_to_real(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
         self.last_notational_crnt = *crnt_;
         self.last_real_crnt = *crnt_;
         if self.floating {
-            let disperse_size;
-            if let Some(max) = self.max_count {
+            // 時間の前方向への散らし幅
+            let disperse_size = if let Some(max) = self.max_count {
                 if self.disperse_count < max {
                     let count = self.disperse_count;
                     self.disperse_count += 1;
-                    disperse_size = Self::MAX_FRONT_DISPERSE - (count * Self::EACH_DISPERSE)
+                    Self::MAX_FRONT_DISPERSE - (count * Self::EACH_DISPERSE)
                 } else {
                     self.max_count = None;
                     self.disperse_count = 0;
-                    disperse_size = Self::MAX_FRONT_DISPERSE
+                    Self::MAX_FRONT_DISPERSE
                 }
             } else {
                 self.disperse_count = 0;
-                disperse_size = Self::MAX_FRONT_DISPERSE
+                Self::MAX_FRONT_DISPERSE
             };
-            let tk = self.last_real_crnt.tick;
-            let real_tick = tk - disperse_size;
+            let real_tick = self.last_real_crnt.tick - disperse_size;
             if real_tick < 0 {
                 self.last_real_crnt.tick = self.last_real_crnt.tick_for_onemsr - real_tick.abs();
                 self.last_real_crnt.msr -= 1;
