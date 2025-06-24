@@ -279,7 +279,8 @@ This document explains all features of Loopian.
     - Prefixing with `$` (e.g. `$C()`) indicates that the chord should be arpeggiated:
         - `$SC` for a slow arpeggio.
         - `$QC` for a quick arpeggio.
-        - (Note: Although the naming may conflict with `Arp()`, the `$` denotes an arpeggio symbol in notation.)
+        - `h$C()`: Timing information is placed before the arpeggio symbol.
+        - Although its name overlaps with `Arp()`, the `$` denotes the arpeggio notation in the score.
 - `Arp(a,b,c)` parameters are as follows:
     - a: duration symbol (choose from h, q, e, v, w and their triplet, quintuplet, or dotted variations; default: q).
     - b: form indicator, where u means ascending, d descending, ux cross-ascending, and dx cross-descending.
