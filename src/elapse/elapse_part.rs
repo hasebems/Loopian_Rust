@@ -69,8 +69,8 @@ impl PhrLoopWrapper {
         };
         #[cfg(feature = "verbose")]
         println!(
-            "**** PhrLoopWrapper::new: loop_id: {}, repeat_tick: {}, max_loop_msr: {}\n**** Phrase: {:?}",
-            loop_id, repeat_tick, max_loop_msr, phr_stock
+            "**** PhrLoopWrapper::new: loop_id: {}, whole_tick: {}, max_loop_msr: {} nt:{:?}",
+            loop_id, repeat_tick, max_loop_msr, phr_stock.evts[0]
         );
         let phrase = PhraseLoop::new(
             loop_id,
@@ -111,7 +111,10 @@ impl PhrLoopWrapper {
             LoopPhase::BeforeBeginPhr
         }
     }
-    // PhraseLoop に残りのイベントがあるか調べる
+    fn set_destroy(&self) {
+        // PhraseLoop の destroy をセット
+        self.phrase.borrow_mut().set_destroy();
+    }
 }
 
 //*******************************************************************
@@ -345,7 +348,7 @@ impl PhrLoopManager {
                 self.phr_idx = 0;
                 let phase = self.get_crnt_phr_phase(crnt_);
                 #[cfg(feature = "verbose")]
-                println!("PhrLoopManager::append_phrase: phase: {:?}", phase);
+                println!("PhrLoopManager::append_phrase: id: {:?}", self.loop_id);
                 if during_play {
                     match phase {
                         LoopPhase::BeforeBeginPhr | LoopPhase::DuringBeginPhr => {
@@ -491,26 +494,45 @@ impl PhrLoopManager {
         replace_msr: i32, // 0以外なら置き換える小節番号
     ) {
         let phr: PhrData = self.phr_stock[self.phr_idx].clone();
+        let crnt_msr = if replace_msr != 0 {
+            replace_msr
+        } else {
+            crnt_.msr
+        };
+
+        // 上書きをするべきかどうかを確認
+        let mut overwrite_a = false; // 置き換えフラグ
+        let mut overwrite_b = false; // 置き換えフラグ
+        if let Some(inst_a) = &self.phr_instance_a {
+            if inst_a.begin_phr == crnt_msr {
+                overwrite_a = true; // instance_a を置き換える
+                inst_a.set_destroy();
+            }
+        }
+        if let Some(inst_b) = &self.phr_instance_b {
+            if inst_b.begin_phr == crnt_msr {
+                overwrite_b = true; // instance_b を置き換える
+                inst_b.set_destroy();
+            }
+        }
+
+        // Phrase Loop Wrapper を生成
         let pinst = PhrLoopWrapper::new(
             crnt_.tick_for_onemsr,
-            if replace_msr != 0 {
-                replace_msr
-            } else {
-                crnt_.msr
-            },
+            crnt_msr,
             pbp,
             self.loop_id + 1, // loop_id をインクリメント
             self.turnnote,
             phr,
         );
-        if self.a_is_gened_last {
+        if self.a_is_gened_last || overwrite_b {
             // instance_b を使用
             self.a_is_gened_last = false;
             self.phr_instance_b = Some(pinst.clone());
             estk.add_elapse(pinst.phrase);
             self.del_b_ev = false;
             self.del_a_ev = true; // instance_a を削除するイベント
-        } else {
+        } else if !self.a_is_gened_last || overwrite_a {
             // instance_a を使用
             self.a_is_gened_last = true;
             self.phr_instance_a = Some(pinst.clone());
@@ -521,24 +543,14 @@ impl PhrLoopManager {
         self.loop_id += 1; // loop_id をインクリメント
     }
     fn del_a(&mut self) {
-        if self.phr_instance_a.is_some() {
-            self.phr_instance_a
-                .as_ref()
-                .unwrap()
-                .phrase
-                .borrow_mut()
-                .set_destroy();
+        if let Some(inst_a) = &self.phr_instance_a {
+            inst_a.set_destroy();
         }
         self.phr_instance_a = None;
     }
     fn del_b(&mut self) {
-        if self.phr_instance_b.is_some() {
-            self.phr_instance_b
-                .as_ref()
-                .unwrap()
-                .phrase
-                .borrow_mut()
-                .set_destroy();
+        if let Some(inst_b) = &self.phr_instance_b {
+            inst_b.set_destroy();
         }
         self.phr_instance_b = None;
     }
