@@ -263,6 +263,7 @@ impl CompositionMap {
 //*******************************************************************
 pub struct CmpsLoopMediator {
     pub state_reserve: bool,
+    clear_cmps_ev: bool, // clear されたかどうか
     first_msr_num: i32,
     loop_id: u32, // loop sid
     cmps: Option<Box<CompositionMap>>,
@@ -275,7 +276,8 @@ impl CmpsLoopMediator {
     pub fn new() -> Self {
         Self {
             state_reserve: false,
-            first_msr_num: 0,
+            clear_cmps_ev: false,
+            first_msr_num: 1,
             loop_id: 0,
             cmps: None,
             do_loop: true,
@@ -333,6 +335,7 @@ impl CmpsLoopMediator {
     pub fn rcv_cmp(&mut self, msg: ChordData, tick_for_onemsr: i32, tick_for_onebeat: i32) {
         if msg.evts.is_empty() && msg.whole_tick == 0 {
             self.next_cmps = None;
+            self.clear_cmps_ev = true;
         } else {
             let max_msr = (msg.whole_tick as i32 / tick_for_onemsr) as usize;
             let max_beat = (tick_for_onemsr / tick_for_onebeat) as usize;
@@ -342,11 +345,16 @@ impl CmpsLoopMediator {
                 max_msr,
                 max_beat,
             )));
+            // 新しい CompositionMap の first_msr_num を設定
+            if let Some(ref mut nxt) = self.next_cmps {
+                let fm = self.first_msr_num + msg.whole_tick as i32 / tick_for_onemsr;
+                nxt.set_first_msr_num(fm);
+            }
         }
         #[cfg(feature = "verbose")]
         println!(
             "Received next_cmps >next_cmps is {:?}",
-            self.next_cmps.is_some()
+            self.next_cmps
         );
         self.do_loop = msg.do_loop;
         self.state_reserve = true;
@@ -380,8 +388,12 @@ impl CmpsLoopMediator {
                     cmp.set_first_msr_num(self.first_msr_num);
                 }
             }
+        } else if self.clear_cmps_ev {
+            //self.clear_cmp_prm();
+            self.clear_cmps_ev = false;
         } else {
-            // 新しい Composition が空のとき、self.cmps をそのまま再生
+            // 拍子が変わってイベントが発生したとき
+            // next_cmps が空なら、self.cmps をそのまま再生
             self.first_msr_num = crnt_.msr;
             let mut max_msr = 0;
             let mut max_beat = 0;
@@ -480,6 +492,7 @@ impl CmpsLoopMediator {
                 return cmp.scan_chord(msr as usize, beat as usize);
             }
         }
+        // 現在と同じ Composition Loop から、情報を取得する
         if let Some(ref cmp) = self.cmps {
             let (msr, beat) = cmp.loop_msr_beat(designated_);
             cmp.scan_chord(msr as usize, beat as usize)
