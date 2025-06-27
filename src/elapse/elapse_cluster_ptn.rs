@@ -131,38 +131,38 @@ impl ClusterPattern {
         }))
     }
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
-        if !self.ntlist.is_empty() {
-            // すでに発音開始済みの Cluster の場合
-            self.gen_note_ev(estk, self.ntlist[0], self.ntlist_vel);
-            self.ntlist.remove(0);
-            if !self.ntlist.is_empty() {
-                self.notational_tick
+        if let Some(pt) = estk.part(self.part) {
+            if self.ntlist.is_empty() {
+                // 対応する Part が存在する場合
+                let mut pt_borrowed = pt.borrow_mut();
+                let cmp_med = pt_borrowed.get_cmps_med();
+                // 和音情報を読み込む
+                let (rt, mut tbl) = cmp_med.get_chord(crnt_);
+                let root = ROOT2NTNUM[rt as usize];
+                if tbl == NO_TABLE {
+                    // 対応する Chord Table が存在しない場合
+                    tbl = 0;
+                }
+                #[cfg(feature = "verbose")]
+                println!("ClusterPattern: root-{}, table-{}", root, tbl);
+                let (tblptr, vel) = self.gen_each_note(crnt_, estk, tbl);
+                // Cluster の場合は、これから数回に分けて発音リストに従って NoteOn する
+                self.play_cluster(estk, root, tblptr, vel);
             } else {
+                // すでに発音開始済みの Cluster の場合
+                self.gen_note_ev(estk, self.ntlist[0], self.ntlist_vel);
+                self.ntlist.remove(0);
+            }
+            // Cluster のノートリストが空になったら、次の Tick を計算し、和音発音を修了
+            if self.ntlist.is_empty() {
                 self.ntlist = Vec::new(); // Cluster のノートリストをクリア
                 self.play_counter += 1;
                 self.recalc_next_tick(crnt_)
-            }
-        } else if let Some(pt) = estk.part(self.part) {
-            // 対応する Part が存在する場合
-            let mut pt_borrowed = pt.borrow_mut();
-            let cmp_med = pt_borrowed.get_cmps_med();
-            // 和音情報を読み込む
-            let (rt, tbl) = cmp_med.get_chord(crnt_);
-            let root = ROOT2NTNUM[rt as usize];
-            if tbl == NO_TABLE {
-                #[cfg(feature = "verbose")]
-                println!("ClusterPattern: No Chord Table!!");
-                self.play_counter += 1;
-                self.recalc_next_tick(crnt_)
             } else {
-                #[cfg(feature = "verbose")]
-                println!("ClusterPattern: root-{}, table-{}", root, tbl);
-                self.gen_each_note(crnt_, estk, root, tbl);
-                // Cluster の場合は、これから数回に分けて発音リストに従って NoteOn する
                 self.notational_tick
             }
         } else {
-            self.recalc_next_tick(crnt_)
+            END_OF_DATA
         }
     }
     fn recalc_next_tick(&mut self, crnt_: &CrntMsrTick) -> i32 {
@@ -174,16 +174,14 @@ impl ClusterPattern {
             next_tick
         }
     }
-    fn gen_each_note(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, root: i16, tbl: i16) {
+    fn gen_each_note(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, tbl: i16) -> (&'static[i16], i16) {
         let (tblptr, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
         let vel = self.calc_dynamic_vel(
             crnt_.tick_for_onemsr,
             estk.get_bpm(),
             estk.tg().get_meter().1,
         );
-
-        // Cluster
-        self.play_cluster(estk, root, tblptr, vel);
+        (tblptr, vel)
     }
     fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
         let mut vel: i16 = self.ptn_vel as i16;
@@ -351,8 +349,8 @@ impl Elapse for ClusterPattern {
                 self.next_msr = rlcrnt_.msr;
                 self.next_tick = rlcrnt_.tick;
             }
-            //println!("^^^^^ CrntMsrTick: {}/{}, note: {}/{}, next: {}/{}",
-            //crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick, self.next_msr, self.next_tick);
+            //println!("^^^ CrntMsrTick: {}/{}, note: {}/{}, ntlist:{}",
+            //    crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick, self.ntlist.len());
         }
     }
 }

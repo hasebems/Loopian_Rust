@@ -114,16 +114,17 @@ impl BrokenPattern {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
             // 和音情報を読み込む
-            let (rt, tbl) = cmp_med.get_chord(crnt_);
+            let (rt, mut tbl) = cmp_med.get_chord(crnt_);
             let root = ROOT2NTNUM[rt as usize];
             if tbl == NO_TABLE {
                 #[cfg(feature = "verbose")]
                 println!("BrokenPattern: No Chord Table!!");
+                tbl = 0; //  No Table の場合は、Table 0 を使用する
             } else {
                 #[cfg(feature = "verbose")]
                 println!("BrokenPattern: root-{}, table-{}", root, tbl);
-                self.gen_each_note(crnt_, estk, root, tbl);
             }
+            self.gen_each_note(crnt_, estk, root, tbl);
         }
         self.recalc_next_tick(crnt_)
     }
