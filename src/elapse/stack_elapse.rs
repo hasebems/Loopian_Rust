@@ -295,7 +295,7 @@ impl ElapseStack {
             }
             felps.borrow_mut().process(crnt_, self);
             debcnt += 1;
-            assert!(debcnt < 100, "Last Tick:{:?}", crnt_.tick);
+            assert!(debcnt < 100, "Last ID:{:?}", felps.borrow().id());
             if self.limit_for_deb < debcnt {
                 self.limit_for_deb = debcnt;
             }
