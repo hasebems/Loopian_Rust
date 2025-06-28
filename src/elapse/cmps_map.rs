@@ -127,7 +127,7 @@ impl CompositionMap {
         let mut msr = if crnt_.msr >= self.first_msr_num {
             (crnt_.msr - self.first_msr_num) as isize
         } else {
-            1 // 1小節目から開始
+            0 // 次の小節が１小節目
         };
         while msr >= loop_size {
             msr -= loop_size;
@@ -352,10 +352,7 @@ impl CmpsLoopMediator {
             }
         }
         #[cfg(feature = "verbose")]
-        println!(
-            "Received next_cmps >next_cmps is {:?}",
-            self.next_cmps
-        );
+        println!("Received next_cmps >next_cmps is {:?}", self.next_cmps);
         self.do_loop = msg.do_loop;
         self.state_reserve = true;
     }
