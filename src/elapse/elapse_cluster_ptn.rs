@@ -361,8 +361,6 @@ impl Elapse for ClusterPattern {
                 self.next_msr = rlcrnt_.msr;
                 self.next_tick = rlcrnt_.tick;
             }
-            //println!("^^^ CrntMsrTick: {}/{}, note: {}/{}, ntlist:{}",
-            //    crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick, self.ntlist.len());
         }
     }
 }

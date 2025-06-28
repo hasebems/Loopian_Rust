@@ -147,9 +147,6 @@ impl PhraseLoop {
         let phr = self.phrase.to_vec();
         let max_ev = self.phrase.len();
         loop {
-            if self.is_next_arpeggio() {
-                self.flt.turnon_floating();
-            }
             if max_ev <= trace {
                 next_tick = END_OF_DATA; // means sequence finished
                 break;
@@ -330,17 +327,6 @@ impl PhraseLoop {
             }
         }
         TrnsType::Com
-    }
-    fn is_next_arpeggio(&self) -> bool {
-        if self.play_counter < self.phrase.len() {
-            if let PhrEvt::ClsPtn(e) = &self.phrase[self.play_counter] {
-                if e.arpeggio >= 0 {
-                    // クラスタパターンの arpeggio が 0 以上なら、次はアルペジオ
-                    return true;
-                }
-            }
-        }
-        false
     }
 }
 //*******************************************************************
