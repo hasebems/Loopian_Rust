@@ -133,7 +133,6 @@ impl ClusterPattern {
     fn generate_event(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
         if let Some(pt) = estk.part(self.part) {
             if self.ntlist.is_empty() {
-                // 対応する Part が存在する場合
                 let mut pt_borrowed = pt.borrow_mut();
                 let cmp_med = pt_borrowed.get_cmps_med();
                 // 和音情報を読み込む
@@ -147,7 +146,7 @@ impl ClusterPattern {
                 println!("ClusterPattern: root-{}, table-{}", root, tbl);
                 let (tblptr, vel) = self.gen_each_note(crnt_, estk, tbl);
                 // Cluster の場合は、これから数回に分けて発音リストに従って NoteOn する
-                self.play_cluster(estk, root, tblptr, vel);
+                self.gen_cluster_list(estk, root, tblptr, vel);
             } else {
                 // すでに発音開始済みの Cluster の場合
                 self.gen_note_ev(estk, self.ntlist[0], self.ntlist_vel);
@@ -174,7 +173,12 @@ impl ClusterPattern {
             next_tick
         }
     }
-    fn gen_each_note(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, tbl: i16) -> (&'static[i16], i16) {
+    fn gen_each_note(
+        &mut self,
+        crnt_: &CrntMsrTick,
+        estk: &mut ElapseStack,
+        tbl: i16,
+    ) -> (&'static [i16], i16) {
         let (tblptr, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
         let vel = self.calc_dynamic_vel(
             crnt_.tick_for_onemsr,
@@ -211,7 +215,7 @@ impl ClusterPattern {
         }
         vel
     }
-    fn play_cluster(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
+    fn gen_cluster_list(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
         // 最低ノートとpara設定から、各ノートのオクターブを算出
         let mut ntlist: Vec<i16> = Vec::new();
         for nt in tblptr {
@@ -241,9 +245,17 @@ impl ClusterPattern {
         // 低い順に並べ、同時発音数を決定する
         ntlist.sort();
 
-        if self.ptn_max_vce as usize <= ntlist.len() {
-            // 最大発音数を超える場合は、最大発音数までにする
-            ntlist.truncate(self.ptn_max_vce as usize);
+        let max_vce = self.ptn_max_vce as usize;
+        match max_vce.cmp(&ntlist.len()) {
+            std::cmp::Ordering::Less => {
+                // 最大発音数を超える場合は、最大発音数までにする
+                ntlist.truncate(max_vce);
+            }
+            std::cmp::Ordering::Greater => {
+                // 最大発音数が少ない場合は、最大発音数までにする
+                ntlist.push(ntlist[0] + 12);
+            }
+            std::cmp::Ordering::Equal => {}
         }
         self.ntlist = ntlist;
         self.flt.set_disperse_count(self.ntlist.len() as i32, 1);
