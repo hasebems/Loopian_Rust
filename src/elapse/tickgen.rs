@@ -7,29 +7,8 @@ use crate::lpnlib::{DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, Meter};
 use std::time::{Duration, Instant};
 
 //*******************************************************************
-//          Tick Generator Struct
+//          Current Tick Struct
 //*******************************************************************
-pub struct TickGen {
-    bpm: i16,
-    meter: Meter,
-    tick_for_onemsr: i32,    // meter によって決まる１小節の tick 数
-    tick_for_beat: i32,      // 1拍の tick 数
-    bpm_stock: i16,          // change bpm で BPM を変えた直後の値
-    origin_time: Instant,    // start 時の絶対時間
-    bpm_start_time: Instant, // tempo/meter が変わった時点の絶対時間、tick 計測の開始時間
-    bpm_start_tick: i32,     // tempo が変わった時点の tick, meter が変わったとき0clear
-    meter_start_msr: i32,    // meter が変わった時点の経過小節数
-    crnt_msr: i32,           // start からの小節数（最初の小節からイベントを出すため、-1初期化)
-    crnt_tick_inmsr: i32,    // 現在の小節内の tick 数
-    crnt_time: Instant,      // 現在の時刻
-
-    prepare_rit: bool, // rit. 開始準備中
-    rit_state: bool,
-    fermata_state: bool, // fermata で止まっている状態
-    prm: RitPrm,
-    start_mt: CrntMsrTick,
-    ritgen: Box<dyn Rit>,
-}
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct CrntMsrTick {
     pub msr: i32,
@@ -53,13 +32,54 @@ impl CrntMsrTick {
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
         }
     }
+    pub fn set(msr: i32) -> Self {
+        Self {
+            msr,
+            tick: 0,
+            tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+        }
+    }
+    pub fn _is_older_than(&self, other: &CrntMsrTick) -> bool {
+        self.msr < other.msr || (self.msr == other.msr && self.tick < other.tick)
+    }
+    pub fn _is_same_or_older_than(&self, other: &CrntMsrTick) -> bool {
+        self.msr <= other.msr || (self.msr == other.msr && self.tick <= other.tick)
+    }
+    pub fn _is_same_as(&self, other: &CrntMsrTick) -> bool {
+        self.msr == other.msr && self.tick == other.tick
+    }
 }
+
+//*******************************************************************
+//          Tick Generator Struct
+//*******************************************************************
 #[allow(dead_code)]
 pub enum RitType {
     Linear,
     LinearPrecise,
     Sigmoid,
     Control,
+}
+pub struct TickGen {
+    bpm: i16,
+    meter: Meter,
+    tick_for_onemsr: i32,    // meter によって決まる１小節の tick 数
+    tick_for_beat: i32,      // 1拍の tick 数
+    bpm_stock: i16,          // change bpm で BPM を変えた直後の値
+    origin_time: Instant,    // start 時の絶対時間
+    bpm_start_time: Instant, // tempo/meter が変わった時点の絶対時間、tick 計測の開始時間
+    bpm_start_tick: i32,     // tempo が変わった時点の tick, meter が変わったとき0clear
+    meter_start_msr: i32,    // meter が変わった時点の経過小節数
+    crnt_msr: i32,           // start からの小節数（最初の小節からイベントを出すため、-1初期化)
+    crnt_tick_inmsr: i32,    // 現在の小節内の tick 数
+    crnt_time: Instant,      // 現在の時刻
+
+    prepare_rit: bool, // rit. 開始準備中
+    rit_state: bool,
+    fermata_state: bool, // fermata で止まっている状態
+    prm: RitPrm,
+    start_mt: CrntMsrTick,
+    ritgen: Box<dyn Rit>,
 }
 impl TickGen {
     pub fn new(tp: RitType) -> Self {
