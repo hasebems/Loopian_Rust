@@ -295,7 +295,15 @@ impl ElapseStack {
             }
             felps.borrow_mut().process(crnt_, self);
             debcnt += 1;
-            assert!(debcnt < 100, "Last ID:{:?}", felps.borrow().id());
+            if debcnt > 80 {
+                // 50個以上のイベントがあったら、何かがおかしい
+                println!(
+                    "Too many events! cnt: {}, id: {:?}",
+                    debcnt,
+                    felps.borrow().id()
+                );
+            }
+            assert!(debcnt < 100, "Last ID:{:?}", felps.borrow().id()); // ERR_SE10
             if self.limit_for_deb < debcnt {
                 self.limit_for_deb = debcnt;
             }
