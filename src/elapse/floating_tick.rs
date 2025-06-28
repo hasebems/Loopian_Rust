@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-
+use crate::lpnlib::*;
 use super::tickgen::CrntMsrTick;
 
 /// FloatingTick
@@ -15,8 +15,8 @@ use super::tickgen::CrntMsrTick;
 /// 2. 通常発音の Tick にランダム性を持たせる。
 pub struct FloatingTick {
     just_crnt: CrntMsrTick,            //   現在の小節とTickの情報が保持される
-    last_real_crnt: CrntMsrTick,       //   次に呼ばれる小節とTickの情報が保持される
-    last_notational_crnt: CrntMsrTick, //   次に呼ばれる小節とTickの情報が保持される
+    next_real_tick: CrntMsrTick,       //   次に呼ばれる小節とTickの情報が保持される
+    next_notational_tick: CrntMsrTick, //   次に呼ばれる譜面上の小節とTickの情報が保持される
     floating: bool,                    //   FloatingTick が有効かどうか
     max_count: Option<i32>,            //   Tick を散らす回数
     disperse_count: i32,               //   Tick を散らす回数
@@ -27,9 +27,9 @@ impl FloatingTick {
 
     pub fn new(floating: bool) -> Self {
         Self {
-            just_crnt: CrntMsrTick::new(),
-            last_real_crnt: CrntMsrTick::new(),
-            last_notational_crnt: CrntMsrTick::new(),
+            just_crnt: CrntMsrTick::default(),
+            next_real_tick: CrntMsrTick::set(FULL), // 大きな数値にしておく
+            next_notational_tick: CrntMsrTick::set(FULL),
             floating,
             max_count: None,
             disperse_count: 0,
@@ -37,8 +37,8 @@ impl FloatingTick {
     }
     /// 現在の Tick と、Notational Tick を設定する。new で生成した後に呼び出す。
     pub fn set_crnt(&mut self, crnt_: &CrntMsrTick, ntcrnt_: &CrntMsrTick) {
-        self.last_real_crnt = *crnt_;
-        self.last_notational_crnt = *ntcrnt_;
+        self.next_real_tick = *crnt_;
+        self.next_notational_tick = *ntcrnt_;
     }
     /// Floating を有効にする
     pub fn turnon_floating(&mut self) {
@@ -61,16 +61,19 @@ impl FloatingTick {
     /// 現実の Tick を Notational Tick に変換する。
     pub fn convert_to_notational(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
         self.just_crnt = *crnt_;
-        if self.last_real_crnt == *crnt_ {
-            self.last_notational_crnt
+        if self.next_real_tick._is_older_than(crnt_) {
+            println!(">> FloatingTick: next_real_tick: {:?}", self.next_real_tick);
+            self.next_notational_tick
+        } else if self.next_real_tick._is_same_as(crnt_) {
+            self.next_notational_tick
         } else {
             *crnt_
         }
     }
-    /// Notational Tick を現実の Tick に変換する。
+    /// Notational Tick を現実に鳴るべき Tick に変換する。
     pub fn convert_to_real(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
-        self.last_notational_crnt = *crnt_;
-        self.last_real_crnt = *crnt_;
+        self.next_notational_tick = *crnt_;
+        self.next_real_tick = *crnt_;
         if self.floating {
             // 時間の前方向への散らし幅
             let disperse_size = if let Some(max) = self.max_count {
@@ -87,17 +90,17 @@ impl FloatingTick {
                 self.disperse_count = 0;
                 Self::MAX_FRONT_DISPERSE
             };
-            let real_tick = self.last_real_crnt.tick - disperse_size;
+            let real_tick = self.next_real_tick.tick - disperse_size;
             if real_tick < 0 {
-                self.last_real_crnt.tick = self.last_real_crnt.tick_for_onemsr - real_tick.abs();
-                self.last_real_crnt.msr -= 1;
-            } else if real_tick >= self.last_real_crnt.tick_for_onemsr {
-                self.last_real_crnt.msr += 1;
-                self.last_real_crnt.tick = real_tick - self.last_real_crnt.tick_for_onemsr;
+                self.next_real_tick.tick = self.next_real_tick.tick_for_onemsr - real_tick.abs();
+                self.next_real_tick.msr -= 1;
+            } else if real_tick >= self.next_real_tick.tick_for_onemsr {
+                self.next_real_tick.msr += 1;
+                self.next_real_tick.tick = real_tick - self.next_real_tick.tick_for_onemsr;
             } else {
-                self.last_real_crnt.tick = real_tick;
+                self.next_real_tick.tick = real_tick;
             }
         }
-        self.last_real_crnt
+        self.next_real_tick
     }
 }
