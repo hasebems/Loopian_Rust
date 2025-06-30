@@ -231,12 +231,12 @@ impl PhrLoopManager {
     pub fn gen_msrcnt(&self, crnt_: &CrntMsrTick) -> Option<(i32, i32)> {
         if let Some(phrloop) = self.loop_phr(crnt_) {
             let denomirator = phrloop.max_loop_msr;
-            let numerator = crnt_.msr - (phrloop.phrase.borrow().first_msr_num() + 1) + 1;
+            let numerator = crnt_.msr - phrloop.phrase.borrow().first_msr_num();
             if denomirator == 0 {
                 return None; // denominator が 0 の場合は None を返す
             }
             if numerator <= 0 {
-                return Some((-1, denomirator));
+                return Some((1, denomirator));
             }
             //format!("{}/{}", numerator, denomirator)
             Some((numerator, denomirator))
