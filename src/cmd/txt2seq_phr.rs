@@ -657,43 +657,61 @@ pub fn gen_diff_vel(nt: String) -> (String, i32) {
 }
 fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> Vec<PhrEvt> {
     let mut return_rcmb = rcmb.clone();
-    for note in notes.iter() {
-        if *note == REST {
-            continue;
-        } else if *note == NO_NOTE {
-            let l = return_rcmb.len();
-            if prm.mes_top && l > 0 {
-                // 小節先頭にタイがあった場合、前の音の音価を増やす
-                // 前回の入力が和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
-                let mut search_idx = l - 1;
-                let last_tick = return_rcmb[search_idx].tick();
-                loop {
-                    if return_rcmb[search_idx].tick() == last_tick {
-                        let dur = return_rcmb[search_idx].dur();
-                        return_rcmb[search_idx].set_dur(dur + prm.dur as i16);
-                        //return_rcmb[search_idx].vel = prm.vel; // タイの場合、前の音符の音量を使う
-                        return_rcmb[search_idx].set_artic(prm.artic);
-                    } else {
-                        break;
+    match notes.len() {
+        0 => (),
+        1 => {
+            match notes[0] {
+                REST => (),
+                NO_NOTE => {
+                    // タイの時は、音符の音価を増やすので、ここでは何もしない
+                    //return_rcmb.push(PhrEvt::NoNote(NoNoteEvt { tick: tick as i16, dur: prm.dur as i16 }));
+                    let l = return_rcmb.len();
+                    if prm.mes_top && l > 0 {
+                        // 小節先頭にタイがあった場合、前の音の音価を増やす
+                        // 前回の入力が和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
+                        let mut search_idx = l - 1;
+                        let last_tick = return_rcmb[search_idx].tick();
+                        loop {
+                            if return_rcmb[search_idx].tick() == last_tick {
+                                let dur = return_rcmb[search_idx].dur();
+                                return_rcmb[search_idx].set_dur(dur + prm.dur as i16);
+                                //return_rcmb[search_idx].vel = prm.vel; // タイの場合、前の音符の音量を使う
+                                return_rcmb[search_idx].set_artic(prm.artic);
+                            } else {
+                                break;
+                            }
+                            if search_idx == 0 {
+                                break;
+                            }
+                            search_idx -= 1;
+                        }
                     }
-                    if search_idx == 0 {
-                        break;
-                    }
-                    search_idx -= 1;
                 }
-            } else {
-                continue;
+                _ => {
+                    // 単音の入力
+                    let note_data = PhrEvt::Note(NoteEvt {
+                        tick: tick as i16,
+                        dur: prm.dur as i16,
+                        note: notes[0],
+                        vel: prm.vel,
+                        trns: prm.trns,
+                        artic: prm.artic,
+                    });
+                    return_rcmb.push(note_data);
+                }
             }
-        } else {
-            let nt_data = PhrEvt::Note(NoteEvt {
+        }
+        _ => {
+            // 和音の入力
+            let note_data = PhrEvt::NoteList(NoteListEvt {
                 tick: tick as i16,
                 dur: prm.dur as i16,
-                note: *note,
+                notes: notes.clone(),
                 vel: prm.vel,
                 trns: prm.trns,
                 artic: prm.artic,
             });
-            return_rcmb.push(nt_data);
+            return_rcmb.push(note_data);
         }
     }
     return_rcmb

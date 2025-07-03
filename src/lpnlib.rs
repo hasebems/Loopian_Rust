@@ -92,6 +92,15 @@ pub struct NoteEvt {
     pub artic: i16,     // 0..100..200[%] staccato/legato
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct NoteListEvt {
+    pub tick: i16,      // tick
+    pub dur: i16,       // duration
+    pub notes: Vec<u8>, // note number
+    pub vel: i16,       // velocity
+    pub trns: TrnsType, // translation
+    pub artic: i16,     // 0..100..200[%] staccato/legato
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct BrkPatternEvt {
     pub tick: i16,      // tick
     pub dur: i16,       // duration
@@ -131,6 +140,7 @@ impl InfoEvt {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PhrEvt {
     Note(NoteEvt),
+    NoteList(NoteListEvt),
     BrkPtn(BrkPatternEvt),
     ClsPtn(ClsPatternEvt),
     Info(InfoEvt),
@@ -139,6 +149,7 @@ impl PhrEvt {
     pub fn dur(&self) -> i16 {
         match self {
             PhrEvt::Note(e) => e.dur,
+            PhrEvt::NoteList(e) => e.dur,
             PhrEvt::BrkPtn(e) => e.dur,
             PhrEvt::ClsPtn(e) => e.dur,
             PhrEvt::Info(e) => e.dur,
@@ -147,6 +158,7 @@ impl PhrEvt {
     pub fn set_dur(&mut self, dur: i16) {
         match self {
             PhrEvt::Note(e) => e.dur = dur,
+            PhrEvt::NoteList(e) => e.dur = dur,
             PhrEvt::BrkPtn(e) => e.dur = dur,
             PhrEvt::ClsPtn(e) => e.dur = dur,
             PhrEvt::Info(e) => e.dur = dur,
@@ -155,6 +167,7 @@ impl PhrEvt {
     pub fn tick(&self) -> i16 {
         match self {
             PhrEvt::Note(e) => e.tick,
+            PhrEvt::NoteList(e) => e.tick,
             PhrEvt::BrkPtn(e) => e.tick,
             PhrEvt::ClsPtn(e) => e.tick,
             PhrEvt::Info(e) => e.tick,
@@ -163,6 +176,7 @@ impl PhrEvt {
     pub fn set_tick(&mut self, tick: i16) {
         match self {
             PhrEvt::Note(e) => e.tick = tick,
+            PhrEvt::NoteList(e) => e.tick = tick,
             PhrEvt::BrkPtn(e) => e.tick = tick,
             PhrEvt::ClsPtn(e) => e.tick = tick,
             PhrEvt::Info(e) => e.tick = tick,
@@ -171,6 +185,7 @@ impl PhrEvt {
     pub fn set_artic(&mut self, artic: i16) {
         match self {
             PhrEvt::Note(e) => e.artic = artic,
+            PhrEvt::NoteList(e) => e.artic = artic,
             PhrEvt::BrkPtn(e) => e.artic = artic,
             PhrEvt::ClsPtn(e) => e.artic = artic,
             PhrEvt::Info(_) => {} // InfoEvt does not have artic

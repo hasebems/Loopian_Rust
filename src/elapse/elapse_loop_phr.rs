@@ -64,8 +64,6 @@ pub struct PhraseLoop {
     turnnote: i16,
     para_root_base: i16,
     same_note_stuck: Vec<u8>,
-    same_note_msr: i32,
-    same_note_tick: i32,
     staccato_rate: i32,
     flt: FloatingTick, //  FloatingTick を保持する
 
@@ -121,8 +119,6 @@ impl PhraseLoop {
             turnnote: prm.turnnote,
             para_root_base,
             same_note_stuck: Vec::new(),
-            same_note_msr: 0,
-            same_note_tick: 0,
             staccato_rate,
             flt: FloatingTick::new(false),
             // for super's member
@@ -158,57 +154,48 @@ impl PhraseLoop {
                 self.flt.turnoff_floating();
                 match evtx {
                     PhrEvt::Note(ev) => {
-                        if self.same_note_msr != msr || self.same_note_tick != tick {
-                            // 設定されているタイミングが少しでも違えば、同タイミング重複音検出をクリア
-                            self.same_note_stuck = Vec::new();
-                            self.same_note_msr = msr;
-                            self.same_note_tick = tick;
+                        let rt_tbl = self.get_root_tbl(estk, crnt_);
+                        if let Some((trans_note, deb_txt)) = self.trans_and_stuck_note(
+                            rt_tbl, ev.note, next_tick,
+                            false, // 重複音チェックを無効にする
+                        ) {
+                            self.note_event(estk, trace, ev, trans_note, deb_txt, (msr, tick));
                         }
-                        self.note_event(estk, crnt_, trace, ev, (next_tick, msr, tick));
                     }
-                    PhrEvt::BrkPtn(mut ev) => {
-                        while ev.tick >= crnt_.tick_for_onemsr as i16 {
-                            // pattern は１小節内で完結
-                            ev.tick -= crnt_.tick_for_onemsr as i16;
+                    PhrEvt::NoteList(ev) => {
+                        let rt_tbl = self.get_root_tbl(estk, crnt_);
+                        self.same_note_stuck = Vec::new();
+                        let nev = NoteEvt {
+                            note: 0,
+                            tick: ev.tick,
+                            dur: ev.dur,
+                            vel: ev.vel,
+                            trns: ev.trns,
+                            artic: ev.artic,
+                        };
+                        for note in ev.notes.iter() {
+                            let mut nev_clone = nev.clone();
+                            nev_clone.note = *note;
+                            if let Some((trans_note, deb_txt)) = self.trans_and_stuck_note(
+                                rt_tbl, *note, next_tick,
+                                true, // 重複音チェックを有効にする
+                            ) {
+                                self.note_event(
+                                    estk,
+                                    trace,
+                                    nev_clone,
+                                    trans_note,
+                                    deb_txt,
+                                    (msr, tick),
+                                );
+                            }
                         }
-                        let ptn: Rc<RefCell<dyn Elapse>> = BrokenPattern::new(
-                            crnt_.msr as u32, //  read pointer
-                            self.id.sid,      //  loop.sid -> note.pid
-                            self.id.pid,      //  part
-                            self.keynote,
-                            msr,
-                            ev,
-                            self.analys.to_vec(),
-                        );
-                        estk.add_elapse(Rc::clone(&ptn));
                     }
-                    PhrEvt::ClsPtn(mut ev) => {
-                        if ev.arpeggio > 0 {
-                            // アルペジオの時は FloatingTick を有効にする
-                            self.flt.turnon_floating();
-                        } else {
-                            // アルペジオでない時は FloatingTick を無効にする
-                            self.flt.turnoff_floating();
-                        }
-                        while ev.tick >= crnt_.tick_for_onemsr as i16 {
-                            // pattern は１小節内で完結
-                            ev.tick -= crnt_.tick_for_onemsr as i16;
-                        }
-                        let ptn: Rc<RefCell<dyn Elapse>> = ClusterPattern::new(
-                            crnt_.msr as u32, //  read pointer
-                            self.id.sid,      //  loop.sid -> note.pid
-                            self.id.pid,      //  part
-                            self.keynote,
-                            (
-                                msr,
-                                self.flt.just_crnt().msr,
-                                self.flt.just_crnt().tick,
-                                self.flt.just_crnt().tick_for_onemsr,
-                            ),
-                            ev,
-                            self.analys.to_vec(),
-                        );
-                        estk.add_elapse(Rc::clone(&ptn));
+                    PhrEvt::BrkPtn(ev) => {
+                        self.set_broken(crnt_, ev, estk, (msr, tick));
+                    }
+                    PhrEvt::ClsPtn(ev) => {
+                        self.set_cluster(crnt_, ev, estk, (msr, tick));
                     }
                     _ => (),
                 }
@@ -220,35 +207,51 @@ impl PhraseLoop {
         self.play_counter = trace;
         next_tick
     }
-    fn note_event(
-        &mut self,
-        estk: &mut ElapseStack,
-        crnt_: &CrntMsrTick,
-        trace: usize,
-        ev: NoteEvt,
-        tk: (i32, i32, i32), // (next_tick, msr, tick)
-    ) {
-        // ev: ['note', tick, duration, note, velocity]
-        let mut crnt_ev = ev.clone();
-        let mut deb_txt: String = "no chord".to_string();
-        let (mut rt, mut ctbl) = (NO_ROOT, NO_TABLE);
+    fn get_root_tbl(&mut self, estk: &mut ElapseStack, crnt_: &CrntMsrTick) -> (i16, i16) {
+        // ルートとテーブルを取得する
+        let (mut root, mut ctbl) = (NO_ROOT, NO_TABLE);
         if let Some(pt) = estk.part(self.id.pid) {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
-            (rt, ctbl) = cmp_med.get_chord(crnt_);
+            (root, ctbl) = cmp_med.get_chord(crnt_);
         }
-
+        (root, ctbl)
+    }
+    fn trans_and_stuck_note(
+        &mut self,
+        rt_tbl: (i16, i16),
+        org_note: u8,
+        next_tick: i32,
+        duplicate_check: bool, // 重複音チェックをするかどうか
+    ) -> Option<(u8, String)> {
         //  Note Translation
-        if rt != NO_ROOT || ctbl != NO_TABLE {
-            (crnt_ev.note, deb_txt) = self.translate_note(rt, ctbl, ev, tk.0);
-        }
+        let (trans_note, deb_txt) = if rt_tbl.0 != NO_ROOT || rt_tbl.1 != NO_TABLE {
+            self.translate_note(rt_tbl.0, rt_tbl.1, org_note, next_tick)
+        } else {
+            (org_note, "no chord".to_string())
+        };
 
         //  同タイミング重複音を鳴らさない
-        if self.same_note_stuck.iter().any(|x| *x == crnt_ev.note) {
-            return;
-        } else {
-            self.same_note_stuck.push(crnt_ev.note);
+        if duplicate_check {
+            if self.same_note_stuck.iter().any(|x| *x == trans_note) {
+                return None;
+            } else {
+                self.same_note_stuck.push(trans_note);
+            }
         }
+        Some((trans_note, deb_txt))
+    }
+    fn note_event(
+        &mut self,
+        estk: &mut ElapseStack,
+        trace: usize,
+        ev: NoteEvt, // ev: ['note', tick, duration, note, velocity]
+        trans_note: u8,
+        deb_txt: String,
+        tk: (i32, i32), // (next_tick, msr, tick)
+    ) {
+        let mut crnt_ev = ev;
+        crnt_ev.note = trans_note;
 
         //  Calculate Duration
         if crnt_ev.artic != DEFAULT_ARTIC {
@@ -258,6 +261,7 @@ impl PhraseLoop {
             let calc = (crnt_ev.dur as i32) * self.staccato_rate;
             crnt_ev.dur = (calc / DEFAULT_ARTIC as i32) as i16;
         }
+
         //  Generate Note Struct
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             trace as u32, //  read pointer
@@ -267,14 +271,14 @@ impl PhraseLoop {
                 &crnt_ev,
                 self.keynote,
                 deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
+                tk.0,
                 tk.1,
-                tk.2,
                 self.id.pid,
             ),
         );
         estk.add_elapse(Rc::clone(&nt));
     }
-    fn translate_note(&mut self, rt: i16, ctbl: i16, ev: NoteEvt, next_tick: i32) -> (u8, String) {
+    fn translate_note(&mut self, rt: i16, ctbl: i16, ev_note: u8, next_tick: i32) -> (u8, String) {
         let deb_txt: String;
         let trans_note: u8;
         let root: i16 = ROOT2NTNUM[rt as usize];
@@ -283,14 +287,14 @@ impl PhraseLoop {
             if para_note > self.turnnote {
                 para_note -= 12;
             }
-            trans_note = translate_note_parascl(para_note, ctbl, ev.note);
+            trans_note = translate_note_parascl(para_note, ctbl, ev_note);
             deb_txt = "para_sc:".to_string();
         } else {
-            let option = self.specify_trans_option(next_tick, ev.note);
+            let option = self.specify_trans_option(next_tick, ev_note);
             match option {
                 TrnsType::Para => {
                     let para_root = root - self.para_root_base;
-                    let mut tgt_nt = ev.note as i16 + para_root;
+                    let mut tgt_nt = ev_note as i16 + para_root;
                     if root > self.turnnote {
                         tgt_nt -= 12;
                     }
@@ -298,15 +302,15 @@ impl PhraseLoop {
                     deb_txt = "para:".to_string();
                 }
                 TrnsType::Com => {
-                    trans_note = translate_note_com(root, ctbl, ev.note);
+                    trans_note = translate_note_com(root, ctbl, ev_note);
                     deb_txt = "com:".to_string();
                 }
                 TrnsType::NoTrns => {
-                    trans_note = ev.note;
+                    trans_note = ev_note;
                     deb_txt = "none:".to_string();
                 }
                 TrnsType::Arp(nt_diff) => {
-                    trans_note = translate_note_arp2(root, ctbl, ev.note, nt_diff, self.last_note);
+                    trans_note = translate_note_arp2(root, ctbl, ev_note, nt_diff, self.last_note);
                     deb_txt = "arp:".to_string();
                 }
             }
@@ -327,6 +331,62 @@ impl PhraseLoop {
             }
         }
         TrnsType::Com
+    }
+    fn set_broken(
+        &mut self,
+        crnt_: &CrntMsrTick,
+        mut ev: BrkPatternEvt,
+        estk: &mut ElapseStack,
+        tk: (i32, i32),
+    ) {
+        while ev.tick >= crnt_.tick_for_onemsr as i16 {
+            // pattern は１小節内で完結
+            ev.tick -= crnt_.tick_for_onemsr as i16;
+        }
+        let ptn: Rc<RefCell<dyn Elapse>> = BrokenPattern::new(
+            crnt_.msr as u32, //  read pointer
+            self.id.sid,      //  loop.sid -> note.pid
+            self.id.pid,      //  part
+            self.keynote,
+            tk.0,
+            ev,
+            self.analys.to_vec(),
+        );
+        estk.add_elapse(Rc::clone(&ptn));
+    }
+    fn set_cluster(
+        &mut self,
+        crnt_: &CrntMsrTick,
+        mut ev: ClsPatternEvt,
+        estk: &mut ElapseStack,
+        tk: (i32, i32),
+    ) {
+        if ev.arpeggio > 0 {
+            // アルペジオの時は FloatingTick を有効にする
+            self.flt.turnon_floating();
+        } else {
+            // アルペジオでない時は FloatingTick を無効にする
+            self.flt.turnoff_floating();
+        }
+        while ev.tick >= crnt_.tick_for_onemsr as i16 {
+            // pattern は１小節内で完結
+            ev.tick -= crnt_.tick_for_onemsr as i16;
+        }
+        let ptn: Rc<RefCell<dyn Elapse>> = ClusterPattern::new(
+            crnt_.msr as u32, //  read pointer
+            self.id.sid,      //  loop.sid -> note.pid
+            self.id.pid,      //  part
+            self.keynote,
+            (
+                tk.0,
+                self.flt.just_crnt().msr,
+                self.flt.just_crnt().tick,
+                self.flt.just_crnt().tick_for_onemsr,
+            ),
+            ev,
+            self.analys.to_vec(),
+        );
+        estk.add_elapse(Rc::clone(&ptn));
     }
 }
 //*******************************************************************
@@ -359,8 +419,6 @@ impl Elapse for PhraseLoop {
         self.next_tick_in_phrase = 0;
         self.last_note = NO_NOTE as i16;
         self.same_note_stuck = Vec::new();
-        self.same_note_msr = 0;
-        self.same_note_tick = 0;
         self.next_msr = 0;
         self.next_tick = 0;
     }
