@@ -155,39 +155,20 @@ impl PhraseLoop {
                 match evtx {
                     PhrEvt::Note(ev) => {
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
-                        if let Some((trans_note, deb_txt)) = self.trans_and_stuck_note(
-                            rt_tbl, ev.note, next_tick,
-                            false, // 重複音チェックを無効にする
-                        ) {
-                            self.note_event(estk, trace, ev, trans_note, deb_txt, (msr, tick));
-                        }
+                        let (trans_note, deb_txt) = self.translate_note(rt_tbl, ev.note, next_tick);
+                        self.note_event(estk, trace, ev, trans_note, deb_txt, (msr, tick));
                     }
                     PhrEvt::NoteList(ev) => {
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
-                        self.same_note_stuck = Vec::new();
-                        let nev = NoteEvt {
-                            note: 0,
-                            tick: ev.tick,
-                            dur: ev.dur,
-                            vel: ev.vel,
-                            trns: ev.trns,
-                            artic: ev.artic,
-                        };
+                        self.same_note_stuck = Vec::new(); // 同タイミングの重複音をリセット
+                        let nev = NoteEvt::from_note_list(&ev, 0);
                         for note in ev.notes.iter() {
                             let mut nev_clone = nev.clone();
                             nev_clone.note = *note;
-                            if let Some((trans_note, deb_txt)) = self.trans_and_stuck_note(
-                                rt_tbl, *note, next_tick,
-                                true, // 重複音チェックを有効にする
-                            ) {
-                                self.note_event(
-                                    estk,
-                                    trace,
-                                    nev_clone,
-                                    trans_note,
-                                    deb_txt,
-                                    (msr, tick),
-                                );
+                            let (trans_note, deb_txt) =
+                                self.translate_note(rt_tbl, *note, next_tick);
+                            if let Some(note) = self.stuck_note(trans_note) {
+                                self.note_event(estk, trace, nev_clone, note, deb_txt, (msr, tick));
                             }
                         }
                     }
@@ -217,29 +198,14 @@ impl PhraseLoop {
         }
         (root, ctbl)
     }
-    fn trans_and_stuck_note(
-        &mut self,
-        rt_tbl: (i16, i16),
-        org_note: u8,
-        next_tick: i32,
-        duplicate_check: bool, // 重複音チェックをするかどうか
-    ) -> Option<(u8, String)> {
-        //  Note Translation
-        let (trans_note, deb_txt) = if rt_tbl.0 != NO_ROOT || rt_tbl.1 != NO_TABLE {
-            self.translate_note(rt_tbl.0, rt_tbl.1, org_note, next_tick)
-        } else {
-            (org_note, "no chord".to_string())
-        };
-
+    fn stuck_note(&mut self, trans_note: u8) -> Option<u8> {
         //  同タイミング重複音を鳴らさない
-        if duplicate_check {
-            if self.same_note_stuck.iter().any(|x| *x == trans_note) {
-                return None;
-            } else {
-                self.same_note_stuck.push(trans_note);
-            }
+        if self.same_note_stuck.iter().any(|x| *x == trans_note) {
+            None
+        } else {
+            self.same_note_stuck.push(trans_note);
+            Some(trans_note)
         }
-        Some((trans_note, deb_txt))
     }
     fn note_event(
         &mut self,
@@ -278,10 +244,14 @@ impl PhraseLoop {
         );
         estk.add_elapse(Rc::clone(&nt));
     }
-    fn translate_note(&mut self, rt: i16, ctbl: i16, ev_note: u8, next_tick: i32) -> (u8, String) {
+    fn translate_note(&mut self, rt_tbl: (i16, i16), ev_note: u8, next_tick: i32) -> (u8, String) {
+        if rt_tbl.0 == NO_ROOT && rt_tbl.1 == NO_TABLE {
+            return (ev_note, "no chord".to_string());
+        }
+        let ctbl = rt_tbl.1;
         let deb_txt: String;
         let trans_note: u8;
-        let root: i16 = ROOT2NTNUM[rt as usize];
+        let root: i16 = ROOT2NTNUM[rt_tbl.0 as usize];
         let (movable_scale, mut para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
         if movable_scale {
             if para_note > self.turnnote {

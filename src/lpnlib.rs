@@ -83,6 +83,15 @@ pub enum ExpType {
 //              []: meaning, < >: index, (a/b/c): selection
 //*******************************************************************
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct NoteListEvt {
+    pub tick: i16,      // tick
+    pub dur: i16,       // duration
+    pub notes: Vec<u8>, // note number
+    pub vel: i16,       // velocity
+    pub trns: TrnsType, // translation
+    pub artic: i16,     // 0..100..200[%] staccato/legato
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct NoteEvt {
     pub tick: i16,      // tick
     pub dur: i16,       // duration
@@ -91,14 +100,17 @@ pub struct NoteEvt {
     pub trns: TrnsType, // translation
     pub artic: i16,     // 0..100..200[%] staccato/legato
 }
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct NoteListEvt {
-    pub tick: i16,      // tick
-    pub dur: i16,       // duration
-    pub notes: Vec<u8>, // note number
-    pub vel: i16,       // velocity
-    pub trns: TrnsType, // translation
-    pub artic: i16,     // 0..100..200[%] staccato/legato
+impl NoteEvt {
+    pub fn from_note_list(list: &NoteListEvt, note: u8) -> Self {
+        Self {
+            tick: list.tick,
+            dur: list.dur,
+            note,
+            vel: list.vel,
+            trns: list.trns,
+            artic: list.artic,
+        }
+    }
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct BrkPatternEvt {
