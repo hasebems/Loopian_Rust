@@ -259,7 +259,7 @@ struct AddNoteParam {
     dur: i32,
     vel: i16,
     trns: TrnsType,
-    artic: i16,
+    others: (i16, bool), // (artic, arppeggio)
 }
 impl Default for AddNoteParam {
     fn default() -> Self {
@@ -268,7 +268,7 @@ impl Default for AddNoteParam {
             dur: 0,
             vel: 0,
             trns: TrnsType::Com,
-            artic: DEFAULT_ARTIC,
+            others: (DEFAULT_ARTIC, false),
         }
     }
 }
@@ -329,7 +329,7 @@ pub fn recombine_to_internal_format(
             }
         } else {
             // Note 処理
-            let (notes, note_dur, diff_vel, bdur, lnt, artic) =
+            let (notes, note_dur, diff_vel, bdur, lnt, others) =
                 break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, rest_tick, imd);
             last_nt = lnt; // 次回の音程の上下判断のため
             base_dur = bdur;
@@ -340,7 +340,7 @@ pub fn recombine_to_internal_format(
                     dur: get_note_dur(note_dur, whole_msr_tick, crnt_tick),
                     vel: velo_limits(exp_vel + diff_vel, 1),
                     trns,
-                    artic,
+                    others,
                 };
                 rcmb = add_note(rcmb, crnt_tick, notes, prm);
                 crnt_tick += note_dur;
@@ -398,7 +398,7 @@ fn break_up_nt_dur_vel(
     last_nt: i32,      // 前回の音程
     rest_tick: i32,    // 小節の残りtick
     imd: InputMode,    // input mode
-) -> (Vec<u8>, i32, i32, i32, i32, i16)
+) -> (Vec<u8>, i32, i32, i32, i32, (i16, bool))
 /*( notes,      // 発音ノート
     dur_tick,    // 音符のtick数
     diff_vel,   // 音量情報
@@ -413,9 +413,15 @@ fn break_up_nt_dur_vel(
 
     //  duration 情報、 Velocity 情報の抽出
     let (ntext3, base_dur, dur_tick, artic) = gen_dur_info(ntext1, bdur, rest_tick);
-    let (ntext4, diff_vel) = gen_diff_vel(ntext3);
+    let (mut ntext4, diff_vel) = gen_diff_vel(ntext3);
 
-    // 複数音を分離してベクトル化
+    // 複数音がアルペジオか判断、各音を分離してベクトル化
+    let arp = if ntext4.starts_with("$") {
+        ntext4.remove(0);
+        true
+    } else {
+        false
+    };
     let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
     let notes_vec = split_notes(ntext5.clone());
 
@@ -444,7 +450,7 @@ fn break_up_nt_dur_vel(
         notes.push(NO_NOTE);
     }
 
-    (notes, dur_tick, diff_vel, base_dur, next_last_nt, artic)
+    (notes, dur_tick, diff_vel, base_dur, next_last_nt, (artic, arp))
 }
 /// 文字列の冒頭にあるプラスマイナスを抽出
 fn extract_top_pm(ntext: &mut String) -> String {
@@ -676,7 +682,7 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> 
                                 let dur = return_rcmb[search_idx].dur();
                                 return_rcmb[search_idx].set_dur(dur + prm.dur as i16);
                                 //return_rcmb[search_idx].vel = prm.vel; // タイの場合、前の音符の音量を使う
-                                return_rcmb[search_idx].set_artic(prm.artic);
+                                return_rcmb[search_idx].set_artic(prm.others.0);
                             } else {
                                 break;
                             }
@@ -695,7 +701,7 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> 
                         note: notes[0],
                         vel: prm.vel,
                         trns: prm.trns,
-                        artic: prm.artic,
+                        artic: prm.others.0,
                     });
                     return_rcmb.push(note_data);
                 }
@@ -707,10 +713,10 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> 
                 tick: tick as i16,
                 dur: prm.dur as i16,
                 notes: notes.clone(),
-                floating: false,
+                floating: prm.others.1,
                 vel: prm.vel,
                 trns: prm.trns,
-                artic: prm.artic,
+                artic: prm.others.0,
             });
             return_rcmb.push(note_data);
         }

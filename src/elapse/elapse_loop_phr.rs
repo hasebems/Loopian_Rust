@@ -212,7 +212,6 @@ impl PhraseLoop {
             let mut nev_clone = self.same_time_shared_note.clone();
             nev_clone.note = nt.0;
             let trace = self.play_counter * 10 + self.same_time_index;
-            println!("### SameTime Note: {}, {}, {}", crnt_.tick, self.next_tick, nt.0);
             self.note_event(estk, trace, nev_clone, nt.0, nt.1.clone(), (msr, tick));
         }
 
@@ -459,10 +458,10 @@ impl Elapse for PhraseLoop {
                 };
                 // FloatingTick を使って、次に呼ばれる実際の小節とTickを計算する
                 let rlcrnt_ = self.flt.convert_to_real(&mt);
-                println!(
-                    "|__ PhraseLoop: next_msr/tick: {}/{}, crnt_msr/tick: {}/{}, ntcrnt_msr/tick:{}/{}, ntp:{}",
-                    rlcrnt_.msr, rlcrnt_.tick, crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick, self.next_tick_in_phrase
-                );
+                //println!(
+                //    "|__ PhraseLoop: next_msr/tick: {}/{}, crnt_msr/tick: {}/{}, ntcrnt_msr/tick:{}/{}, ntp:{}",
+                //    rlcrnt_.msr, rlcrnt_.tick, crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick, self.next_tick_in_phrase
+                //);
                 self.next_msr = rlcrnt_.msr;
                 self.next_tick = rlcrnt_.tick;
             }
