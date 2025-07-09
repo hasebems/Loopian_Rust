@@ -186,7 +186,8 @@ impl PhraseLoop {
                         self.same_time_stuck.sort_by_key(|x| x.0); // 同タイミングの音をソート
                         self.same_time_index = 0;
                         self.same_time_shared_note = NoteEvt::from_note_list(&ev, 0);
-                        self.flt.set_disperse_count(self.same_time_stuck.len() as i32, 0);
+                        self.flt
+                            .set_disperse_count(self.same_time_stuck.len() as i32, 0);
                         break;
                     }
                     PhrEvt::BrkPtn(ev) => {

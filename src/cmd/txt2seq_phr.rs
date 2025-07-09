@@ -450,7 +450,14 @@ fn break_up_nt_dur_vel(
         notes.push(NO_NOTE);
     }
 
-    (notes, dur_tick, diff_vel, base_dur, next_last_nt, (artic, arp))
+    (
+        notes,
+        dur_tick,
+        diff_vel,
+        base_dur,
+        next_last_nt,
+        (artic, arp),
+    )
 }
 /// 文字列の冒頭にあるプラスマイナスを抽出
 fn extract_top_pm(ntext: &mut String) -> String {

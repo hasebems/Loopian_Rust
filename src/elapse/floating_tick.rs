@@ -3,8 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib::*;
 use super::tickgen::CrntMsrTick;
+use crate::lpnlib::*;
 
 /// FloatingTick
 /// 本クラスは、PhraseLoop の next_tick を入力すると、その値を時間方向に散らして
