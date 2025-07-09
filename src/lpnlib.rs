@@ -87,6 +87,7 @@ pub struct NoteListEvt {
     pub tick: i16,      // tick
     pub dur: i16,       // duration
     pub notes: Vec<u8>, // note number
+    pub floating: bool, // true: floating tick, false: not floating
     pub vel: i16,       // velocity
     pub trns: TrnsType, // translation
     pub artic: i16,     // 0..100..200[%] staccato/legato

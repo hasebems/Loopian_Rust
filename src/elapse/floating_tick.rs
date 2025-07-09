@@ -48,6 +48,9 @@ impl FloatingTick {
     pub fn turnoff_floating(&mut self) {
         self.floating = false;
     }
+    pub fn _is_floating(&self) -> bool {
+        self.floating
+    }
     pub fn just_crnt(&self) -> &CrntMsrTick {
         &self.just_crnt
     }
@@ -92,7 +95,7 @@ impl FloatingTick {
             };
             let real_tick = self.next_real_tick.tick - disperse_size;
             if real_tick < 0 {
-                self.next_real_tick.tick = self.next_real_tick.tick_for_onemsr - real_tick.abs();
+                self.next_real_tick.tick = self.next_real_tick.tick_for_onemsr + real_tick;
                 self.next_real_tick.msr -= 1;
             } else if real_tick >= self.next_real_tick.tick_for_onemsr {
                 self.next_real_tick.msr += 1;
