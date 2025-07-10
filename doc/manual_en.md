@@ -251,6 +251,7 @@ This document explains all features of Loopian.
 - `d~`: Adding `~` at the end makes the note length 120% of the note value (stronger than stacc(),legato())
 - `<d,r,m>!`: Enclosing multiple Notes in `<>!` makes their lengths half of the note value
 - `<d,r,m>~`: Enclosing multiple Notes in `<>~` makes their lengths 120% of the note value
+- `[h$drm]`: When there is a `$` between simultaneous notes and note value information, arpeggio performance is executed.
 
 ### Function Notation Following Phrases
 - By specifying `.fn()` after the `[]` containing the Phrase, you can give instructions for the entire Phrase
