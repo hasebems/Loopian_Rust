@@ -173,7 +173,8 @@ impl PhrLoopManager {
             self.begin_phr_ev = false;
         } else if self.if_end_prpr(crnt_) {
             // この小節が end_prpr になるとき（追いかけより優先）
-            if self.do_loop() || self.new_phrase {
+            if self.phr_idx != 0 || self.do_loop() || self.new_phrase {
+                // Variation の最後の小節の場合、Loop 指定の場合、new_phrase の場合
                 self.new_phrase = false; // 新しい Phrase の生成フラグをリセット
                 self.phr_idx = 0; // 0: Normal
                 self.gen_phr_alternately(crnt_, estk, pbp, 0); // Alternate
@@ -190,6 +191,7 @@ impl PhrLoopManager {
         //self._deb(crnt_); // デバッグ用
     }
     pub fn start(&mut self) {
+        self.phr_idx = 0; // 0: Normal
         self.del_a();
         self.del_b();
         if self.phr_stock.len() >= self.phr_idx && self.phr_stock[self.phr_idx].whole_tick != 0 {
