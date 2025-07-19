@@ -134,6 +134,7 @@ struct PhrLoopManager {
     del_a_ev: bool,     // instance_a を削除するイベント
     del_b_ev: bool,     // instance_b を削除するイベント
     turnnote: i16,
+    keynote_stock: Option<u8>, // 0-11
 }
 impl PhrLoopManager {
     pub fn new() -> Self {
@@ -151,6 +152,7 @@ impl PhrLoopManager {
             del_a_ev: false,
             del_b_ev: false,
             turnnote: DEFAULT_TURNNOTE,
+            keynote_stock: None, // 0-11
         }
     }
     pub fn msrtop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
@@ -185,8 +187,12 @@ impl PhrLoopManager {
             self.chasing_play(crnt_, estk, pbp);
             self.chasing_play = false; // 追いかけ再生フラグをリセット
             self.delete_by_del_ev(); // 削除イベントのあるインスタンスを削除
-        } else {
-            // 何もしない
+        }
+
+        // key が変更されている場合
+        if let Some(knt) = self.keynote_stock {
+            self.change_newkey(knt);
+            self.keynote_stock = None; // 予約をリセット
         }
         //self._deb(crnt_); // デバッグ用
     }
@@ -284,6 +290,9 @@ impl PhrLoopManager {
             false
         }
     }
+    pub fn set_keynote_stock(&mut self, knt: u8) {
+        self.keynote_stock = Some(knt);
+    }
     //---------------------------------------------------------------
     fn _deb(&self, _crnt_: &CrntMsrTick) {
         if let Some(inst_a) = &self.phr_instance_a {
@@ -295,6 +304,15 @@ impl PhrLoopManager {
                     phase_a, inst_a.begin_phr, phase_b, inst_b.begin_phr
                 );
             }
+        }
+    }
+    fn change_newkey(&mut self, knt: u8) {
+        // Phrase Loop の key を変更する
+        if let Some(inst_a) = &self.phr_instance_a {
+            inst_a.phrase.borrow_mut().set_keynote(knt);
+        }
+        if let Some(inst_b) = &self.phr_instance_b {
+            inst_b.phrase.borrow_mut().set_keynote(knt);
         }
     }
     fn crnt_phr(&self) -> Option<&PhrLoopWrapper> {
@@ -602,7 +620,7 @@ impl Part {
         if let Some(fl) = &self.flow {
             fl.borrow_mut().set_keynote(knt);
         }
-        //self.pm.state_reserve = true;
+        self.pm.set_keynote_stock(knt);
     }
     pub fn rcv_phr_msg(&mut self, msg: PhrData, crnt_: &CrntMsrTick, estk_: &mut ElapseStack) {
         let pbp = PartBasicPrm {

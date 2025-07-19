@@ -136,6 +136,10 @@ impl PhraseLoop {
     pub fn get_noped(&self) -> bool {
         self.noped
     }
+    pub fn set_keynote(&mut self, knt: u8) {
+        // Phrase Loop の keynote を変更する
+        self.keynote = knt;
+    }
     fn generate_event(
         &mut self,
         crnt_: &CrntMsrTick,
