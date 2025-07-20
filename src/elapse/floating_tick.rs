@@ -22,8 +22,8 @@ pub struct FloatingTick {
     disperse_count: i32,               //   Tick を散らす回数
 }
 impl FloatingTick {
-    const MAX_FRONT_DISPERSE: i32 = 50; // Tick の前への散らし幅
-    const EACH_DISPERSE: i32 = 50; // Tick の散らし幅の単位
+    const MAX_FRONT_DISPERSE: i32 = 80; // Tick の前への散らし幅
+    const EACH_DISPERSE: i32 = 40; // Tick の散らし幅の単位
 
     pub fn new(floating: bool) -> Self {
         Self {
