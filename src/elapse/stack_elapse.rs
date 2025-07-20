@@ -468,7 +468,7 @@ impl ElapseStack {
             return;
         }
         self.during_play = false;
-        self.last_msr_tick = CrntMsrTick::new();
+        self.last_msr_tick = CrntMsrTick::reset(self.last_msr_tick.tick_for_onemsr);
         let stop_vec = self.elapse_vec.to_vec();
         for elps in stop_vec.iter() {
             elps.borrow_mut().stop(self);

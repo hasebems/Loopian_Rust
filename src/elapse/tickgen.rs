@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib::{DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, Meter};
+use crate::lpnlib::{DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, Meter, NO_DATA};
 use std::time::{Duration, Instant};
 
 //*******************************************************************
@@ -27,9 +27,16 @@ impl Default for CrntMsrTick {
 impl CrntMsrTick {
     pub fn new() -> Self {
         Self {
-            msr: -1, // not during_play
+            msr: NO_DATA, // not during_play
             tick: 0,
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+        }
+    }
+    pub fn reset(tick_for_onemsr: i32) -> Self {
+        Self {
+            msr: NO_DATA, // not during_play
+            tick: 0,
+            tick_for_onemsr,
         }
     }
     pub fn set(msr: i32) -> Self {
