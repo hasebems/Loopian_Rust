@@ -22,8 +22,7 @@ pub struct FloatingTick {
     disperse_count: i32,               //   Tick を散らす回数
 }
 impl FloatingTick {
-    const MAX_FRONT_DISPERSE: i32 = 80; // Tick の前への散らし幅
-    const EACH_DISPERSE: i32 = 40; // Tick の散らし幅の単位
+    const MAX_FRONT_DISPERSE: i32 = 120; // Tick の前への最大散らし幅
 
     pub fn new(floating: bool) -> Self {
         Self {
@@ -42,6 +41,7 @@ impl FloatingTick {
     }
     /// Floating を有効にする
     pub fn turnon_floating(&mut self) {
+        self.max_count = None;
         self.floating = true;
     }
     /// Floating を無効にする
@@ -65,7 +65,7 @@ impl FloatingTick {
     pub fn convert_to_notational(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
         self.just_crnt = *crnt_;
         if self.next_real_tick._is_older_than(crnt_) {
-            println!(">> FloatingTick: next_real_tick: {:?}", self.next_real_tick);
+            //println!(">> FloatingTick crnt_: {}/{}", crnt_.msr, crnt_.tick);
             self.next_notational_tick
         } else if self.next_real_tick._is_same_as(crnt_) {
             self.next_notational_tick
@@ -74,26 +74,28 @@ impl FloatingTick {
         }
     }
     /// Notational Tick を現実に鳴るべき Tick に変換する。
-    pub fn convert_to_real(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
-        self.next_notational_tick = *crnt_;
-        self.next_real_tick = *crnt_;
+    pub fn convert_to_real(&mut self, next_: &CrntMsrTick) -> Option<CrntMsrTick> {
+        self.next_notational_tick = *next_;
+        self.next_real_tick = *next_;
         if self.floating {
             // 時間の前方向への散らし幅
-            let disperse_size = if let Some(max) = self.max_count {
-                if self.disperse_count < max {
-                    let count = self.disperse_count;
-                    self.disperse_count += 1;
-                    Self::MAX_FRONT_DISPERSE - (count * Self::EACH_DISPERSE)
-                } else {
-                    self.max_count = None;
-                    self.disperse_count = 0;
-                    Self::MAX_FRONT_DISPERSE
-                }
-            } else {
-                self.disperse_count = 0;
-                Self::MAX_FRONT_DISPERSE
-            };
-            let real_tick = self.next_real_tick.tick - disperse_size;
+            //let disperse_tick = if let Some(max) = self.max_count {
+            //    if self.disperse_count + 1 < max {
+            //        self.disperse_count += 1;
+            //        Self::MAX_FRONT_DISPERSE - (self.disperse_count * Self::EACH_DISPERSE)
+            //    } else {
+            // 最大値に達したら、再度散らしを行う
+            //        self.max_count = None;
+            //        self.disperse_count = 0;
+            //        Self::MAX_FRONT_DISPERSE
+            //    }
+            //} else {
+            // max_count が Set されていない場合は、最大値
+            //    self.disperse_count = 0;
+            //    Self::MAX_FRONT_DISPERSE
+            //};
+
+            let real_tick = self.next_real_tick.tick - Self::MAX_FRONT_DISPERSE;
             if real_tick < 0 {
                 self.next_real_tick.tick = self.next_real_tick.tick_for_onemsr + real_tick;
                 self.next_real_tick.msr -= 1;
@@ -103,7 +105,10 @@ impl FloatingTick {
             } else {
                 self.next_real_tick.tick = real_tick;
             }
+            //println!(">> FloatingTick next_: {}/{}", self.next_real_tick.msr, self.next_real_tick.tick);
+            Some(self.next_real_tick)
+        } else {
+            None
         }
-        self.next_real_tick
     }
 }

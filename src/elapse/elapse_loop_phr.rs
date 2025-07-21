@@ -169,7 +169,6 @@ impl PhraseLoop {
             if next_tick <= elapsed_tick {
                 let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                 let evtx = phr[trace].clone();
-                self.flt.turnoff_floating();
                 match evtx {
                     PhrEvt::Note(ev) => {
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
@@ -177,9 +176,6 @@ impl PhraseLoop {
                         self.note_event(estk, trace * 10, ev, trans_note, deb_txt, (msr, tick));
                     }
                     PhrEvt::NoteList(ev) => {
-                        if ev.floating {
-                            self.flt.turnon_floating();
-                        }
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
                         self.same_time_stuck = Vec::new();
                         for note in ev.notes.iter() {
@@ -208,6 +204,7 @@ impl PhraseLoop {
             trace += 1;
         }
         self.play_counter = trace;
+        self.check_next_evt_and_set_floating(trace);
         next_tick
     }
     fn same_time_note_on(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> bool {
@@ -369,13 +366,6 @@ impl PhraseLoop {
         estk: &mut ElapseStack,
         tk: (i32, i32),
     ) {
-        if ev.arpeggio > 0 {
-            // アルペジオの時は FloatingTick を有効にする
-            self.flt.turnon_floating();
-        } else {
-            // アルペジオでない時は FloatingTick を無効にする
-            self.flt.turnoff_floating();
-        }
         while ev.tick >= crnt_.tick_for_onemsr as i16 {
             // pattern は１小節内で完結
             ev.tick -= crnt_.tick_for_onemsr as i16;
@@ -395,6 +385,26 @@ impl PhraseLoop {
             self.analys.to_vec(),
         );
         estk.add_elapse(Rc::clone(&ptn));
+    }
+    fn check_next_evt_and_set_floating(&mut self, next_idx: usize) {
+        self.flt.turnoff_floating();
+        if next_idx >= self.phrase.len() {
+            return; //  次のイベントがない場合は、何もしない
+        }
+        let next_evt = self.phrase[next_idx].clone();
+        match next_evt {
+            PhrEvt::NoteList(ev) => {
+                if ev.floating {
+                    self.flt.turnon_floating();
+                }
+            }
+            PhrEvt::ClsPtn(ev) => {
+                if ev.arpeggio > 0 {
+                    self.flt.turnon_floating();
+                }
+            }
+            _ => ()
+        }
     }
 }
 //*******************************************************************
@@ -462,13 +472,19 @@ impl Elapse for PhraseLoop {
                     tick_for_onemsr: ntcrnt_.tick_for_onemsr,
                 };
                 // FloatingTick を使って、次に呼ばれる実際の小節とTickを計算する
-                let rlcrnt_ = self.flt.convert_to_real(&mt);
-                //println!(
-                //    "|__ PhraseLoop: next_msr/tick: {}/{}, crnt_msr/tick: {}/{}, ntcrnt_msr/tick:{}/{}, ntp:{}",
-                //    rlcrnt_.msr, rlcrnt_.tick, crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick, self.next_tick_in_phrase
-                //);
-                self.next_msr = rlcrnt_.msr;
-                self.next_tick = rlcrnt_.tick;
+                if let Some(rlcrnt_) = self.flt.convert_to_real(&mt) {
+                    // FloatingTick の変換結果を使って、次の小節とTickを設定する
+                    //println!(
+                    //    "|__ PhraseLoop: next_msr/tick: {}/{}, crnt_msr/tick: {}/{}, ntcrnt_msr/tick:{}/{}",
+                    //    rlcrnt_.msr, rlcrnt_.tick, crnt_.msr, crnt_.tick, ntcrnt_.msr, ntcrnt_.tick
+                    //);
+                    self.next_msr = rlcrnt_.msr;
+                    self.next_tick = rlcrnt_.tick;
+                } else {
+                    // FloatingTick の変換結果が None の場合は、現在の crnt_ をそのまま使用
+                    self.next_msr = mt.msr;
+                    self.next_tick = mt.tick;
+                }
             }
         }
     }
