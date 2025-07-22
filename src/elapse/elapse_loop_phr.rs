@@ -64,8 +64,6 @@ pub struct PhraseLoop {
     turnnote: i16,
     para_root_base: i16,
     same_time_stuck: Vec<(u8, String)>,
-    same_time_shared_note: NoteEvt,
-    same_time_index: usize,
     staccato_rate: i32,
     flt: FloatingTick, //  FloatingTick を保持する
 
@@ -80,6 +78,9 @@ pub struct PhraseLoop {
 //          Phrase Loop Implementation
 //*******************************************************************
 impl PhraseLoop {
+    const MAX_FRONT_DISPERSE: i32 = 120; // Tick の前への最大散らし幅
+    const EACH_DISPERSE: i32 = 60; // Tick の散らし幅の単位
+
     pub fn new(sid: u32, pid: u32, prm: PhraseLoopParam) -> Rc<RefCell<Self>> {
         let noped = prm.ana.clone().iter().any(|x| {
             if let AnaEvt::Exp(e) = x {
@@ -121,8 +122,6 @@ impl PhraseLoop {
             turnnote: prm.turnnote,
             para_root_base,
             same_time_stuck: Vec::new(),
-            same_time_shared_note: NoteEvt::default(),
-            same_time_index: 0,
             staccato_rate,
             flt: FloatingTick::new(false),
             // for super's member
@@ -146,16 +145,6 @@ impl PhraseLoop {
         estk: &mut ElapseStack,
         elapsed_tick: i32,
     ) -> i32 {
-        // 同時発音の処理
-        if !self.same_time_stuck.is_empty() {
-            if self.same_time_note_on(crnt_, estk) {
-                return self.phrase[self.play_counter].tick() as i32;
-            } else {
-                self.flt.turnoff_floating();
-                self.play_counter += 1;
-            }
-        }
-
         let mut next_tick: i32;
         let mut trace: usize = self.play_counter;
         let phr = self.phrase.to_vec();
@@ -177,18 +166,7 @@ impl PhraseLoop {
                     }
                     PhrEvt::NoteList(ev) => {
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
-                        self.same_time_stuck = Vec::new();
-                        for note in ev.notes.iter() {
-                            let (trans_note, deb_txt) =
-                                self.translate_note(rt_tbl, *note, next_tick);
-                            self.stuck_note(trans_note, &deb_txt);
-                        }
-                        self.same_time_stuck.sort_by_key(|x| x.0); // 同タイミングの音をソート
-                        self.same_time_index = 0;
-                        self.same_time_shared_note = NoteEvt::from_note_list(&ev, 0);
-                        self.flt
-                            .set_disperse_count(self.same_time_stuck.len() as i32, 0);
-                        break;
+                        self.note_on_at_the_same_time(crnt_, estk, &ev, rt_tbl, next_tick);
                     }
                     PhrEvt::BrkPtn(ev) => {
                         self.set_broken(crnt_, ev, estk, (msr, tick));
@@ -207,24 +185,46 @@ impl PhraseLoop {
         self.check_next_evt_and_set_floating(trace);
         next_tick
     }
-    fn same_time_note_on(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> bool {
-        // 同タイミングの音が鳴る場合は、同タイミングの音を鳴らす
-        let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
-        if let Some(nt) = self.same_time_stuck.get(self.same_time_index) {
-            let mut nev_clone = self.same_time_shared_note.clone();
-            nev_clone.note = nt.0;
-            let trace = self.play_counter * 10 + self.same_time_index;
+    fn note_on_at_the_same_time(
+        &mut self,
+        crnt_: &CrntMsrTick,
+        estk: &mut ElapseStack,
+        ev: &NoteListEvt,
+        rt_tbl: (i16, i16),
+        next_tick: i32,
+    ) {
+        let mut same_time_stuck = Vec::new();
+        for note in ev.notes.iter() {
+            let (trans_note, deb_txt) = self.translate_note(rt_tbl, *note, next_tick);
+            if !same_time_stuck.iter().any(|x: &(u8, String)| x.0 == trans_note) {
+                same_time_stuck.push((trans_note, deb_txt.to_string()));
+            }
+        }
+        same_time_stuck.sort_by_key(|x| x.0); // 同タイミングの音をソート
+        let (ntmsr, nttick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
+        //println!("|^^ Note on at the same time: {}, {}, {}", same_time_stuck.len(), ntmsr, nttick);
+        for (i, nt) in same_time_stuck.iter().enumerate() {
+            let arp = if ev.floating {
+                (i as i32 * Self::EACH_DISPERSE) - Self::MAX_FRONT_DISPERSE
+            } else {
+                0
+            };
+            let mut msr = ntmsr;
+            let mut tick = nttick + arp;
+            if tick < 0 {
+                tick += crnt_.tick_for_onemsr;
+                msr -= 1;
+            } else if tick >= crnt_.tick_for_onemsr {
+                tick -= crnt_.tick_for_onemsr;
+                msr += 1;
+            }
+            let nev_clone = NoteEvt::from_note_list(ev, nt.0);
+            let trace = self.play_counter * 10 + i;
+            //println!("|__ Note on at the same time: {}, {}, {}", nt.0, msr, tick);
             self.note_event(estk, trace, nev_clone, nt.0, nt.1.clone(), (msr, tick));
         }
-
-        self.same_time_index += 1;
-        if self.same_time_index >= self.same_time_stuck.len() {
-            // 同タイミングの音を全て鳴らしたら、同タイミングの音をクリアする
-            self.same_time_stuck.clear();
-            false
-        } else {
-            true
-        }
+        // 次のイベント処理の準備
+        self.flt.turnoff_floating();
     }
     fn get_root_tbl(&mut self, estk: &mut ElapseStack, crnt_: &CrntMsrTick) -> (i16, i16) {
         // ルートとテーブルを取得する
@@ -235,12 +235,6 @@ impl PhraseLoop {
             (root, ctbl) = cmp_med.get_chord(crnt_);
         }
         (root, ctbl)
-    }
-    fn stuck_note(&mut self, trans_note: u8, deb_txt: &str) {
-        //  同タイミング重複音を鳴らさない
-        if !self.same_time_stuck.iter().any(|x| x.0 == trans_note) {
-            self.same_time_stuck.push((trans_note, deb_txt.to_string()));
-        }
     }
     fn note_event(
         &mut self,

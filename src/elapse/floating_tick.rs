@@ -18,8 +18,6 @@ pub struct FloatingTick {
     next_real_tick: CrntMsrTick,       //   次に呼ばれる小節とTickの情報が保持される
     next_notational_tick: CrntMsrTick, //   次に呼ばれる譜面上の小節とTickの情報が保持される
     floating: bool,                    //   FloatingTick が有効かどうか
-    max_count: Option<i32>,            //   Tick を散らす回数
-    disperse_count: i32,               //   Tick を散らす回数
 }
 impl FloatingTick {
     const MAX_FRONT_DISPERSE: i32 = 120; // Tick の前への最大散らし幅
@@ -30,8 +28,6 @@ impl FloatingTick {
             next_real_tick: CrntMsrTick::set(FULL), // 大きな数値にしておく
             next_notational_tick: CrntMsrTick::set(FULL),
             floating,
-            max_count: None,
-            disperse_count: 0,
         }
     }
     /// 現在の Tick と、Notational Tick を設定する。new で生成した後に呼び出す。
@@ -41,7 +37,6 @@ impl FloatingTick {
     }
     /// Floating を有効にする
     pub fn turnon_floating(&mut self) {
-        self.max_count = None;
         self.floating = true;
     }
     /// Floating を無効にする
@@ -53,13 +48,6 @@ impl FloatingTick {
     }
     pub fn just_crnt(&self) -> &CrntMsrTick {
         &self.just_crnt
-    }
-    /// FloatingTick を使用して、同音発音を散らす指示を受ける
-    /// max_num: 同音発音数
-    /// start: 散らし開始位置
-    pub fn set_disperse_count(&mut self, max_num: i32, start: i32) {
-        self.max_count = Some(max_num);
-        self.disperse_count = start;
     }
     /// 現実の Tick を Notational Tick に変換する。
     pub fn convert_to_notational(&mut self, crnt_: &CrntMsrTick) -> CrntMsrTick {
@@ -78,23 +66,6 @@ impl FloatingTick {
         self.next_notational_tick = *next_;
         self.next_real_tick = *next_;
         if self.floating {
-            // 時間の前方向への散らし幅
-            //let disperse_tick = if let Some(max) = self.max_count {
-            //    if self.disperse_count + 1 < max {
-            //        self.disperse_count += 1;
-            //        Self::MAX_FRONT_DISPERSE - (self.disperse_count * Self::EACH_DISPERSE)
-            //    } else {
-            // 最大値に達したら、再度散らしを行う
-            //        self.max_count = None;
-            //        self.disperse_count = 0;
-            //        Self::MAX_FRONT_DISPERSE
-            //    }
-            //} else {
-            // max_count が Set されていない場合は、最大値
-            //    self.disperse_count = 0;
-            //    Self::MAX_FRONT_DISPERSE
-            //};
-
             let real_tick = self.next_real_tick.tick - Self::MAX_FRONT_DISPERSE;
             if real_tick < 0 {
                 self.next_real_tick.tick = self.next_real_tick.tick_for_onemsr + real_tick;
