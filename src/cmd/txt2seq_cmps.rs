@@ -16,7 +16,7 @@ struct ChordTable {
 }
 
 #[rustfmt::skip]
-const CHORD_TABLE: [ChordTable; 58] = [
+const CHORD_TABLE: [ChordTable; 59] = [
     ChordTable {name: "X",      table: &THRU,}, // noped
     ChordTable {name: "O",      table: &THRU,},
     ChordTable {name: "_",      table: &MAJOR,},
@@ -30,6 +30,7 @@ const CHORD_TABLE: [ChordTable; 58] = [
 
     ChordTable {name: "_mM7",   table: &MINMAJ7TH,},
     ChordTable {name: "_add9",  table: &ADD9TH,},
+    ChordTable {name: "_madd9", table: &MINADD9TH,},
     ChordTable {name: "_9",     table: &M9TH,},
     ChordTable {name: "_m9",    table: &MIN9TH,},
     ChordTable {name: "_M9",    table: &MAJ9TH,},
@@ -37,8 +38,8 @@ const CHORD_TABLE: [ChordTable; 58] = [
     ChordTable {name: "_maj9",  table: &MAJ9TH,},
     ChordTable {name: "_+5",    table: &AUG5TH,},
     ChordTable {name: "_aug",   table: &AUG5TH,},
-    ChordTable {name: "_7+5",   table: &AUG57TH,},
 
+    ChordTable {name: "_7+5",   table: &AUG57TH,},
     ChordTable {name: "_aug7",  table: &AUG7TH,},
     ChordTable {name: "_7-9",   table: &M7MNS9,},
     ChordTable {name: "_7+9",   table: &M7PLS9,},
@@ -48,9 +49,9 @@ const CHORD_TABLE: [ChordTable; 58] = [
     ChordTable {name: "_m7-5",  table: &MIN7M5,},
     ChordTable {name: "_sus4",  table: &SUS4,},
     ChordTable {name: "_7sus4", table: &M7SUS4,},
+
     // parasc(29-34): para() を付けなくても、para機能
     ChordTable {name: "_chr",   table: &THRU,}, // Iのとき音程そのまま。音程関係を保持したまま並行移動
-
     ChordTable {name: "_ion",   table: &IONIAN,}, // Iが音程そのまま。Iとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name: "_dor",   table: &IONIAN,}, // IIが音程そのまま。IIとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name: "_lyd",   table: &IONIAN,}, // IVが音程そのまま。IVとの差分分並行移動し、音程をkeyに合わせる
@@ -60,8 +61,8 @@ const CHORD_TABLE: [ChordTable; 58] = [
     ChordTable {name: "dorian", table: &DORIAN,},
     ChordTable {name: "lydian", table: &LYDIAN,},
     ChordTable {name: "mixolydian",table: &MIXOLYDIAN,},
-    ChordTable {name: "aeolian",table: &AEOLIAN,},
 
+    ChordTable {name: "aeolian",table: &AEOLIAN,},
     ChordTable {name: "comdim", table: &COMDIM,},
     ChordTable {name: "pentatonic",table: &PENTATONIC,},
     ChordTable {name: "blues",  table: &BLUES,},
@@ -72,8 +73,8 @@ const CHORD_TABLE: [ChordTable; 58] = [
     ChordTable {name: "sc3",    table: &SC3,},
     ChordTable {name: "sc4",    table: &SC4,},
     ChordTable {name: "sc5",    table: &MIXOLYDIAN,},
-    ChordTable {name: "sc6",    table: &SC6,},
 
+    ChordTable {name: "sc6",    table: &SC6,},
     ChordTable {name: "sc7",    table: &LYDIAN,},
     ChordTable {name: "sc8",    table: &SC8,},
     ChordTable {name: "sc9",    table: &SC9,},
@@ -96,6 +97,7 @@ const MIN7TH: [i16; 4] = [0, 3, 7, 10];
 const MAJ7TH: [i16; 4] = [0, 4, 7, 11];
 const MINMAJ7TH: [i16; 4] = [0, 3, 7, 11];
 const ADD9TH: [i16; 4] = [0, 2, 4, 7];
+const MINADD9TH: [i16; 4] = [0, 2, 3, 7];
 const M9TH: [i16; 5] = [0, 2, 4, 7, 10];
 const MIN9TH: [i16; 5] = [0, 2, 3, 7, 10];
 const MAJ9TH: [i16; 5] = [0, 2, 4, 7, 11];
