@@ -20,10 +20,15 @@ pub struct Midi {
     pub midi_ext_out: String,
     pub midi_device: String,
 }
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Command {
+    pub init_commands: Option<Vec<String>>,
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub window_size: WindowSize,
     pub midi: Midi,
+    pub command: Command,
 }
 
 impl Settings {

@@ -236,6 +236,16 @@ impl InputText {
             self.input_locate
         }
     }
+    pub fn set_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>) {
+        let chr = itxt.chars().nth(0).unwrap_or(' ');
+        if chr != '!' {
+            // Normal Input
+            let msg = self.one_command(get_crnt_date_txt(), itxt, true);
+            self.set_graphic_msg(msg, graphmsg);
+        } else {
+            self.non_logged_command(itxt, graphmsg);
+        }
+    }
     fn pressed_enter(&mut self, graphmsg: &mut Vec<GraphicMsg>) {
         let itxt = self.input_text.clone();
         if itxt.is_empty() {
@@ -244,14 +254,7 @@ impl InputText {
         self.input_text = "".to_string();
         self.input_locate = 0;
         self.visible_locate = 0;
-        let chr = itxt.chars().nth(0).unwrap_or(' ');
-        if chr != '!' {
-            // Normal Input
-            let msg = self.one_command(get_crnt_date_txt(), itxt, true);
-            self.set_graphic_msg(msg, graphmsg);
-        } else {
-            self.non_logged_command(itxt.clone(), graphmsg);
-        }
+        self.set_command(itxt, graphmsg);
     }
     fn non_logged_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>) {
         let len = itxt.chars().count();

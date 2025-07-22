@@ -62,6 +62,7 @@ pub struct Model {
     itxt: InputText,
     graph: Graphic,
     guiev: GuiEv,
+    first_run: bool,
     // as you like
 }
 fn model(app: &App) -> Model {
@@ -81,6 +82,7 @@ fn model(app: &App) -> Model {
         itxt: InputText::new(txmsg),
         graph: Graphic::new(app),
         guiev: GuiEv::new(true),
+        first_run: true,
     }
 }
 /// GUI/CUI 両方から呼ばれる
@@ -119,6 +121,15 @@ fn update(app: &App, model: &mut Model, _update: Update) {
         .graph
         .update_lpn_model(&mut model.guiev, &model.itxt, crnt_time);
 
+    if model.first_run {
+        //  起動時の設定
+        model.first_run = false;
+        if let Some(cmd) = Settings::load_settings().command.init_commands {
+            cmd.iter().for_each(|c| {
+                model.itxt.set_command(c.clone(), model.graph.graph_msg());
+            });
+        }
+    }
     // as you like
 }
 fn read_from_ui_hndr(model: &mut Model) {

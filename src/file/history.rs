@@ -148,6 +148,7 @@ impl History {
                         }
                     }
                 }
+                println!("No rd!({}) in {}", num, fname);
             }
             Err(_err) => println!("Can't open a file"),
         };
