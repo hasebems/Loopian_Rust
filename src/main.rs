@@ -35,7 +35,9 @@ fn main() {
 
     //  Version
     const VERSION: &str = env!("CARGO_PKG_VERSION");
-    println!("*** Version: {}", VERSION);
+    println!("*** Hi, I'm Loopian.");
+    println!("*** I'm so glad to see you!");
+    println!("*** Loopian Version: {}", VERSION);
 
     //  Args
     println!("*** Args: {:?}", args);
