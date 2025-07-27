@@ -35,7 +35,7 @@
 - [File Loading and Saving](#file-loading-and-saving)
     - [Saving Log Files](#saving-log-files)
     - [Loading Files](#loading-files)
-    - [Special Notations in Files](#special-notations-in-files)
+    - [File Description Rules](#file-description-rules)
     - [Loading Option Functions](#loading-option-functions)
     - [File Conversion](#file-conversion)
 - [Extended Playback Control Specifications](#extended-playback-control-specifications)
@@ -359,6 +359,7 @@ This document explains all features of Loopian.
     |Chord Name|Chord Notation|Chord Constitution|
     |-|-|-|
     |add9th|_add9|`oxox-oxxo-xxxx`|
+    |Minor add9th|_madd9|`oxoo-xxxo-xxxx`|
     |Dominant ninth|_9|`oxox-oxxo-xxox`|
     |Minor ninth|_m9|`oxxo-xxxo-xxox`|
     |Major ninth|_M9,_maj9|`oxox-oxxo-xxxo`|
@@ -437,26 +438,26 @@ This document explains all features of Loopian.
 
 ### Loading Files
 
-- `!load.`*filename* (or `!l.`*filename*)
-    - Loads specified file
-    - Expects to load files in same format as log files
-    - Loaded content is stored in history and can be recalled one line at a time using cursor (up/down) keys
-    - Lines starting with `//` or `20` or `!rd(` are not loaded
-        - `20` means year 2024, indicating lines with dates like 2024-05-19 will not be played
-- About file specification and path settings:
-    - When first load command is input, a /load folder is automatically created in application folder
-    - Load files must have `lpn` extension, but extension is not needed in file specification
-    - Files to be loaded must be in this /load folder or below
-        - Subfolders can be created
-        - In that case, specify subfolder name with `set.path(xxx)` before loading
-    - Even with just `!load` input, previous filename is remembered and same file as last time is loaded
+- `!load.`*filename* (or `!l.`*filename*): Load the specified file
+    - The loaded file extension is only `lpn`, and no extension is required when specifying the file
+        - `*.lpn` files are in the same format as log files
+    - Once a file is loaded, subsequent `!load` input alone will load the same file as before
+- Files to be loaded must be placed in the `/load` folder or its subdirectories
+    - A `/load` folder is automatically created in the application folder when the first load command is entered
+- Subfolders can be created under the `/load` folder to place files in subdirectories
+    - When specifying files in subfolders, specify the subfolder name `xxx` with `set.path(xxx)` before loading
+- Loaded content is stored in history and can be recalled line by line using cursor (up/down) keys
 
-### Special Notations in Files
+### File Description Rules
 
-- Lines after `!msr(n)` written in file are played in time for first beat of measure n
+- Each line in the file represents one Command that can be specified in the Input Window
+- Lines starting with `//`, `20`, or `!rd(` are not loaded
+    - `20` derives from years like 2024, meaning lines with dates like 2024-05-19 will not be played
+- When there is a blank line, the effects of notations using `!` described below end there
+- Lines following `!msr(n)` written in the file are played in time for the first beat of measure n
     - Actually played when less than 240 ticks remain in measure n-1
-    - Even during wait with automatic loading during load, user input to Input Window is possible
-- When `!rd(n): xxxx` is written in file, inputting `!rd(n)` in Input Window after loading file automatically inputs subsequent string `xxxx` from same line in file (n is any number)
+    - Even when there is a wait during loading and it is considered automatic loading, user input to the Input Window is still possible
+- When `!rd(n): xxx` is written in a file, after loading the file, inputting `!rd(n)` in the Input Window automatically inputs the string `xxx` following that from the same line in the file (n is any number)
 
 ### Loading Option Functions
 
@@ -526,8 +527,9 @@ This document explains all features of Loopian.
     - After `midi_ext_out =`, write device name with MIDI OUT terminal to connect to Loopian::ORBIT when outputting MIDI
     - After `midi_device =`, write device name outputting MIDI when inputting MIDI from Loopian::ORBIT
     - Above device names are output on terminal when launching Loopian as follows:
-        - After line saying `--MIDI Output List--`, list of MIDI Devices Loopian can output to
-        - After line saying `--MIDI Input List--`, list of MIDI Devices that can input to Loopian
+        - After line saying `--MIDI Output List--`, list of MIDI Devices Loopian can output to is displayed
+        - After line saying `--MIDI Input List--`, list of MIDI Devices that can input to Loopian is displayed
+- [command] `init_commands` allows you to describe commands that you want to be automatically input at application startup as an array
 
 ## Performance with Loopian::ORBIT
 
