@@ -8,3 +8,8 @@ midi_ext_out = "U6MIDI Pro ポート1"  # Loopian::ORBIT by raspberry pi5
 # midi_device = "Pico"                # Loopian::ORBIT by raspberry pi5 
 midi_device = "XIAO RP2350:XIAO RP2350 MIDI 1"   # Loopian::ORBIT by Seeed XIAO RP2350 
 # midi_out = "Midi Through:Midi Through Port-0 14:0" # Loopian::ORBIT by raspberry pi5 
+
+[command]
+init_commands = [
+# 立ち上げ時に自動再生するコマンドをここに追記していく
+]
