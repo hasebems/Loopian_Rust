@@ -12,14 +12,15 @@ use crate::cmd::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 
+//*******************************************************************
+//      History
+//*******************************************************************
 pub struct History {
-    input_lines: Vec<(String, String)>,
+    input_lines: Vec<(String, String)>, // (time, command) : 過去の入力履歴
     history_ptr: usize,
-    loaded_text: Vec<String>,
+    loaded_text: Vec<String>, //ファイルからロードされたテキスト
 }
-
 impl LpnFile for History {}
-
 impl History {
     pub fn new() -> Self {
         Self {
@@ -91,6 +92,7 @@ impl History {
                 for line in content.lines() {
                     let mut lodable = true;
                     if line.len() > 1 {
+                        // block指定、!rd() 指定、コメント行があれば読み飛ばす
                         let notxt = line[0..2].to_string();
                         if notxt == "//" || notxt == "20" || notxt == "!l" {
                             // コメントでないか、過去の 2023.. が書かれてないか、loadではないか
@@ -104,19 +106,26 @@ impl History {
                             // blk指定があるか
                             if line.len() > 5 && line[0..5] == *"!blk(" {
                                 let blk_mark = extract_texts_from_parentheses(line);
-                                if blk.as_ref().unwrap() == blk_mark {
-                                    inside_blk = true;
-                                    continue;
-                                }
+                                inside_blk = blk.as_ref().unwrap() == blk_mark;
+                                continue;
                             }
                         }
                     } else if line.len() == 1 {
                         // nothing
                     } else if enable_blk && inside_blk {
+                        // line.len() == 0
                         inside_blk = false;
                     }
-                    if !line.is_empty() && lodable && inside_blk {
-                        self.loaded_text.push(line.to_string());
+                    // ここまで来たら、読み込む行
+                    if !line.is_empty() {
+                        if enable_blk && inside_blk {
+                            // blk指定があり、blkの中をロードする場合
+                            self.loaded_text.push(line.to_string());
+                        }
+                        if !enable_blk && lodable {
+                            // blk指定がなく、ファイル全体をロードする場合
+                            self.loaded_text.push(line.to_string());
+                        }
                     }
                 }
             }
@@ -154,17 +163,45 @@ impl History {
         };
         None
     }
+    /// ファイル内で !blk() を使ったデータにおいて、
+    /// 指定された block から、データの再生開始場所を調べ、
+    /// そこから block が終わるまでのデータを返す
+    pub fn get_loaded_blk(&self, selected_blk: &str) -> Vec<String> {
+        let mut txt_this_time: Vec<String> = Vec::new();
+        let mut idx: usize = 0;
+        let blk_or = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!blk(";
+        // 先頭を探す
+        for crnt in self.loaded_text.iter().enumerate() {
+            let ctxt = crnt.1;
+            if blk_or(ctxt) && selected_blk == extract_texts_from_parentheses(ctxt) {
+                idx = crnt.0 + 1;
+                break;
+            }
+        }
+        // ここから txt_this_time に記録
+        for n in idx..self.loaded_text.len() {
+            let ctxt = &self.loaded_text[n];
+            if blk_or(ctxt) || ctxt.is_empty() {
+                // 次のブロック、あるいは空行
+                break;
+            } else {
+                txt_this_time.push(self.loaded_text[n].clone());
+            }
+        }
+        txt_this_time
+    }
     /// ファイル内で !msr() を使ったデータにおいて、
     /// 指定された小節数から、ロードされたデータの再生開始場所を調べ、
     /// そこから次の !msr() までのデータを返す
-    pub fn get_loaded_text(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
+    pub fn get_loaded_msr(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
         let mut txt_this_time: Vec<String> = Vec::new();
         let mut idx: usize = 0;
+        let msr_or = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!msr(";
         // 先頭を探す
         if mt.msr != 0 {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
-                if ctxt.len() > 5 && ctxt[0..5] == *"!msr(" {
+                if msr_or(ctxt) {
                     if let Some(msr) = extract_number_from_parentheses(ctxt) {
                         if msr == mt.msr.try_into().unwrap_or(0) {
                             idx = crnt.0 + 1;
@@ -174,10 +211,10 @@ impl History {
                 }
             }
         }
-        // ここから記録
+        // ここから txt_this_time に記録
         for n in idx..self.loaded_text.len() {
             let ctxt = &self.loaded_text[n];
-            if ctxt.len() > 5 && ctxt[0..5] == *"!msr(" {
+            if msr_or(ctxt) {
                 let msr;
                 if let Some(m) = extract_number_from_parentheses(ctxt) {
                     msr = m;

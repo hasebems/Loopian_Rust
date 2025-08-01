@@ -447,6 +447,9 @@ This document explains all features of Loopian.
 - Subfolders can be created under the `/load` folder to place files in subdirectories
     - When specifying files in subfolders, specify the subfolder name `xxx` with `set.path(xxx)` before loading
 - Loaded content is stored in history and can be recalled line by line using cursor (up/down) keys
+- `!history.`*filename* (or `!h.`*filename*): Load the specified file to history only
+    - Commands loaded to history only are not played
+    - Scroll Text displays `">> History: 0000n"` and can be selected using up/down keys
 
 ### File Description Rules
 
@@ -461,15 +464,12 @@ This document explains all features of Loopian.
 
 ### Loading Option Functions
 
-- `!load.`*filename*`.blk(a)`
-    - Plays from line starting with `!blk(a)` in file until next blank line
-    - Ignores `!msr()` if present in description called by `!blk()`
-    - Once file is loaded, can also omit middle filename like `!load.blk(a)`
-- `!load.`*filename*`.msr(n)`
-    - After input, typing `resume` command plays from line starting with `!msr(n)` in file
-        - For mid-playback, use `resume` instead of `play`
-    - Can also omit middle filename like `!load.msr(n)`
-    - Accurate playback from middle measures not guaranteed under some conditions, such as when file description assumes Loop
+- Once a file is loaded, the following optional functions can be used
+- `!blk(a)`: Plays from lines in the file starting with `!blk(a)` until the next blank line (or the next `!blk`, `!msr`)
+    - `!msr()` is ignored if present in the description called by `!blk()`
+- `!msr(n)`: After input, typing the `resume` command plays from lines in the file starting with `!msr(n)`
+    - Accurate playback from middle measures is not guaranteed under some conditions, such as when the file description assumes Loop
+- `!clear` (or `!c`) clears all contents of the loaded file
 
 ### File Conversion
 

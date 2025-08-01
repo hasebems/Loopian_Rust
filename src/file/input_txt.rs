@@ -182,7 +182,7 @@ impl InputText {
             &Key::RWin => {}
             &Key::Space => {
                 if self.shift_pressed {
-                    self.set_graphic_msg(GraphicMsg::TextVisibleCtrl, graphmsg);
+                    graphmsg.push(GraphicMsg::TextVisibleCtrl);
                 }
             }
             _ => {}
@@ -236,16 +236,6 @@ impl InputText {
             self.input_locate
         }
     }
-    pub fn set_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>) {
-        let chr = itxt.chars().nth(0).unwrap_or(' ');
-        if chr != '!' {
-            // Normal Input
-            let msg = self.one_command(get_crnt_date_txt(), itxt, true);
-            self.set_graphic_msg(msg, graphmsg);
-        } else {
-            self.non_logged_command(itxt, graphmsg);
-        }
-    }
     fn pressed_enter(&mut self, graphmsg: &mut Vec<GraphicMsg>) {
         let itxt = self.input_text.clone();
         if itxt.is_empty() {
@@ -256,6 +246,15 @@ impl InputText {
         self.visible_locate = 0;
         self.set_command(itxt, graphmsg);
     }
+    pub fn set_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>) {
+        let chr = itxt.chars().nth(0).unwrap_or(' ');
+        if chr != '!' {
+            self.one_command(itxt, graphmsg, true);
+        } else {
+            self.non_logged_command(itxt, graphmsg);
+        }
+    }
+    /// Log に記録しないコマンドを処理 (例: !q, !load, !clear)
     fn non_logged_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>) {
         let len = itxt.chars().count();
         if (len == 2 && &itxt[0..2] == "!q") || (len >= 5 && &itxt[0..5] == "!quit") {
@@ -265,8 +264,11 @@ impl InputText {
             println!("That's all. Thank you!");
             std::process::exit(0);
         } else if (len >= 2 && &itxt[0..2] == "!l") || (len >= 5 && &itxt[0..5] == "!load") {
-            // Load File
-            self.load_file(&itxt[0..], graphmsg);
+            // Load Command
+            self.analyze_load_command(&itxt[0..], graphmsg, true);
+        } else if (len >= 2 && &itxt[0..2] == "!h") || (len >= 8 && &itxt[0..8] == "!history") {
+            // Load to history Command
+            self.analyze_load_command(&itxt[0..], graphmsg, false);
         } else if (len == 6 && &itxt[0..6] == "!clear") // no parameter
             || (len == 4 && &itxt[0..4] == "!clr")
             || (len == 2 && &itxt[0..2] == "!c")
@@ -280,108 +282,99 @@ impl InputText {
                 "All data cleared!".to_string(),
             ));
         } else if (len >= 2 && &itxt[0..2] == "!s") || (len >= 5 && &itxt[0..5] == "!save") {
-            let itxts = split_by('.', itxt);
-            let fname = if itxts.len() >= 2 {
-                itxts[1].clone()
-            } else {
-                "".to_string()
-            };
-            let num;
-            if let Some(n) = extract_number_from_parentheses(&itxts[0]) {
-                num = n;
-            } else {
-                num = 0;
-            }
-            self.gen_log(num, fname);
-            self.scroll_lines.push((
-                TextAttribute::Answer,
-                "".to_string(),
-                "log saved!".to_string(),
-            ));
+            // Save Command
+            self.save_command(itxt);
         } else if (len >= 2 && &itxt[0..2] == "!r")
             || (len >= 3 && &itxt[0..3] == "!rd")
             || (len >= 5 && &itxt[0..5] == "!read")
         {
-            let num;
-            if let Some(n) = extract_number_from_parentheses(itxt.as_str()) {
-                num = n;
-            } else {
-                num = 0;
-            }
-            if let Some(cmd) = self.history.read_line_from_lpn(
-                self.file_name_stock.clone(),
-                self.cmd.get_path().as_deref(),
-                num,
-            ) {
-                self.input_text = cmd;
-            }
+            // 一行のコマンドを読み込む
+            self.read_oneline_command(&itxt[0..]);
+        } else if len >= 5 && &itxt[0..5] == "!blk(" {
+            // ブロックの読み込み
+            let blk_name = extract_texts_from_parentheses(&itxt[0..]);
+            self.history
+                .get_loaded_blk(blk_name)
+                .iter()
+                .for_each(|txt| {
+                    self.one_command(txt.clone(), graphmsg, false);
+                });
+        } else if len >= 5 && &itxt[0..5] == "!msr(" {
+            // measure の読み込み
+            let msr_num = extract_number_from_parentheses(&itxt[0..]);
+            self.load_msr_command(msr_num, graphmsg);
         } else if len >= 7 && &itxt[0..7] == "!cnv2tl" {
-            println!("Convert to Timeline File");
-            let itxts = split_by('.', itxt);
-            if itxts.len() >= 2 {
-                cnv_file::convert_to_timeline(itxts[1].clone(), self.cmd.get_path().as_deref());
-                self.scroll_lines.push((
-                    TextAttribute::Answer,
-                    "".to_string(),
-                    "Converted to Timeline File!".to_string(),
-                ));
-            }
+            // convert to timeline file
+            self.convert_to_timeline_file(&itxt[0..]);
         }
     }
-    fn load_file(&mut self, itxt: &str, graphmsg: &mut Vec<GraphicMsg>) {
-        let blk_exists = |fnm: String| -> (Option<String>, Option<usize>) {
-            let mut ltr = None;
-            let mut num = None;
-            if fnm.contains("blk") {
-                ltr = Some(extract_texts_from_parentheses(fnm.as_str()).to_string());
-            } else if fnm.contains("msr") {
-                if let Some(e) = extract_number_from_parentheses(fnm.as_str()) {
-                    num = Some(e);
-                }
-            }
-            (ltr, num) // blk命令があるか調べ、あった場合は () 内の文字列取得
-        };
-
-        let mut blk: Option<String> = None;
-        let mut msr: Option<usize> = None;
-        let fname;
-        let fnx = split_by('.', itxt.to_string());
-        let fn_ele_num = fnx.len();
-
-        // blk と msr の指定があるか調べる
-        if fn_ele_num >= 3 {
-            (blk, msr) = blk_exists(fnx[2].clone());
-            fname = fnx[1].clone();
-            self.file_name_stock = fname.clone(); // file名を保存しておく
-        } else if fn_ele_num == 2 {
-            (blk, msr) = blk_exists(fnx[1].clone());
-            if blk.is_none() && msr.is_none() {
-                // !l.nnn はファイル名と考える
-                fname = fnx[1].clone();
-                self.file_name_stock = fname.clone(); // file名を保存しておく
-            } else {
-                // ファイル名は省略
-                fname = self.file_name_stock.clone(); // 保存したfile名を使用する
-            }
+    fn clear_loaded_data(&mut self) {
+        self.file_name_stock = String::new();
+        self.next_msr_tick = None;
+    }
+    fn save_command(&mut self, itxt: String) {
+        let itxts = split_by('.', itxt);
+        let fname = if itxts.len() >= 2 {
+            itxts[1].clone()
         } else {
-            // "!l" だけ（ファイル名は省略）
-            fname = self.file_name_stock.clone(); // 保存したfile名を使用する
+            "".to_string()
+        };
+        let num;
+        if let Some(n) = extract_number_from_parentheses(&itxts[0]) {
+            num = n;
+        } else {
+            num = 0;
+        }
+        self.gen_log(num, fname);
+        self.scroll_lines.push((
+            TextAttribute::Answer,
+            "".to_string(),
+            "log saved!".to_string(),
+        ));
+    }
+    fn read_oneline_command(&mut self, itxt: &str) {
+        let num;
+        if let Some(n) = extract_number_from_parentheses(itxt) {
+            num = n;
+        } else {
+            num = 0;
+        }
+        if let Some(cmd) = self.history.read_line_from_lpn(
+            self.file_name_stock.clone(),
+            self.cmd.get_path().as_deref(),
+            num,
+        ) {
+            self.input_text = cmd;
+        }
+    }
+    fn convert_to_timeline_file(&mut self, itxt: &str) {
+        println!("Convert to Timeline File");
+        let itxts = split_by('.', itxt.to_string());
+        if itxts.len() >= 2 {
+            cnv_file::convert_to_timeline(itxts[1].clone(), self.cmd.get_path().as_deref());
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "Converted to Timeline File!".to_string(),
+            ));
+        }
+    }
+    /// ファイルをロードして、一行ずつ処理する
+    fn analyze_load_command(&mut self, itxt: &str, graphmsg: &mut Vec<GraphicMsg>, playable: bool) {
+        let fnx = split_by('.', itxt.to_string());
+        if fnx.len() >= 2 {
+            self.file_name_stock = fnx[1].clone();
         }
 
-        if self
-            .history
-            .load_lpn(fname, self.cmd.get_path().as_deref(), blk)
-        {
-            // load_lpn() でファイルを読み込み、
-            // get_loaded_text() で一行ずつ Scroll Text に入れていく
-            let mut mt: CrntMsrTick = CrntMsrTick::default();
-            if let Some(msr_num) = msr {
-                // msr_num: 1origin
-                let msr0ori = if msr_num > 0 { (msr_num as i16) - 1 } else { 0 };
-                self.cmd.set_measure(msr0ori);
-                mt.msr = msr_num as i32;
-            }
-            self.next_msr_tick = self.get_loaded_text(mt, graphmsg);
+        // load_lpn() でファイルの中身を読み込み、
+        // input_loaded_msr() で一行ずつ Scroll Text に入れていく
+        if self.history.load_lpn(
+            self.file_name_stock.clone(),
+            self.cmd.get_path().as_deref(),
+            None,
+        ) {
+            // 小節番号の指定があった場合の確認
+            self.next_msr_tick = self.input_loaded_msr(CrntMsrTick::default(), graphmsg, playable);
         } else {
             // 適切なファイルや中身がなかった場合
             self.scroll_lines.push((
@@ -390,6 +383,17 @@ impl InputText {
                 "No history".to_string(),
             ));
         }
+    }
+    fn load_msr_command(&mut self, msr: Option<usize>, graphmsg: &mut Vec<GraphicMsg>) {
+        // get_loaded_text() で一行ずつ Scroll Text に入れていく
+        let mut mt: CrntMsrTick = CrntMsrTick::default();
+        if let Some(msr_num) = msr {
+            // msr_num: 1origin
+            let msr0ori = if msr_num > 0 { (msr_num as i16) - 1 } else { 0 };
+            self.cmd.set_measure(msr0ori);
+            mt.msr = msr_num as i32;
+        }
+        self.next_msr_tick = self.input_loaded_msr(mt, graphmsg, true);
     }
     /// Auto Load  called from main::update()
     pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<GraphicMsg>) {
@@ -400,19 +404,25 @@ impl InputText {
                 && nmt.msr - 1 == crnt.msr  // 一つ前の小節(両方とも1origin)
                 && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK
             {
-                self.next_msr_tick = self.get_loaded_text(nmt, graphmsg);
+                self.next_msr_tick = self.input_loaded_msr(nmt, graphmsg, true);
             }
         }
     }
-    fn get_loaded_text(
+    /// ロードされたファイルの内容を再生する
+    fn input_loaded_msr(
         &mut self,
         mt: CrntMsrTick,
         graphmsg: &mut Vec<GraphicMsg>,
+        playable: bool,
     ) -> Option<CrntMsrTick> {
-        let loaded = self.history.get_loaded_text(mt);
-        for onecmd in loaded.0.iter() {
-            let msg = self.one_command(get_crnt_date_txt(), onecmd.clone(), false);
-            self.set_graphic_msg(msg, graphmsg);
+        let loaded = self.history.get_loaded_msr(mt);
+        for (i, onecmd) in loaded.0.iter().enumerate() {
+            if playable {
+                self.one_command(onecmd.clone(), graphmsg, false);
+            } else {
+                let time = format!("  >> History: {:05} ", i);
+                self.set_history(time, onecmd.clone(), None);
+            }
         }
         self.scroll_lines.push((
             TextAttribute::Answer,
@@ -421,28 +431,25 @@ impl InputText {
         ));
         loaded.1
     }
-    fn clear_loaded_data(&mut self) {
-        self.file_name_stock = String::new();
-        self.next_msr_tick = None;
-    }
-    fn one_command(&mut self, time: String, itxt: String, verbose: bool) -> GraphicMsg {
-        // 通常のコマンド入力
-        if let Some(answer) = self.cmd.put_and_get_responce(&itxt) {
-            // normal command
-            self.history_cnt = self
-                .history
-                .set_scroll_text(get_crnt_date_txt(), itxt.clone()); // input history
-            self.scroll_lines
-                .push((TextAttribute::Common, time.clone(), itxt.clone())); // for display text
-            if verbose {
-                self.scroll_lines
-                    .push((TextAttribute::Answer, "".to_string(), answer.0));
-            }
-            return answer.1;
-        }
-        GraphicMsg::NoMsg
-    }
-    fn set_graphic_msg(&mut self, msg: GraphicMsg, graphmsg: &mut Vec<GraphicMsg>) {
+    /// 一行分のコマンド入力
+    fn one_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>, verbose: bool) {
+        let time = get_crnt_date_txt();
+        let msg = if let Some(answer) = self.cmd.put_and_get_responce(&itxt) {
+            let answer0 = if verbose { Some(&(answer.0)) } else { None };
+            self.set_history(time, itxt, answer0);
+            answer.1
+        } else {
+            GraphicMsg::NoMsg
+        };
         graphmsg.push(msg);
+    }
+    /// 入力したコマンドを履歴に追加
+    fn set_history(&mut self, time: String, itxt: String, answer: Option<&String>) {
+        self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone()); // input history
+        self.scroll_lines.push((TextAttribute::Common, time, itxt)); // for display text
+        if let Some(a) = answer {
+            self.scroll_lines
+                .push((TextAttribute::Answer, "".to_string(), a.to_string())); // for display answer
+        }
     }
 }
