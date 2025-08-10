@@ -465,7 +465,7 @@ This document explains all features of Loopian.
 ### Loading Option Functions
 
 - Once a file is loaded, the following optional functions can be used
-- `!blk(a)`: Plays from lines in the file starting with `!blk(a)` until the next blank line (or the next `!blk`, `!msr`)
+- `!blk(a)`: Plays from lines in the file starting with `!blk(a)` until the next `!blk`, `!msr`
     - `!msr()` is ignored if present in the description called by `!blk()`
 - `!msr(n)`: After input, typing the `resume` command plays from lines in the file starting with `!msr(n)`
     - Accurate playback from middle measures is not guaranteed under some conditions, such as when the file description assumes Loop

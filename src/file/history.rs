@@ -80,52 +80,29 @@ impl History {
         self.input_lines.push((time.clone(), cmd));
         self.update_history_ptr()
     }
-    pub fn load_lpn(&mut self, fname: String, path: Option<&str>, blk: Option<String>) -> bool {
+    pub fn load_lpn(&mut self, fname: String, path: Option<&str>) -> bool {
         let fp_string = self.gen_lpn_file_name(fname, path);
         let fp = self.path_str(&fp_string);
-
-        let enable_blk = blk.clone().is_some();
-        let mut inside_blk = !enable_blk;
         self.loaded_text = Vec::new();
         match fs::read_to_string(fp) {
             Ok(content) => {
                 for line in content.lines() {
-                    let mut lodable = true;
                     if line.len() > 1 {
-                        // block指定、!rd() 指定、コメント行があれば読み飛ばす
+                        // !rd() 指定、コメント行があれば読み飛ばす
                         let notxt = line[0..2].to_string();
                         if notxt == "//" || notxt == "20" || notxt == "!l" {
                             // コメントでないか、過去の 2023.. が書かれてないか、loadではないか
-                            lodable = false;
+                            continue;
                         }
                         if line.len() >= 4 && &line[0..4] == "!rd(" {
                             // 読み飛ばす
                             continue;
                         }
-                        if enable_blk && line.chars().nth(0).unwrap_or('_') == '!' {
-                            // blk指定があるか
-                            if line.len() > 5 && line[0..5] == *"!blk(" {
-                                let blk_mark = extract_texts_from_parentheses(line);
-                                inside_blk = blk.as_ref().unwrap() == blk_mark;
-                                continue;
-                            }
-                        }
-                    } else if line.len() == 1 {
-                        // nothing
-                    } else if enable_blk && inside_blk {
-                        // line.len() == 0
-                        inside_blk = false;
                     }
                     // ここまで来たら、読み込む行
                     if !line.is_empty() {
-                        if enable_blk && inside_blk {
-                            // blk指定があり、blkの中をロードする場合
-                            self.loaded_text.push(line.to_string());
-                        }
-                        if !enable_blk && lodable {
-                            // blk指定がなく、ファイル全体をロードする場合
-                            self.loaded_text.push(line.to_string());
-                        }
+                        // blk指定がなく、ファイル全体をロードする場合
+                        self.loaded_text.push(line.to_string());
                     }
                 }
             }

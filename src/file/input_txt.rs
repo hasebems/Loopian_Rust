@@ -370,8 +370,7 @@ impl InputText {
         // input_loaded_msr() で一行ずつ Scroll Text に入れていく
         if self.history.load_lpn(
             self.file_name_stock.clone(),
-            self.cmd.get_path().as_deref(),
-            None,
+            self.cmd.get_path().as_deref()
         ) {
             // 小節番号の指定があった場合の確認
             self.next_msr_tick = self.input_loaded_msr(CrntMsrTick::default(), graphmsg, playable);
