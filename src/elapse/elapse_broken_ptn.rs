@@ -75,7 +75,7 @@ impl BrokenPattern {
         });
 
         #[cfg(feature = "verbose")]
-        println!("New BrkPtn: para:{}", para);
+        println!("New BrkPtn: para:{para}");
 
         // new Dynamic Pattern
         Rc::new(RefCell::new(Self {
@@ -122,7 +122,7 @@ impl BrokenPattern {
                 tbl = 0; //  No Table の場合は、Table 0 を使用する
             } else {
                 #[cfg(feature = "verbose")]
-                println!("BrokenPattern: root-{}, table-{}", root, tbl);
+                println!("BrokenPattern: root-{root}, table-{tbl}");
             }
             self.gen_each_note(crnt_, estk, root, tbl);
         }

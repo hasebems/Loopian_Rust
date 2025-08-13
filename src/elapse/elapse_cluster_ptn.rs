@@ -98,7 +98,7 @@ impl ClusterPattern {
         );
 
         #[cfg(feature = "verbose")]
-        println!("New ClsPtn: para:{}", para);
+        println!("New ClsPtn: para:{para}");
         // new Dynamic Pattern
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -145,7 +145,7 @@ impl ClusterPattern {
                 tbl = 0;
             }
             #[cfg(feature = "verbose")]
-            println!("ClusterPattern: root-{}, table-{}", root, tbl);
+            println!("ClusterPattern: root-{root}, table-{tbl}");
             let (tblptr, vel) = self.gen_each_note(crnt_, estk, tbl);
             let ntlist = self.gen_cluster_list(root, tblptr);
             self.play_cluster(estk, &ntlist, vel);

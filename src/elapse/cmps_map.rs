@@ -440,7 +440,7 @@ impl CmpsLoopMediator {
             cmp.set_first_msr_num(fmsrnum);
         }
         #[cfg(feature = "verbose")]
-        println!("Replace Composition Loop! --whole tick: {}", whole_tick);
+        println!("Replace Composition Loop! --whole tick: {whole_tick}");
     }
     /// whole_tick を loop_measure と beat に換算する
     fn calc_msr_beat(whole_tick: i32, tick_for_onemsr: i32, tick_for_beat: i32) -> (i32, i32) {

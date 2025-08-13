@@ -37,10 +37,10 @@ fn main() {
     const VERSION: &str = env!("CARGO_PKG_VERSION");
     println!("*** Hi, I'm Loopian.");
     println!("*** I'm so glad to see you!");
-    println!("*** Loopian Version: {}", VERSION);
+    println!("*** Loopian Version: {VERSION}");
 
     //  Args
-    println!("*** Args: {:?}", args);
+    println!("*** Args: {args:?}");
 
     //  Setting file の存在確認
     if !Settings::find_setting_file() {
