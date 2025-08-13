@@ -157,7 +157,7 @@ pub fn get_table_name(idx_num: i16) -> &'static str {
         idx_num as usize
     };
     if idx >= MAX_CHORD_TABLE {
-        eprintln!("Error: idx_num out of bounds: {}", idx); // idx_num を表示
+        eprintln!("Error: idx_num out of bounds: {idx}"); // idx_num を表示
         panic!("Assertion failed: idx_num < MAX_CHORD_TABLE");
     }
     CHORD_TABLE[idx].name

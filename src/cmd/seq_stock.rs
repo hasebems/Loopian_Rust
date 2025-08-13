@@ -113,7 +113,7 @@ impl SeqDataStock {
     }
     pub fn change_beat(&mut self, numerator: i16, denomirator: i16) {
         #[cfg(feature = "verbose")]
-        println!("beat: {}/{}", numerator, denomirator);
+        println!("beat: {numerator}/{denomirator}");
         self.tick_for_onemsr =
             DEFAULT_TICK_FOR_ONE_MEASURE * (numerator as i32) / (denomirator as i32);
         self.tick_for_beat = DEFAULT_TICK_FOR_QUARTER * 4 / (denomirator as i32);
@@ -202,7 +202,7 @@ impl SeqDataStock {
                 // last time
                 newraw = self.raw_additional.clone() + &raw[1..];
                 #[cfg(feature = "verbose")]
-                println!("Additional Phrase: {:?}", newraw);
+                println!("Additional Phrase: {newraw:?}");
                 self.raw_additional = String::from("");
             }
             Some(newraw)
@@ -395,7 +395,7 @@ impl CompositionDataStock {
         if let Some(cmpl) = complement_composition(input_text) {
             self.cmpl_cd = cmpl.clone();
             #[cfg(feature = "verbose")]
-            println!("complement_composition: {:?}", cmpl);
+            println!("complement_composition: {cmpl:?}");
             true
         } else {
             println!("Composition input failed!");

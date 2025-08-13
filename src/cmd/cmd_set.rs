@@ -30,7 +30,7 @@ impl LoopianCmd {
                         "BPM has changed!".to_string()
                     }
                     Err(e) => {
-                        println!("{:?}", e);
+                        println!("{e:?}");
                         "Number is wrong.".to_string()
                     }
                 }
@@ -129,7 +129,7 @@ impl LoopianCmd {
                 key -= 12;
             }
             #[cfg(feature = "verbose")]
-            println!("CHANGE KEY: {}, {}", key, oct);
+            println!("CHANGE KEY: {key}, {oct}");
             // phrase 再生成(新oct込み)
             if oct != 0 && self.dtstk.change_oct(oct, false, self.get_input_part()) {
                 self.sndr

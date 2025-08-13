@@ -182,8 +182,7 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
         // RPT_HEAD のとき、TRNS_COM になるので対象外
         #[cfg(feature = "verbose")]
         println!(
-            "ana_dbg: {},{},{},{}",
-            crnt_cnt, crnt_note, last_cnt, last_note
+            "ana_dbg: {crnt_cnt},{crnt_note},{last_cnt},{last_note}"
         );
         if para {
             // 強制的に para

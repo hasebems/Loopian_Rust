@@ -73,7 +73,7 @@ impl LoopianCmd {
             // option + space などの無効な文字列
             return None;
         }
-        println!("Set Text: {}", input_text);
+        println!("Set Text: {input_text}");
         let first_letter = &input_text[0..1];
         if first_letter == "@" {
             Some(CmndRtn(self.letter_at(input_text), GraphicMsg::NoMsg))
@@ -130,7 +130,7 @@ impl LoopianCmd {
             } else {
                 let remaining_letter = &input_text[6..];
                 if let Some(pnum) = Self::detect_part(remaining_letter) {
-                    println!("clear>>{}", remaining_letter);
+                    println!("clear>>{remaining_letter}");
                     self.clear_part(pnum);
                     match pnum {
                         LEFT1 => "part L1 data erased!".to_string(),
@@ -634,8 +634,7 @@ impl LoopianCmd {
         }
 
         println!(
-            "Rit,strength:{}, bar:{}, after:{}",
-            strength_value, bar_num, aft_rit
+            "Rit,strength:{strength_value}, bar:{bar_num}, after:{aft_rit}",
         );
         self.sndr
             .send_msg_to_elapse(ElpsMsg::Rit([strength_value + bar_num * 10, aft_rit]));

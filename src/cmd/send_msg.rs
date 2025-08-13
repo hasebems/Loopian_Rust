@@ -17,7 +17,7 @@ impl MessageSender {
     }
     pub fn send_msg_to_elapse(&self, msg: ElpsMsg) {
         if let Err(e) = self.msg_hndr.send(msg) {
-            println!("Something happened on MPSC for Elps! {}", e)
+            println!("Something happened on MPSC for Elps! {e}");
         }
     }
     pub fn send_all_vari_and_phrase(&self, part: usize, gdt: &SeqDataStock) {
@@ -47,7 +47,7 @@ impl MessageSender {
         if let ElpsMsg::Cmp(_c0, cv) = &cdt {
             if cv.evts.is_empty() {
                 self.send_msg_to_elapse(ElpsMsg::CmpX(part as i16));
-                println!("Part {} Composition: No Data!", part)
+                println!("Part {part} Composition: No Data!");
             } else {
                 self.send_msg_to_elapse(cmsg)
             }
