@@ -621,7 +621,21 @@ pub fn decide_dur(ntext: String, mut base_dur: i32) -> (String, i32) {
             base_dur = DEFAULT_TICK_FOR_QUARTER / 4;
         }
     } else if fst_ltr == 'w' {
-        base_dur = DEFAULT_TICK_FOR_QUARTER / 8;
+        if ntext.chars().nth(1).unwrap_or(' ') == '(' {
+            if let Some(p) = ntext.find(')') {
+                let dur_str = &ntext[2..p];
+                if let Ok(dur) = dur_str.parse::<i32>() {
+                    base_dur = dur;
+                } else {
+                    base_dur = DEFAULT_TICK_FOR_QUARTER / 8;
+                }
+                idx = p + 1;
+            } else {
+                base_dur = DEFAULT_TICK_FOR_QUARTER / 8;
+            }
+        } else {
+            base_dur = DEFAULT_TICK_FOR_QUARTER / 8;
+        }
     } else if fst_ltr == 'q' {
         if ntext.chars().nth(1).unwrap_or(' ') == '\'' {
             base_dur = DEFAULT_TICK_FOR_QUARTER * 3 / 2;
