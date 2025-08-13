@@ -429,13 +429,19 @@ fn break_up_nt_dur_vel(
     let mut notes: Vec<u8> = Vec::new();
     let mut next_last_nt = last_nt;
     for (i, nt) in notes_vec.iter().enumerate() {
-        let mut doremi: i32 = 0;
-        if imd == InputMode::Fixed {
-            doremi = convert_doremi_fixed(nt.to_string());
-        } else if imd == InputMode::Closer {
-            if i == 0 {
-                doremi = convert_doremi_closer(nt.to_string(), next_last_nt);
-            } else {
+        let doremi: i32;
+        match imd {
+            InputMode::Fixed => {
+                doremi = convert_doremi_fixed(nt.to_string());
+            }
+            InputMode::Closer => {
+                if i == 0 {
+                    doremi = convert_doremi_closer(nt.to_string(), next_last_nt);
+                } else {
+                    doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
+                }
+            }
+            InputMode::Upcloser => {
                 doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
             }
         }
@@ -755,6 +761,8 @@ fn convert_doremi_upper_closer(doremi: String, last_nt: i32) -> i32 {
             return REST as i32;
         } else if ltr == '+' {
             oct_pitch += 12;
+        } else if ltr == '-' {
+            oct_pitch -= 12;
         } else {
             pure_doremi = doremi[i..].to_string();
             break;

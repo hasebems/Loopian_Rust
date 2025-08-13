@@ -177,6 +177,9 @@ impl LoopianCmd {
         } else if imd == "closer" {
             self.dtstk.change_input_mode(InputMode::Closer);
             true
+        } else if imd == "upcloser" {
+            self.dtstk.change_input_mode(InputMode::Upcloser);
+            true
         } else {
             false
         }

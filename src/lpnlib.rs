@@ -437,5 +437,6 @@ pub enum GraphMode {
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum InputMode {
     Fixed,  // 階名のオクターブ位置は固定。絶対位置を指定
-    Closer, // 次の階名は近い方のオクターブを選択。遠い方を指示する場合、+/-を使う。
+    Closer, // +/-がない時、次の階名は近い方のオクターブを選択。遠い方を指示する場合、+/-を使う。
+    Upcloser, // +/-がない時、次の階名は前の音程から1オクターブ上を選択。遠い方を指示する場合、+/-を使う。
 }
