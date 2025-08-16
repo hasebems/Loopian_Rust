@@ -316,6 +316,7 @@ impl PhraseDataStock {
         tick_for_beat: i32,
     ) {
         if self.cmpl_nt == [""] {
+            #[cfg(feature = "verbose")]
             println!("no_phrase...");
             //  clear
             self.phr = Vec::new();

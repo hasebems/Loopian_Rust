@@ -170,7 +170,7 @@ impl History {
     /// ファイル内で !msr() を使ったデータにおいて、
     /// 指定された小節数から、ロードされたデータの再生開始場所を調べ、
     /// そこから次の !msr() までのデータを返す
-    pub fn get_loaded_msr(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
+    pub fn get_from_mt_to_next(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
         let mut txt_this_time: Vec<String> = Vec::new();
         let mut idx: usize = 0;
         let msr_or = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!msr(";
@@ -219,6 +219,39 @@ impl History {
                 tick_for_onemsr: 0,
             }),
         )
+    }
+    pub fn get_from_0_to_mt(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
+        let mut txt_this_time: Vec<String> = Vec::new();
+        let mut next_msr_tick = None;
+        let msr_or = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!msr(";
+        // 先頭を探す
+        if mt.msr != 0 {
+            for crnt in self.loaded_text.iter().enumerate() {
+                let ctxt = crnt.1;
+                if msr_or(ctxt) {
+                    if let Some(msr) = extract_number_from_parentheses(ctxt) {
+                        if msr as i32 > mt.msr {
+                            next_msr_tick = Some(CrntMsrTick {
+                                msr: (msr as i32),
+                                tick: 0,
+                                tick_for_onemsr: 0,
+                            });
+                            break;
+                        }
+                    }
+                }
+                txt_this_time.push(ctxt.clone());
+            }
+        }
+        if next_msr_tick.is_none() {
+            // 0小節目からの再生
+            next_msr_tick = Some(CrntMsrTick {
+                msr: LAST,
+                tick: 0,
+                tick_for_onemsr: 0,
+            });
+        }
+        (txt_this_time, next_msr_tick)
     }
     pub fn arrow_up(&mut self) -> Option<(String, usize)> {
         let max_count = self.input_lines.len();

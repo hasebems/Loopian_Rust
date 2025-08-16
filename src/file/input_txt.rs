@@ -265,10 +265,10 @@ impl InputText {
             std::process::exit(0);
         } else if (len >= 2 && &itxt[0..2] == "!l") || (len >= 5 && &itxt[0..5] == "!load") {
             // Load Command
-            self.analyze_load_command(&itxt[0..], graphmsg, true);
+            self.load_file(&itxt[0..], graphmsg, true);
         } else if (len >= 2 && &itxt[0..2] == "!h") || (len >= 8 && &itxt[0..8] == "!history") {
             // Load to history Command
-            self.analyze_load_command(&itxt[0..], graphmsg, false);
+            self.load_file(&itxt[0..], graphmsg, false);
         } else if (len == 6 && &itxt[0..6] == "!clear") // no parameter
             || (len == 4 && &itxt[0..4] == "!clr")
             || (len == 2 && &itxt[0..2] == "!c")
@@ -301,8 +301,9 @@ impl InputText {
                 });
         } else if len >= 5 && &itxt[0..5] == "!msr(" {
             // measure の読み込み
-            let msr_num = extract_number_from_parentheses(&itxt[0..]);
-            self.load_msr_command(msr_num, graphmsg);
+            if let Some(msr_num) = extract_number_from_parentheses(&itxt[0..]) {
+                self.load_by_msr_command(msr_num, graphmsg);
+            }
         } else if len >= 7 && &itxt[0..7] == "!cnv2tl" {
             // convert to timeline file
             self.convert_to_timeline_file(&itxt[0..]);
@@ -360,61 +361,79 @@ impl InputText {
         }
     }
     /// ファイルをロードして、一行ずつ処理する
-    fn analyze_load_command(&mut self, itxt: &str, graphmsg: &mut Vec<GraphicMsg>, playable: bool) {
+    fn load_file(&mut self, itxt: &str, graphmsg: &mut Vec<GraphicMsg>, playable: bool) {
         let fnx = split_by('.', itxt.to_string());
         if fnx.len() >= 2 {
             self.file_name_stock = fnx[1].clone();
         }
 
         // load_lpn() でファイルの中身を読み込み、
-        // input_loaded_msr() で一行ずつ Scroll Text に入れていく
-        if self.history.load_lpn(
-            self.file_name_stock.clone(),
-            self.cmd.get_path().as_deref()
-        ) {
-            // 小節番号の指定があった場合の確認
-            self.next_msr_tick = self.input_loaded_msr(CrntMsrTick::default(), graphmsg, playable);
+        // send_loaddata_to_elapse() で一行ずつ再生し Scroll Text に入れていく
+        if self
+            .history
+            .load_lpn(self.file_name_stock.clone(), self.cmd.get_path().as_deref())
+        {
+            let loaded = self.history.get_from_mt_to_next(CrntMsrTick::default());
+            self.next_msr_tick = self.send_loaddata_to_elapse(graphmsg, playable, loaded);
         } else {
             // 適切なファイルや中身がなかった場合
             self.scroll_lines.push((
                 TextAttribute::Answer,
                 "".to_string(),
-                "No history".to_string(),
+                "No File.".to_string(),
             ));
         }
     }
-    fn load_msr_command(&mut self, msr: Option<usize>, graphmsg: &mut Vec<GraphicMsg>) {
-        // get_loaded_text() で一行ずつ Scroll Text に入れていく
-        let mut mt: CrntMsrTick = CrntMsrTick::default();
-        if let Some(msr_num) = msr {
-            // msr_num: 1origin
-            let msr0ori = if msr_num > 0 { (msr_num as i16) - 1 } else { 0 };
-            self.cmd.set_measure(msr0ori);
-            mt.msr = msr_num as i32;
+    /// !msr() で指定された小節までのデータをロード
+    /// ここでは、指定された小節の直前までのデータをロード
+    fn load_by_msr_command(&mut self, msr: usize, graphmsg: &mut Vec<GraphicMsg>) {
+        // send_loaddata_to_elapse() で一行ずつ Scroll Text に入れていく
+        let mt: CrntMsrTick = CrntMsrTick {
+            msr: msr as i32,
+            ..Default::default()
+        };
+        let loaded = self.history.get_from_0_to_mt(mt);
+        if loaded.0.is_empty() {
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "No Data!".to_string(),
+            ));
+            return;
         }
-        self.next_msr_tick = self.input_loaded_msr(mt, graphmsg, true);
+        self.next_msr_tick = self.send_loaddata_to_elapse(graphmsg, true, loaded);
+        let msr0ori = if msr > 0 { (msr as i16) - 1 } else { 0 };
+        self.cmd.set_measure(msr0ori);
+        if self.next_msr_tick.is_some() {
+            //#[cfg(feature = "verbose")]
+            println!(
+                "@@@ Load by msr: {}, next_msr_tick: {:?}",
+                msr,
+                self.next_msr_tick.unwrap()
+            );
+        }
     }
     /// Auto Load  called from main::update()
     pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<GraphicMsg>) {
-        if let Some(nmt) = self.next_msr_tick {
+        if let Some(mt) = self.next_msr_tick {
             let crnt: CrntMsrTick = guiev.get_msr_tick();
-            if nmt.msr != LAST
-                && nmt.msr > 0
-                && nmt.msr - 1 == crnt.msr  // 一つ前の小節(両方とも1origin)
+            if mt.msr != LAST
+                && mt.msr > 0
+                && mt.msr - 1 == crnt.msr
                 && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK
             {
-                self.next_msr_tick = self.input_loaded_msr(nmt, graphmsg, true);
+                let loaded = self.history.get_from_mt_to_next(mt);
+                self.next_msr_tick = self.send_loaddata_to_elapse(graphmsg, true, loaded);
             }
         }
     }
     /// ロードされたファイルの内容を再生する
-    fn input_loaded_msr(
+    fn send_loaddata_to_elapse(
         &mut self,
-        mt: CrntMsrTick,
         graphmsg: &mut Vec<GraphicMsg>,
         playable: bool,
+        loaded: (Vec<String>, Option<CrntMsrTick>),
     ) -> Option<CrntMsrTick> {
-        let loaded = self.history.get_loaded_msr(mt);
         for (i, onecmd) in loaded.0.iter().enumerate() {
             if playable {
                 self.one_command(onecmd.clone(), graphmsg, false);
