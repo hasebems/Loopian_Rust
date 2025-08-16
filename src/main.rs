@@ -92,7 +92,7 @@ fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<UiMsg>) {
     //  create new thread & channel
     let (txmsg, rxmsg) = mpsc::channel();
     let (txui, rxui) = mpsc::channel();
-    thread::spawn(move || {
+    let _ = thread::Builder::new().name("elapse".to_string()).spawn(move || {
         let mut est = ElapseStack::new(txui);
         loop {
             if est.periodic(rxmsg.try_recv()) {
