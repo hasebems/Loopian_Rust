@@ -54,9 +54,13 @@ pub fn doremi_to_notenum(doremi: String, mut base_note: i32) -> i32 {
     } else {
         // d,r,m,f,s,l,t
         base_note = doremi_number(doremi.chars().next().unwrap_or(' '), base_note);
-        if doremi.len() != 1 {
+        if doremi.len() == 2 {
             // i,a
             base_note = doremi_semi_number(doremi.chars().nth(1).unwrap_or(' '), base_note);
+        } else if doremi.len() == 3 {
+            // ii,aa
+            base_note = doremi_semi_number(doremi.chars().nth(1).unwrap_or(' '), base_note);
+            base_note = doremi_semi_number(doremi.chars().nth(2).unwrap_or(' '), base_note);
         }
     }
     base_note
