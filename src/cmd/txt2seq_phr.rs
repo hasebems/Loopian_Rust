@@ -428,11 +428,13 @@ fn break_up_nt_dur_vel(
     // 階名への変換
     let mut notes: Vec<u8> = Vec::new();
     let mut next_last_nt = last_nt;
+    let mut first_note: Option<i32> = None; // 和音の最初の音程を記録するため
     for (i, nt) in notes_vec.iter().enumerate() {
         let doremi: i32;
         match imd {
             InputMode::Fixed => {
                 doremi = convert_doremi_fixed(nt.to_string());
+                if i > 0 {break;}
             }
             InputMode::Closer => {
                 if i == 0 {
@@ -443,6 +445,9 @@ fn break_up_nt_dur_vel(
             }
             InputMode::Upcloser => {
                 doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
+                if i == 0 && doremi < NO_MIDI_VALUE as i32 {
+                    first_note = Some(doremi);
+                }
             }
         }
         if doremi < NO_MIDI_VALUE as i32 {
@@ -454,6 +459,9 @@ fn break_up_nt_dur_vel(
     // 何も音名が入らなかった時
     if notes.is_empty() {
         notes.push(NO_NOTE);
+    } else if notes.len() > 1 && first_note.is_some() {
+        // Upcloser + 和音の時、最低音を next_last_nt とする
+        next_last_nt = first_note.unwrap();
     }
 
     (
