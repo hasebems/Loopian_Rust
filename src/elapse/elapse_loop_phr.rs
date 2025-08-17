@@ -431,6 +431,7 @@ impl Elapse for PhraseLoop {
         self.next_tick_in_phrase = 0;
         self.last_note = NO_NOTE as i16;
         self.same_time_stuck = Vec::new();
+        self.destroy = false;
         self.next_msr = 0;
         self.next_tick = 0;
     }

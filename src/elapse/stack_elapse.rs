@@ -298,9 +298,11 @@ impl ElapseStack {
             if debcnt > 80 {
                 // 50個以上のイベントがあったら、何かがおかしい
                 println!(
-                    "Too many events! cnt: {}, id: {:?}",
+                    "Too many events! cnt: {}, id: {:?}, nmsr: {:?}, ntick: {:?}",
                     debcnt,
-                    felps.borrow().id()
+                    felps.borrow().id(),
+                    felps.borrow().next().0,
+                    felps.borrow().next().1
                 );
             }
             assert!(debcnt < 100, "Last ID:{:?}", felps.borrow().id()); // ERR_SE10
