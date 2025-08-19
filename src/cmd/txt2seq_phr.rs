@@ -439,6 +439,9 @@ fn break_up_nt_dur_vel(
             InputMode::Closer => {
                 if i == 0 {
                     doremi = convert_doremi_closer(nt.to_string(), next_last_nt);
+                    if doremi < NO_MIDI_VALUE as i32 {
+                        first_note = Some(doremi);
+                    }
                 } else {
                     doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
                 }
