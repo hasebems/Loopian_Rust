@@ -437,10 +437,12 @@ impl InputText {
                     self.auto_load_buffer = self.history.get_from_mt_to_next(mt);
                     self.auto_load_state = 1;
                 } else if self.auto_load_state == 1 && crnt.tick > Self::COMMAND_INPUT_REST_TICK {
+                    // 1拍目の COMMAND_INPUT_REST_TICK 後に、フレーズを再生
                     let autoload = self.auto_load_buffer.clone();
                     self.send_loaddata_to_elapse(graphmsg, InputTextType::Phrase, true, autoload.0);
                     self.auto_load_state = 2;
                 } else if self.auto_load_state == 2 && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK {
+                    // 小節終わりの COMMAND_INPUT_REST_TICK 前に、リアルタイムメッセージを再生
                     let autoload = self.auto_load_buffer.clone();
                     self.send_loaddata_to_elapse(graphmsg, InputTextType::Realtime, true, autoload.0);
                     self.next_msr_tick = autoload.1;
@@ -464,6 +466,7 @@ impl InputText {
                 _ => true,
             }
         };
+        let mut something_loaded = false;
         for (i, onecmd) in loaded.iter().enumerate() {
             if is_fitting_command(txt_type, onecmd) {
                 if playable {
@@ -472,13 +475,16 @@ impl InputText {
                     let time = format!("  >> History: {:05} ", i);
                     self.set_history(time, onecmd.clone(), None);
                 }
+                something_loaded = true;
             }
         }
-        self.scroll_lines.push((
-            TextAttribute::Answer,
-            "".to_string(),
-            "Loaded from designated file".to_string(),
-        ));
+        if something_loaded {
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "Loaded from designated file".to_string(),
+            ));
+        }
     }
     /// 一行分のコマンド入力
     fn one_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>, verbose: bool) {
