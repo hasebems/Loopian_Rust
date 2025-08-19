@@ -30,19 +30,26 @@ impl CnvFile {
             Ok(content) => {
                 let mut inside_blk = false;
                 let mut ptnum: Option<usize> = None;
+                let mut msrnum: Option<usize> = None;
                 for line in content.lines() {
                     if line.len() > 1 {
                         let top_char = line[0..2].to_string();
                         if top_char == "//" || top_char == "20" || top_char == "!l" {
                             // コメントでないか、過去の 2023.. が書かれてないか、loadではないか
-                            continue;
                         } else if line.len() >= 4 && &line[0..4] == "!rd(" {
                             // 読み飛ばす
-                            continue;
+                            inside_blk = false;
+                            msrnum = None;
+                            ptnum = None;
                         } else if line.len() >= 5 && &line[0..5] == "!blk(" {
                             // 読み飛ばす
                             inside_blk = true;
-                            continue;
+                            msrnum = None;
+                            ptnum = None;
+                        } else if line.len() >= 5 && &line[0..5] == "!msr(" {
+                            msrnum = extract_number_from_parentheses(line);
+                            ptnum = None;
+                            inside_blk = false;
                         } else if !line.is_empty() && !inside_blk {
                             if line == "L1" {
                                 ptnum = Some(0);
@@ -54,12 +61,18 @@ impl CnvFile {
                                 ptnum = Some(3);
                             } else if let Some(p) = ptnum {
                                 self.part_lines[p].push(line.to_string());
+                            } else if let Some(msr) = msrnum {
+                                let ln = format!("@msr({})={}", msr, line);
+                                self.raw_lines.push(ln.clone());
                             } else {
                                 self.raw_lines.push(line.to_string());
                             }
                         }
                     } else if line.len() <= 1 && inside_blk {
+                        // 空行
                         inside_blk = false;
+                        msrnum = None;
+                        ptnum = None; // パート番号をリセット
                     }
                 }
             }
@@ -69,34 +82,51 @@ impl CnvFile {
     pub fn output_file(&mut self, fp_string: String) {
         let fp = self.path_str(&fp_string);
         let mut output = String::from("");
+        let mut msr_line: Vec<(usize, String)> = Vec::new();
         for line in &self.raw_lines {
+            // フレーズ以外の行を処理
+            if line.len() >= 4 && &line[0..4] == "@msr" {
+                if let Some(msr) = extract_number_from_parentheses(line) {
+                    let separated_line = split_by('=', line.to_string());
+                    msr_line.push((msr, separated_line[1].to_string()));
+                }
+                continue;
+            }
             output.push_str(line);
             output.push('\n');
         }
+
         let mut msr: usize = 0;
-        let mut ptidx: [Option<usize>; MAX_KBD_PART] = [Some(0); MAX_KBD_PART];
-        let mut bp;
+        let mut empty_msr: usize = 0;
+        let mut ptidx: [Option<usize>; MAX_KBD_PART] = [Some(0); MAX_KBD_PART]; // 次回のindex
         loop {
-            bp = 0;
             let mut msr_out: String = "".to_string();
             for (i, idx) in ptidx.iter_mut().enumerate().take(MAX_KBD_PART) {
                 if let Some(index) = idx {
                     *idx = self.put_part_line(i, *index, msr, &mut msr_out);
-                } else {
-                    bp += 1;
                 }
             }
-            if bp == MAX_KBD_PART {
-                println!("Final Measure: {}", msr);
-                break;
-            } else if !msr_out.is_empty() {
+            for (msrnum, line) in &msr_line {
+                if msrnum == &msr {
+                    msr_out.push_str(line);
+                    msr_out.push('\n');
+                }
+            }
+            if !msr_out.is_empty() {
                 let msr_str = "!msr(".to_string() + msr.to_string().as_str() + ")\n";
                 output.push('\n');
                 output.push_str(&msr_str);
                 output.push_str(&msr_out);
                 println!("Recorded Measure: {}", msr);
+                empty_msr = 0; // 情報のある小節が見つかったので、空の小節カウンタをリセット
+            } else {
+                empty_msr += 1;
             }
             msr += 1;
+            if empty_msr > 100 { // 連続する情報のない小節が100を超えた場合、終了したとみなす
+                println!("Final Measure: {}", msr - 100);
+                break;
+            }
         }
         match fs::write(fp, output) {
             Ok(_) => println!("Success"),
@@ -113,6 +143,9 @@ impl CnvFile {
         const PTSTR_TBL: [&str; MAX_KBD_PART] = ["L1.", "L2.", "R1.", "R2."];
         let ptstr = PTSTR_TBL[part];
         if let Some(line) = self.part_lines[part].get(idx) {
+            if line[0..4] != *"@msr" {
+                return None;
+            }
             let separated_line = split_by('=', line.to_string());
             let mut ptidx = idx;
             if let Some(msr_num) = extract_number_from_parentheses(&separated_line[0]) {
