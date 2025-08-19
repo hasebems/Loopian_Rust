@@ -15,6 +15,13 @@ use crate::elapse::tickgen::CrntMsrTick;
 use crate::graphic::guiev::GuiEv;
 use crate::lpnlib::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum InputTextType {
+    Phrase,
+    Realtime,
+    Any,
+}
+
 //*******************************************************************
 //      Input Text
 //*******************************************************************
@@ -25,6 +32,8 @@ pub struct InputText {
     history_cnt: usize,
     file_name_stock: String,
     next_msr_tick: Option<CrntMsrTick>,
+    auto_load_buffer: (Vec<String>, Option<CrntMsrTick>),
+    auto_load_state: usize,
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history: History,
     cmd: LoopianCmd,
@@ -44,6 +53,8 @@ impl InputText {
             history_cnt: 0,
             file_name_stock: String::new(),
             next_msr_tick: None,
+            auto_load_buffer: (vec![], None),
+            auto_load_state: 0,
             scroll_lines: vec![],
             history: History::new(),
             cmd: LoopianCmd::new(msg_hndr),
@@ -374,7 +385,8 @@ impl InputText {
             .load_lpn(self.file_name_stock.clone(), self.cmd.get_path().as_deref())
         {
             let loaded = self.history.get_from_mt_to_next(CrntMsrTick::default());
-            self.next_msr_tick = self.send_loaddata_to_elapse(graphmsg, playable, loaded);
+            self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, playable, loaded.0);
+            self.next_msr_tick = loaded.1;
         } else {
             // 適切なファイルや中身がなかった場合
             self.scroll_lines.push((
@@ -401,7 +413,8 @@ impl InputText {
             ));
             return;
         }
-        self.next_msr_tick = self.send_loaddata_to_elapse(graphmsg, true, loaded);
+        self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0);
+        self.next_msr_tick = loaded.1;
         let msr0ori = if msr > 0 { (msr as i16) - 1 } else { 0 };
         self.cmd.set_measure(msr0ori);
         if self.next_msr_tick.is_some() {
@@ -419,11 +432,20 @@ impl InputText {
             let crnt: CrntMsrTick = guiev.get_msr_tick();
             if mt.msr != LAST
                 && mt.msr > 0
-                && mt.msr - 1 == crnt.msr
-                && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK
-            {
-                let loaded = self.history.get_from_mt_to_next(mt);
-                self.next_msr_tick = self.send_loaddata_to_elapse(graphmsg, true, loaded);
+                && mt.msr - 1 == crnt.msr {
+                if self.auto_load_state == 0 {
+                    self.auto_load_buffer = self.history.get_from_mt_to_next(mt);
+                    self.auto_load_state = 1;
+                } else if self.auto_load_state == 1 && crnt.tick > Self::COMMAND_INPUT_REST_TICK {
+                    let autoload = self.auto_load_buffer.clone();
+                    self.send_loaddata_to_elapse(graphmsg, InputTextType::Phrase, true, autoload.0);
+                    self.auto_load_state = 2;
+                } else if self.auto_load_state == 2 && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK {
+                    let autoload = self.auto_load_buffer.clone();
+                    self.send_loaddata_to_elapse(graphmsg, InputTextType::Realtime, true, autoload.0);
+                    self.next_msr_tick = autoload.1;
+                    self.auto_load_state = 0;
+                }
             }
         }
     }
@@ -431,15 +453,25 @@ impl InputText {
     fn send_loaddata_to_elapse(
         &mut self,
         graphmsg: &mut Vec<GraphicMsg>,
+        txt_type: InputTextType,
         playable: bool,
-        loaded: (Vec<String>, Option<CrntMsrTick>),
-    ) -> Option<CrntMsrTick> {
-        for (i, onecmd) in loaded.0.iter().enumerate() {
-            if playable {
-                self.one_command(onecmd.clone(), graphmsg, false);
-            } else {
-                let time = format!("  >> History: {:05} ", i);
-                self.set_history(time, onecmd.clone(), None);
+        loaded: Vec<String>,
+    ) {
+        let is_fitting_command = |ttype: InputTextType, onecmd: &str| -> bool {
+            match ttype {
+                InputTextType::Phrase => onecmd.chars().any(|c| c == '['),
+                InputTextType::Realtime => !onecmd.chars().any(|c| c == '['),
+                _ => true,
+            }
+        };
+        for (i, onecmd) in loaded.iter().enumerate() {
+            if is_fitting_command(txt_type, onecmd) {
+                if playable {
+                    self.one_command(onecmd.clone(), graphmsg, false);
+                } else {
+                    let time = format!("  >> History: {:05} ", i);
+                    self.set_history(time, onecmd.clone(), None);
+                }
             }
         }
         self.scroll_lines.push((
@@ -447,7 +479,6 @@ impl InputText {
             "".to_string(),
             "Loaded from designated file".to_string(),
         ));
-        loaded.1
     }
     /// 一行分のコマンド入力
     fn one_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>, verbose: bool) {
