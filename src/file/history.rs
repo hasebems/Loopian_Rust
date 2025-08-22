@@ -168,19 +168,19 @@ impl History {
         txt_this_time
     }
     /// ファイル内で !msr() を使ったデータにおいて、
-    /// 指定された小節数から、ロードされたデータの再生開始場所を調べ、
-    /// そこから次の !msr() までのデータを返す
+    /// 指定された小節数から次の !msr() までのデータを返す
     pub fn get_from_mt_to_next(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
         let mut txt_this_time: Vec<String> = Vec::new();
         let mut idx: usize = 0;
-        let msr_or = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!msr(";
+        let start_msr: usize = mt.msr as usize;
+        let msr_exists = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!msr(";
         // 先頭を探す
-        if mt.msr != 0 {
+        if start_msr != 0 {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
-                if msr_or(ctxt) {
-                    if let Some(msr) = extract_number_from_parentheses(ctxt) {
-                        if msr == mt.msr.try_into().unwrap_or(0) {
+                if msr_exists(ctxt) {
+                    if let Some(file_msr) = extract_number_from_parentheses(ctxt) {
+                        if file_msr == start_msr {
                             idx = crnt.0 + 1;
                             break;
                         }
@@ -191,7 +191,7 @@ impl History {
         // ここから txt_this_time に記録
         for n in idx..self.loaded_text.len() {
             let ctxt = &self.loaded_text[n];
-            if msr_or(ctxt) {
+            if msr_exists(ctxt) {
                 let msr;
                 if let Some(m) = extract_number_from_parentheses(ctxt) {
                     msr = m;
@@ -220,17 +220,20 @@ impl History {
             }),
         )
     }
+    /// ファイル内で !msr() を使ったデータにおいて、
+    /// 最初から、指定された小節後最初の !msr() までのデータを返す
     pub fn get_from_0_to_mt(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
         let mut txt_this_time: Vec<String> = Vec::new();
         let mut next_msr_tick = None;
-        let msr_or = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!msr(";
+        let msr_exists = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!msr(";
+        let crnt_msr = mt.msr as usize;
         // 先頭を探す
-        if mt.msr != 0 {
+        if crnt_msr != 0 {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
-                if msr_or(ctxt) {
+                if msr_exists(ctxt) { // !msr() の場合
                     if let Some(msr) = extract_number_from_parentheses(ctxt) {
-                        if msr as i32 > mt.msr {
+                        if msr >= crnt_msr {
                             next_msr_tick = Some(CrntMsrTick {
                                 msr: (msr as i32),
                                 tick: 0,
@@ -239,8 +242,9 @@ impl History {
                             break;
                         }
                     }
+                } else {
+                    txt_this_time.push(ctxt.clone());
                 }
-                txt_this_time.push(ctxt.clone());
             }
         }
         if next_msr_tick.is_none() {
@@ -250,6 +254,39 @@ impl History {
                 tick: 0,
                 tick_for_onemsr: 0,
             });
+        }
+        (txt_this_time, next_msr_tick)
+    }
+    /// ファイル内で !msr() を使ったデータにおいて、
+    /// 指定された小節に !msr() があれば、そのデータを返す
+    pub fn get_from_mt(&self, mt: CrntMsrTick) -> (Vec<String>, Option<CrntMsrTick>) {
+        let mut txt_this_time: Vec<String> = Vec::new();
+        let mut next_msr_tick = None;
+        let msr_exists = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!msr(";
+        let crnt_msr = mt.msr as usize;
+        let mut sw = false;
+        // 先頭を探す
+        if crnt_msr != 0 {
+            for crnt in self.loaded_text.iter().enumerate() {
+                let ctxt = crnt.1;
+                if msr_exists(ctxt) { // !msr() の場合
+                    if let Some(msr) = extract_number_from_parentheses(ctxt) {
+                        if msr == crnt_msr {
+                            sw = true;
+                        } else if sw {
+                            // すでに !msr() が見つかっているので、ここで終了
+                            next_msr_tick = Some(CrntMsrTick {
+                                msr: (msr as i32),
+                                tick: 0,
+                                tick_for_onemsr: 0,
+                            });
+                            break;
+                        }
+                    }
+                } else if sw {
+                    txt_this_time.push(ctxt.clone());
+                }
+            }
         }
         (txt_this_time, next_msr_tick)
     }

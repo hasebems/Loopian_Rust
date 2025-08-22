@@ -21,6 +21,12 @@ enum InputTextType {
     Realtime,
     Any,
 }
+#[derive(PartialEq, Eq)]
+enum AutoLoadState {
+    BeforeLoading,
+    Reached,
+    PhraseLoaded,
+}
 
 //*******************************************************************
 //      Input Text
@@ -33,7 +39,7 @@ pub struct InputText {
     file_name_stock: String,
     next_msr_tick: Option<CrntMsrTick>,
     auto_load_buffer: (Vec<String>, Option<CrntMsrTick>),
-    auto_load_state: usize,
+    auto_load_state: AutoLoadState,
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history: History,
     cmd: LoopianCmd,
@@ -54,7 +60,7 @@ impl InputText {
             file_name_stock: String::new(),
             next_msr_tick: None,
             auto_load_buffer: (vec![], None),
-            auto_load_state: 0,
+            auto_load_state: AutoLoadState::BeforeLoading,
             scroll_lines: vec![],
             history: History::new(),
             cmd: LoopianCmd::new(msg_hndr),
@@ -399,13 +405,15 @@ impl InputText {
     /// !msr() で指定された小節までのデータをロード
     /// ここでは、指定された小節の直前までのデータをロード
     fn load_by_msr_command(&mut self, msr: usize, graphmsg: &mut Vec<GraphicMsg>) {
-        // send_loaddata_to_elapse() で一行ずつ Scroll Text に入れていく
         let mt: CrntMsrTick = CrntMsrTick {
             msr: msr as i32,
             ..Default::default()
         };
         let loaded = self.history.get_from_0_to_mt(mt);
-        if loaded.0.is_empty() {
+        if !loaded.0.is_empty() {
+            println!("@@@ Realtime Message: 0->{}", mt.msr);
+            self.send_loaddata_to_elapse(graphmsg, InputTextType::Realtime, true, loaded.0);
+        } else {
             self.scroll_lines.push((
                 TextAttribute::Answer,
                 "".to_string(),
@@ -413,40 +421,85 @@ impl InputText {
             ));
             return;
         }
-        self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0);
         self.next_msr_tick = loaded.1;
+        let loaded = self.history.get_from_mt(mt);
+        if !loaded.0.is_empty() {
+            println!("@@@ All: {}", mt.msr);
+            self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0);
+        }
+
+        // 小節番号を設定する
         let msr0ori = if msr > 0 { (msr as i16) - 1 } else { 0 };
         self.cmd.set_measure(msr0ori);
-        if self.next_msr_tick.is_some() {
+        self.auto_load_buffer = (vec![], None);
+        self.auto_load_state = AutoLoadState::BeforeLoading;
+    }
+    /// ファイルからデータを取得して、elapse に送る
+    fn _get_and_send(
+        &mut self,
+        msr: i32,
+        txt_type: InputTextType,
+        graphmsg: &mut Vec<GraphicMsg>,
+    ) -> Option<CrntMsrTick> {
+        let mt: CrntMsrTick = CrntMsrTick {
+            msr,
+            ..Default::default()
+        };
+        let loaded = if txt_type == InputTextType::Realtime {
+            println!("@@@ 0->{}", mt.msr);
+            self.history.get_from_0_to_mt(mt)
+        } else {
+            println!("@@@ {}->next", mt.msr);
+            self.history.get_from_mt_to_next(mt)
+        };
+
+        if loaded.0.is_empty() {
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                "No Data!".to_string(),
+            ));
+            return None;
+        } else if loaded.1.is_some() {
             //#[cfg(feature = "verbose")]
             println!(
                 "@@@ Load by msr: {}, next_msr_tick: {:?}",
                 msr,
-                self.next_msr_tick.unwrap()
+                loaded.1.unwrap()
             );
         }
+        self.send_loaddata_to_elapse(graphmsg, txt_type, true, loaded.0);
+        loaded.1
     }
     /// Auto Load  called from main::update()
     pub fn auto_load_command(&mut self, guiev: &GuiEv, graphmsg: &mut Vec<GraphicMsg>) {
-        if let Some(mt) = self.next_msr_tick {
+        if let Some(next_mt) = self.next_msr_tick {
             let crnt: CrntMsrTick = guiev.get_msr_tick();
-            if mt.msr != LAST
-                && mt.msr > 0
-                && mt.msr - 1 == crnt.msr {
-                if self.auto_load_state == 0 {
-                    self.auto_load_buffer = self.history.get_from_mt_to_next(mt);
-                    self.auto_load_state = 1;
-                } else if self.auto_load_state == 1 && crnt.tick > Self::COMMAND_INPUT_REST_TICK {
+            if next_mt.msr != LAST && next_mt.msr > 0 && next_mt.msr - 1 == crnt.msr {
+                // 指定された小節の１小節前まで来た場合
+                if self.auto_load_state == AutoLoadState::BeforeLoading {
+                    self.auto_load_buffer = self.history.get_from_mt_to_next(next_mt);
+                    self.auto_load_state = AutoLoadState::Reached;
+                } else if self.auto_load_state == AutoLoadState::Reached
+                    && crnt.tick > Self::COMMAND_INPUT_REST_TICK
+                {
                     // 1拍目の COMMAND_INPUT_REST_TICK 後に、フレーズを再生
                     let autoload = self.auto_load_buffer.clone();
                     self.send_loaddata_to_elapse(graphmsg, InputTextType::Phrase, true, autoload.0);
-                    self.auto_load_state = 2;
-                } else if self.auto_load_state == 2 && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK {
+                    self.auto_load_state = AutoLoadState::PhraseLoaded;
+                } else if self.auto_load_state == AutoLoadState::PhraseLoaded
+                    && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK
+                {
                     // 小節終わりの COMMAND_INPUT_REST_TICK 前に、リアルタイムメッセージを再生
                     let autoload = self.auto_load_buffer.clone();
-                    self.send_loaddata_to_elapse(graphmsg, InputTextType::Realtime, true, autoload.0);
+                    self.send_loaddata_to_elapse(
+                        graphmsg,
+                        InputTextType::Realtime,
+                        true,
+                        autoload.0,
+                    );
                     self.next_msr_tick = autoload.1;
-                    self.auto_load_state = 0;
+                    self.auto_load_state = AutoLoadState::BeforeLoading;
                 }
             }
         }
@@ -466,7 +519,7 @@ impl InputText {
                 _ => true,
             }
         };
-        let mut something_loaded = false;
+        let mut some_loaded = false;
         for (i, onecmd) in loaded.iter().enumerate() {
             if is_fitting_command(txt_type, onecmd) {
                 if playable {
@@ -475,10 +528,10 @@ impl InputText {
                     let time = format!("  >> History: {:05} ", i);
                     self.set_history(time, onecmd.clone(), None);
                 }
-                something_loaded = true;
+                some_loaded = true;
             }
         }
-        if something_loaded {
+        if some_loaded {
             self.scroll_lines.push((
                 TextAttribute::Answer,
                 "".to_string(),
