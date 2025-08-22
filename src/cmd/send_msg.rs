@@ -23,9 +23,11 @@ impl MessageSender {
     pub fn send_all_vari_and_phrase(&self, part: usize, gdt: &SeqDataStock) {
         for i in 0..MAX_VARIATION {
             if i == 0 {
-                // Normal の場合、Phrase が空でない場合のみ送信
-                if !gdt.get_pdstk(part, PhraseAs::Normal).get_phr().is_empty() {
-                    self.send_phrase_to_elapse(part, PhraseAs::Normal, gdt);
+                // Normal の場合、Phrase が空でない、do_loop の場合のみ送信
+                if let Some(pdt) = gdt.get_pdstk(part, PhraseAs::Normal) {
+                    if !pdt.get_phr().is_empty() {
+                        self.send_phrase_to_elapse(part, PhraseAs::Normal, gdt);
+                    }
                 }
             } else {
                 self.send_phrase_to_elapse(part, PhraseAs::Variation(i), gdt);
@@ -33,10 +35,9 @@ impl MessageSender {
         }
     }
     pub fn send_phrase_to_elapse(&self, part: usize, vari: PhraseAs, gdt: &SeqDataStock) {
-        let pdt = gdt
-            .get_pdstk(part, vari.clone())
-            .get_final(part as i16, vari);
-        self.send_msg_to_elapse(pdt);
+        if let Some(pdt) = gdt.get_pdstk(part, vari.clone()) {
+            self.send_msg_to_elapse(pdt.get_final(part as i16, vari));
+        }
     }
     pub fn clear_phrase_to_elapse(&self, part: usize) {
         self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16));

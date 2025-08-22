@@ -47,13 +47,17 @@ impl SeqDataStock {
             bpm: DEFAULT_BPM,
         }
     }
-    pub fn get_pdstk(&self, part: usize, vari: PhraseAs) -> &PhraseDataStock {
+    pub fn get_pdstk(&self, part: usize, vari: PhraseAs) -> Option<&PhraseDataStock> {
         let num = match vari {
             PhraseAs::Normal => 0,
             PhraseAs::Variation(v) => v,
             PhraseAs::Measure(_m) => MAX_VARIATION,
         };
-        &self.pdt[part][num]
+        if self.pdt[part][num].send_enable {
+            Some(&self.pdt[part][num])
+        } else {
+            None
+        }
     }
     pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {
         &self.cdt[part]
@@ -84,6 +88,7 @@ impl SeqDataStock {
                     self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
+                    false,
                 );
                 return Some(false);
             }
@@ -99,6 +104,7 @@ impl SeqDataStock {
                         self.bpm,
                         self.tick_for_onemsr,
                         self.tick_for_beat,
+                        false,
                     );
                 }
             }
@@ -157,6 +163,7 @@ impl SeqDataStock {
                     self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
+                    true,
                 );
             }
         }
@@ -216,6 +223,7 @@ impl SeqDataStock {
                     self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
+                    true,
                 );
             }
         }
@@ -228,6 +236,7 @@ impl SeqDataStock {
                     self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
+                    true,
                 );
             }
             self.cdt[i].set_recombined(self.tick_for_onemsr, self.tick_for_beat);
@@ -252,6 +261,7 @@ pub struct PhraseDataStock {
     atrb: Vec<Option<i16>>,
     do_loop: bool,
     whole_tick: i32,
+    send_enable: bool,
 }
 impl PhraseDataStock {
     fn new(base_note: i32) -> Self {
@@ -265,6 +275,7 @@ impl PhraseDataStock {
             atrb: vec![None],
             do_loop: true,
             whole_tick: 0,
+            send_enable: true,
         }
     }
     pub fn _get_cmpl_nt(&self) -> &Vec<String> {
@@ -294,6 +305,7 @@ impl PhraseDataStock {
     }
     pub fn set_raw(&mut self, input_text: String, cluster_word: &str) -> bool {
         // 1.raw
+        self.send_enable = true;
         self.raw = input_text.clone();
 
         // 2.complement data
@@ -314,10 +326,9 @@ impl PhraseDataStock {
         bpm: i16,
         tick_for_onemsr: i32,
         tick_for_beat: i32,
+        resend: bool,
     ) {
         if self.cmpl_nt == [""] {
-            #[cfg(feature = "verbose")]
-            println!("no_phrase...");
             //  clear
             self.phr = Vec::new();
             self.ana = Vec::new();
@@ -333,6 +344,13 @@ impl PhraseDataStock {
             self.base_note,
             tick_for_onemsr,
         );
+        if resend && !do_loop {
+            // do_loop が false の場合は、再生しない
+            #[cfg(feature = "verbose")]
+            println!("do_loop is false, not updating phrase data.");
+            self.send_enable = false;
+            return;
+        }
         self.phr = rcmb;
         self.do_loop = do_loop;
         self.whole_tick = whole_tick;
