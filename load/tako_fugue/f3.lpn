@@ -5,6 +5,7 @@ graph.dark
 set.beat(6/8)
 set.bpm(378)
 set.key(G)
+set.input(closer)
 
 !msr(1)
 R2

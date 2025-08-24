@@ -5,6 +5,7 @@ graph.dark
 set.beat(6/8)
 set.bpm(378)
 set.key(G)
+set.input(closer)
 R2
 @msr(1)=[-vd%%,r%%,m%,f,s^,l^,et^^,x,t].dyn(mf)
 @msr(2)=[-qr,er!,+ql,el!].dyn(mf)

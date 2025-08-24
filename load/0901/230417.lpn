@@ -8,6 +8,7 @@ graph.dark
 graph.ripple
 set.bpm(69)
 set.key(Eb)
+set.input(closer)
 L1
 
 [lo]

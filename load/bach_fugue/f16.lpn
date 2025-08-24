@@ -5,6 +5,7 @@ graph.voice
 set.bpm(60)
 set.beat(4/4)
 set.key(Bb)
+set.input(closer)
 
 R1
 set.oct(-1)

@@ -11,6 +11,7 @@ set.bpm(120)
 set.beat(6/8)
 set.key(G)
 set.turnnote(9)
+set.input(closer)
 L1
 
 [ed..,s..].dyn(mf).para().dmp(off)

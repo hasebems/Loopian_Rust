@@ -3,6 +3,7 @@ set.key(D)
 set.bpm(72)
 efct.dmp(80)
 set.turnnote(10)
+set.input(closer)
 L1
 [qd^,ex,s,d!,qd^,es].dyn(mf).para()
 {I/VIm/IIm/VIIb.,V7}

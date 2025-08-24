@@ -8,6 +8,7 @@ clear
 set.key(A)
 set.beat(4/4)
 set.bpm(84)
+set.input(closer)
 
 L1
 [+el,d,m,d%,l,d,m%,d%%].dyn(mp)
@@ -43,13 +44,13 @@ R1
 L1
 [er^,++l,-d,+l%,--s^,++r,ta,r%].dyn(p)
 R1
-[ems,rf,ms,-dm,vrf%......,ms^].dyn(mp)
+[ems,rf,ms,dm,vrf%......,ms^].dyn(mp)
 
 !msr(8)
 L1
 [ed^,++s,-ta,+s%,--f^,++l,-t,+l%].dyn(p)
 R1
-[erf^,dm,rf,-tar%,dm%..,tri%/qtm%..,x//].dyn(mp)
+[erf^,dm,rf,tar%,dm%..,tri%/qtm%..,x//].dyn(mp)
 
 !msr(9)
 L1
@@ -87,13 +88,13 @@ R1
 L1
 [el^,++s,-d,f%,--s^,++f,-ta,m%].dyn(p)
 R1
-[edm,-tar,dm,-sid,vtar%......,dm^].dyn(mp)
+[edm,tar,dm,sid,vtar%......,dm^].dyn(mp)
 
 !msr(16)
 L1
 [ef^,+m,l,-ri%,-m^,+r,m,r%].dyn(p)
 R1
-[eld^,sit,ld,-dl%,q-dl%,-tsi/q-l+l%..,x//].dyn(mp)
+[eld^,sit,ld,-dl%,qdl%,tsi/ql+l%..,x//].dyn(mp)
 
 !msr(17)
 L1
@@ -196,17 +197,17 @@ R2
 L1
 [el^,++s,-d,f%,--s^,++f,-ta,m%].dyn(mp)
 R1
-[edm,-tar,dm,-sid,vtar......,dm].dyn(mp)
+[edm,tar,dm,sid,vtar......,dm].dyn(mp)
 R2
-[edm,-tar,dm,-sid,vtar......,dm].dyn(mp)
+[edm,tar,dm,sid,vtar......,dm].dyn(mp)
 
 !msr(33)
 L1
 [ef^,+m,l,-ri%,-m^,+r,m,r%].dyn(mp)
 R1
-[eld,sit,ld,-dl,q-dl,-tsi/q-l+l..,x//].dyn(mp)
+[eld,sit,ld,-dl,qdl,tsi/ql+l..,x//].dyn(mp)
 R2
-[eld,sit,ld,-dl,q-dl,-tsi/q-l+l..,x//].dyn(mp)
+[eld,sit,ld,-dl,qdl,tsi/ql+l..,x//].dyn(mp)
 
 !msr(34)
 L1
@@ -356,9 +357,9 @@ R2
 L1
 [el^^,++s,-d,f%,--s^^,++f,-ta,m%].dyn(mf)
 R1
-[edm,-tar,dm,-sid,vtar......,dm].dyn(mp)
+[edm,tar,dm,sid,vtar......,dm].dyn(mp)
 R2
-[edm,-tar,dm,-sid,vtar......,dm].dyn(mp)
+[edm,tar,dm,sid,vtar......,dm].dyn(mp)
 
 !msr(63)
 L1
@@ -366,9 +367,9 @@ L1
 L2
 [hx,ex,ri%,m,mi^].dyn(mp)
 R1
-[eld,sit,ld,-dl,q-dl%,-tsi%/q-l+l%..,x//].dyn(mp)
+[eld,sit,ld,-dl,qdl%,tsi%/ql+l%..,x//].dyn(mp)
 R2
-[eld,sit,ld,-dl,q-dl%,-tsi%/q-l+l%..,x//].dyn(mp)
+[eld,sit,ld,-dl,qdl%,tsi%/ql+l%..,x//].dyn(mp)
 
 !msr(64)
 L1

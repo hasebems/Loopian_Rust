@@ -10,6 +10,7 @@ graph.voice
 set.beat(4/4)
 set.key(Gb)
 set.bpm(102)
+set.input(closer)
 R1
 
 [emst^,mst,msl,mst%,x...].dyn(mp)

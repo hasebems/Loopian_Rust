@@ -5,6 +5,7 @@ graph.dark
 set.beat(4/4)
 set.bpm(60)
 set.key(C)
+set.input(closer)
 
 R1
 [ex,d^^,r^,m^,vf^..,ws,f,em,l/-r,vs..,l,s,f,m,f,m,r,d,r,d,t/]+

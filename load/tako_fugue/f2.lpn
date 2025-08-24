@@ -5,6 +5,7 @@ graph.dark
 set.beat(2/4)
 set.bpm(116)
 set.key(C)
+set.input(closer)
 
 L2
 [<++vl^,t>,ed,-m,+d/<vsi^,l>,et,-r,+t/-d,+t,-t,+l/s,-l,<vsi,fi>,esi].dyn(mp).stacc()

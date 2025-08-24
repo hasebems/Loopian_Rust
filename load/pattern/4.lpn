@@ -3,6 +3,7 @@ set.bpm(166)
 set.key(Eb)
 set.beat(3/4)
 efct.dmp(127)
+set.input(closer)
 L2
 @c=-lrfsd
 [qc^,c,c%].dyn(pp).dmp(off).stacc(70)

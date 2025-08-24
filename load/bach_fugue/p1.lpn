@@ -6,6 +6,7 @@ graph.voice
 set.key(C)
 set.beat(4/4)
 set.bpm(66)
+set.input(closer)
 
 R1
 {O}
@@ -109,7 +110,7 @@ R1
 
 !msr(34)
 rit.bar(2)
-[--vd,+t,++s,t,r^,f^,r^,t,r,t,s,t,-r,f%,m%,r%/--d-dms+d%%o//].dyn(p)
+[--vd,+t,++s,t,r^,f^,r^,t,r,t,s,t,-r,f%,m%,r%/--d+dms+d%%o//].dyn(p)
 
 !msr(37)
 fine
