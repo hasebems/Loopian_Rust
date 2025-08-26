@@ -196,7 +196,10 @@ impl PhraseLoop {
         let mut same_time_stuck = Vec::new();
         for note in ev.notes.iter() {
             let (trans_note, deb_txt) = self.translate_note(rt_tbl, *note, next_tick);
-            if !same_time_stuck.iter().any(|x: &(u8, String)| x.0 == trans_note) {
+            if !same_time_stuck
+                .iter()
+                .any(|x: &(u8, String)| x.0 == trans_note)
+            {
                 same_time_stuck.push((trans_note, deb_txt.to_string()));
             }
         }
@@ -397,7 +400,7 @@ impl PhraseLoop {
                     self.flt.turnon_floating();
                 }
             }
-            _ => ()
+            _ => (),
         }
     }
 }

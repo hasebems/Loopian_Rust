@@ -144,7 +144,10 @@ impl DamperPart {
                 // もし長さが違ったら、エラー
                 println!(
                     "<<< part{}/beat{}: {}->{}",
-                    part_num, beat_num, chord_map.len(), ba.len()
+                    part_num,
+                    beat_num,
+                    chord_map.len(),
+                    ba.len()
                 );
                 panic!("DamperPart::merge_chord_map: length mismatch");
             }

@@ -633,9 +633,7 @@ impl LoopianCmd {
             rit_txt.remove(0);
         }
 
-        println!(
-            "Rit,strength:{strength_value}, bar:{bar_num}, after:{aft_rit}",
-        );
+        println!("Rit,strength:{strength_value}, bar:{bar_num}, after:{aft_rit}",);
         self.sndr
             .send_msg_to_elapse(ElpsMsg::Rit([strength_value + bar_num * 10, aft_rit]));
 

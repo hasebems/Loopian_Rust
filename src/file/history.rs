@@ -231,7 +231,8 @@ impl History {
         if crnt_msr != 0 {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
-                if msr_exists(ctxt) { // !msr() の場合
+                if msr_exists(ctxt) {
+                    // !msr() の場合
                     if let Some(msr) = extract_number_from_parentheses(ctxt) {
                         if msr >= crnt_msr {
                             next_msr_tick = Some(CrntMsrTick {
@@ -269,7 +270,8 @@ impl History {
         if crnt_msr != 0 {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
-                if msr_exists(ctxt) { // !msr() の場合
+                if msr_exists(ctxt) {
+                    // !msr() の場合
                     if let Some(msr) = extract_number_from_parentheses(ctxt) {
                         if msr == crnt_msr {
                             sw = true;

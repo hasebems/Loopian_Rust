@@ -434,7 +434,9 @@ fn break_up_nt_dur_vel(
         match imd {
             InputMode::Fixed => {
                 doremi = convert_doremi_fixed(nt.to_string());
-                if i > 0 {break;}
+                if i > 0 {
+                    break;
+                }
             }
             InputMode::Closer => {
                 if i == 0 {

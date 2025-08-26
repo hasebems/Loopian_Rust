@@ -123,7 +123,8 @@ impl CnvFile {
                 empty_msr += 1;
             }
             msr += 1;
-            if empty_msr > 100 { // 連続する情報のない小節が100を超えた場合、終了したとみなす
+            if empty_msr > 100 {
+                // 連続する情報のない小節が100を超えた場合、終了したとみなす
                 println!("Final Measure: {}", msr - 100);
                 break;
             }
