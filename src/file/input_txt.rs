@@ -275,7 +275,7 @@ impl InputText {
             self.auto_load_buffer = (vec![], None);
             self.auto_load_state = AutoLoadState::BeforeLoading;
             let loaded = self.history.get_from_mt_to_next(CrntMsrTick::default());
-            self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0);
+            self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0, Some(1));
             self.next_msr_tick = loaded.1;
         }
         self.set_command(itxt, graphmsg);
@@ -429,7 +429,7 @@ impl InputText {
     fn input_history(&mut self, graphmsg: &mut Vec<GraphicMsg>) {
         self.clear_loaded_data();
         let loaded = self.history.get_from_mt_to_next(CrntMsrTick::default());
-        self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, false, loaded.0);
+        self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, false, loaded.0, None);
         self.next_msr_tick = loaded.1;
     }
     /// !msr() で指定された小節までのデータをロード
@@ -441,7 +441,7 @@ impl InputText {
         };
         let loaded = self.history.get_from_0_to_mt(mt);
         if !loaded.0.is_empty() {
-            self.send_loaddata_to_elapse(graphmsg, InputTextType::Realtime, true, loaded.0);
+            self.send_loaddata_to_elapse(graphmsg, InputTextType::Realtime, true, loaded.0, None);
         } else {
             self.scroll_lines.push((
                 TextAttribute::Answer,
@@ -453,7 +453,13 @@ impl InputText {
         self.next_msr_tick = loaded.1;
         let loaded = self.history.get_from_mt(mt);
         if !loaded.0.is_empty() {
-            self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0);
+            self.send_loaddata_to_elapse(
+                graphmsg,
+                InputTextType::Any,
+                true,
+                loaded.0,
+                Some(msr as i32),
+            );
         }
 
         // 小節番号を設定する
@@ -476,7 +482,13 @@ impl InputText {
                 {
                     // 1拍目の COMMAND_INPUT_REST_TICK 後に、フレーズを再生
                     let autoload = self.auto_load_buffer.clone();
-                    self.send_loaddata_to_elapse(graphmsg, InputTextType::Phrase, true, autoload.0);
+                    self.send_loaddata_to_elapse(
+                        graphmsg,
+                        InputTextType::Phrase,
+                        true,
+                        autoload.0,
+                        Some(next_mt.msr),
+                    );
                     self.auto_load_state = AutoLoadState::PhraseLoaded;
                 } else if self.auto_load_state == AutoLoadState::PhraseLoaded
                     && crnt.tick_for_onemsr - crnt.tick < Self::COMMAND_INPUT_REST_TICK
@@ -488,6 +500,7 @@ impl InputText {
                         InputTextType::Realtime,
                         true,
                         autoload.0,
+                        None,
                     );
                     self.next_msr_tick = autoload.1;
                     self.auto_load_state = AutoLoadState::BeforeLoading;
@@ -497,8 +510,12 @@ impl InputText {
     }
     /// ロードされたファイルの内容を Elapse Engine に送る
     fn is_fitting_command(ttype: InputTextType, onecmd: &str) -> bool {
-        let cnd = onecmd.chars().any(|c| c == '[') || onecmd.chars().any(|c| c == ']') ||
-            onecmd.contains("L1") || onecmd.contains("L2") || onecmd.contains("R1") || onecmd.contains("R2");
+        let cnd = onecmd.chars().any(|c| c == '[')
+            || onecmd.chars().any(|c| c == ']')
+            || onecmd.contains("L1")
+            || onecmd.contains("L2")
+            || onecmd.contains("R1")
+            || onecmd.contains("R2");
         match ttype {
             InputTextType::Phrase => cnd,
             InputTextType::Realtime => !cnd,
@@ -511,16 +528,26 @@ impl InputText {
         txt_type: InputTextType,
         playable: bool,
         loaded: Vec<String>,
+        next_msr: Option<i32>,
     ) {
+        let mut answer: bool = false;
         for (i, onecmd) in loaded.iter().enumerate() {
             if Self::is_fitting_command(txt_type, onecmd) {
                 if playable {
                     self.one_command(onecmd.clone(), graphmsg, false);
+                    answer = true;
                 } else {
                     let time = format!("  >> History: {:05} ", i);
                     self.set_history(time, onecmd.clone(), None);
                 }
             }
+        }
+        if answer && next_msr.is_some() {
+            self.scroll_lines.push((
+                TextAttribute::Answer,
+                "".to_string(),
+                format!("Played data at Measure {}.", next_msr.unwrap_or(0)),
+            ));
         }
     }
     //*******************************************************************
