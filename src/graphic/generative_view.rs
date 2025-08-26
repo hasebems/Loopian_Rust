@@ -9,6 +9,7 @@ use super::draw_graph::*;
 use super::guiev::*;
 use super::view_beatlissa::*;
 use super::view_fish::*;
+use super::view_jumping::*;
 use super::view_lissajous::*;
 use super::view_raineffect::*;
 use super::view_sinewave::*;
@@ -29,9 +30,10 @@ pub enum GraphicPattern {
     SineWave,
     RainEffect,
     SchoolOfFish,
+    Jumping,
 }
 pub struct GraphicPatternName(pub GraphicPattern, pub GraphicMsg, pub &'static str);
-pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 8] = [
+pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 9] = [
     GraphicPatternName(GraphicPattern::Ripple, GraphicMsg::RipplePattern, "ripple"),
     GraphicPatternName(GraphicPattern::Voice4, GraphicMsg::VoicePattern, "voice"),
     GraphicPatternName(
@@ -63,6 +65,11 @@ pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 8] = [
         GraphicPattern::SchoolOfFish,
         GraphicMsg::FishPattern,
         "fish",
+    ),
+    GraphicPatternName(
+        GraphicPattern::Jumping,
+        GraphicMsg::JumpingPattern,
+        "jumping",
     ),
 ];
 
@@ -151,8 +158,12 @@ pub fn get_view_instance(
             view = Some(Box::new(RainEffect::new(gmode)));
         }
         GraphicMsg::FishPattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[6].0);
+            gptn = Some(GRAPHIC_PATTERN_NAME[7].0);
             view = Some(Box::new(SchoolOfFish::new()));
+        }
+        GraphicMsg::JumpingPattern => {
+            gptn = Some(GRAPHIC_PATTERN_NAME[8].0);
+            view = Some(Box::new(Jumping::new()));
         }
         _ => {
             gptn = None;

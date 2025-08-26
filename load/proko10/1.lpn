@@ -3,6 +3,7 @@ set.key(Ab)
 set.meter(2/4)
 set.bpm(100)
 set.input(upcloser)
+graph.jumping
 
 !msr(1)
 L1.[+edf,x,-lm,x/tar,x,-mr,x/-s+s,x,-fi+fi,x/-qf,+e'f,-vm//].dyn(p)

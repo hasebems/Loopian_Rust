@@ -3,6 +3,7 @@ pub mod generative_view;
 pub mod guiev;
 pub mod view_beatlissa;
 pub mod view_fish;
+pub mod view_jumping;
 pub mod view_lissajous;
 pub mod view_raineffect;
 pub mod view_sinewave;

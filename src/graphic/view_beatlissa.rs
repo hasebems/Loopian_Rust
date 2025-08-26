@@ -77,6 +77,7 @@ impl GenerativeView for BeatLissa {
     }
     /// Beat 演奏情報を受け取る
     fn on_beat(&mut self, bt: i32, tm: f32, dt: f32) {
+        let draw_time = dt + 0.1;
         self.beat = bt;
         if bt == 0 {
             self.measure_position += 1;
@@ -92,7 +93,7 @@ impl GenerativeView for BeatLissa {
                 let loc = self.obj_locate[self.bobj.len()];
                 self.bobj.push(Box::new(BeatLissaObj::new(
                     tm,
-                    dt,
+                    draw_time,
                     loc.x,
                     loc.y,
                     SQUARE_SIZE,
@@ -105,7 +106,7 @@ impl GenerativeView for BeatLissa {
             };
             self.bobj.push(Box::new(BeatLissaObj::new(
                 tm,
-                dt * self.max_obj_inline as f32,
+                draw_time * self.max_obj_inline as f32,
                 0.0,
                 0.0,
                 SQUARE_BIG_SIZE,

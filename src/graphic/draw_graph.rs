@@ -177,7 +177,7 @@ impl Graphic {
                             .parse::<f32>()
                             .unwrap_or(100.0)
                             .clamp(20.0, 300.0); // 20 - 300 bpm の範囲
-                        let draw_time = (60.0 / bpm) + 0.1;
+                        let draw_time = 60.0 / bpm; // 一拍あたりの描画時間
                         if let Some(sv) = self.svce.as_mut() {
                             sv.on_beat(beat, crnt_time, draw_time);
                         }
