@@ -546,7 +546,7 @@ impl InputText {
             self.scroll_lines.push((
                 TextAttribute::Answer,
                 "".to_string(),
-                format!("Played data at Measure {}.", next_msr.unwrap_or(0)),
+                format!("Transferred to play measure {}", next_msr.unwrap_or(0)),
             ));
         }
     }
