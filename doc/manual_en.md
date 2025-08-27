@@ -1,4 +1,8 @@
+
 # Loopian Reference Manual
+
+[Japanese Version is here](manual.md)
+
 
 ## Table of Contents
 
@@ -18,9 +22,11 @@
     - [Basic Format](#basic-format)
     - [Pitch Specification Methods](#pitch-specification-methods)
     - [Note Value Specification](#note-value-specification)
+    - [Anacrusis Expression Function](#anacrusis-expression-function)
     - [Note Volume and Articulation Specification](#note-volume-and-articulation-specification)
     - [Function Notation Following Phrases](#function-notation-following-phrases)
     - [Dynamic Pattern](#dynamic-pattern)
+    - [Cluster Memory Function](#cluster-memory-function)
     - [Multiple Phrase Addition Input Function](#multiple-phrase-addition-input-function)
 - [Composition Specification](#composition-specification)
     - [Composition Basic Format](#composition-basic-format)
@@ -49,11 +55,12 @@
 
 ## What is Loopian
 
-Loopian is a text-input piano sequencer developed for use in Live Coding and similar applications.
-It has the following features:
-- Text is input line by line in Input Windows to specify phrases and chords, as well as commands to control the overall performance
-- Automatically calculates velocity, pitch in chord conversion, and damper pedal for somewhat natural performance
-- Phrases are specified using movable-do notation
+Loopian is a text-input piano sequencer developed for live coding and similar use cases. It has the following features:
+
+- You can specify phrases, chords, and overall performance control commands by entering a single line of text.
+- For more natural performance, velocity, pitch in chord conversion, and damper pedal are automatically calculated and controlled.
+- Pitches are specified using movable-do notation.
+- By automatically loading files, sequence data can be played back automatically.
 
 This document explains all features of Loopian.
 
@@ -64,6 +71,8 @@ This document explains all features of Loopian.
 - composition: Chord/Scale information that modifies sounds when applied to phrases
 - loop: Loopian basically repeats phrase/composition. This is the unit of repetition.
 - part: Four independent Loop playbacks are possible for phrase/composition. A set of phrase and composition is called a part.
+- note value: The length of a note
+- reference note value: If you specify a note value once, subsequent notes will inherit that value until another is specified. This is called the reference note value.
 
 <img src="./image/design_part.png" width="80%">
 
@@ -71,62 +80,66 @@ This document explains all features of Loopian.
 
 ### How to Start
 
-1. Open terminal
-2. Navigate to Loopian folder
-`cd /path/to/loopian`
-
-3. Launch application
-`./loopian`
-
-4. When launching with options:
-- Server mode: `./loopian --server`
-
-5. When launching from compiler:
-- For Raspberry Pi 5: `cargo build --features raspi`
-- With detailed logs: `cargo build --features verbose`
+1. Open a terminal
+2. Move to the Loopian folder
+   ```
+   cd /path/to/loopian
+   ```
+3. Start the application
+   ```
+   ./loopian
+   ```
+4. To start with options:
+   - Server mode: `./loopian --server`
+5. To start from compiler:
+   - For Raspberry Pi 5: `cargo build --features raspi`
+   - With detailed logs: `cargo build --features verbose`
 
 ### Command Input
 
 <img src="./image/v050_exp.png" width="70%">
 
-- When the app is launched, the following command prompt appears in the Input Window at the bottom of the screen:
-    - `NNN: L1>` : Command prompt.
-- "NNN:" indicates the current position in the command history. Once it exceeds 999, the display resets to 000, but previous history is retained.
-- "L1>" indicates that the input state is set to Left 1.
-- Enter commands or phrases at the cursor position following this prompt and press Return to confirm.
+- When the application is launched, an input prompt like below appears in the Input Window at the bottom of the screen:
+    - `NNN: L1>` : Input prompt
+- NNN: Indicates the current position in the command history. When it exceeds 999, the display resets to 000, but previous history is retained.
+- L1>: Indicates that the input state is Left 1.
+- Enter commands or phrases at the cursor position after the prompt and press Return to confirm.
 - Use the left/right arrow keys to move the cursor during input.
-- Use the up/down arrow keys to recall previous inputs. (To prevent accidental manipulation, history recall is only available when the cursor is at the far left.)
+- Use the up/down arrow keys to recall previous inputs. (To prevent accidental operation, history recall is only available when the cursor is at the far left.)
 - In Loopian, pressing the space bar is automatically converted to a dot (`.`).
 
 ### Screen Display
 
 - After text entered in the Input Window is confirmed by pressing Return, it is added to the bottom line of the Scroll Text.
 - The text added to the Scroll Text will scroll once it exceeds the number of display lines.
+    - You can recall any line in the Scroll Text using the up/down arrow keys.
+    - If you move the cursor to the right of the line head with the left/right keys, the recall operation will not work.
 - The Status Indicator at the top of the screen displays the following information:
-    - `>M:B:TTT`: Indicates that playback is in progress by showing the measure number (M), beat (B), and the tick (TTT) within the beat.
+    - `>M:B:TTT`: Indicates that playback is in progress, showing the measure number (M), beat (B), and the tick (TTT) within the beat.
     - `bpm:BBB`: Displays the current tempo.
     - `meter:N/D`: Displays the current time signature.
     - `key:N`: Displays the current key.
-    - `R2 ---`: Displays each part’s playback position (position within the loop / total measures in the loop) and chord information.
+    - `R2 ---`: Shows each part's playback position (position within the loop / total measures in the loop) and chord information.
         - If the position within the loop is `-1`, it indicates that a new Phrase is queued.
+- Any graphic pattern can be displayed in the background, and you can change this pattern.
 
 ### Exiting
 
-- Enter `!quit` or `!q` in the Input Window and press return to exit the application
-- You can also exit by pressing the window's close button
-    - However, log files will not be recorded in this case
+- Enter `!quit` or `!q` in the Input Window and press return to exit the application.
+- You can also exit by pressing the window's close button.
+    - However, log files will not be recorded in this case.
 
 ### Environment for Sound Output
 
-- Since Loopian only outputs MIDI, a separate sound source is required
-- You can select either PC internal MIDI sound sources or external MIDI sound sources, configured in setting.toml located in the same folder as Loopian
-    - Change the [midi] midi_out in setting.toml to the name of the desired connection before launching Loopian (described later)
+- Loopian only outputs MIDI, so a separate sound source is required.
+- You can select either a PC internal MIDI sound source or an external MIDI sound source, configured in `setting.toml` located in the same folder as Loopian.
+    - Change the `[midi] midi_out` in `setting.toml` to the name of the desired connection before launching Loopian (see later section).
     - Verified PC sound sources:
         - On Mac, verified with the following applications:
             - Garage Band / Logic: DAW for MIDI performance on Mac by Apple
-            - Pianoteq8: Physical engine-based Piano sound source by MODARTT
+            - Pianoteq8: Physical modeling piano sound source by MODARTT
         - On Windows, verified with Microsoft GS Wavetable Synth
-- Real-time performance is also possible by connecting a dedicated MIDI Controller (such as Loopian::ORBIT)
+- Real-time performance is also possible by connecting a dedicated MIDI Controller (such as Loopian::ORBIT).
 
 ## Basic Operation Commands
 
@@ -145,11 +158,12 @@ This document explains all features of Loopian.
 * `left2` or `L2`: Set input part to left2
 * `right1` or `R1`: Set input part to right1
 * `right2` or `R2`: Set input part to right2
-* The figure below shows octave specification methods for each part
+* The figures below show octave specification methods for each part
 
 <img src="./image/design_octfixed.png" width="70%">
 
 <img src="./image/design_octcloser.png" width="70%">
+
 
 ## Tempo, Time Signature, Key and Other Settings
 
@@ -167,6 +181,7 @@ This document explains all features of Loopian.
 - `set.input(fixed)`: Method for determining octave when inputting scale degrees
     - `fixed`: Input scale degrees are absolute positions (d-t within same octave)
     - `closer`: Without +- indication, uses pitch close to previous note (-5..6) (default)
+    - `upcloser`: Without +- indication, uses range one octave above previous note (0..11)
 - `set.samenote(modeling)`: Behavior for repeated notes
     - `modeling`: For modeling sound sources, note off is sent only once (default)
     - `common`: For general MIDI sound sources, note off is sent as many times as note on
@@ -188,8 +203,8 @@ This document explains all features of Loopian.
 
 ### Pitch Specification Methods
 - Pitches are expressed in movable-do notation
-    - Adding i raises by a semitone
-    - Adding a lowers by a semitone
+    - Adding i raises by a semitone (e.g. di)
+    - Adding a lowers by a semitone (e.g. da)
 
 |Scale Degree|Do|Re|Mi|Fa|So|La|Ti|
 |-|-|-|-|-|-|-|-|
@@ -199,23 +214,25 @@ This document explains all features of Loopian.
 
 - When setting the octave of a pitch, there are two approaches: relative octave and absolute octave
     - In relative octave specification (input(closer)), if going to the nearest up/down, nothing is written. If not nearby, specify as follows:
-        - `-d`: (Not nearby) lower Do
-        - `+d`: (Not nearby) upper Do
-        - `--d`: Two octaves down
-        - `++d`: Two octaves up
+        - `-d`: lower Do
+        - `+d`: upper Do
+        - `--d`: two octaves down
+        - `++d`: two octaves up
     - In absolute octave specification (input(fixed)), `d-t` are included in the same octave, and nothing is written if within the part's default octave
         - Add `+` before the pitch for octaves above default
         - Similarly, add `-` before the pitch for octaves below default
+    - In upcloser mode, the range is always one octave above the previous note (0..11)
     - Relative or absolute can be changed with `set.input` (default is input(closer))
+    - For chord input, absolute octave cannot be used
+    - In closer/upcloser, the lowest note of the current chord is compared to the previous chord to determine octave notation
 
-- Note connections
+- Note connections and symbols
     - `x`: Rest
     - `,`: Note separator. Content exceeding one measure is discarded. Consecutive separators are treated as omitted rests
     - `|` or `/`: Measure separator. Consecutive separators are treated as omitted rests
     - `dms`: Simultaneous playback (write notes consecutively)
         - Write pitches in order from lowest to highest
-        - When adding `+`, the note becomes one octave higher than without `+`
-        - When written as `[i,jkl,m]`, the relative distance from previous note is considered for i->j, and from subsequent note for l->m, to determine whether to add `+,-` before j,m
+        - `[d+d]`: Do and the Do one octave above (when specifying relative octave)
     - `d*4`: Play Do four times consecutively
 
 ### Note Value Specification
@@ -227,7 +244,9 @@ This document explains all features of Loopian.
 - `e` eighth note (example: `[em,r,d,r,qm,r]`)
 - `v` sixteenth note (example: `[em,vr,d,et,vd,r,em,vr,d,t,d,r,d]`)
 - `w` thirty-second note
-- `[3ed,r,m]`: Writing 3 before ' creates triplet note value
+- `w(N)`: Specify arbitrary tick value for ornamental notes, etc. (N is tick count)
+    - `[w(24)d,r,m,f,s]`: Play five notes d,r,m,f,s at equal intervals within a sixteenth note
+- `[3ed,r,m]`: Writing 3 before e creates triplet note value
     - Similarly, quintuplets are possible
     - Similarly, 3q for two-beat triplet
 - `[h'd]` `[q'd]`: Writing h before ' creates dotted half note, q creates dotted quarter note
@@ -238,11 +257,12 @@ This document explains all features of Loopian.
 - `hd_e`: Tie half note and eighth note
     - Can cross measures like `qd/_e` (tie)
     - Reference note value changes to the note value of the note after the tie
-- Anacrusis expression function
-    - Writing `[An:....]` at the beginning with n representing any beat allows writing phrases that start from that beat as anacrusis
-    - `[A3:d,r/m,f,s,t/d]`: Rest for two beats, then the phrase starts from the third beat
-    - The anacrusis measure overlaps with the last measure of the previous phrase
-    - **<Note!>** For phrases following an anacrusis phrase, care must be taken as the anacrusis phrase will start if input is made after the last measure. Input should be made earlier or use `//` with the anacrusis phrase to prevent repetition
+
+### Anacrusis Expression Function
+- `[An:.....]`: At the beginning, writing A and any beat number allows you to write a phrase that starts from that beat as an anacrusis.
+- `[A3:d,r/m,f,s,t/d]`: Rest for two beats, then the phrase starts from the third beat
+- The anacrusis measure overlaps with the last measure of the previous phrase
+- **<Note!>** For phrases following an anacrusis phrase, care must be taken as the anacrusis phrase will start if input is made after the last measure. Input should be made earlier or use `//` with the anacrusis phrase to prevent repetition
 
 ### Note Volume and Articulation Specification
 - `d^`: Adding `^` after a scale degree increases volume. Multiple can be added
@@ -299,7 +319,7 @@ This document explains all features of Loopian.
     - After `[aaa]+`, inputting `[bbb]` will be treated as `[aaabbb]` and generate playback data
     - Since strings are simply concatenated, you need `,` or `/` after `c` in cases like `[a,b,c,]+`
 - If you input rpt()+ at the end like `[ax].rpt(2)+`, it will be treated as `[axaxax]`
-    - Will result in error if used with part specification like `L1.[...]+`
+    - If you use part specification like `L1.[...]+`, it will result in an error
 
 ## Composition Specification
 
@@ -404,7 +424,7 @@ This document explains all features of Loopian.
 
 ### Phrase Parallel Specification
 - During chord conversion, the Phrase moves in parallel according to the root
-- For `{IV}`, the entire Phase moves a perfect fourth before chord note conversion occurs
+- For `{IV}`, the entire Phrase moves a perfect fourth before chord note conversion occurs
 - Note-by-note chord conversion specification is possible
     - `[>d,s,d,m,d,>>s]`: `>` indicates parallel movement, `>>` means no conversion
     - To specify multiple notes as parallel, enclose them in `< >p`
