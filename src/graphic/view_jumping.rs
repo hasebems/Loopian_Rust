@@ -8,6 +8,21 @@ use crate::graphic::generative_view::GenerativeView;
 use crate::lpnlib::GraphMode;
 use nannou::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ObjectType {
+    Circle,
+    Square,
+    Triangle,
+}
+impl ObjectType {
+    fn random() -> Self {
+        match random_range(0, 3) {
+            0 => Self::Circle,
+            1 => Self::Square,
+            _ => Self::Triangle,
+        }
+    }
+}
 //*******************************************************************
 //      Screen Graphic
 //*******************************************************************
@@ -17,6 +32,8 @@ pub struct Jumping {
     crnt_bt: i32,
     x_normalized: f32,
     y_normalized: f32,
+    amplitude: f32,
+    vel_move: Vec<f32>, 
     obj: Vec<JumpingObject>,
 }
 impl Jumping {
@@ -27,6 +44,8 @@ impl Jumping {
             crnt_bt: 0,
             x_normalized: 0.0,
             y_normalized: 0.0,
+            amplitude: 1.0,
+            vel_move: Vec::new(),
             obj: Vec::new(),
         }
     }
@@ -50,14 +69,20 @@ impl GenerativeView for Jumping {
             self.x_normalized = dt / 2.0;
             self.y_normalized = pow(dt / 2.0, 2);
             //println!("*** Jumping Beat: {bt}, time: {tm}, dt: {dt}");
-            if bt % 2 == 0 {
-                self.obj.push(JumpingObject::new(
-                    tm,
-                    self.rs.get_full_size_x() / 2.0,
-                    self.rs.get_full_size_y() / 2.0,
-                ));
-            }
+            self.obj.push(JumpingObject::new(
+                tm,
+                self.rs.get_full_size_x() / 2.0,
+                self.rs.get_full_size_y() / 2.0,
+                self.amplitude,
+            ));
         }
+    }
+    fn note_on(&mut self, _nt: i32, vel: i32, _pt: i32, _tm: f32) {
+        self.vel_move.push((vel as f32) / 127.0);
+        if self.vel_move.len() > 5 {
+            self.vel_move.remove(0);
+        }
+        self.amplitude = self.vel_move.iter().sum::<f32>() / self.vel_move.len() as f32;
     }
     fn set_mode(&mut self, _mode: GraphMode) {}
     fn disp(
@@ -84,23 +109,25 @@ pub struct JumpingObject {
     x_multify: f32,
     y_multify: f32,
     radius: f32,
-    obj_type: usize,
+    size: f32,
+    obj_type: ObjectType,
     pub over_bounds: bool,
 }
 impl JumpingObject {
     const BASE_Y_AXIS: f32 = -200.0;
 
-    pub fn new(crnt_time: f32, x_limit: f32, y_limit: f32) -> Self {
+    pub fn new(crnt_time: f32, x_limit: f32, y_limit: f32, amplitude: f32) -> Self {
         Self {
             x_axis: 0.0,
             y_axis: 0.0,
             start_time: crnt_time,
             x_limit,
             y_limit,
-            x_multify: random_range(200.0, 500.0),
-            y_multify: random_range(100.0, 400.0),
-            radius: random_range(50.0, 150.0),
-            obj_type: random_range(0, 3),
+            x_multify: random_range(200.0, 400.0),
+            y_multify: random_range(100.0, 600.0) * amplitude,
+            radius: random_range(50.0, 180.0) * amplitude,
+            size: random_range(50.0, 180.0) * amplitude,
+            obj_type: ObjectType::random(),
             over_bounds: false,
         }
     }
@@ -120,30 +147,33 @@ impl JumpingObject {
         } else {
             self.radius
         };
-        if self.obj_type == 0 {
+        if self.obj_type == ObjectType::Circle {
             draw.ellipse()
                 .x_y(self.x_axis, self.y_axis)
                 .w_h(self.radius, y_rad.abs())
                 .no_fill()
                 .stroke_weight(2.0)
                 .stroke(WHITE);
-        } else if self.obj_type == 1 {
+        } else if self.obj_type == ObjectType::Square {
             draw.rect()
                 .x_y(self.x_axis, self.y_axis)
-                .w_h(self.radius, y_rad.abs())
+                .w_h(self.size, self.size)
                 .no_fill()
                 .stroke_weight(2.0)
-                .stroke(WHITE);
-        } else if self.obj_type == 2 {
+                .stroke(WHITE)
+                .rotate(-self.x_axis * PI / 400.0);
+        } else if self.obj_type == ObjectType::Triangle {
             draw.tri()
                 .points(
-                    pt2(self.x_axis - self.radius / 2.0, self.y_axis - self.radius / 2.0),
-                    pt2(self.x_axis + self.radius / 2.0, self.y_axis - self.radius / 2.0),
-                    pt2(self.x_axis, self.y_axis + self.radius / 2.0),
+                    pt2(- self.size / 2.0, - self.size / 2.0),
+                    pt2(self.size / 2.0,  - self.size / 2.0),
+                    pt2(0.0, self.size / 2.0),
             )
+            .x_y(self.x_axis, self.y_axis)
             .no_fill()
             .stroke_weight(2.0)
-            .stroke(WHITE);
+            .stroke(WHITE)
+            .rotate(-self.x_axis * PI / 400.0);
         }
     }
 }
