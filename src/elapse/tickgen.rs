@@ -14,6 +14,7 @@ pub struct CrntMsrTick {
     pub msr: i32,
     pub tick: i32,
     pub tick_for_onemsr: i32,
+    pub imaginary_tick: Option<i32>,    // Fermata の時に進む tick (実際には進まない)
 }
 impl Default for CrntMsrTick {
     fn default() -> Self {
@@ -21,6 +22,7 @@ impl Default for CrntMsrTick {
             msr: 0,
             tick: 0,
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+            imaginary_tick: None,
         }
     }
 }
@@ -30,6 +32,7 @@ impl CrntMsrTick {
             msr: NO_DATA, // not during_play
             tick: 0,
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+            imaginary_tick: None,
         }
     }
     pub fn reset(tick_for_onemsr: i32) -> Self {
@@ -37,6 +40,7 @@ impl CrntMsrTick {
             msr: NO_DATA, // not during_play
             tick: 0,
             tick_for_onemsr,
+            imaginary_tick: None,
         }
     }
     pub fn set(msr: i32) -> Self {
@@ -44,6 +48,7 @@ impl CrntMsrTick {
             msr,
             tick: 0,
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
+            imaginary_tick: None,
         }
     }
     pub fn _is_older_than(&self, other: &CrntMsrTick) -> bool {
@@ -83,10 +88,14 @@ pub struct TickGen {
 
     prepare_rit: bool, // rit. 開始準備中
     rit_state: bool,
-    fermata_state: bool, // fermata で止まっている状態
     prm: RitPrm,
     start_mt: CrntMsrTick,
     ritgen: Box<dyn Rit>,
+
+    fermata_state: bool, // fermata で止まっている状態
+    fermata_tps: i32,
+    fermata_start_time: Instant,
+    fermata_tick_inmsr: i32,
 }
 impl TickGen {
     pub fn new(tp: RitType) -> Self {
@@ -111,10 +120,13 @@ impl TickGen {
             crnt_time: Instant::now(),
             prepare_rit: false,
             rit_state: false,
-            fermata_state: false,
             prm: RitPrm::default(),
             start_mt: CrntMsrTick::default(),
             ritgen: rit,
+            fermata_state: false,
+            fermata_tps: 0,
+            fermata_start_time: Instant::now(),
+            fermata_tick_inmsr: 0,
         }
     }
     pub fn change_beat_event(&mut self, tick_for_onemsr: i32, meter: Meter) {
@@ -154,6 +166,8 @@ impl TickGen {
         self.bpm_start_time = time;
         self.bpm = bpm;
         self.bpm_stock = bpm;
+        self.fermata_tps = 0;
+        self.fermata_tick_inmsr = 0;
         if resume {
             self.meter_start_msr = self.crnt_msr;
         } else {
@@ -166,6 +180,10 @@ impl TickGen {
         self.crnt_time = crnt_time;
         if self.rit_state {
             self.gen_rit();
+        } else if self.fermata_state {
+            let diff = self.crnt_time - self.fermata_start_time;
+            self.fermata_tick_inmsr =
+                ((self.fermata_tps as f32) * diff.as_secs_f32()) as i32; // tick_for_beat * self.bpm as f32 * diff.as_secs_f32() / 60.0;
         } else {
             // same bpm
             let tick_from_meter_starts = self.calc_crnt_tick();
@@ -175,14 +193,12 @@ impl TickGen {
                 self.start_rit(self.crnt_time);
             }
         }
+
+        // Gen Event
         let new_msr = self.crnt_msr != former_msr;
         if new_msr && !self.rit_state && (self.bpm != self.bpm_stock) {
             // Tempo Change
             self.change_bpm_event(self.bpm_stock);
-            if self.bpm == 0 {
-                // fermata
-                self.crnt_tick_inmsr = 0;
-            }
         }
         let beat_num = self.crnt_tick_inmsr / self.tick_for_beat;
         let new_beat = if new_msr {
@@ -194,10 +210,20 @@ impl TickGen {
     }
     pub fn get_crnt_msr_tick(&self) -> CrntMsrTick {
         let msr = if self.crnt_msr < 0 { 0 } else { self.crnt_msr }; // 0以上の値にする
-        CrntMsrTick {
-            msr,
-            tick: self.crnt_tick_inmsr,
-            tick_for_onemsr: self.tick_for_onemsr,
+        if self.fermata_state {
+            CrntMsrTick {
+                msr,
+                tick: self.crnt_tick_inmsr,
+                tick_for_onemsr: self.tick_for_onemsr,
+                imaginary_tick: Some(self.fermata_tick_inmsr),
+            }
+        } else {
+            CrntMsrTick {
+                msr,
+                tick: self.crnt_tick_inmsr,
+                tick_for_onemsr: self.tick_for_onemsr,
+                ..Default::default()
+            }
         }
     }
     pub fn set_crnt_msr(&mut self, msr: i32) {
@@ -283,6 +309,18 @@ impl TickGen {
             self.prm = RitPrm::default();
             self.start_mt = CrntMsrTick::default();
             self.bpm = self.bpm_stock;
+            if self.bpm == 0 {
+                // start fermata
+                self.crnt_tick_inmsr = 0;
+                self.fermata_state = true;
+                self.fermata_tps = self.ritgen.get_real_tps();
+                self.fermata_start_time = self.crnt_time;
+                self.fermata_tick_inmsr = 0;
+                println!(
+                    ">>>Fermata Start: tps:{}, bpm:{}",
+                    self.fermata_tps, self.get_real_bpm()
+                );
+            }
         }
     }
     fn is_over(&self, tgt: CrntMsrTick) -> bool {
@@ -300,6 +338,7 @@ impl TickGen {
             msr,
             tick,
             tick_for_onemsr: self.tick_for_onemsr,
+            ..Default::default()
         }
     }
 }
@@ -333,6 +372,7 @@ pub trait Rit {
 
     //  現在の bpm を得る
     fn get_real_bpm(&self) -> i16; // 現在のテンポ
+    fn get_real_tps(&self) -> i32; // 現在の TPS
 }
 
 //*******************************************************************
@@ -399,6 +439,9 @@ impl Rit for RitLinear {
     }
     fn get_real_bpm(&self) -> i16 {
         self.original_bpm as i16 - self.delta_bpm
+    }
+    fn get_real_tps(&self) -> i32 {
+        ((self.original_bpm - self.delta_bpm as f32) * self.bpm2tps) as i32
     }
 }
 impl RitLinear {
@@ -516,6 +559,9 @@ impl Rit for RitLinearPrecise {
     }
     fn get_real_bpm(&self) -> i16 {
         (self.crnt_tps as f32 / self.bpm2tps) as i16
+    }
+    fn get_real_tps(&self) -> i32 {
+        self.crnt_tps
     }
 }
 impl RitLinearPrecise {
@@ -683,6 +729,9 @@ impl Rit for RitSigmoid {
     fn get_real_bpm(&self) -> i16 {
         (self.crnt_tps as f32 / self.bpm2tps) as i16
     }
+    fn get_real_tps(&self) -> i32 {
+        self.crnt_tps
+    }
 }
 impl RitSigmoid {
     pub fn new() -> Self {
@@ -724,6 +773,9 @@ impl Rit for RitCtrl {
         (0, true, true)
     }
     fn get_real_bpm(&self) -> i16 {
+        0
+    }
+    fn get_real_tps(&self) -> i32 {
         0
     }
 }

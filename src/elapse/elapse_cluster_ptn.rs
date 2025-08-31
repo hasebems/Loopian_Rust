@@ -89,11 +89,13 @@ impl ClusterPattern {
                 msr: mst.1,
                 tick: mst.2,
                 tick_for_onemsr: mst.3,
+                ..Default::default()
             },
             &CrntMsrTick {
                 msr: mst.0,
                 tick: 0,
                 tick_for_onemsr: mst.3,
+                ..Default::default()
             },
         );
 
@@ -362,6 +364,7 @@ impl Elapse for ClusterPattern {
                     msr: self.notational_msr,
                     tick: self.notational_tick,
                     tick_for_onemsr: ntcrnt_.tick_for_onemsr,
+                    ..Default::default()
                 };
                 // FloatingTick を使って、次に呼ばれる実際の小節とTickを計算する
                 if let Some(rlcrnt_) = self.flt.convert_to_real(&mt) {

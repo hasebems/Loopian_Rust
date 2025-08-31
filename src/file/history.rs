@@ -204,6 +204,7 @@ impl History {
                         msr: msr.try_into().unwrap_or(0),
                         tick: 0,
                         tick_for_onemsr: 0,
+                        ..Default::default()
                     }),
                 );
             } else {
@@ -217,6 +218,7 @@ impl History {
                 msr: LAST,
                 tick: 0,
                 tick_for_onemsr: 0,
+                ..Default::default()
             }),
         )
     }
@@ -239,6 +241,7 @@ impl History {
                                 msr: (msr as i32),
                                 tick: 0,
                                 tick_for_onemsr: 0,
+                                ..Default::default()
                             });
                             break;
                         }
@@ -254,6 +257,7 @@ impl History {
                 msr: LAST,
                 tick: 0,
                 tick_for_onemsr: 0,
+                ..Default::default()
             });
         }
         (txt_this_time, next_msr_tick)
@@ -281,6 +285,7 @@ impl History {
                                 msr: (msr as i32),
                                 tick: 0,
                                 tick_for_onemsr: 0,
+                                ..Default::default()
                             });
                             break;
                         }

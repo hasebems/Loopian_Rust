@@ -468,6 +468,7 @@ impl Elapse for PhraseLoop {
                     msr,
                     tick,
                     tick_for_onemsr: ntcrnt_.tick_for_onemsr,
+                    ..Default::default()
                 };
                 // FloatingTick を使って、次に呼ばれる実際の小節とTickを計算する
                 if let Some(rlcrnt_) = self.flt.convert_to_real(&mt) {

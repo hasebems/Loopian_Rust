@@ -71,6 +71,7 @@ impl Flow {
                 msr: 0,
                 tick: 0,
                 tick_for_onemsr: 0,
+                ..Default::default()
             },
             raw_state: [NO_DATA; LOCATION_ALL],
             raw_ev: Vec::new(),
