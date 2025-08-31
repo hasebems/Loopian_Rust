@@ -35,6 +35,7 @@ pub struct Jumping {
     amplitude: f32,
     vel_move: Vec<f32>, 
     obj: Vec<JumpingObject>,
+    inverting: bool,
 }
 impl Jumping {
     pub fn new() -> Self {
@@ -47,6 +48,7 @@ impl Jumping {
             amplitude: 1.0,
             vel_move: Vec::new(),
             obj: Vec::new(),
+            inverting: false,
         }
     }
 }
@@ -75,6 +77,15 @@ impl GenerativeView for Jumping {
                 self.rs.get_full_size_y() / 2.0,
                 self.amplitude,
             ));
+            // 時々方向が反転する
+            if self.inverting {
+                self.inverting = false;
+            } else if random_f32() < 0.1 {
+                self.inverting = true;
+            }
+            self.obj.iter_mut().for_each(|o| {
+                o.jump(self.inverting, tm);
+            });
         }
     }
     fn note_on(&mut self, _nt: i32, vel: i32, _pt: i32, _tm: f32) {
@@ -103,7 +114,9 @@ impl GenerativeView for Jumping {
 pub struct JumpingObject {
     x_axis: f32,
     y_axis: f32,
-    start_time: f32,
+    _start_time: f32,
+    last_jumping_time: f32,
+    last_jumping_x: f32,
     x_limit: f32,
     y_limit: f32,
     x_multify: f32,
@@ -118,9 +131,11 @@ impl JumpingObject {
 
     pub fn new(crnt_time: f32, x_limit: f32, y_limit: f32, amplitude: f32) -> Self {
         Self {
-            x_axis: 0.0,
+            x_axis: -x_limit,
             y_axis: 0.0,
-            start_time: crnt_time,
+            _start_time: crnt_time,
+            last_jumping_time: crnt_time,
+            last_jumping_x: -x_limit,
             x_limit,
             y_limit,
             x_multify: random_range(200.0, 400.0),
@@ -133,8 +148,15 @@ impl JumpingObject {
     }
     fn update(&mut self, crnt_time: f32, y_axis: f32) {
         self.y_axis = Self::BASE_Y_AXIS + y_axis * self.y_multify;
-        self.x_axis = -self.x_limit + (crnt_time - self.start_time) * self.x_multify;
-        self.over_bounds = self.x_axis.abs() > self.x_limit || y_axis.abs() > self.y_limit;
+        self.x_axis = self.last_jumping_x + (crnt_time - self.last_jumping_time) * self.x_multify;
+        self.over_bounds = self.x_axis.abs() > self.x_limit + 1.0 || y_axis.abs() > self.y_limit + 1.0;
+    }
+    fn jump(&mut self, inverting: bool, crnt_time: f32) {
+        if (inverting && self.x_multify > 0.0) || (!inverting && self.x_multify < 0.0) {
+            self.x_multify = -self.x_multify;
+        }
+        self.last_jumping_time = crnt_time;
+        self.last_jumping_x = self.x_axis;
     }
     fn disp(
         &self,
