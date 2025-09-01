@@ -168,8 +168,8 @@ impl Elapse for Note {
         self.priority
     }
     /// 次に呼ばれる小節番号、Tick数を返す
-    fn next(&self) -> (i32, i32) {
-        (self.next_msr, self.next_tick)
+    fn next(&self) -> (i32, i32, bool) {
+        (self.next_msr, self.next_tick, false)
     }
     /// User による start/play 時にコールされる
     fn start(&mut self, _msr: i32) {}
@@ -287,8 +287,8 @@ impl Elapse for Damper {
         self.priority
     }
     /// 次に呼ばれる小節番号、Tick数を返す
-    fn next(&self) -> (i32, i32) {
-        (self.next_msr, self.next_tick)
+    fn next(&self) -> (i32, i32, bool) {
+        (self.next_msr, self.next_tick, false)
     }
     /// User による start/play 時にコールされる
     fn start(&mut self, _msr: i32) {}

@@ -418,8 +418,8 @@ impl Elapse for PhraseLoop {
         self.priority
     }
     /// 次に呼ばれる小節番号、Tick数を返す
-    fn next(&self) -> (i32, i32) {
-        (self.next_msr, self.next_tick)
+    fn next(&self) -> (i32, i32, bool) {
+        (self.next_msr, self.next_tick, false)
     }
     fn start(&mut self, _msr: i32) {} // User による start/play 時にコールされる
     /// User による stop 時にコールされる

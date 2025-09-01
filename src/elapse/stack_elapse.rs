@@ -606,11 +606,11 @@ impl ElapseStack {
     fn pick_up_first(&self, crnt_: &CrntMsrTick) -> Option<Rc<RefCell<dyn Elapse>>> {
         let mut first: Option<Rc<RefCell<dyn Elapse>>> = None;
         for elps in self.elapse_vec.iter() {
-            let (msr, tick) = elps.borrow().next();
+            let (msr, tick, _floating) = elps.borrow().next();
             if (msr == crnt_.msr && tick <= crnt_.tick) || msr < crnt_.msr {
                 // 現在のタイミングより前のイベントがあれば
                 if let Some(felps) = first.clone() {
-                    let (msrx, tickx) = felps.borrow().next();
+                    let (msrx, tickx, _floating) = felps.borrow().next();
                     if (msr < msrx)
                         || ((msr == msrx) && (tick < tickx))
                         || ((msr == msrx)
@@ -625,40 +625,6 @@ impl ElapseStack {
             }
         }
         first
-    }
-    fn _pick_out_playable(&self, crnt_: &CrntMsrTick) -> Vec<Rc<RefCell<dyn Elapse>>> {
-        let mut playable: Vec<Rc<RefCell<dyn Elapse>>> = Vec::new();
-        for elps in self.elapse_vec.iter() {
-            let (msr, tick) = elps.borrow().next();
-            if (msr == crnt_.msr && tick <= crnt_.tick) || msr < crnt_.msr {
-                // 現在のタイミングより前のイベントがあれば
-                if playable.is_empty() {
-                    // playable にまだ何も無ければ、普通に push
-                    playable.push(Rc::clone(elps));
-                } else {
-                    // playable に、時間順になるように挿入
-                    let mut after_break = false;
-                    for (i, one_plabl) in playable.iter().enumerate() {
-                        let (msrx, tickx) = one_plabl.borrow().next();
-                        if (msr < msrx)
-                            || ((msr == msrx)
-                                && ((tick < tickx)
-                                    || ((tick == tickx)
-                                        && (one_plabl.borrow().prio() > elps.borrow().prio()))))
-                        {
-                            playable.insert(i, Rc::clone(elps));
-                            after_break = true;
-                            break;
-                        }
-                    }
-                    if !after_break {
-                        // 条件にはまらなければ最後に入れる
-                        playable.push(Rc::clone(elps));
-                    }
-                }
-            }
-        }
-        playable
     }
     fn destroy_finished_elps(&mut self) {
         loop {

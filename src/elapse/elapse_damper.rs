@@ -206,9 +206,9 @@ impl Elapse for DamperPart {
     fn prio(&self) -> u32 {
         self.priority
     } // priority を得る
-    fn next(&self) -> (i32, i32) {
+    fn next(&self) -> (i32, i32, bool) {
         // 次に呼ばれる小節番号、Tick数を返す
-        (self.next_msr, self.next_tick)
+        (self.next_msr, self.next_tick, false)
     }
     fn start(&mut self, msr: i32) {
         // User による start/play 時にコールされる
