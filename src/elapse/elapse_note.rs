@@ -25,25 +25,24 @@ pub struct NoteParam<'a> {
     msr: i32,
     tick: i32,
     part: u32,
+    floating: bool,
 }
 impl<'a> NoteParam<'a> {
     pub fn new(
         _estk: &'a mut ElapseStack,
         ev: &'a NoteEvt,
-        keynote: u8,
         _deb_txt: String,
-        msr: i32,
-        tick: i32,
-        part: u32,
+        prmset: (u8, i32, i32, u32, bool), // (keynote,msr,tick,part,floating)
     ) -> Self {
         Self {
             _estk,
             ev,
-            keynote,
+            keynote: prmset.0,
             _deb_txt,
-            msr,
-            tick,
-            part,
+            msr: prmset.1,
+            tick: prmset.2,
+            part: prmset.3,
+            floating: prmset.4,
         }
     }
 }
@@ -58,6 +57,7 @@ pub struct Note {
     real_note: u8,
     noteon_started: bool,
     destroy: bool,
+    floating: bool,
     next_msr: i32,
     next_tick: i32,
     part: u32,
@@ -90,6 +90,7 @@ impl Note {
             real_note: 0,
             noteon_started: false,
             destroy: false,
+            floating: prm.floating,
             next_msr: prm.msr,
             next_tick: prm.tick,
             part: prm.part,
@@ -157,6 +158,15 @@ impl Note {
         };
         (real_sec * bpm * 1920.0 / (60.0 * (meter.1 as f32))) as i32
     }
+    fn timing_reached(&self, crnt_: &CrntMsrTick) -> bool {
+        if let Some(itk) = crnt_.imaginary_tick {
+            (crnt_.msr == self.next_msr && itk >= self.next_tick) ||
+            (crnt_.msr > self.next_msr)
+        } else {
+            (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick) ||
+            (crnt_.msr > self.next_msr)
+        }
+    }
 }
 impl Elapse for Note {
     /// id を得る
@@ -169,7 +179,7 @@ impl Elapse for Note {
     }
     /// 次に呼ばれる小節番号、Tick数を返す
     fn next(&self) -> (i32, i32, bool) {
-        (self.next_msr, self.next_tick, false)
+        (self.next_msr, self.next_tick, self.floating)
     }
     /// User による start/play 時にコールされる
     fn start(&mut self, _msr: i32) {}
@@ -188,9 +198,7 @@ impl Elapse for Note {
     }
     /// 再生処理 msr/tick に達したらコールされる
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick)
-            || (crnt_.msr > self.next_msr)
-        {
+        if self.timing_reached(crnt_) {
             if !self.noteon_started {
                 // midi note on
                 self.noteon_started = self.note_on(estk);

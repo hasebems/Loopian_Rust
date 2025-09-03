@@ -606,8 +606,8 @@ impl ElapseStack {
     fn pick_up_first(&self, crnt_: &CrntMsrTick) -> Option<Rc<RefCell<dyn Elapse>>> {
         let mut first: Option<Rc<RefCell<dyn Elapse>>> = None;
         for elps in self.elapse_vec.iter() {
-            let (msr, tick, _floating) = elps.borrow().next();
-            if (msr == crnt_.msr && tick <= crnt_.tick) || msr < crnt_.msr {
+            let (msr, tick, floating) = elps.borrow().next();
+            if Self::timing_condition(crnt_, msr, tick, floating) {
                 // 現在のタイミングより前のイベントがあれば
                 if let Some(felps) = first.clone() {
                     let (msrx, tickx, _floating) = felps.borrow().next();
@@ -625,6 +625,19 @@ impl ElapseStack {
             }
         }
         first
+    }
+    /// 再生タイミングを超えたら true を返す
+    fn timing_condition(crnt_: &CrntMsrTick, msr: i32, tick: i32, floating: bool) -> bool {
+        let normal = (msr < crnt_.msr) || (msr == crnt_.msr && tick <= crnt_.tick);
+        if let Some(itick) = crnt_.imaginary_tick {
+            if floating {
+                (msr < crnt_.msr) || (msr == crnt_.msr && tick <= itick)
+            } else {
+                normal
+            }
+        } else {
+            normal
+        }
     }
     fn destroy_finished_elps(&mut self) {
         loop {
