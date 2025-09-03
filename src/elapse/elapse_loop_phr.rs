@@ -267,11 +267,8 @@ impl PhraseLoop {
             NoteParam::new(
                 estk,
                 &crnt_ev,
-                self.keynote,
                 deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
-                tk.0,
-                tk.1,
-                self.id.pid,
+                (self.keynote, tk.0, tk.1, self.id.pid, crnt_ev.floating),
             ),
         );
         estk.add_elapse(Rc::clone(&nt));

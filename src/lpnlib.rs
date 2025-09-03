@@ -97,6 +97,7 @@ pub struct NoteEvt {
     pub tick: i16,      // tick
     pub dur: i16,       // duration
     pub note: u8,       // note number
+    pub floating: bool, // true: floating tick, false: not floating
     pub vel: i16,       // velocity
     pub trns: TrnsType, // translation
     pub artic: i16,     // 0..100..200[%] staccato/legato
@@ -107,6 +108,7 @@ impl NoteEvt {
             tick: list.tick,
             dur: list.dur,
             note,
+            floating: list.floating,
             vel: list.vel,
             trns: list.trns,
             artic: list.artic,

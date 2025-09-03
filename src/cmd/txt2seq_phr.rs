@@ -739,6 +739,7 @@ fn add_note(rcmb: Vec<PhrEvt>, tick: i32, notes: Vec<u8>, prm: AddNoteParam) -> 
                         tick: tick as i16,
                         dur: prm.dur as i16,
                         note: notes[0],
+                        floating: prm.others.1,
                         vel: prm.vel,
                         trns: prm.trns,
                         artic: prm.others.0,

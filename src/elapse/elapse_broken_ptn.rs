@@ -249,11 +249,14 @@ impl BrokenPattern {
             NoteParam::new(
                 estk,
                 &crnt_ev,
-                self.keynote,
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
-                self.first_msr_num,
-                self.ptn_tick + self.ptn_each_dur * (self.play_counter as i32),
-                self.part,
+                (
+                    self.keynote,
+                    self.first_msr_num,
+                    self.ptn_tick + self.ptn_each_dur * (self.play_counter as i32),
+                    self.part,
+                    false,
+                ),
             ),
         );
         estk.add_elapse(Rc::clone(&nt));

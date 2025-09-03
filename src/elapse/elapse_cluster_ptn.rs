@@ -286,11 +286,8 @@ impl ClusterPattern {
             NoteParam::new(
                 estk,
                 &crnt_ev,
-                self.keynote,
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
-                msr,
-                tick,
-                self.part,
+                (self.keynote, msr, tick, self.part, self.arpeggio)
             ),
         );
         estk.add_elapse(Rc::clone(&nt));
