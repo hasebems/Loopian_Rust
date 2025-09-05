@@ -69,8 +69,8 @@ impl PhrLoopWrapper {
         };
         #[cfg(feature = "verbose")]
         println!(
-            "**** PhrLoopWrapper::new: loop_id: {}, whole_tick: {}, max_loop_msr: {} nt:{:?}",
-            loop_id, repeat_tick, max_loop_msr, phr_stock.evts[0]
+            "**** PhrLoopWrapper::new: loop_id: {}, whole_tick: {}, max_loop_msr: {}",
+            loop_id, repeat_tick, max_loop_msr
         );
         let phrase = PhraseLoop::new(
             loop_id,
