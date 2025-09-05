@@ -57,35 +57,39 @@ R1
 [ex,d^^,r^,m^,vf^..,ws,f,em,l/-r,vs..,l,s,f,em,m^,fi^,s^/]+
 [.,fi,si,l.,s^^,l^,t^/vd^..,wr,d,et,m,-l,r,vx,m,r,d/]+
 [et,+ss,-di,r,m,di,r,m/-l,xo//].dyn(mf)
-L2
-[A2:ex,+s^^,l^,t^,vd^..,wr,d/et,m,-l,r.,-s,+qr/ed,l,+qm,er,x..//].dyn(mf)
 graph.light
 
 !msr(15)
-R2
-[A3:ex,s^^,l^,t^/vd^..,wr,d,et,d^^,r^,m^,vf^..,ws,f/]+
-[em,l,-r,s,vx,l,s,f,em,l/-r,+ta,l,vs,f,s,f,s,m,f,s,s,wf,s/]+
-[vl,-di,r,s,vm..,r,er,x,qx//].dyn(mf)
+L2
+[A2:ex,+s^^,l^,t^,vd^..,wr,d/et,m,-l,r.,-s,+qr/ed,l,+qm,er,x..//].dyn(mf)
 L1
 [ex,+s^^,l^,t^,vd^..,wr,d,et,m/-l,r,vx,m,r,d,et,ta,l,s/]+
 [el,+fi,s,m,qr,em,f/s,vl,s,ef,ta,-m,l,vx,t,l,s/]+
 [vf,m,f,r,es,l,-hr/vx,m,r,d,t,l,s,fi,em,x..].dyn(mf)
+
+!msr(16)
+R2
+[A3:ex,s^^,l^,t^/vd^..,wr,d,et,d^^,r^,m^,vf^..,ws,f/]+
+[em,l,-r,s,vx,l,s,f,em,l/-r,+ta,l,vs,f,s,f,s,m,f,s,s,wf,s/]+
+[vl,-di,r,s,vm..,r,er,x,qx//].dyn(mf)
 
 !msr(17)
 L2
 [ex,+l^^,t^,di^,vr^..,wm,r,ed,f/-t,m,vx,f,m,r,edi,x..//].dyn(mf)
 
 !msr(19)
-R1
-[A2:ex,m^^,fi^,s^,vl^..,wt,l/es,d,-fi,t,vx,d,t,l,s,fi,m,r/]+
-[qm,r,vx,+l,s,f,m,s,f,l/vs....,l,ta,qd,er,-s/]+
-[es..,f.,m,r./m,l.,s,qx.//].dyn(mp)
 L2
 [ex,+l^^,t^,di^,vr^..,wm,r,ed,fi/-t,m,vx,fi,m,r,hd/]+
 [vx,r,d,t,l,s,l,fi,es,t^^,d^,r^/vm^..,wf,m,er,s,-d,f,vx,s,f,m/]+
 [qr,em,r.,s,es.//].dyn(mp)
 
 !msr(20)
+R1
+[A2:ex,m^^,fi^,s^,vl^..,wt,l/es,d,-fi,t,vx,d,t,l,s,fi,m,r/]+
+[qm,r,vx,+l,s,f,m,s,f,l/vs....,l,ta,qd,er,-s/]+
+[es..,f.,m,r./m,l.,s,qx.//].dyn(mp)
+
+!msr(21)
 R2
 [A4:ex,s^^/l^,t^,vd^..,wr,d,et,m,-l,vr./.,m,r,d,t,d,r,m,f,s,l,s,f,m,r,d/]+
 [qt,ed,r,-s,qd,et/qd,et,ta,l,qr,ed/]+
@@ -97,13 +101,15 @@ L1
 [do/o/o/o//].dyn(mp)
 
 !msr(24)
+L2
+[ex,d^^,r^,m^,vf^..,ws,f,em,l/-r,s,vx,l,s,f,m,r,m,f,s,l,ta,s/]+
+[l,m,f,s,l,t,d,l,ht/do//].dyn(p)
+
+!msr(25)
 R1
 [A3:ex,f^^,s^,l^/]+
 [vta^..,wd,ta,el,r,-s,d,vx,r,d,ta/l,ta,l,s,f,s,f,m,vr......,s/]+
 [ql,vx,+f,er,hm//].dyn(p)
-L2
-[ex,d^^,r^,m^,vf^..,ws,f,em,l/-r,s,vx,l,s,f,m,r,m,f,s,l,ta,s/]+
-[l,m,f,s,l,t,d,l,ht/do//].dyn(p)
 
 !msr(26)
 rit.bar(2)
