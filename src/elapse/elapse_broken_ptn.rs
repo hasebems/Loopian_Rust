@@ -169,8 +169,8 @@ impl BrokenPattern {
         let incdec_idx = |inc: bool, mut x, mut oct| -> (usize, i16) {
             if inc {
                 x += 1;
-                if x == max_tbl_num {
-                    x = 0;
+                if x >= max_tbl_num {
+                    x -= max_tbl_num;
                     oct += 1;
                 }
             } else if x == 0 {
