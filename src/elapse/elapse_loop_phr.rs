@@ -268,7 +268,14 @@ impl PhraseLoop {
                 estk,
                 &crnt_ev,
                 deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
-                (self.keynote, tk.0, tk.1, self.id.pid, crnt_ev.floating),
+                (
+                    self.keynote,
+                    tk.0,
+                    tk.1,
+                    self.id.pid,
+                    crnt_ev.floating,
+                    false,
+                ),
             ),
         );
         estk.add_elapse(Rc::clone(&nt));

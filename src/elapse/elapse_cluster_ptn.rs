@@ -287,7 +287,7 @@ impl ClusterPattern {
                 estk,
                 &crnt_ev,
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
-                (self.keynote, msr, tick, self.part, self.arpeggio)
+                (self.keynote, msr, tick, self.part, self.arpeggio, false),
             ),
         );
         estk.add_elapse(Rc::clone(&nt));

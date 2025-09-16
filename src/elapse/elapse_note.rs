@@ -26,13 +26,14 @@ pub struct NoteParam<'a> {
     tick: i32,
     part: u32,
     floating: bool,
+    flow: bool,
 }
 impl<'a> NoteParam<'a> {
     pub fn new(
         _estk: &'a mut ElapseStack,
         ev: &'a NoteEvt,
         _deb_txt: String,
-        prmset: (u8, i32, i32, u32, bool), // (keynote,msr,tick,part,floating)
+        prmset: (u8, i32, i32, u32, bool, bool), // (keynote,msr,tick,part,floating,flow)
     ) -> Self {
         Self {
             _estk,
@@ -43,6 +44,7 @@ impl<'a> NoteParam<'a> {
             tick: prmset.2,
             part: prmset.3,
             floating: prmset.4,
+            flow: prmset.5,
         }
     }
 }
@@ -58,6 +60,7 @@ pub struct Note {
     noteon_started: bool,
     destroy: bool,
     floating: bool,
+    flow: bool,
     next_msr: i32,
     next_tick: i32,
     part: u32,
@@ -91,6 +94,7 @@ impl Note {
             noteon_started: false,
             destroy: false,
             floating: prm.floating,
+            flow: prm.flow,
             next_msr: prm.msr,
             next_tick: prm.tick,
             part: prm.part,
@@ -100,13 +104,21 @@ impl Note {
     fn note_on(&mut self, estk: &mut ElapseStack) -> bool {
         let num = self.note_num + self.keynote;
         let bpm = estk.tg().get_bpm();
-        let beat = estk.tg().get_meter();
-        self.duration = Self::auto_duration(bpm, beat, self.duration);
+        let meter = estk.tg().get_meter();
+        if self.flow {
+            self.duration = meter.0 * (1920 / meter.1); // 1小節分
+        } else {
+            self.duration = Self::auto_duration(bpm, meter, self.duration);
+        }
         if Note::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
             self.real_note = num;
             let vel = self.random_velocity(self.velocity);
             estk.inc_key_map(num, vel, self.part as u8);
-            estk.midi_out(0x90, self.real_note, vel);
+            if self.flow {
+                estk.midi_out_flow(0x90, self.real_note, vel);
+            } else {
+                estk.midi_out(0x90, self.real_note, vel);
+            }
             #[cfg(feature = "verbose")]
             println!(
                 "On: N{} V{} D{} Trns: {}, ",
@@ -118,13 +130,17 @@ impl Note {
             false
         }
     }
-    fn note_off(&mut self, estk: &mut ElapseStack) {
+    pub fn note_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;
         self.next_msr = FULL;
         // midi note off
         let snk = estk.dec_key_map(self.real_note);
         if snk == stack_elapse::SameKeyState::Last {
-            estk.midi_out(0x90, self.real_note, 0);
+            if self.flow {
+                estk.midi_out_flow(0x90, self.real_note, 0);
+            } else {
+                estk.midi_out(0x90, self.real_note, 0);
+            }
             #[cfg(feature = "verbose")]
             println!("Off: N{}, ", self.real_note);
         }
@@ -160,11 +176,10 @@ impl Note {
     }
     fn timing_reached(&self, crnt_: &CrntMsrTick) -> bool {
         if let Some(itk) = crnt_.imaginary_tick {
-            (crnt_.msr == self.next_msr && itk >= self.next_tick) ||
-            (crnt_.msr > self.next_msr)
+            (crnt_.msr == self.next_msr && itk >= self.next_tick) || (crnt_.msr > self.next_msr)
         } else {
-            (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick) ||
-            (crnt_.msr > self.next_msr)
+            (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick)
+                || (crnt_.msr > self.next_msr)
         }
     }
 }

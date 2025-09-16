@@ -692,18 +692,6 @@ impl Part {
             chord_name,
         }
     }
-    pub fn rcv_midi_in(
-        &mut self,
-        estk_: &mut ElapseStack,
-        crnt_: &CrntMsrTick,
-        status: u8,
-        locate: u8,
-        vel: u8,
-    ) {
-        if let Some(fl) = &self.flow {
-            fl.borrow_mut().rcv_midi(estk_, crnt_, status, locate, vel);
-        }
-    }
     pub fn get_start_beat(&self) -> Option<i32> {
         let auf = self.pm.auftakt();
         if auf != 0 {

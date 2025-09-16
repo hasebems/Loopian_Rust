@@ -256,6 +256,7 @@ impl BrokenPattern {
                     self.ptn_tick + self.ptn_each_dur * (self.play_counter as i32),
                     self.part,
                     false,
+                    false,
                 ),
             ),
         );

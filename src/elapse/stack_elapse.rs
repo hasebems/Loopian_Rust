@@ -421,9 +421,10 @@ impl ElapseStack {
             // 0b/0c ch <from ORBIT>
             if (sts & 0xe0) == 0x80 {
                 // 再生中 & Note Message
-                let pt = self.part_vec[FLOW_PART].clone();
-                pt.borrow_mut()
-                    .rcv_midi_in(self, crnt_, sts & 0xf0, nt, vel);
+                if let Some(flow) = self.get_flow() {
+                    flow.borrow_mut()
+                        .rcv_midi(self, crnt_, sts & 0xf0, nt, vel);
+                }
             } else if (sts & 0xf0) == 0xc0 {
                 // PCN は Pattern 切り替えに使用する
                 self.send_msg_to_ui(UiMsg::ChangePtn(nt));
