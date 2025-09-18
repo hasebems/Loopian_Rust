@@ -116,6 +116,24 @@ impl Flow {
             }
         } else {
             // 再生中
+            if status & 0xf0 == 0x90 {
+                if vel != 0 {
+                    let (msr, tick ) = if !self.note_stock.is_empty() {
+                        self.calculate_tick(crnt_)
+                    } else {
+                        (crnt_.msr, crnt_.tick)
+                    };
+                    self.note_on_flow(estk_, crnt_, locate, vel, (msr, tick));
+                } else {
+                    self.note_off_flow(estk_, locate);
+                }
+            } else if status & 0xf0 == 0x80 {
+                self.note_off_flow(estk_, locate);
+            }
+        }
+    }
+    fn calculate_tick(&self, crnt_: &CrntMsrTick) -> (i32, i32) {
+        let (msr, tick) = {
             let msr: i32;
             let tick: i32;
             let tk = (crnt_.tick / TICK_RESOLUTION + 1) * TICK_RESOLUTION;
@@ -126,16 +144,9 @@ impl Flow {
                 msr = crnt_.msr;
                 tick = tk;
             }
-            if status & 0xf0 == 0x90 {
-                if vel != 0 {
-                    self.note_on_flow(estk_, crnt_, locate, vel, (msr, tick));
-                } else {
-                    self.note_off_flow(estk_, locate);
-                }
-            } else if status & 0xf0 == 0x80 {
-                self.note_off_flow(estk_, locate);
-            }
-        }
+            (msr, tick)
+        };
+        (msr, tick)
     }
     fn note_on_flow(
         &mut self,
