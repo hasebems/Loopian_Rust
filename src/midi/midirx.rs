@@ -45,7 +45,7 @@ impl MidiRxBuf {
 //*******************************************************************
 //          MIDI Rx
 //*******************************************************************
-pub struct MidiRx {
+pub struct MidiRxThread {
     // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
     _conn_in: [Option<MidiInputConnection<()>>; 2],
     mdr_buf: [Option<Arc<Mutex<MidiRxBuf>>>; 2],
@@ -57,8 +57,9 @@ pub struct MidiRx {
     #[cfg(feature = "raspi")]
     pub uart: Option<Uart>,
 }
-impl MidiRx {
-    pub fn new(tx_hndr: mpsc::Sender<ElpsMsg>) -> Option<MidiRx> {
+impl MidiRxThread {
+    /// MidiRx のインスタンスを生成し、MIDI IN ポートに接続する
+    pub fn new(tx_hndr: mpsc::Sender<ElpsMsg>) -> Option<MidiRxThread> {
         let mut this = Self {
             _conn_in: [None, None],
             mdr_buf: [None, None],
@@ -177,11 +178,14 @@ impl MidiRx {
         }
         Ok(ret_num)
     }
+    /// ElpsMsg を Elapse に送信する
     fn send_msg_to_elapse(&self, msg: ElpsMsg) {
         if let Err(e) = self.tx_hndr.send(msg) {
             println!("Something happened on MPSC from MIDIRx! {}", e);
         }
     }
+    /// stack_elapse::gen_midirx_thread() で生成したスレッドから定期的に呼び出される
+    /// ElpsMsg::Ctrl(MSG_CTRL_QUIT) を受け取ったら true を返す
     pub fn periodic(&mut self, rx_ctrlmsg: Result<ElpsMsg, TryRecvError>) -> bool {
         self.receive_midi_event();
         match rx_ctrlmsg {
@@ -206,13 +210,13 @@ impl MidiRx {
         }
         false
     }
+    /// MIDI IN ポートからのイベントをチェックし、あれば ElpsMsg::MIDIRx に変換して Elapse に送信する
     fn receive_midi_event(&mut self) {
         for i in 0..2 {
             if self.mdr_buf[i].is_some() {
                 if let Some(msg_ext) = self.mdr_buf[i].as_ref().unwrap().lock().unwrap().take() {
                     let msg = msg_ext.1;
-                    #[cfg(feature = "verbose")]
-                    {
+                    if cfg!(feature = "verbose") {
                         let length = msg.len();
                         println!(
                             "MIDI{} Received >{}: {:x}-{:x}-{:x} (len = {})",
@@ -223,15 +227,18 @@ impl MidiRx {
                             if length > 2 { msg[2] } else { 0 },
                             length
                         );
+                    } else {
+                        println!("{:x}-{:x}-{:x} ", msg[0], msg[1], if msg.len() > 2 { msg[2] } else { 0 });
                     }
-                    // midi ch=12,13 のみ受信 (Loopian::ORBIT)
+                    // midi ch=12,13 のみ受信 (Loopian::ORBIT/CUBIT)
+                    let status = msg[0] & 0xf0;
                     let input_ch = msg[0] & 0x0f;
                     if input_ch != 0x0b && input_ch != 0x0c {
                         return;
                     }
-                    if msg.len() == 2 {
+                    if status == 0xc0 || status == 0xd0 {
                         self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0, 0));
-                    } else {
+                    } else if status == 0x90 || status == 0x80 || status == 0xa0 || status == 0xb0 || status == 0xe0 {
                         self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2], 0));
                     }
                 }

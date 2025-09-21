@@ -20,7 +20,7 @@ use super::elapse_loop_phr::PhraseLoop;
 use super::elapse_part::Part;
 use super::tickgen::{CrntMsrTick, RitType, TickGen};
 use crate::lpnlib::{ElpsMsg::*, *};
-use crate::midi::midirx::MidiRx;
+use crate::midi::midirx::MidiRxThread;
 use crate::midi::miditx::MidiTx;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -66,7 +66,7 @@ fn gen_midirx_thread() -> (Receiver<ElpsMsg>, Sender<ElpsMsg>) {
     //  create new thread & channel
     let (txmsg, rxmsg) = mpsc::channel();
     let (txctrl, rxctrl) = mpsc::channel();
-    thread::spawn(move || match MidiRx::new(txmsg /* , rxctrl*/) {
+    thread::spawn(move || match MidiRxThread::new(txmsg /* , rxctrl*/) {
         Some(mut rx) => loop {
             if rx.periodic(rxctrl.try_recv()) {
                 break;
