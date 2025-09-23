@@ -254,11 +254,9 @@ impl SeqDataStock {
 pub struct PhraseDataStock {
     base_note: i32,
     raw: String,
-    cmpl_nt: Vec<String>,
-    cmpl_ex: Vec<String>,
+    cmpl: Option<Box<PhraseComplemented>>,
     phr: Vec<PhrEvt>,
     ana: Vec<AnaEvt>,
-    atrb: Vec<Option<i16>>,
     do_loop: bool,
     whole_tick: i32,
     send_enable: bool,
@@ -268,19 +266,21 @@ impl PhraseDataStock {
         Self {
             base_note,
             raw: "".to_string(),
-            cmpl_nt: vec!["".to_string()],
-            cmpl_ex: vec!["".to_string()],
+            cmpl: None,
             phr: Vec::new(),
             ana: Vec::new(),
-            atrb: vec![None],
             do_loop: true,
             whole_tick: 0,
             send_enable: true,
         }
     }
-    pub fn _get_cmpl_nt(&self) -> &Vec<String> {
+    pub fn _get_cmpl_nt(&self) -> Vec<String> {
         // for test
-        &self.cmpl_nt
+        if let Some(cmpl) = &self.cmpl {
+            cmpl.note_info.clone()
+        } else {
+            vec!["".to_string()]
+        }
     }
     pub fn get_phr(&self) -> &Vec<PhrEvt> {
         &self.phr
@@ -295,11 +295,11 @@ impl PhraseDataStock {
                 evts: self.phr.clone(),
                 ana: self.ana.clone(),
                 vari,
-                auftakt: if self.atrb[0].is_some() {
-                    self.atrb[0].unwrap_or(0)
+                auftakt: if self.cmpl.is_some() {
+                    self.cmpl.as_ref().unwrap().note_attribute[0].unwrap_or(0)
                 } else {
                     0
-                },
+                }, 
             },
         )
     }
@@ -309,15 +309,16 @@ impl PhraseDataStock {
         self.raw = input_text.clone();
 
         // 2.complement data
-        let cmpl = complement_phrase(input_text, cluster_word);
-        self.cmpl_nt = cmpl.0.clone();
-        self.cmpl_ex = cmpl.1.clone();
-        self.atrb = cmpl.2.clone();
-        #[cfg(feature = "verbose")]
-        println!(
-            "complement_phrase: {:?} exp: {:?} atrb: {:?}",
-            cmpl.0, cmpl.1, cmpl.2
-        );
+        self.cmpl = Some(complement_phrase(input_text, cluster_word));
+        if cfg!(feature = "verbose") {
+            println!(
+                "complement_phrase: {:?} exp: {:?} atrb: {:?} accia: {:?}",
+                if self.cmpl.is_some() {self.cmpl.as_ref().unwrap().note_info.clone()} else {["-".to_string()].to_vec()},
+                if self.cmpl.is_some() {self.cmpl.as_ref().unwrap().music_exp.clone()} else {["-".to_string()].to_vec()},
+                if self.cmpl.is_some() {self.cmpl.as_ref().unwrap().note_attribute.clone()} else {[None].to_vec()},
+                if self.cmpl.is_some() {self.cmpl.as_ref().unwrap().accia_info.clone()} else {["-".to_string()].to_vec()}
+            );
+        }
         true
     }
     pub fn set_recombined(
@@ -328,7 +329,7 @@ impl PhraseDataStock {
         tick_for_beat: i32,
         resend: bool,
     ) {
-        if self.cmpl_nt == [""] {
+        if self.cmpl.is_none() {
             //  clear
             self.phr = Vec::new();
             self.ana = Vec::new();
@@ -338,8 +339,7 @@ impl PhraseDataStock {
 
         // 3.recombined data
         let (whole_tick, do_loop, rcmb) = recombine_to_internal_format(
-            &self.cmpl_nt,
-            &self.cmpl_ex,
+            self.cmpl.as_ref().unwrap(),
             input_mode,
             self.base_note,
             tick_for_onemsr,
@@ -356,7 +356,7 @@ impl PhraseDataStock {
         self.whole_tick = whole_tick;
 
         // 4.analysed data
-        self.ana = analyse_data(&self.phr, &self.cmpl_ex);
+        self.ana = analyse_data(&self.phr, &self.cmpl.as_ref().unwrap().music_exp);
 
         // 5.humanized data
         self.phr = beat_filter(&self.phr, bpm, tick_for_onemsr, tick_for_beat);

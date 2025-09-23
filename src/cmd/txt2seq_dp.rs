@@ -15,13 +15,12 @@ pub fn available_for_dp(text: &str) -> bool {
 }
 /// Note のときの fn break_up_nt_dur_vel() と同様の処理
 pub fn treat_dp(
+    pr: &mut PhraseRecombined,
     text: String,   // Dynamic Pattern のテキスト
     base_note: i32, // octave などのセッティング
-    base_dur: i32,  // 前の duration
     crnt_tick: i32, // 小節内の現在 tick
-    rest_tick: i32, // 小節内の残り tick
     exp_vel: i32,   // dynなどを反省した velocity
-) -> (PhrEvt, i32) {
+) -> PhrEvt {
     // Cluster or Arpeggio?
     let mut case_arp = true;
     if text.contains("C") {
@@ -32,10 +31,10 @@ pub fn treat_dp(
     let (tie_dur, bdur_tie, ntext2) = decide_tie_dur(text.clone());
 
     //  duration 情報、 Velocity 情報の抽出
-    let (ntext3, mut bdur) = decide_dur(ntext2, base_dur);
+    let (ntext3, mut bdur) = decide_dur(ntext2, pr.base_dur);
     let mut duration = bdur + tie_dur;
     if text == ntext3 {
-        duration = rest_tick; // dur情報がない場合、小節残り全体とする
+        duration = pr.rest_tick(crnt_tick); // dur情報がない場合、小節残り全体とする
     }
     let (ntext4, diff_vel) = gen_diff_vel(ntext3);
 
@@ -60,7 +59,8 @@ pub fn treat_dp(
     if bdur_tie != 0 {
         bdur = bdur_tie;
     }
-    (ev, bdur)
+    pr.base_dur = bdur; // 次の音符のために保存しておく
+    ev
 }
 fn gen_dp_pattern(
     nt: &str,

@@ -4,250 +4,369 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::txt_common::*;
-use super::txt2seq_dp::*;
+use super::txt2seq_dp;
 use crate::lpnlib::*;
 
 //*******************************************************************
 //          complement_phrase
 //*******************************************************************
-pub fn complement_phrase(
-    input_text: String,
-    cluster_word: &str,
-) -> (Vec<String>, Vec<String>, Vec<Option<i16>>) {
-    // 1. space 削除
-    let phr = input_text.trim().to_string();
-
-    // 2. [] を検出し、音符情報と、その他の情報を分け、音符情報はさらに : で分割、auftaktの展開
-    let (nttmp, ne) = divide_brackets(phr);
-    let ntdiv = split_by(':', nttmp);
-    let (nt, ntatrb) = div_atrb(ntdiv);
-
-    // 3. 関数を . で分割し、音符変調と音楽表現に分ける
-    let mut nev = split_by('.', ne);
-    nev.retain(|nt| !nt.is_empty());
-    let (nmvec, nevec) = divide_notemod_and_musicex(nev);
-
-    // 4. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
-    let nttmp = divide_arrow_bracket(nt);
-    let nt2 = nttmp.replace('c', cluster_word);
-
-    // 5. ,| 重複による休符指示の補填、()内の ',' を '_' に変換。音符のVector化
-    let nt3 = fill_omitted_note_data(nt2);
-    let mut ntvec = split_by(',', nt3);
-
-    // 6. 同音繰り返しの展開
-    loop {
-        let (nvr_tmp, no_exist) = note_repeat(ntvec.clone());
-        ntvec = nvr_tmp.clone();
-        if no_exist {
-            break;
-        }
-    }
-
-    // 7. 音符変調関数の適用
-    for ne in nmvec.iter() {
-        if &ne[0..3] == "rpt" {
-            ntvec = repeat_ntimes(ntvec, ne);
-        }
-    }
-
-    (ntvec, nevec, ntatrb)
+#[derive(Debug)]
+pub struct PhraseComplemented {
+    pub note_str: String,                 // []内
+    pub exp_str: String,                  // []の後ろ
+    pub accia_str: String,                // 装飾音符 (acciaccatura)
+    pub note_attribute: Vec<Option<i16>>, // Auftakt などの属性
+    pub note_info: Vec<String>,
+    pub note_mod: Vec<String>,   // Note Modulation Function
+    pub music_exp: Vec<String>,  // Music Expression Function
+    pub accia_info: Vec<String>, // 装飾音符の情報
 }
-fn divide_brackets(input_text: String) -> (String, String) {
-    let mut ninfo = "".to_string();
-    let mut minfo = "".to_string();
 
-    // 中身と、その後の文字列を ninfo/minfo に入れる
-    let mut isx: &str = &input_text;
-    if let Some(n2) = isx.find(']') {
-        ninfo = isx[1..n2].to_string();
-        isx = &isx[n2 + 1..];
-        if !isx.is_empty() {
-            minfo = isx.to_string();
+impl PhraseComplemented {
+    pub fn new() -> Self {
+        PhraseComplemented {
+            note_str: String::new(),
+            exp_str: String::new(),
+            accia_str: String::new(),
+            note_attribute: vec![None],
+            note_info: Vec::new(),
+            note_mod: Vec::new(),
+            music_exp: Vec::new(),
+            accia_info: Vec::new(),
         }
     }
-    (ninfo, minfo)
-}
-fn divide_arrow_bracket(nt: String) -> String {
-    let mut ret_str: String = "".to_string();
-    let mut i = 0;
-    while let Some(ltr) = nt.chars().nth(i) {
-        if ltr == '<' {
-            // 閉じる矢印を探し、その後ろの文字を取得
-            if let Some(loc) = nt[i + 1..].chars().position(|c| c == '>') {
-                let end_arrow = i + 1 + loc;
-                let mut omit = false;
-                let mut mark = nt.chars().nth(end_arrow + 1).unwrap_or('~');
-                let mut comma = ',';
-                if mark == ',' || mark == '/' || mark == '|' {
-                    comma = mark;
-                    mark = '~';
-                    omit = true;
-                }
-                if mark == 'p' || mark == '!' || mark == '~' || mark == 'n' {
-                    for j in i + 1..end_arrow {
-                        let nx = nt.chars().nth(j).unwrap_or(' ');
-                        if nx == ',' || nx == '|' || nx == '/' {
-                            ret_str.push(mark);
+    pub fn divide_brackets(&mut self, input_text: String) {
+        // 中身と、その後の文字列を note_str/exp_str に入れる
+        let mut isx: &str = &input_text;
+        if let Some(n2) = isx.find(']') {
+            self.note_str = isx[1..n2].to_string();
+            isx = &isx[n2 + 1..];
+            if !isx.is_empty() {
+                self.exp_str = isx.to_string();
+            }
+        }
+    }
+    fn divide_atrb(&mut self, mut ntdiv: Vec<String>) {
+        let dnum = ntdiv.len();
+        let mut nt = "".to_string();
+        let mut ntatrb = vec!["".to_string()];
+        let mut atrb: Vec<Option<i16>> = vec![None];
+        if dnum >= 2 {
+            nt = ntdiv.pop().unwrap_or("".to_string());
+            ntatrb = ntdiv;
+        } else if dnum == 1 {
+            nt = ntdiv[0].clone();
+        }
+
+        // Attribute の調査
+        for a in ntatrb.iter() {
+            if a.contains('A') {
+                let beat = a.chars().nth(1).unwrap_or('0').to_digit(10).unwrap_or(0);
+                #[cfg(feature = "verbose")]
+                println!("Auftakt Start Beat: {beat}");
+                if beat > 0 {
+                    atrb[0] = Some(beat as i16);
+                    if beat > 1 {
+                        let mut rest = String::from("qx");
+                        for _ in 0..beat - 2 {
+                            rest.push('.')
                         }
-                        if let Some(c) = nt.chars().nth(j) {
-                            ret_str.push(c);
-                        }
+                        nt = rest + "," + &nt;
                     }
-                    ret_str.push(mark);
-                    ret_str.push(comma);
-                    if omit {
-                        // markがない場合、XX で ',' の分を飛ばす
-                        i = end_arrow + 1;
+                }
+            }
+        }
+
+        self.note_str = nt;
+        self.note_attribute = atrb;
+    }
+    /// 装飾音符 (acciaccatura: アッチャッカトゥーラ) を分離する
+    fn divide_acciaccatura(&mut self) {
+        let original_str = self.note_str.clone();
+        let mut removed = original_str.clone();
+        let mut start = None;
+        let mut start_cnd = None;
+        let mut accia_str = "".to_string();
+        let mut another_kakko = false;
+        let mut total = 0;
+        for (idx, c) in original_str.chars().enumerate() {
+            if idx == 0 && c == '(' {
+                start = Some(idx);
+            } else if c == ',' || c == '/' {
+                start_cnd = Some(idx);
+                accia_str += &c.to_string();
+            } else if c == '(' {
+                if let Some(scidx) = start_cnd {
+                    if idx == scidx + 1 {
+                        start = Some(idx);
                     } else {
-                        // mark + ',' の２文字進める(最後の XX を考慮)
-                        i = end_arrow + 2;
+                        another_kakko = true;
                     }
+                } else {
+                    another_kakko = true;
                 }
-            }
-        } else {
-            ret_str.push(ltr);
-        }
-        i += 1; // XX
-    }
-    //println!("$$$Divided letter in <>: {}", ret_str);
-    ret_str
-}
-fn div_atrb(mut ntdiv: Vec<String>) -> (String, Vec<Option<i16>>) {
-    let dnum = ntdiv.len();
-    let mut nt = "".to_string();
-    let mut ntatrb = vec!["".to_string()];
-    let mut atrb: Vec<Option<i16>> = vec![None];
-    if dnum >= 2 {
-        nt = ntdiv.pop().unwrap_or("".to_string());
-        ntatrb = ntdiv;
-    } else if dnum == 1 {
-        nt = ntdiv[0].clone();
-    }
-
-    // Attribute の調査
-    for a in ntatrb.iter() {
-        if a.contains('A') {
-            let beat = a.chars().nth(1).unwrap_or('0').to_digit(10).unwrap_or(0);
-            #[cfg(feature = "verbose")]
-            println!("Auftakt Start Beat: {beat}");
-            if beat > 0 {
-                atrb[0] = Some(beat as i16);
-                if beat > 1 {
-                    let mut rest = String::from("qx");
-                    for _ in 0..beat - 2 {
-                        rest.push('.')
-                    }
-                    nt = rest + "," + &nt;
+                start_cnd = None;
+            } else if c == ')' && start.is_some() {
+                if another_kakko {
+                    another_kakko = false;
+                } else {
+                    // 前打音の括弧が閉じられた時
+                    let stt = start.unwrap_or(0) - total;
+                    let end = idx - total;
+                    let assia: String = removed.drain(stt..=end).collect();
+                    total += end - stt + 1;
+                    accia_str += &assia;
+                    start = None;
                 }
+                start_cnd = None;
             }
         }
+        //println!("+++ Note String:  {}", original_str);
+        //println!("+++ Acciaccatura: {}", accia_str);
+        self.note_str = removed;
+        self.accia_str = accia_str;
     }
+    /// Note Modulation Function と Music Expression Function を分離する
+    fn divide_notemod_and_musicex(&mut self, nev: Vec<String>) {
+        let mut nm: Vec<String> = Vec::new();
+        let mut ne: Vec<String> = Vec::new();
 
-    (nt, atrb)
-}
-fn fill_omitted_note_data(mut nf: String) -> String {
-    let phr_len = nf.len();
-    if phr_len == 0 {
-        return "".to_string();
-    } else if phr_len >= 2 && nf.ends_with("//") {
-        nf.pop();
-        nf.pop();
-        nf += ",LPEND";
-    }
-
-    let mut fill: String = "".to_string();
-    let mut doremi = "x".to_string();
-    let mut doremi_end_flag = true;
-    let mut in_parentheses = false;
-    for ltr in nf.chars() {
-        if ltr == ',' {
-            if in_parentheses {
-                doremi.push('@'); // ()内の','を、@ に変換
+        for nx in nev.iter() {
+            if nx.len() >= 3 && &nx[0..3] == "rpt" {
+                nm.push(nx.to_string());
             } else {
+                ne.push(nx.to_string());
+            }
+        }
+        if ne.is_empty() {
+            ne.push("raw".to_string());
+        }
+        //(nm, ne)
+        self.note_mod = nm;
+        self.music_exp = ne;
+    }
+    fn divide_arrow_bracket(&mut self) {
+        let nt = self.note_str.clone();
+        let mut ret_str: String = "".to_string();
+        let mut i = 0;
+        while let Some(ltr) = nt.chars().nth(i) {
+            if ltr == '<' {
+                // 閉じる矢印を探し、その後ろの文字を取得
+                if let Some(loc) = nt[i + 1..].chars().position(|c| c == '>') {
+                    let end_arrow = i + 1 + loc;
+                    let mut omit = false;
+                    let mut mark = nt.chars().nth(end_arrow + 1).unwrap_or('~');
+                    let mut comma = ',';
+                    if mark == ',' || mark == '/' || mark == '|' {
+                        comma = mark;
+                        mark = '~';
+                        omit = true;
+                    }
+                    if mark == 'p' || mark == '!' || mark == '~' || mark == 'n' {
+                        for j in i + 1..end_arrow {
+                            let nx = nt.chars().nth(j).unwrap_or(' ');
+                            if nx == ',' || nx == '|' || nx == '/' {
+                                ret_str.push(mark);
+                            }
+                            if let Some(c) = nt.chars().nth(j) {
+                                ret_str.push(c);
+                            }
+                        }
+                        ret_str.push(mark);
+                        ret_str.push(comma);
+                        if omit {
+                            // markがない場合、XX で ',' の分を飛ばす
+                            i = end_arrow + 1;
+                        } else {
+                            // mark + ',' の２文字進める(最後の XX を考慮)
+                            i = end_arrow + 2;
+                        }
+                    }
+                }
+            } else {
+                ret_str.push(ltr);
+            }
+            i += 1; // XX
+        }
+        //println!("$$$Divided letter in <>: {}", ret_str);
+        //ret_str
+        self.note_str = ret_str;
+    }
+    fn fill_omitted_data(&mut self, mut dt: String) -> String {
+        let phr_len = dt.len();
+        if phr_len == 0 {
+            self.note_str = "".to_string();
+        } else if phr_len >= 2 && dt.ends_with("//") {
+            dt.pop();
+            dt.pop();
+            dt += ",LPEND";
+        }
+
+        let mut fill: String = "".to_string();
+        let mut doremi = "x".to_string();
+        let mut doremi_end_flag = true;
+        let mut in_parentheses = false;
+        for ltr in dt.chars() {
+            if ltr == ',' {
+                if in_parentheses {
+                    doremi.push('@'); // ()内の','を、@ に変換
+                } else {
+                    fill += &doremi;
+                    fill += ",";
+                    doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
+                    doremi_end_flag = true;
+                }
+            } else if ltr == '|' || ltr == '/' {
                 fill += &doremi;
-                fill += ",";
+                fill += ",|,";
                 doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
                 doremi_end_flag = true;
+            } else if doremi_end_flag {
+                doremi = (ltr).to_string();
+                doremi_end_flag = false;
+            } else if ltr == '(' {
+                in_parentheses = true;
+                doremi.push(ltr);
+            } else if ltr == ')' {
+                in_parentheses = false;
+                doremi.push(ltr);
+            } else {
+                doremi.push(ltr);
             }
-        } else if ltr == '|' || ltr == '/' {
+        }
+        if !doremi.is_empty() {
             fill += &doremi;
-            fill += ",|,";
-            doremi = "x".to_string(); // ,| 連続入力による、休符指示の補填
-            doremi_end_flag = true;
-        } else if doremi_end_flag {
-            doremi = (ltr).to_string();
-            doremi_end_flag = false;
-        } else if ltr == '(' {
-            in_parentheses = true;
-            doremi.push(ltr);
-        } else if ltr == ')' {
-            in_parentheses = false;
-            doremi.push(ltr);
-        } else {
-            doremi.push(ltr);
+        }
+        fill
+    }
+    fn fill_omitted_note_data(&mut self) {
+        let nf = self.note_str.clone();
+        self.note_str = self.fill_omitted_data(nf);
+        let ac = self.accia_str.clone();
+        self.accia_str = self.fill_omitted_data(ac);
+    }
+    fn gen_accia_info(&mut self) {
+        // 装飾音符を一拍前に移動するために、先頭を削除し、小節線を後ろにずらす
+        if !self.accia_info.is_empty() {
+            self.accia_info.remove(0);
+        }
+        if self.accia_info.is_empty() {
+            return;
+        }
+        let mut do_swap = true;
+        for i in 0..self.accia_info.len() - 1 {
+            if self.accia_info[i] == "|" && do_swap {
+                self.accia_info.swap(i, i + 1);
+                do_swap = false;
+            } else {
+                do_swap = true;
+            }
         }
     }
-    if !doremi.is_empty() {
-        fill += &doremi;
-    }
-    fill
-}
-/// Note Modulation Function と Music Expression Function を分離する
-fn divide_notemod_and_musicex(nev: Vec<String>) -> (Vec<String>, Vec<String>) {
-    let mut nm: Vec<String> = Vec::new();
-    let mut ne: Vec<String> = Vec::new();
-
-    for nx in nev.iter() {
-        if nx.len() >= 3 && &nx[0..3] == "rpt" {
-            nm.push(nx.to_string());
-        } else {
-            ne.push(nx.to_string());
-        }
-    }
-    if ne.is_empty() {
-        ne.push("raw".to_string());
-    }
-    (nm, ne)
-}
-fn note_repeat(nv: Vec<String>) -> (Vec<String>, bool) {
-    let mut new_vec = nv.clone();
-    let mut no_exist: bool = true;
-    for (i, one) in nv.iter().enumerate() {
-        if one.contains("*") {
-            no_exist = false;
-            for (j, ltr) in one.chars().enumerate() {
-                if ltr == '*' {
-                    new_vec[i] = one[..j].to_string();
-                    let number: i32 = one[j + 1..].parse().unwrap_or(0);
-                    if number > 1 {
-                        for _ in 0..number - 1 {
-                            new_vec.insert(i + 1, one[..j].to_string());
+    fn note_repeat(&mut self) {
+        loop {
+            let mut new_vec = self.note_info.clone();
+            let mut no_exist: bool = true;
+            for (i, one) in self.note_info.iter().enumerate() {
+                if one.contains("*") {
+                    no_exist = false;
+                    for (j, ltr) in one.chars().enumerate() {
+                        if ltr == '*' {
+                            new_vec[i] = one[..j].to_string();
+                            let number: i32 = one[j + 1..].parse().unwrap_or(0);
+                            if number > 1 {
+                                for _ in 0..number - 1 {
+                                    new_vec.insert(i + 1, one[..j].to_string());
+                                }
+                            }
+                            break;
                         }
                     }
                     break;
                 }
             }
-            break;
+            self.note_info = new_vec;
+            if no_exist {
+                break;
+            }
         }
     }
-    (new_vec, no_exist)
+    /// 同じ Phrase を指定回数回、コピーし追加する
+    fn repeat_ntimes(&mut self, ne: &str) {
+        let mut nnv: Vec<String> = Vec::new();
+        let num;
+        if let Some(n) = extract_number_from_parentheses(ne) {
+            num = n;
+        } else {
+            num = 1;
+        }
+        nnv.extend(self.note_info.clone()); //  repeat前
+        for _ in 0..num {
+            nnv.push("$RPT".to_string());
+            nnv.extend(self.note_info.clone()); // 繰り返しの中身
+        }
+        self.note_info = nnv;
+    }
+    fn _get_nt_orgin(&self, idx: usize) -> Option<String> {
+        if idx < self.note_info.len() {
+            Some(self.note_info[idx].clone())
+        } else {
+            None
+        }
+    }
+    fn get_origin(&self, idx: usize) -> (Option<String>, Option<String>) {
+        if idx < self.note_info.len() {
+            let nt = self.note_info[idx].clone();
+            let at = if idx < self.accia_info.len() {
+                Some(self.accia_info[idx].clone())
+            } else {
+                None
+            };
+            (Some(nt), at)
+        } else {
+            (None, None)
+        }
+    }
 }
-/// 同じ Phrase を指定回数回、コピーし追加する
-fn repeat_ntimes(nv: Vec<String>, ne: &str) -> Vec<String> {
-    let mut nnv: Vec<String> = Vec::new();
-    let num;
-    if let Some(n) = extract_number_from_parentheses(ne) {
-        num = n;
-    } else {
-        num = 1;
+//*******************************************************************
+pub fn complement_phrase(input_text: String, cluster_word: &str) -> Box<PhraseComplemented> {
+    let mut pc = Box::new(PhraseComplemented::new());
+
+    // 1. space 削除し、[] を検出して、音符情報と、その他の情報を分ける
+    let phr = input_text.trim().to_string();
+    pc.divide_brackets(phr);
+
+    // 2. 音符情報はさらに : で分割、auftaktの展開、装飾音符の分離
+    let ntdiv = split_by(':', pc.note_str.clone());
+    pc.divide_atrb(ntdiv.clone());
+    pc.divide_acciaccatura();
+
+    // 3. 関数を . で分割し、音符変調と音楽表現に分ける
+    let mut nev = split_by('.', pc.exp_str.clone());
+    nev.retain(|nt| !nt.is_empty());
+    pc.divide_notemod_and_musicex(nev);
+
+    // 4. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
+    pc.divide_arrow_bracket();
+    pc.note_str = pc.note_str.replace('c', cluster_word);
+
+    // 5. ,| 重複による休符指示の補填、()内の ',' を '_' に変換。音符のVector化
+    pc.fill_omitted_note_data();
+    pc.note_info = split_by(',', pc.note_str.clone());
+    pc.accia_info = split_by(',', pc.accia_str.clone());
+    pc.gen_accia_info();
+
+    // 6. 同音繰り返しの展開
+    pc.note_repeat();
+
+    // 7. 音符変調関数の適用
+    let note_mod = pc.note_mod.clone();
+    for ne in note_mod.iter() {
+        if &ne[0..3] == "rpt" {
+            pc.repeat_ntimes(ne);
+        }
     }
-    nnv.extend(nv.clone()); //  repeat前
-    for _ in 0..num {
-        nnv.push("$RPT".to_string());
-        nnv.extend(nv.clone()); // 繰り返しの中身
-    }
-    nnv
+    pc
 }
 
 //*******************************************************************
@@ -273,95 +392,210 @@ impl Default for AddNoteParam {
     }
 }
 //*******************************************************************
+#[derive(Debug)]
+pub struct PhraseRecombined {
+    pub rcmb: Vec<PhrEvt>,
+    pub last_nt: i32,
+    pub base_dur: i32,
+    pub read_ptr: usize,
+    pub msr: i32,
+    pub whole_msr_tick: i32,
+    tick_for_onemsr: i32,
+}
+impl PhraseRecombined {
+    pub fn new(tick_for_onemsr: i32) -> Self {
+        PhraseRecombined {
+            rcmb: Vec::new(),
+            last_nt: 0,
+            base_dur: DEFAULT_TICK_FOR_QUARTER,
+            read_ptr: 0,
+            msr: 1,
+            whole_msr_tick: tick_for_onemsr,
+            tick_for_onemsr,
+        }
+    }
+    pub fn get_and_inc_read_ptr(&mut self) -> usize {
+        let r = self.read_ptr;
+        self.read_ptr += 1;
+        r
+    }
+    pub fn update_crnt_tick(&mut self) -> i32 {
+        let crnt_tick = self.whole_msr_tick; // 小節頭
+        self.whole_msr_tick = self.tick_for_onemsr * self.new_msr(); // 次の小節頭
+        crnt_tick
+    }
+    pub fn whole_msr_tick(&self) -> i32 {
+        self.whole_msr_tick
+    }
+    pub fn rest_tick(&self, crnt_tick: i32) -> i32 {
+        self.whole_msr_tick - crnt_tick
+    }
+    pub fn is_less_than_whole_tick(&self, crnt_tick: i32) -> bool {
+        crnt_tick < self.whole_msr_tick
+    }
+    pub fn adjust_crnt_tick(&self, crnt_tick: i32) -> i32 {
+        if crnt_tick < self.whole_msr_tick {
+            // 小節線を超えていれば、次の小節の頭までをwhole_tickとする
+            self.whole_msr_tick
+        } else {
+            crnt_tick
+        }
+    }
+    fn new_msr(&mut self) -> i32 {
+        self.msr += 1;
+        self.msr
+    }
+    /// カンマで区切られた単位の文字列を解析し、ノート番号、tick、velocity を確定する
+    fn break_up_nt_dur_vel(
+        //pr: &mut PhraseRecombined,
+        &mut self,
+        note_text: String, // 分析対象のテキスト
+        base_note: i32,    // そのパートの基準音
+        crnt_tick: i32,    // 現在の tick
+        imd: InputMode,    // input mode
+    ) -> (Vec<u8>, i32, i32, (i16, bool))
+    /*( notes,      // 発音ノート
+        dur_tick,   // 音符のtick数
+        diff_vel,   // 音量情報
+        artic       // アーティキュレーション情報
+    )*/ {
+        let rest_tick = self.rest_tick(crnt_tick);
+        //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、解析を終えたら文字列を再結合
+        let mut ntext1 = note_text;
+        let oct = extract_top_pm(&mut ntext1);
+
+        //  duration 情報、 Velocity 情報の抽出
+        let (ntext3, base_dur, dur_tick, artic) = gen_dur_info(ntext1, self.base_dur, rest_tick);
+        let (mut ntext4, diff_vel) = gen_diff_vel(ntext3);
+
+        // 複数音がアルペジオか判断、各音を分離してベクトル化
+        let arp = if ntext4.starts_with("$") {
+            ntext4.remove(0);
+            true
+        } else {
+            false
+        };
+        let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
+        let notes_vec = split_notes(ntext5.clone());
+
+        // 階名への変換
+        let mut notes: Vec<u8> = Vec::new();
+        let mut next_last_nt = self.last_nt;
+        let mut first_note: Option<i32> = None; // 和音の最初の音程を記録するため
+        for (i, nt) in notes_vec.iter().enumerate() {
+            let doremi: i32;
+            match imd {
+                InputMode::Fixed => {
+                    doremi = convert_doremi_fixed(nt.to_string());
+                    if i > 0 {
+                        break;
+                    }
+                }
+                InputMode::Closer => {
+                    if i == 0 {
+                        doremi = convert_doremi_closer(nt.to_string(), next_last_nt);
+                        if doremi < NO_MIDI_VALUE as i32 {
+                            first_note = Some(doremi);
+                        }
+                    } else {
+                        doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
+                    }
+                }
+                InputMode::Upcloser => {
+                    doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
+                    if i == 0 && doremi < NO_MIDI_VALUE as i32 {
+                        first_note = Some(doremi);
+                    }
+                }
+            }
+            if doremi < NO_MIDI_VALUE as i32 {
+                next_last_nt = doremi;
+            }
+            notes.push(add_base_and_doremi(base_note, doremi));
+        }
+
+        // 何も音名が入らなかった時
+        if notes.is_empty() {
+            notes.push(NO_NOTE);
+        } else if notes.len() > 1 && first_note.is_some() {
+            // Upcloser + 和音の時、最低音を next_last_nt とする
+            next_last_nt = first_note.unwrap();
+        }
+        self.last_nt = next_last_nt; // 次回の音程の上下判断のため
+        self.base_dur = base_dur; // 次回の音符のために保存しておく
+        (notes, dur_tick, diff_vel, (artic, arp))
+    }
+}
+//*******************************************************************
 pub fn recombine_to_internal_format(
-    ntvec: &[String],
-    expvec: &[String],
+    pc: &PhraseComplemented,
     imd: InputMode,
     base_note: i32,
     tick_for_onemsr: i32,
 ) -> (i32, bool, Vec<PhrEvt>) {
-    let (exp_vel, _exp_others) = get_dyn_info(expvec.to_vec());
-    let mut read_ptr = 0;
-    let mut last_nt: i32 = 0;
+    let mut pr = PhraseRecombined::new(tick_for_onemsr);
+    let (exp_vel, _exp_others) = get_dyn_info(pc.music_exp.clone());
     let mut crnt_tick: i32 = 0;
-    let mut msr: i32 = 1;
-    let mut base_dur: i32 = DEFAULT_TICK_FOR_QUARTER;
-    let mut rcmb = Vec::new();
     let mut mes_top: bool = false;
-    let (max_read_ptr, do_loop) = judge_no_loop(ntvec);
-    let mut whole_msr_tick = tick_for_onemsr;
-    let mut rest_tick = 0;
+    let mut do_loop = true;
 
-    while read_ptr < max_read_ptr {
-        let nt_origin = ntvec[read_ptr].clone();
-        if nt_origin == "|" {
+    loop {
+        let (nt_val, atrb_val) = pc.get_origin(pr.get_and_inc_read_ptr());
+        println!("$$$ nt_val: {:?}, atrb_val: {:?}", nt_val, atrb_val);
+        if nt_val.is_none() {
+            break;
+        }
+        let nt = nt_val.unwrap();
+        if nt == "|" {
             // 小節線
-            crnt_tick = whole_msr_tick; // 小節頭
-            msr += 1;
-            whole_msr_tick = tick_for_onemsr * msr; // 次の小節頭
+            crnt_tick = pr.update_crnt_tick();
             mes_top = true;
-            read_ptr += 1; // out from repeat
             continue;
         }
+        if nt == "LPEND" {
+            // 繰り返しなしを示す終端
+            do_loop = false;
+            break;
+        }
+        let nt_origin = nt;
 
         // イベント抽出
-        rest_tick = whole_msr_tick - crnt_tick;
         let (note_text, trns) = extract_trans_info(nt_origin);
         if note_text == "$RPT" {
             // complement時に入れた、繰り返しを表す特殊マーク$
             let nt_data = PhrEvt::Info(InfoEvt::gen_repeat(crnt_tick as i16));
-            rcmb.push(nt_data);
-            last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
-        } else if available_for_dp(&note_text) {
+            pr.rcmb.push(nt_data);
+            pr.last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
+        } else if txt2seq_dp::available_for_dp(&note_text) {
             // Dynamic Pattern
-            let (ca_ev, bdur) = treat_dp(
-                note_text.clone(),
-                base_note,
-                base_dur,
-                crnt_tick,
-                rest_tick,
-                exp_vel,
-            );
-            base_dur = bdur;
-            if crnt_tick < whole_msr_tick {
+            let ca_ev =
+                txt2seq_dp::treat_dp(&mut pr, note_text.clone(), base_note, crnt_tick, exp_vel);
+            if pr.is_less_than_whole_tick(crnt_tick) {
                 crnt_tick += ca_ev.dur() as i32;
-                rcmb.push(ca_ev);
+                pr.rcmb.push(ca_ev);
             }
         } else {
             // Note 処理
-            let (notes, note_dur, diff_vel, bdur, lnt, others) =
-                break_up_nt_dur_vel(note_text, base_note, base_dur, last_nt, rest_tick, imd);
-            last_nt = lnt; // 次回の音程の上下判断のため
-            base_dur = bdur;
-            if crnt_tick < whole_msr_tick {
+            let (notes, note_dur, diff_vel, others) =
+                pr.break_up_nt_dur_vel(note_text, base_note, crnt_tick, imd);
+            if pr.is_less_than_whole_tick(crnt_tick) {
                 // add to recombined data (NO_NOTE 含む(タイの時に使用))
                 let prm = AddNoteParam {
                     mes_top,
-                    dur: get_note_dur(note_dur, whole_msr_tick, crnt_tick),
+                    dur: get_note_dur(note_dur, pr.whole_msr_tick(), crnt_tick),
                     vel: velo_limits(exp_vel + diff_vel, 1),
                     trns,
                     others,
                 };
-                rcmb = add_note(rcmb, crnt_tick, notes, prm);
+                pr.rcmb = add_note(pr.rcmb, crnt_tick, notes, prm);
                 crnt_tick += note_dur;
             }
         }
         mes_top = false;
-        read_ptr += 1; // out from repeat
     }
-    if rest_tick > 0 {
-        crnt_tick = whole_msr_tick; // 小節線を超えていれば、次の小節の頭までをwhole_tickとする
-    }
-    (crnt_tick, do_loop, rcmb)
-}
-fn judge_no_loop(ntvec: &[String]) -> (usize, bool) {
-    let mut max_read_ptr = ntvec.len();
-    // LPENDの検出
-    let do_loop = !ntvec.ends_with(&["LPEND".to_string()]);
-    if !do_loop {
-        max_read_ptr -= 1;
-    }
-    (max_read_ptr, do_loop)
+
+    crnt_tick = pr.adjust_crnt_tick(crnt_tick);
+    (crnt_tick, do_loop, pr.rcmb)
 }
 fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
     let mut vel = END_OF_DATA;
@@ -384,99 +618,11 @@ fn get_dyn_info(expvec: Vec<String>) -> (i32, Vec<String>) {
 fn extract_trans_info(origin: String) -> (String, TrnsType) {
     if origin.len() > 2 && &origin[0..2] == ">>" {
         (origin[2..].to_string(), TrnsType::NoTrns)
-    } else if &origin[0..1] == ">" {
+    } else if !origin.is_empty() && &origin[0..1] == ">" {
         (origin[1..].to_string(), TrnsType::Para)
     } else {
         (origin, TrnsType::Com)
     }
-}
-/// カンマで区切られた単位の文字列を解析し、ノート番号、tick、velocity を確定する
-fn break_up_nt_dur_vel(
-    note_text: String, // 分析対象のテキスト
-    base_note: i32,    // そのパートの基準音
-    bdur: i32,         // 現在の基準音価
-    last_nt: i32,      // 前回の音程
-    rest_tick: i32,    // 小節の残りtick
-    imd: InputMode,    // input mode
-) -> (Vec<u8>, i32, i32, i32, i32, (i16, bool))
-/*( notes,      // 発音ノート
-    dur_tick,    // 音符のtick数
-    diff_vel,   // 音量情報
-    base_dur,   // 基準音価 -> bdur
-    last_nt,    // 次回判定用の今回の音程 -> last_nt
-    artic       // アーティキュレーション情報
-  )*/
-{
-    //  頭にOctave記号(+-)があれば、一度ここで抜いておいて、解析を終えたら文字列を再結合
-    let mut ntext1 = note_text;
-    let oct = extract_top_pm(&mut ntext1);
-
-    //  duration 情報、 Velocity 情報の抽出
-    let (ntext3, base_dur, dur_tick, artic) = gen_dur_info(ntext1, bdur, rest_tick);
-    let (mut ntext4, diff_vel) = gen_diff_vel(ntext3);
-
-    // 複数音がアルペジオか判断、各音を分離してベクトル化
-    let arp = if ntext4.starts_with("$") {
-        ntext4.remove(0);
-        true
-    } else {
-        false
-    };
-    let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
-    let notes_vec = split_notes(ntext5.clone());
-
-    // 階名への変換
-    let mut notes: Vec<u8> = Vec::new();
-    let mut next_last_nt = last_nt;
-    let mut first_note: Option<i32> = None; // 和音の最初の音程を記録するため
-    for (i, nt) in notes_vec.iter().enumerate() {
-        let doremi: i32;
-        match imd {
-            InputMode::Fixed => {
-                doremi = convert_doremi_fixed(nt.to_string());
-                if i > 0 {
-                    break;
-                }
-            }
-            InputMode::Closer => {
-                if i == 0 {
-                    doremi = convert_doremi_closer(nt.to_string(), next_last_nt);
-                    if doremi < NO_MIDI_VALUE as i32 {
-                        first_note = Some(doremi);
-                    }
-                } else {
-                    doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
-                }
-            }
-            InputMode::Upcloser => {
-                doremi = convert_doremi_upper_closer(nt.to_string(), next_last_nt);
-                if i == 0 && doremi < NO_MIDI_VALUE as i32 {
-                    first_note = Some(doremi);
-                }
-            }
-        }
-        if doremi < NO_MIDI_VALUE as i32 {
-            next_last_nt = doremi;
-        }
-        notes.push(add_base_and_doremi(base_note, doremi));
-    }
-
-    // 何も音名が入らなかった時
-    if notes.is_empty() {
-        notes.push(NO_NOTE);
-    } else if notes.len() > 1 && first_note.is_some() {
-        // Upcloser + 和音の時、最低音を next_last_nt とする
-        next_last_nt = first_note.unwrap();
-    }
-
-    (
-        notes,
-        dur_tick,
-        diff_vel,
-        base_dur,
-        next_last_nt,
-        (artic, arp),
-    )
 }
 /// 文字列の冒頭にあるプラスマイナスを抽出
 fn extract_top_pm(ntext: &mut String) -> String {
