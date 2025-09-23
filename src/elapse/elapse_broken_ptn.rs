@@ -224,7 +224,12 @@ impl BrokenPattern {
             note += post_add_nt;
         } else {
             (self.next_index, self.oct_up) = incdec_idx(up, self.next_index, self.oct_up);
-            note = tblptr[self.next_index] + pre_add_nt + self.oct_up * 12;
+            let tbl_val = if self.next_index < max_tbl_num {
+                tblptr[self.next_index]
+            } else {
+                0
+            };
+            note = tbl_val + pre_add_nt + self.oct_up * 12;
             note += post_add_nt;
         }
         self.gen_note_ev(estk, note, vel);
