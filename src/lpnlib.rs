@@ -206,6 +206,26 @@ impl PhrEvt {
             PhrEvt::Info(_) => {} // InfoEvt does not have artic
         }
     }
+    pub fn note(&self) -> u8 {
+        match self {
+            PhrEvt::Note(e) => e.note,
+            PhrEvt::NoteList(e) => e.notes[e.notes.len() - 1], // last note
+        //    PhrEvt::BrkPtn(e) => e.note,
+        //    PhrEvt::ClsPtn(e) => e.note,
+        //    PhrEvt::Info(e) => e.tick,
+            _ => NO_NOTE,
+        }
+    }
+    pub fn set_note(&mut self, note: u8) {
+        match self {
+            PhrEvt::Note(e) => e.note = note,
+        //    PhrEvt::NoteList(e) => e.set_note(note),
+        //    PhrEvt::BrkPtn(e) => e.set_note(note),
+        //    PhrEvt::ClsPtn(e) => e.set_note(note),
+        //    PhrEvt::Info(e) => e.tick = tick,
+            _ => {}
+        }
+    }
 }
 //-------------------------------------------------------------------
 // MSG_ANA

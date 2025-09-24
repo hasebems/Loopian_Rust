@@ -117,6 +117,25 @@ pub fn extract_number_from_parentheses(ne: &str) -> Option<usize> {
     }
     None
 }
+#[allow(dead_code)]
+pub fn extract_anynumber_from_parentheses<T: std::str::FromStr>(ne: &str) -> Option<T> {
+    if let Some(i) = ne.find('(') {
+        if let Some(e) = ne.find(')') {
+            if i < e {
+                let num = if i + 1 < e {
+                    match ne[(i + 1)..e].to_string().parse::<T>() {
+                        Ok(n) => Some(n),
+                        Err(_) => None,
+                    }
+                } else {
+                    None
+                };
+                return num;
+            }
+        }
+    }
+    None
+}
 pub fn extract_texts_from_parentheses(ne: &str) -> &str {
     if let Some(i) = ne.find('(') {
         if let Some(e) = ne.find(')') {

@@ -16,8 +16,8 @@ pub struct PhraseComplemented {
     pub exp_str: String,                  // []の後ろ
     pub note_attribute: Vec<Option<i16>>, // Auftakt などの属性
     pub note_info: Vec<String>,
-    pub note_mod: Vec<String>,   // Note Modulation Function
-    pub music_exp: Vec<String>,  // Music Expression Function
+    pub note_mod: Vec<String>,           // Note Modulation Function
+    pub music_exp: Vec<String>,          // Music Expression Function
     pub accia_info: Vec<Option<String>>, // 装飾音符の情報
 }
 
@@ -344,6 +344,7 @@ pub struct PhraseRecombined {
     base_note: i32,
 }
 impl PhraseRecombined {
+    const ACCIACCATURA_LENGTH: i16 = 60;
     fn new(tick_for_onemsr: i32, base_note: i32) -> Self {
         PhraseRecombined {
             rcmb: Vec::new(),
@@ -393,8 +394,8 @@ impl PhraseRecombined {
         note_text: String, // 分析対象のテキスト
         crnt_tick: i32,    // 現在の tick
         imd: InputMode,    // input mode
-    ) -> (Vec<u8>, i32, i32, (i16, bool))
-    /*( notes,      // 発音ノート
+    ) -> (Vec<u8>, i32, i32, (i16, bool)) /*
+    (   notes,      // 発音ノート
         dur_tick,   // 音符のtick数
         diff_vel,   // 音量情報
         artic       // アーティキュレーション情報
@@ -465,13 +466,8 @@ impl PhraseRecombined {
         self.base_dur = base_dur; // 次回の音符のために保存しておく
         (notes, dur_tick, diff_vel, (artic, arp))
     }
-    fn add_note(
-        &mut self,
-        tick: i32,
-        notes: Vec<u8>,
-        prm: AddNoteParam,
-        accia: Option<String>,
-    ) {
+    /// 音符を指定して、Recombine に追加する
+    fn add_note(&mut self, tick: i32, notes: Vec<u8>, prm: AddNoteParam, accia: Option<String>) {
         //let mut return_rcmb = rcmb.clone();
         match notes.len() {
             0 => (),
@@ -479,14 +475,10 @@ impl PhraseRecombined {
                 match notes[0] {
                     REST => (),
                     NO_NOTE => {
-                        // タイの時は、音符の音価を増やすので、ここでは何もしない
-                        //self.rcmb.push(PhrEvt::NoNote(NoNoteEvt { tick: tick as i16, dur: prm.dur as i16 }));
+                        // 小節先頭にタイがあった場合、前の音の音価を増やす
                         self.modify_last_note(&prm);
                     }
                     _ => {
-                        if accia.is_some() {
-                            // 装飾音符の入力
-                        }
                         // 単音の入力
                         let note_data = PhrEvt::Note(NoteEvt {
                             tick: tick as i16,
@@ -497,6 +489,9 @@ impl PhraseRecombined {
                             trns: prm.trns,
                             artic: prm.others.0,
                         });
+                        if let Some(accia_str) = &accia {
+                            self.add_accia_note(accia_str, &note_data);
+                        }
                         self.rcmb.push(note_data);
                     }
                 }
@@ -512,6 +507,9 @@ impl PhraseRecombined {
                     trns: prm.trns,
                     artic: prm.others.0,
                 });
+                if let Some(accia_str) = &accia {
+                    self.add_accia_note(accia_str, &note_data);
+                }
                 self.rcmb.push(note_data);
             }
         }
@@ -520,7 +518,6 @@ impl PhraseRecombined {
     fn modify_last_note(&mut self, prm: &AddNoteParam) {
         let l = self.rcmb.len();
         if prm.mes_top && l > 0 {
-            // 小節先頭にタイがあった場合、前の音の音価を増やす
             // 前回の入力が和音入力だった場合も考え、直前の同じタイミングのデータを全て調べる
             let mut search_idx = l - 1;
             let last_tick = self.rcmb[search_idx].tick();
@@ -539,6 +536,24 @@ impl PhraseRecombined {
                 search_idx -= 1;
             }
         }
+    }
+    fn add_accia_note(&mut self, accia_str: &str, note_data: &PhrEvt) {
+        // 装飾音符の入力
+        let accia_str = extract_texts_from_parentheses(accia_str);
+        let accia_notes = accia_str.split('@').collect::<Vec<&str>>();
+        let acnum = accia_notes.len() as i16;
+        for (i, &nt) in accia_notes.iter().enumerate() {
+            if nt.is_empty() {
+                continue;
+            }
+            let accia_value = nt.parse().unwrap_or(0);
+            let mut accia_note = note_data.clone();
+            accia_note.set_dur(Self::ACCIACCATURA_LENGTH);
+            accia_note.set_note((note_data.note() as i8 + accia_value) as u8);
+            accia_note.set_tick(accia_note.tick() - Self::ACCIACCATURA_LENGTH * (acnum - i as i16));
+            //println!("Added accia note: {:?}", nt);
+            self.rcmb.push(accia_note);
+        }       
     }
 }
 //*******************************************************************
