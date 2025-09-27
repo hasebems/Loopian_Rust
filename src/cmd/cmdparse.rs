@@ -594,8 +594,7 @@ impl LoopianCmd {
         // Phrase を消去する message を送る
         self.sndr.clear_phrase_to_elapse(part_num);
 
-        let empty_cmp = "{}".to_string();
-        if self.dtstk.set_raw_composition(part_num, empty_cmp) {
+        if self.dtstk.set_raw_composition(part_num, "{}".to_string()) {
             self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
         }
         self.dtstk.change_oct(0, true, part_num);

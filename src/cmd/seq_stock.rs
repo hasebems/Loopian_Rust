@@ -111,8 +111,8 @@ impl SeqDataStock {
         }
     }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
-        if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw(input_text) {
-            self.cdt[part].set_recombined(self.tick_for_onemsr, self.tick_for_beat);
+        if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw_cd(input_text) {
+            self.cdt[part].set_recombined_cd(self.tick_for_onemsr, self.tick_for_beat);
             return true;
         }
         false
@@ -239,7 +239,7 @@ impl SeqDataStock {
                     true,
                 );
             }
-            self.cdt[i].set_recombined(self.tick_for_onemsr, self.tick_for_beat);
+            self.cdt[i].set_recombined_cd(self.tick_for_onemsr, self.tick_for_beat);
         }
     }
     fn default_base_note(part_num: usize) -> i32 {
@@ -422,7 +422,7 @@ impl CompositionDataStock {
             },
         )
     }
-    pub fn set_raw(&mut self, input_text: String) -> bool {
+    pub fn set_raw_cd(&mut self, input_text: String) -> bool {
         // 1.raw
         self.raw = input_text.clone();
 
@@ -437,24 +437,25 @@ impl CompositionDataStock {
             false
         }
     }
-    pub fn set_recombined(&mut self, tick_for_onemsr: i32, tick_for_beat: i32) {
+    pub fn set_recombined_cd(&mut self, tick_for_onemsr: i32, tick_for_beat: i32) {
         if self.cmpl_cd == [""] {
             // clear
             self.chord = Vec::new();
-            println!("no_composition...");
-            return;
+            self.whole_tick = 0;
+            self.do_loop = true;
+            //println!("no_composition...");
+        } else {
+            // 3.recombined data
+            let (whole_tick, do_loop, rcmb) =
+                recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_beat);
+            self.chord = rcmb;
+            self.do_loop = do_loop;
+            self.whole_tick = whole_tick;
+            #[cfg(feature = "verbose")]
+            println!(
+                "final_composition: {:?} whole_tick: {:?}",
+                self.chord, self.whole_tick
+            );
         }
-
-        // 3.recombined data
-        let (whole_tick, do_loop, rcmb) =
-            recombine_to_chord_loop(&self.cmpl_cd, tick_for_onemsr, tick_for_beat);
-        self.chord = rcmb;
-        self.do_loop = do_loop;
-        self.whole_tick = whole_tick;
-        #[cfg(feature = "verbose")]
-        println!(
-            "final_composition: {:?} whole_tick: {:?}",
-            self.chord, self.whole_tick
-        );
     }
 }

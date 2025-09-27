@@ -45,7 +45,7 @@ impl MessageSender {
     pub fn send_composition_to_elapse(&self, part: usize, gdt: &SeqDataStock) {
         let cdt = gdt.get_cdstk(part).get_final(part as i16);
         let cmsg = cdt.clone();
-        if let ElpsMsg::Cmp(_c0, cv) = &cdt {
+        if let ElpsMsg::Cmp(_c0, cv) = cdt {
             if cv.evts.is_empty() {
                 self.send_msg_to_elapse(ElpsMsg::CmpX(part as i16));
                 println!("Part {part} Composition: No Data!");

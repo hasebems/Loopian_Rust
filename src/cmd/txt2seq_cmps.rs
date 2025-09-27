@@ -271,18 +271,22 @@ pub fn recombine_to_chord_loop(
 
     let mut chord: String;
     let mut dur: i32 = 0;
-    let mut tick: i32 = 0;
+    let mut tick: i16 = 0;
     let mut msr: i32 = 1;
     let mut rcmb = Vec::new();
-    let mut same_chord: String = "path".to_string();
+    //let mut same_chord: String = "path".to_string();
+    let mut same_chord: String = "".to_string();
+    let mut rc_push = |mtype, tick, root, tbl| {
+        rcmb.push(ChordEvt {mtype, tick, root, tbl})
+    };
 
     while read_ptr < max_read_ptr {
         // generate new tick
         if dur != LAST {
-            tick += tick_for_onebeat * dur;
+            tick += (tick_for_onebeat * dur) as i16;
         }
-        if dur == LAST || tick >= tick_for_onemsr * msr {
-            tick = tick_for_onemsr * msr;
+        if dur == LAST || tick >= (tick_for_onemsr * msr) as i16 {
+            tick = (tick_for_onemsr * msr) as i16;
             msr += 1;
         }
 
@@ -296,12 +300,7 @@ pub fn recombine_to_chord_loop(
                 .to_digit(10)
                 .unwrap_or(0) as i16;
             if num > 0 && num <= 9 {
-                rcmb.push(ChordEvt {
-                    mtype: TYPE_VARI,
-                    tick: tick as i16,
-                    root: num,
-                    tbl: 0,
-                })
+                rc_push(TYPE_VARI, tick, num, 0);
             }
             if !msgs_sp[1][1..].is_empty() {
                 let rest = msgs_sp[1][1..].to_string();
@@ -310,7 +309,7 @@ pub fn recombine_to_chord_loop(
                 msgs = msgs_sp[0].to_string();
             }
             if msgs.is_empty() {
-                msgs = "X".to_string();
+                msgs = "".to_string();
             }
         }
 
@@ -323,19 +322,9 @@ pub fn recombine_to_chord_loop(
 
         let (root, table) = convert_chord_to_num(chord);
         if table == NO_LOOP {
-            rcmb.push(ChordEvt {
-                mtype: TYPE_CONTROL,
-                tick: tick as i16,
-                root: 0,
-                tbl: table,
-            });
+            rc_push(TYPE_CONTROL, tick, 0, table);
         } else {
-            rcmb.push(ChordEvt {
-                mtype: TYPE_CHORD,
-                tick: tick as i16,
-                root,
-                tbl: table,
-            });
+            rc_push(TYPE_CHORD, tick, root, table);
         }
 
         read_ptr += 1;
@@ -352,7 +341,9 @@ pub fn recombine_to_chord_loop(
 fn divide_chord_and_dur(mut chord: String) -> (String, i32) {
     let mut dur: i32 = 1;
     let mut ltr_count = chord.len();
-    assert!(ltr_count != 0);
+    if ltr_count == 0 {
+        return ("".to_string(), dur);
+    }
 
     let last_ltr = chord.chars().last().unwrap_or(' ');
     let mut msr_line: bool = false;

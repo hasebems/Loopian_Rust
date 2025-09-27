@@ -386,7 +386,7 @@ impl CmpsLoopMediator {
                 }
             }
         } else if self.clear_cmps_ev {
-            //self.clear_cmp_prm();
+            self.clear_cmp_prm();
             self.clear_cmps_ev = false;
         } else {
             // 拍子が変わってイベントが発生したとき
