@@ -140,8 +140,6 @@ impl PhraseComplemented {
             }
             i += 1; // XX
         }
-        //println!("$$$Divided letter in <>: {}", ret_str);
-        //ret_str
         self.note_str = ret_str;
     }
     /// ,| 重複による休符指示の補填、()内の ',' を '@' に変換
@@ -605,7 +603,6 @@ pub fn recombine_to_internal_format(
             }
         } else {
             // Note 処理
-            println!("$$$ nt: {:?}, accia: {:?}", note_text, accia_val);
             let (notes, note_dur, diff_vel, others) =
                 pr.break_up_nt_dur_vel(note_text, crnt_tick, imd);
             if pr.is_less_than_whole_tick(crnt_tick) {
