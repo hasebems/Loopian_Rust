@@ -78,6 +78,12 @@ impl LoopianCmd {
                 } else {
                     "what?".to_string()
                 }
+            } else if cmd == "flowreso" {
+                if self.change_reso(prm) {
+                    "Path has changed!".to_string()
+                } else {
+                    "what?".to_string()
+                }
             } else {
                 "what?".to_string()
             }
@@ -196,5 +202,14 @@ impl LoopianCmd {
     fn change_path(&mut self, path: &str) -> bool {
         self.path(path.to_string());
         true
+    }
+    fn change_reso(&mut self, ntnum: &str) -> bool {
+        if let Ok(turn_note) = ntnum.parse::<i16>() {
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_TICK_RESOLUTION, turn_note]));
+            true
+        } else {
+            false
+        }
     }
 }

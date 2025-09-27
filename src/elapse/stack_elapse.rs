@@ -559,6 +559,10 @@ impl ElapseStack {
                 self.stop();
             }
             self.tg.set_crnt_msr(msg[1] as i32);
+        } else if msg[0] == MSG_SET_FLOW_TICK_RESOLUTION {
+            if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+                fl.borrow_mut().set_tick_resolution(msg[1] as i32);
+            }
         }
     }
     fn efct(&mut self, msg: [i16; 2]) {

@@ -38,6 +38,7 @@ pub struct Flow {
     keynote: u8,
     root: i16,
     translation_tbl: i16,
+    tick_resolution: i32,
 
     // for super's member
     during_play: bool,
@@ -65,6 +66,7 @@ impl Flow {
             keynote: 0,
             root: 0,
             translation_tbl: NO_TABLE,
+            tick_resolution: TICK_RESOLUTION,
 
             // for super's member
             during_play,
@@ -81,6 +83,9 @@ impl Flow {
     }
     pub fn set_keynote(&mut self, keynote: u8) {
         self.keynote = keynote;
+    }
+    pub fn set_tick_resolution(&mut self, reso: i32) {
+        self.tick_resolution = reso;
     }
     pub fn get_keynote(&self) -> u8 {
         self.keynote
@@ -136,7 +141,7 @@ impl Flow {
         let (msr, tick) = {
             let msr: i32;
             let tick: i32;
-            let tk = (crnt_.tick / TICK_RESOLUTION + 1) * TICK_RESOLUTION;
+            let tk = (crnt_.tick / self.tick_resolution + 1) * self.tick_resolution;
             if tk >= crnt_.tick_for_onemsr {
                 msr = crnt_.msr + 1;
                 tick = tk - crnt_.tick_for_onemsr;
