@@ -3,6 +3,7 @@ set.key(D)
 set.bpm(144)
 set.beat(4/4)
 set.input(closer)
+set.flowreso(160)
 L1
 [d^^,m,s^,m].para().stacc(70).dyn(mp).dmp(off)
 @1=[3ex.,+d^,qta^,s^,m].para().dyn(mf).dmp(off)

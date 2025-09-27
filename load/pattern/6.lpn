@@ -1,0 +1,13 @@
+clear
+set.key(D)
+set.bpm(56)
+set.turnnote(7)
+set.input(upcloser)
+set.flowreso(160)
+
+L1
+[3el^^,d,m,t^,d,-l,s^^.....].dyn(mp)
+@1=[3el^^,d,f,t^,d,-l,+l^^.....].dyn(mp)
+{O/O/O@1/O@1}
+FLOW.{VIm9/./IVM9/.}
+play
