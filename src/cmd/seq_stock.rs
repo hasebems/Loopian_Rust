@@ -395,7 +395,7 @@ impl PhraseDataStock {
 pub struct CompositionDataStock {
     raw: String,
     cmpl_cd: Vec<String>,
-    chord: Vec<ChordEvt>,
+    chord: Vec<CmpEvt>,
     do_loop: bool,
     whole_tick: i32,
 }
@@ -414,7 +414,7 @@ impl CompositionDataStock {
     pub fn get_final(&self, part: i16) -> ElpsMsg {
         ElpsMsg::Cmp(
             part,
-            ChordData {
+            CmpData {
                 whole_tick: self.whole_tick as i16,
                 do_loop: self.do_loop,
                 evts: self.chord.clone(),

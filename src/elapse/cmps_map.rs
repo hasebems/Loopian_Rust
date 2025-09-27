@@ -3,6 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+pub type ChordEvtMap = Vec<Vec<Option<(ChordEvt, bool)>>>;
+pub type PedalEvtMap = Vec<Vec<Option<(PedalEvt, bool)>>>;
 use super::elapse_part::PartBasicPrm;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
@@ -14,7 +16,9 @@ use crate::lpnlib::*;
 //*******************************************************************
 #[derive(Clone, Debug)]
 pub struct CompositionMap {
-    cmps_map: Vec<Vec<Vec<(ChordEvt, bool)>>>, // [msr][beat][num]
+    chord_map: ChordEvtMap, // [msr][beat][num]
+    damper_map: PedalEvtMap, // [msr][beat][num]
+    vari_map: Vec<Option<i16>>,
 
     // for Composition
     first_msr_num: i32,
@@ -27,10 +31,13 @@ pub struct CompositionMap {
     max_beat: usize,
 }
 impl CompositionMap {
-    pub fn new(evts: Vec<ChordEvt>, whole_tick: i32, max_msr: usize, max_beat: usize) -> Self {
-        let cmps_map = Self::unfold_cmp_evt(evts, max_msr, max_beat, whole_tick);
+    pub fn new(evts: Vec<CmpEvt>, whole_tick: i32, max_msr: usize, max_beat: usize) -> Self {
+        let (chord_map, damper_map, vari_map) =
+            Self::unfold_chord_pedal_evt(evts, max_msr, max_beat, whole_tick);
         Self {
-            cmps_map,
+            chord_map,
+            damper_map,
+            vari_map,
             first_msr_num: 0,
             chord_name: String::new(),
             root_for_ui: NO_ROOT,
@@ -41,39 +48,59 @@ impl CompositionMap {
             max_beat,
         }
     }
-    /// Composition Event を受け取り、Composition Map に展開する
-    fn unfold_cmp_evt(
-        evts: Vec<ChordEvt>,
+    fn unfold_chord_pedal_evt(
+        evts: Vec<CmpEvt>,
         msr: usize,
         beat: usize,
         whole_tick: i32,
-    ) -> Vec<Vec<Vec<(ChordEvt, bool)>>> {
-        let mut cmps_map = vec![vec![Vec::new(); beat]; msr];
+    ) -> (ChordEvtMap, PedalEvtMap, Vec<Option<i16>>) {
+        let mut chord_map = vec![vec![None; beat]; msr];
+        let mut pedal_map = vec![vec![None; beat]; msr];
+        let mut vari_map = vec![None; msr];
         let tick_for_onemsr = whole_tick as usize / msr;
         let tick_for_onebeat = tick_for_onemsr / beat;
         let mut crnt_idx = 0;
-        let mut last_evt = None;
+        let mut last_chord = None;
+        let mut last_pedal = None;
         let max_len = evts.len();
         // 1小節の中に、1拍ごとに分けて、イベントを展開する
-        for (i, msr_map) in cmps_map.iter_mut().enumerate() {
-            for (j, beat_map) in msr_map.iter_mut().enumerate() {
+        for i in 0..msr {
+            let chd_m_map = &mut chord_map[i];
+            let ped_m_map = &mut pedal_map[i];
+            for j in 0..beat {
                 let crnt_tick = (i * tick_for_onemsr + j * tick_for_onebeat) as i16;
-                if crnt_idx < max_len && evts[crnt_idx].tick <= crnt_tick {
+                if crnt_idx < max_len && evts[crnt_idx].tick() <= crnt_tick {
                     // 同タイミングに複数イベントがある場合のため、loopにて処理
                     loop {
-                        beat_map.push((evts[crnt_idx].clone(), true));
-                        if evts[crnt_idx].mtype == TYPE_CHORD {
-                            last_evt = Some(evts[crnt_idx].clone());
+                        let evt = evts[crnt_idx].clone();
+                        match evt {
+                            CmpEvt::Chord(cd) => {
+                                chd_m_map[j] = Some((cd.clone(), true));
+                                last_chord = Some(cd);
+                            }
+                            CmpEvt::Pedal(pd) => {
+                                ped_m_map[j] = Some((pd.clone(), true));
+                                last_pedal = Some(pd);
+                            }
+                            CmpEvt::Vari(v) => {
+                                vari_map[i] = Some(v.vari);
+                            }
+                            _ => {}
                         }
                         crnt_idx += 1;
-                        if crnt_idx < max_len && evts[crnt_idx].tick <= crnt_tick {
+                        if crnt_idx < max_len && evts[crnt_idx].tick() <= crnt_tick {
                             continue;
                         } else {
                             break;
                         }
                     }
-                } else if let Some(ref evt) = last_evt {
-                    beat_map.push((evt.clone(), false));
+                } else {
+                    if let Some(ref evt) = last_chord {
+                        chd_m_map[j] = Some((evt.clone(), false));
+                    }
+                    if let Some(ref evt) = last_pedal {
+                        ped_m_map[j] = Some((evt.clone(), false));
+                    }
                 }
             }
         }
@@ -82,25 +109,35 @@ impl CompositionMap {
             println!("cmps_map={:?}", cmps_map);
             println!("Unfolded Composition!");
         }
-        cmps_map
+        (chord_map, pedal_map, vari_map)
     }
     pub fn reunfold(&mut self, new_beat: i32, whole_tick: i32) {
-        // beat の変更に伴い、cmps_map を再構築する
-        let mut new_cmps_map = vec![vec![Vec::new(); new_beat as usize]; self.max_msr];
-        for (i, msr_map) in new_cmps_map.iter_mut().enumerate() {
-            for (j, beat_map) in msr_map.iter_mut().enumerate() {
+        // beat の変更に伴い、chord_map を再構築する
+        let mut new_chord_map = vec![vec![None; new_beat as usize]; self.max_msr];
+        let mut new_damper_map = vec![vec![None; new_beat as usize]; self.max_msr];
+        for i in 0..self.max_msr {
+            let mut chd_m_map = &mut new_chord_map[i];
+            let mut ped_m_map = &mut new_damper_map[i];
+            for j in 0..new_beat as usize {
                 if j >= self.max_beat {
-                    for evt in &self.cmps_map[i][self.max_beat - 1] {
-                        beat_map.push((evt.0.clone(), evt.1));
+                    if let Some(ref e) = self.chord_map[i][self.max_beat - 1] {
+                        chd_m_map[j] = Some((e.0.clone(), e.1));
+                    }
+                    if let Some(ref e) = self.damper_map[i][self.max_beat - 1] {
+                        ped_m_map[j] = Some((e.0.clone(), e.1));
                     }
                 } else {
-                    for evt in &self.cmps_map[i][j] {
-                        beat_map.push((evt.0.clone(), evt.1));
+                    if let Some(ref evt) = self.chord_map[i][j].clone() {
+                        chd_m_map[j] = Some((evt.0.clone(), evt.1));
+                    }
+                    if let Some(ref evt) = self.damper_map[i][j].clone() {
+                        ped_m_map[j] = Some((evt.0.clone(), evt.1));
                     }
                 }
             }
         }
-        self.cmps_map = new_cmps_map;
+        self.chord_map = new_chord_map;
+        self.damper_map = new_damper_map;
         self.max_beat = new_beat as usize;
         self.whole_tick = whole_tick;
     }
@@ -134,37 +171,29 @@ impl CompositionMap {
         }
         Self::check_msr_beat(msr, beat)
     }
-    pub fn gen_chord_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
+    pub fn gen_damper_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
         let cmsr = if crnt_.msr >= self.first_msr_num {
             (crnt_.msr - self.first_msr_num) as usize
         } else {
             1 // 1小節目から開始
         };
-        let mut chord_map = vec![false; max_beat];
+        let mut damper_map = vec![false; max_beat];
         if self.max_msr > cmsr {
-            for (j, chord) in chord_map.iter_mut().enumerate() {
-                for evt in &self.cmps_map[cmsr][j] {
-                    if evt.1 && evt.0.mtype == TYPE_CHORD && evt.0.tbl != NO_PED_TBL_NUM {
-                        *chord = true;
+            for (j, damper) in damper_map.iter_mut().enumerate() {
+                if let Some(c) = &self.chord_map[cmsr][j] {
+                    if c.1 && c.0.tbl != NO_PED_TBL_NUM {
+                        *damper = true;
                     }
                 }
             }
         }
         #[cfg(feature = "verbose")]
-        println!("<gen_chord_ev_map for Damper> chord_map={:?}", chord_map);
-        chord_map
+        println!("<gen_damper_ev_map for Damper> damper_map={:?}", damper_map);
+        damper_map
     }
     pub fn gen_vari_num(&mut self, crnt_: &CrntMsrTick) -> i16 {
-        let (msr, beat) = self.loop_msr_beat(crnt_);
-        let mut vari_num = 0;
-        self.cmps_map[msr as usize][beat as usize]
-            .iter()
-            .for_each(|evt| {
-                if evt.0.mtype == TYPE_VARI {
-                    vari_num = evt.0.root;
-                }
-            });
-        vari_num
+        let (msr, _beat) = self.loop_msr_beat(crnt_);
+        self.vari_map[msr as usize].unwrap_or(0)
     }
     /// 指定されたタイミングの Chord の root/table を探す
     pub fn scan_chord(&self, crnt_msr: usize, crnt_beat: usize) -> (i16, i16) {
@@ -174,15 +203,10 @@ impl CompositionMap {
         let mut msr = crnt_msr as isize;
         let mut beat = crnt_beat as isize;
         loop {
-            if !self.cmps_map[msr as usize][beat as usize].is_empty() {
-                for evt in &self.cmps_map[msr as usize][beat as usize] {
-                    if evt.0.mtype == TYPE_CHORD {
-                        root = evt.0.root;
-                        tbl = evt.0.tbl;
-                        find = true;
-                        break;
-                    }
-                }
+            if let Some(c) = &self.chord_map[msr as usize][beat as usize] {
+                root = c.0.root;
+                tbl = c.0.tbl;
+                find = true;
             }
             if !find {
                 beat -= 1;
@@ -205,13 +229,11 @@ impl CompositionMap {
         let (msr, beat) = self.loop_msr_beat(crnt_);
         let mut root = NO_ROOT;
         let mut tbl = NO_TABLE;
-        self.cmps_map[msr as usize][beat as usize]
+        self.chord_map[msr as usize][beat as usize]
             .iter()
             .for_each(|evt| {
-                if evt.0.mtype == TYPE_CHORD {
-                    root = evt.0.root;
-                    tbl = evt.0.tbl;
-                }
+                root = evt.0.root;
+                tbl = evt.0.tbl;
             });
 
         if root != self.root_for_ui || tbl != self.tbl_for_ui {
@@ -332,7 +354,7 @@ impl CmpsLoopMediator {
         }
     }
     /// Composition Event を受け取り、CompositionMap を生成する
-    pub fn rcv_cmp(&mut self, msg: ChordData, tick_for_onemsr: i32, tick_for_onebeat: i32) {
+    pub fn rcv_cmp(&mut self, msg: CmpData, tick_for_onemsr: i32, tick_for_onebeat: i32) {
         if msg.evts.is_empty() && msg.whole_tick == 0 {
             self.next_cmps = None;
             self.clear_cmps_ev = true;
@@ -474,9 +496,9 @@ impl CmpsLoopMediator {
     /// Not Yet:
     /// いずれ、未来の小節の情報を取得できるようにする
     /// cmps（現在）か next_cmps（未来）のどちらかを選択する
-    pub fn get_chord_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
+    pub fn get_damper_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
         if let Some(ref cmp) = self.cmps {
-            cmp.gen_chord_ev_map(crnt_, max_beat)
+            cmp.gen_damper_ev_map(crnt_, max_beat)
         } else {
             vec![false; max_beat]
         }

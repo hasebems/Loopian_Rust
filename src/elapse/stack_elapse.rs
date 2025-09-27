@@ -588,7 +588,7 @@ impl ElapseStack {
         let pt = self.part_vec[part_num as usize].clone();
         pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
     }
-    fn composition(&mut self, part_num: i16, evts: ChordData) {
+    fn composition(&mut self, part_num: i16, evts: CmpData) {
         println!("Received Composition Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
@@ -603,7 +603,7 @@ impl ElapseStack {
         println!("Deleted Composition Message! Part: {}", part_num);
         self.part_vec[part_num as usize]
             .borrow_mut()
-            .rcv_cmps_msg(ChordData::empty(), self.tg().get_beat_tick());
+            .rcv_cmps_msg(CmpData::empty(), self.tg().get_beat_tick());
     }
     //*******************************************************************
     //      Pick out playable

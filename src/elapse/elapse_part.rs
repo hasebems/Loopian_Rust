@@ -633,7 +633,7 @@ impl Part {
     pub fn del_phr(&mut self) {
         self.pm.del_phrase();
     }
-    pub fn rcv_cmps_msg(&mut self, msg: ChordData, (msr, tick): (i32, i32)) {
+    pub fn rcv_cmps_msg(&mut self, msg: CmpData, (msr, tick): (i32, i32)) {
         self.cm.rcv_cmp(msg, msr, tick);
     }
     /// CmpsLoopMediator を取得する

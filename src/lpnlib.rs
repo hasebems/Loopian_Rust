@@ -301,28 +301,63 @@ impl PhrData {
 }
 //-------------------------------------------------------------------
 // MSG_CHORD
-/// for mtype
-pub const TYPE_CHORD: i16 = 1100;
-pub const TYPE_VARI: i16 = 1101;
-pub const TYPE_CONTROL: i16 = 1102;
-/// for tbl
 pub const UPPER: i16 = 1000;
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ChordEvt {
-    pub mtype: i16, // message type
     pub tick: i16,
-    pub root: i16, // TYPE_CHORD: root note / TYPE_VARI: vari number
+    pub root: i16, // root note
     pub tbl: i16,
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct ChordData {
+pub struct VariEvt {
+    pub tick: i16,
+    pub vari: i16, // vari number
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct ControlEvt {
+    pub tick: i16,
+    pub ctrl: i16, // control number
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub enum PedalPos {
+    #[default]
+    Off,
+    Half,
+    Full,
+    NoEvt,
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct PedalEvt {
+    pub tick: i16,
+    pub pre_pos: PedalPos, // just before position
+    pub position: PedalPos, // pedal position
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CmpEvt {
+    Chord(ChordEvt),
+    Vari(VariEvt),
+    Control(ControlEvt),
+    Pedal(PedalEvt),
+}
+impl CmpEvt {
+    pub fn tick(&self) -> i16 {
+        match self {
+            CmpEvt::Chord(e) => e.tick,
+            CmpEvt::Vari(e) => e.tick,
+            CmpEvt::Control(e) => e.tick,
+            CmpEvt::Pedal(e) => e.tick,
+        }
+    }
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct CmpData {
     pub whole_tick: i16,
     pub do_loop: bool,
-    pub evts: Vec<ChordEvt>,
+    pub evts: Vec<CmpEvt>,
     // how to start
     pub measure: i16, // NOTHING: no effect, 1..:measure number
 }
-impl ChordData {
+impl CmpData {
     pub fn empty() -> Self {
         Self {
             whole_tick: 0,
@@ -352,11 +387,11 @@ pub enum ElpsMsg {
     //    SetBpm([i16; 3]),
     SetMeter([i16; 2]),
     //    SetKey([i16; 3]),
-    Phr(i16, PhrData),      //  Phr : part, (whole_tick,evts)
-    PhrX(i16),              //  PhrX : part
-    Cmp(i16, ChordData),    //  Cmp : part, (whole_tick,evts)
-    CmpX(i16),              //  CmpX : part
-    MIDIRx(u8, u8, u8, u8), //  status, dt1, dt2, extra
+    Phr(i16, PhrData),          //  Phr : part, (whole_tick,evts)
+    PhrX(i16),                  //  PhrX : part
+    Cmp(i16, CmpData),          //  Cmp : part, (whole_tick,evts)
+    CmpX(i16),                  //  CmpX : part
+    MIDIRx(u8, u8, u8, u8),     //  status, dt1, dt2, extra
 }
 //  Ctrl
 pub const MSG_CTRL_QUIT: i16 = -1;
