@@ -262,7 +262,7 @@ pub fn recombine_to_chord_loop(
     comp: &[String],
     tick_for_onemsr: i32,
     tick_for_onebeat: i32,
-) -> (i32, bool, Vec<ChordEvt>) {
+) -> (i32, bool, Vec<CmpEvt>) {
     if comp.is_empty() {
         return (0, true, Vec::new());
     }
@@ -276,9 +276,6 @@ pub fn recombine_to_chord_loop(
     let mut rcmb = Vec::new();
     //let mut same_chord: String = "path".to_string();
     let mut same_chord: String = "".to_string();
-    let mut rc_push = |mtype, tick, root, tbl| {
-        rcmb.push(ChordEvt {mtype, tick, root, tbl})
-    };
 
     while read_ptr < max_read_ptr {
         // generate new tick
@@ -300,7 +297,7 @@ pub fn recombine_to_chord_loop(
                 .to_digit(10)
                 .unwrap_or(0) as i16;
             if num > 0 && num <= 9 {
-                rc_push(TYPE_VARI, tick, num, 0);
+                rcmb.push(CmpEvt::Vari(VariEvt {tick, vari: num}))
             }
             if !msgs_sp[1][1..].is_empty() {
                 let rest = msgs_sp[1][1..].to_string();
@@ -322,17 +319,21 @@ pub fn recombine_to_chord_loop(
 
         let (root, table) = convert_chord_to_num(chord);
         if table == NO_LOOP {
-            rc_push(TYPE_CONTROL, tick, 0, table);
+            rcmb.push(CmpEvt::Control( ControlEvt { tick, ctrl: NO_LOOP } )); // loop end control
         } else {
-            rc_push(TYPE_CHORD, tick, root, table);
+            rcmb.push(CmpEvt::Chord(ChordEvt {tick, root, tbl: table}))
         }
 
         read_ptr += 1;
     }
 
-    let tmp = ChordEvt::default();
+    let tmp = CmpEvt::Chord(ChordEvt::default());
     let last_one = rcmb.last().unwrap_or(&tmp);
-    let do_loop = last_one.tbl != NO_LOOP;
+    let do_loop = if let CmpEvt::Chord(ref cd) = *last_one {
+        cd.tbl != NO_LOOP
+    } else {
+        false
+    };
     if !do_loop {
         rcmb.pop();
     }
