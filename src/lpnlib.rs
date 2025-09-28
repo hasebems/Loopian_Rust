@@ -41,7 +41,10 @@ pub const MAX_KBD_PART: usize = MAX_LEFT_PART + MAX_RIGHT_PART;
 pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + 1;
 pub const MAX_VARIATION: usize = 10; // normal + vari(1-9) + 1(for measure)
 pub const FLOW_PART: usize = MAX_KBD_PART;
-pub const DAMPER_PEDAL_PART: usize = MAX_KBD_PART + 1;
+pub const _DAMPER_PART: usize = MAX_KBD_PART + 1; // message send only
+pub const _SOSTENUTO_PART: usize = MAX_KBD_PART + 2; // message send only
+pub const _SHIFT_PART: usize = MAX_KBD_PART + 3; // message send only
+pub const PEDAL_PART: usize = MAX_KBD_PART + 1; // Elapse inside Part
 pub const NONE_NUM: usize = 255;
 
 //*******************************************************************
@@ -318,13 +321,13 @@ pub struct ControlEvt {
     pub tick: i16,
     pub ctrl: i16, // control number
 }
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq, Copy)]
 pub enum PedalPos {
     #[default]
+    NoEvt, // no event
     Off,
     Half,
     Full,
-    NoEvt,
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PedalEvt {

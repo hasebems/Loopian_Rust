@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 use std::vec::Vec;
 
 use super::elapse_base::*;
-use super::elapse_damper::DamperPart;
+use super::elapse_pedal::PedalPart;
 use super::elapse_flow::Flow;
 use super::elapse_loop_phr::PhraseLoop;
 use super::elapse_part::Part;
@@ -54,7 +54,7 @@ pub struct ElapseStack {
     tg: TickGen,
     flac: u64,
     part_vec: Vec<Rc<RefCell<Part>>>, // Part Instance が繋がれた Vec
-    damper_part: Rc<RefCell<DamperPart>>,
+    pedal_part: Rc<RefCell<PedalPart>>,
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
     limit_for_deb: i32,
@@ -100,9 +100,9 @@ impl ElapseStack {
         let pt = Part::new(FLOW_PART as u32, Some(flow));
         part_vec.push(Rc::clone(&pt));
         elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
-        // Damper Part
-        let damper_part = DamperPart::new(DAMPER_PEDAL_PART as u32);
-        elapse_vec.push(Rc::clone(&damper_part) as Rc<RefCell<dyn Elapse>>);
+        // Pedal Part
+        let pedal_part = PedalPart::new(PEDAL_PART as u32);
+        elapse_vec.push(Rc::clone(&pedal_part) as Rc<RefCell<dyn Elapse>>);
 
         let (rx_hndr, tx_ctrl) = gen_midirx_thread();
         Self {
@@ -120,7 +120,7 @@ impl ElapseStack {
             tg: TickGen::new(RitType::Sigmoid),
             flac: 0,
             part_vec: part_vec.clone(),
-            damper_part,
+            pedal_part,
             elapse_vec,
             key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
             limit_for_deb: 0,
@@ -567,7 +567,7 @@ impl ElapseStack {
     }
     fn efct(&mut self, msg: [i16; 2]) {
         if msg[0] == MSG_EFCT_DMP {
-            self.damper_part.borrow_mut().set_position(msg[1]);
+            self.pedal_part.borrow_mut().set_position(msg[1]);
         } else if msg[0] == MSG_EFCT_CC70 {
             let val = if msg[1] > 127 { 127 } else { msg[1] as u8 };
             self.midi_out(0xb0, 70, val);

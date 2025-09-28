@@ -2,7 +2,7 @@ pub mod cmps_map;
 pub mod elapse_base;
 pub mod elapse_broken_ptn;
 pub mod elapse_cluster_ptn;
-pub mod elapse_damper;
+pub mod elapse_pedal;
 pub mod elapse_flow;
 pub mod elapse_loop_phr;
 pub mod elapse_note;

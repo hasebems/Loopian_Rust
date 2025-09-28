@@ -116,8 +116,8 @@ impl CompositionMap {
         let mut new_chord_map = vec![vec![None; new_beat as usize]; self.max_msr];
         let mut new_damper_map = vec![vec![None; new_beat as usize]; self.max_msr];
         for i in 0..self.max_msr {
-            let mut chd_m_map = &mut new_chord_map[i];
-            let mut ped_m_map = &mut new_damper_map[i];
+            let chd_m_map = &mut new_chord_map[i];
+            let ped_m_map = &mut new_damper_map[i];
             for j in 0..new_beat as usize {
                 if j >= self.max_beat {
                     if let Some(ref e) = self.chord_map[i][self.max_beat - 1] {
@@ -171,18 +171,39 @@ impl CompositionMap {
         }
         Self::check_msr_beat(msr, beat)
     }
-    pub fn gen_damper_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
+    pub fn gen_damper_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<PedalPos> {
         let cmsr = if crnt_.msr >= self.first_msr_num {
             (crnt_.msr - self.first_msr_num) as usize
         } else {
             1 // 1小節目から開始
         };
-        let mut damper_map = vec![false; max_beat];
+        let mut damper_map = vec![PedalPos::NoEvt; max_beat];
+        let mut damper_exists = false;
+        for (i, ele) in damper_map.iter_mut().enumerate() {
+            if i < max_beat {
+                if let Some(c) = &self.damper_map[cmsr][i] {
+                    *ele = if c.1 && c.0.position == PedalPos::Full {
+                        PedalPos::Full
+                    } else if c.1 && c.0.position == PedalPos::Half {
+                        PedalPos::Half
+                    } else {
+                        PedalPos::Off
+                    };
+                    damper_exists = true;
+                }
+            }
+        }
+        if damper_exists {
+            // もし、今回の小節に Damper イベントが存在したら、その情報を返す
+            println!("damper exists in msr {}", cmsr);
+            return damper_map;
+        }
+        // Damper イベントが無かったら、和音から Damper 情報を生成する
         if self.max_msr > cmsr {
             for (j, damper) in damper_map.iter_mut().enumerate() {
                 if let Some(c) = &self.chord_map[cmsr][j] {
                     if c.1 && c.0.tbl != NO_PED_TBL_NUM {
-                        *damper = true;
+                        *damper = PedalPos::Full;
                     }
                 }
             }
@@ -496,11 +517,11 @@ impl CmpsLoopMediator {
     /// Not Yet:
     /// いずれ、未来の小節の情報を取得できるようにする
     /// cmps（現在）か next_cmps（未来）のどちらかを選択する
-    pub fn get_damper_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<bool> {
+    pub fn get_damper_ev_map(&self, crnt_: &CrntMsrTick, max_beat: usize) -> Vec<PedalPos> {
         if let Some(ref cmp) = self.cmps {
             cmp.gen_damper_ev_map(crnt_, max_beat)
         } else {
-            vec![false; max_beat]
+            vec![PedalPos::NoEvt; max_beat]
         }
     }
     pub fn get_chord(&self, designated_: &CrntMsrTick) -> (i16, i16) {

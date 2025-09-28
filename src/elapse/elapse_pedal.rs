@@ -13,9 +13,9 @@ use super::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 
 //*******************************************************************
-//          Damper Part Struct
+//          Pedal Part Struct
 //*******************************************************************
-pub struct DamperPart {
+pub struct PedalPart {
     id: ElapseId,
     priority: u32,
     during_play: bool,
@@ -28,8 +28,8 @@ pub struct DamperPart {
     play_counter: usize,
     whole_tick: i32,
 }
-impl DamperPart {
-    pub fn new(num: u32) -> Rc<RefCell<DamperPart>> {
+impl PedalPart {
+    pub fn new(num: u32) -> Rc<RefCell<PedalPart>> {
         let new_id = ElapseId {
             pid: 0,
             sid: num,
@@ -107,18 +107,18 @@ impl DamperPart {
         self.whole_tick = tick_for_onemsr;
         self.play_counter = 0;
 
-        let mut chord_map = vec![false; beat_num];
+        let mut chord_map = vec![PedalPos::NoEvt; beat_num];
         if let Some(_fl) = estk.get_flow() {
-            chord_map = DamperPart::merge_chord_map(crnt_, estk, FLOW_PART, chord_map, beat_num);
+            chord_map = PedalPart::merge_chord_map(crnt_, estk, FLOW_PART, chord_map, beat_num);
         }
         for i in 0..MAX_KBD_PART {
             if let Some(phr) = estk.get_phr(i) {
                 if phr.borrow().get_noped() {
                     // 一パートでも noped 指定があれば
-                    chord_map = vec![false; beat_num];
+                    chord_map = vec![PedalPos::Off; beat_num];
                     break;
                 } else {
-                    chord_map = DamperPart::merge_chord_map(crnt_, estk, i, chord_map, beat_num);
+                    chord_map = PedalPart::merge_chord_map(crnt_, estk, i, chord_map, beat_num);
                 }
             } else {
                 continue;
@@ -133,9 +133,9 @@ impl DamperPart {
         crnt_: &CrntMsrTick,
         estk: &mut ElapseStack,
         part_num: usize,
-        mut chord_map: Vec<bool>,
+        mut chord_map: Vec<PedalPos>,
         beat_num: usize,
-    ) -> Vec<bool> {
+    ) -> Vec<PedalPos> {
         if let Some(pt) = estk.part(part_num as u32) {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
@@ -152,14 +152,32 @@ impl DamperPart {
                 panic!("DamperPart::merge_chord_map: length mismatch");
             }
             for (i, x) in chord_map.iter_mut().enumerate() {
-                *x |= ba[i];
+                match *x {
+                    // 新しいイベントのマージ方法
+                    PedalPos::Full => {
+                        continue; // すでに Full なら、変更しない
+                    }
+                    PedalPos::Half => {
+                        if ba[i] == PedalPos::Full {
+                            *x = PedalPos::Full; // Full が来たら、Full にする
+                        }
+                    }
+                    PedalPos::Off => {
+                        if ba[i] == PedalPos::Full || ba[i] == PedalPos::Half {
+                            *x = ba[i]; // Full or Half が来たら、変更する
+                        }
+                    }
+                    PedalPos::NoEvt => {
+                        *x = ba[i];
+                    }
+                }
             }
         }
         chord_map
     }
     fn gen_real_damper_track(
         &self,
-        chord_map: Vec<bool>,
+        chord_map: Vec<PedalPos>,
         tick_for_onebeat: i32,
         beat_num: usize,
     ) -> (Vec<DmprEvt>, i32) {
@@ -168,7 +186,7 @@ impl DamperPart {
         let mut first_tick = NO_DATA;
         const PDL_MARGIN_TICK: i32 = 60;
         for (j, k) in chord_map.iter().enumerate() {
-            if *k {
+            if *k == PedalPos::Full {
                 if keep != beat_num {
                     let tick = ((keep as i32) * tick_for_onebeat + PDL_MARGIN_TICK) as i16;
                     dmpr_evt.push(DmprEvt {
@@ -199,7 +217,7 @@ impl DamperPart {
         (dmpr_evt, first_tick)
     }
 }
-impl Elapse for DamperPart {
+impl Elapse for PedalPart {
     fn id(&self) -> ElapseId {
         self.id
     } // id を得る
