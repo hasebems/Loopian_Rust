@@ -585,8 +585,13 @@ impl ElapseStack {
     fn phrase(&mut self, part_num: i16, evts: PhrData) {
         println!("Received Phrase Message! Part: {}", part_num);
         let crnt_ = self.last_msr_tick;
-        let pt = self.part_vec[part_num as usize].clone();
-        pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
+        if part_num < PEDAL_PART as i16 {
+            let pt = self.part_vec[part_num as usize].clone();
+            pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
+        } else {
+            let pt = self.pedal_part.clone();
+            pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
+        }
     }
     fn composition(&mut self, part_num: i16, evts: CmpData) {
         println!("Received Composition Message! Part: {}", part_num);

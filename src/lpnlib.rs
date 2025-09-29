@@ -41,9 +41,6 @@ pub const MAX_KBD_PART: usize = MAX_LEFT_PART + MAX_RIGHT_PART;
 pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + 1;
 pub const MAX_VARIATION: usize = 10; // normal + vari(1-9) + 1(for measure)
 pub const FLOW_PART: usize = MAX_KBD_PART;
-pub const _DAMPER_PART: usize = MAX_KBD_PART + 1; // message send only
-pub const _SOSTENUTO_PART: usize = MAX_KBD_PART + 2; // message send only
-pub const _SHIFT_PART: usize = MAX_KBD_PART + 3; // message send only
 pub const PEDAL_PART: usize = MAX_KBD_PART + 1; // Elapse inside Part
 pub const NONE_NUM: usize = 255;
 
@@ -155,12 +152,29 @@ impl InfoEvt {
         }
     }
 }
+#[derive(Default, Clone, Debug, PartialEq, Eq, Copy)]
+pub enum PedalPos {
+    #[default]
+    NoEvt, // no event
+    Off,
+    Half,
+    Full,
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct PedalEvt {
+    pub tick: i16,
+    pub which: i16,    // which pedal: 0-damper,1-sostenuto,2-shift
+    pub pre_pos: PedalPos, // just before position
+    pub position: PedalPos, // pedal position
+}
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PhrEvt {
     Note(NoteEvt),
     NoteList(NoteListEvt),
     BrkPtn(BrkPatternEvt),
     ClsPtn(ClsPatternEvt),
+    Pedal(PedalEvt),
     Info(InfoEvt),
 }
 impl PhrEvt {
@@ -170,6 +184,7 @@ impl PhrEvt {
             PhrEvt::NoteList(e) => e.dur,
             PhrEvt::BrkPtn(e) => e.dur,
             PhrEvt::ClsPtn(e) => e.dur,
+            PhrEvt::Pedal(_) => 0,
             PhrEvt::Info(e) => e.dur,
         }
     }
@@ -180,6 +195,7 @@ impl PhrEvt {
             PhrEvt::BrkPtn(e) => e.dur = dur,
             PhrEvt::ClsPtn(e) => e.dur = dur,
             PhrEvt::Info(e) => e.dur = dur,
+            _ => {}
         }
     }
     pub fn tick(&self) -> i16 {
@@ -188,6 +204,7 @@ impl PhrEvt {
             PhrEvt::NoteList(e) => e.tick,
             PhrEvt::BrkPtn(e) => e.tick,
             PhrEvt::ClsPtn(e) => e.tick,
+            PhrEvt::Pedal(e) => e.tick,
             PhrEvt::Info(e) => e.tick,
         }
     }
@@ -197,6 +214,7 @@ impl PhrEvt {
             PhrEvt::NoteList(e) => e.tick = tick,
             PhrEvt::BrkPtn(e) => e.tick = tick,
             PhrEvt::ClsPtn(e) => e.tick = tick,
+            PhrEvt::Pedal(e) => e.tick = tick,
             PhrEvt::Info(e) => e.tick = tick,
         }
     }
@@ -206,7 +224,7 @@ impl PhrEvt {
             PhrEvt::NoteList(e) => e.artic = artic,
             PhrEvt::BrkPtn(e) => e.artic = artic,
             PhrEvt::ClsPtn(e) => e.artic = artic,
-            PhrEvt::Info(_) => {} // InfoEvt does not have artic
+            _ => {}
         }
     }
     pub fn note(&self) -> u8 {
@@ -321,26 +339,11 @@ pub struct ControlEvt {
     pub tick: i16,
     pub ctrl: i16, // control number
 }
-#[derive(Default, Clone, Debug, PartialEq, Eq, Copy)]
-pub enum PedalPos {
-    #[default]
-    NoEvt, // no event
-    Off,
-    Half,
-    Full,
-}
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct PedalEvt {
-    pub tick: i16,
-    pub pre_pos: PedalPos, // just before position
-    pub position: PedalPos, // pedal position
-}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CmpEvt {
     Chord(ChordEvt),
     Vari(VariEvt),
     Control(ControlEvt),
-    Pedal(PedalEvt),
 }
 impl CmpEvt {
     pub fn tick(&self) -> i16 {
@@ -348,7 +351,6 @@ impl CmpEvt {
             CmpEvt::Chord(e) => e.tick,
             CmpEvt::Vari(e) => e.tick,
             CmpEvt::Control(e) => e.tick,
-            CmpEvt::Pedal(e) => e.tick,
         }
     }
 }

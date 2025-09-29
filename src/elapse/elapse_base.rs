@@ -19,13 +19,12 @@ pub const PRI_DMPR: u32 = 500;
 pub enum ElapseType {
     _TpNone,
     TpPart,
-    TpDamperPart,
+    TpPedalPart,
     TpPhraseLoop,
     TpClusterPattern,
     TpBrokenPattern,
     TpNote,
     TpFlow,
-    _TpDamper,
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

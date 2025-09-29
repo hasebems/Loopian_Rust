@@ -33,7 +33,7 @@ impl PedalPart {
         let new_id = ElapseId {
             pid: 0,
             sid: num,
-            elps_type: ElapseType::TpDamperPart,
+            elps_type: ElapseType::TpPedalPart,
         };
         Rc::new(RefCell::new(Self {
             id: new_id,
@@ -215,6 +215,36 @@ impl PedalPart {
             }
         }
         (dmpr_evt, first_tick)
+    }
+    pub fn rcv_phr_msg(&mut self, phr: PhrData, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack) {
+        let evts = phr.evts;
+        for e in evts {
+            match e {
+                PhrEvt::Pedal(p) => {
+                    if p.which == 0 {
+                        // Damper Pedal Event
+                        let new_evt = DmprEvt {
+                            mtype: TYPE_DAMPER,
+                            tick: p.tick,
+                            dur: 0,
+                            position: Self::convert_pos_to_value(p.position),
+                        };
+                        self.evt.push(new_evt);
+                    }
+                }
+                _ => {
+                    // ignore other events
+                }
+            }
+        }
+    }
+    fn convert_pos_to_value(pos: PedalPos) -> i16 {
+        match pos {
+            PedalPos::NoEvt => 0,
+            PedalPos::Off => 0,
+            PedalPos::Half => 64,
+            PedalPos::Full => 127,
+        }
     }
 }
 impl Elapse for PedalPart {

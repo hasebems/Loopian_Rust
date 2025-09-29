@@ -61,7 +61,7 @@ impl CompositionMap {
         let tick_for_onebeat = tick_for_onemsr / beat;
         let mut crnt_idx = 0;
         let mut last_chord = None;
-        let mut last_pedal = None;
+        let last_pedal: Option<PedalEvt> = None;
         let max_len = evts.len();
         // 1小節の中に、1拍ごとに分けて、イベントを展開する
         for i in 0..msr {
@@ -77,10 +77,6 @@ impl CompositionMap {
                             CmpEvt::Chord(cd) => {
                                 chd_m_map[j] = Some((cd.clone(), true));
                                 last_chord = Some(cd);
-                            }
-                            CmpEvt::Pedal(pd) => {
-                                ped_m_map[j] = Some((pd.clone(), true));
-                                last_pedal = Some(pd);
                             }
                             CmpEvt::Vari(v) => {
                                 vari_map[i] = Some(v.vari);
