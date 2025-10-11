@@ -7,6 +7,7 @@ use super::txt_common::*;
 use super::txt2seq_ana::*;
 use super::txt2seq_cmps::*;
 use super::txt2seq_phr::*;
+use super::txt2seq_pdl::*;
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -18,6 +19,7 @@ use crate::lpnlib::*;
 pub struct SeqDataStock {
     pdt: Vec<Vec<PhraseDataStock>>,
     cdt: [CompositionDataStock; MAX_COMPOSITION_PART],
+    pdldt: [PedalDataStock; 3],
     input_mode: InputMode,
     cluster_memory: String,
     raw_additional: String,
@@ -39,6 +41,7 @@ impl SeqDataStock {
         Self {
             pdt: pd,
             cdt: Default::default(),
+            pdldt: [PedalDataStock::new(), PedalDataStock::new(), PedalDataStock::new()],
             input_mode: InputMode::Closer,
             cluster_memory: "".to_string(),
             raw_additional: "".to_string(),
@@ -62,6 +65,9 @@ impl SeqDataStock {
     pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {
         &self.cdt[part]
     }
+    pub fn get_pdlstk(&self, part: usize) -> &PedalDataStock {
+        &self.pdldt[part - MAX_ALL_KBD_PART]
+    }
     pub fn set_cluster_memory(&mut self, word: String) {
         self.cluster_memory = word;
     }
@@ -84,6 +90,18 @@ impl SeqDataStock {
             };
             if self.pdt[part][num].set_raw(input_text, &self.cluster_memory) {
                 self.pdt[part][num].set_recombined(
+                    self.input_mode,
+                    self.bpm,
+                    self.tick_for_onemsr,
+                    self.tick_for_beat,
+                    false,
+                );
+                return Some(false);
+            }
+        } else if (DAMPER_PART..=SHIFT_PART).contains(&part) {
+            // Damper/Sostenuto/Shift part の場合
+            if self.pdldt[part - MAX_ALL_KBD_PART].set_raw(input_text, &self.cluster_memory) {
+                self.pdldt[part - MAX_ALL_KBD_PART].set_recombined(
                     self.input_mode,
                     self.bpm,
                     self.tick_for_onemsr,

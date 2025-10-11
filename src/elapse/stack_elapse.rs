@@ -101,7 +101,7 @@ impl ElapseStack {
         part_vec.push(Rc::clone(&pt));
         elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
         // Pedal Part
-        let pedal_part = PedalPart::new(PEDAL_PART as u32);
+        let pedal_part = PedalPart::new(DAMPER_PART as u32);
         elapse_vec.push(Rc::clone(&pedal_part) as Rc<RefCell<dyn Elapse>>);
 
         let (rx_hndr, tx_ctrl) = gen_midirx_thread();
@@ -585,7 +585,7 @@ impl ElapseStack {
     fn phrase(&mut self, part_num: i16, evts: PhrData) {
         println!("Received Phrase Message! Part: {}", part_num);
         let crnt_ = self.last_msr_tick;
-        if part_num < PEDAL_PART as i16 {
+        if part_num < MAX_ALL_KBD_PART as i16 {
             let pt = self.part_vec[part_num as usize].clone();
             pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
         } else {

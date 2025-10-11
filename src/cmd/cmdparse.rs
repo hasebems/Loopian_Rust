@@ -103,6 +103,8 @@ impl LoopianCmd {
             || first_letter == "R"
             || first_letter == "F"
             || first_letter == "A"
+            || first_letter == "D"
+            || first_letter == "S"
         {
             Some(CmndRtn(self.letter_part(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "h" {
@@ -481,6 +483,23 @@ impl LoopianCmd {
                             rtn_str = self.call_bracket_brace(FLOW_PART, first_letter, rest_text);
                         }
                     }
+                    "D" | "DAMPER" => {
+                        if first_letter == "[" {
+                            rtn_str = self.call_bracket_brace(DAMPER_PART, first_letter, rest_text);
+                        }
+                    }
+                    "SO" | "SOSTENUTO" => {
+                        if first_letter == "[" {
+                            rtn_str =
+                                self.call_bracket_brace(SOSTENUTO_PART, first_letter, rest_text);
+                        }
+                    }
+                    "SH" | "SHIFT" => {
+                        if first_letter == "[" {
+                            rtn_str =
+                                self.call_bracket_brace(SHIFT_PART, first_letter, rest_text);
+                        }
+                    }
                     "ALL" => {
                         for i in 0..MAX_KBD_PART {
                             rtn_str = self.call_bracket_brace(i, first_letter, rest_text);
@@ -580,7 +599,11 @@ impl LoopianCmd {
                 // additional なので、elapse にはまだ送らない
                 Some(true)
             } else {
-                self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
+                if part_num < MAX_KBD_PART {
+                    self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
+                } else if (DAMPER_PART..=SHIFT_PART).contains(&part_num) {
+                    self.sndr.send_pedal_to_elapse(part_num, &self.dtstk);
+                }
                 Some(false)
             }
         } else {

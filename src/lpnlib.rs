@@ -41,8 +41,22 @@ pub const MAX_KBD_PART: usize = MAX_LEFT_PART + MAX_RIGHT_PART;
 pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + 1;
 pub const MAX_VARIATION: usize = 10; // normal + vari(1-9) + 1(for measure)
 pub const FLOW_PART: usize = MAX_KBD_PART;
-pub const PEDAL_PART: usize = MAX_KBD_PART + 1; // Elapse inside Part
+pub const MAX_ALL_KBD_PART: usize = MAX_KBD_PART + 1; // Flow part included
+pub const DAMPER_PART: usize = MAX_ALL_KBD_PART + 1; // Elapse inside Part
+pub const SOSTENUTO_PART: usize = MAX_ALL_KBD_PART + 2; // Elapse inside Part
+pub const SHIFT_PART: usize = MAX_ALL_KBD_PART + 3; // Elapse inside Part
 pub const NONE_NUM: usize = 255;
+#[allow(dead_code)]
+pub enum Part {
+    Left1 = 0,
+    Left2 = 1,
+    Right1 = 2,
+    Right2 = 3,
+    Flow = 4,
+    Damper = 5,
+    Sostenuto = 6,
+    Shift = 7,
+}
 
 //*******************************************************************
 //          default value
@@ -162,9 +176,8 @@ pub enum PedalPos {
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PedalEvt {
-    pub tick: i16,
-    pub which: i16,    // which pedal: 0-damper,1-sostenuto,2-shift
-    pub pre_pos: PedalPos, // just before position
+    pub beat: i16,
+    pub front: bool, // true: front of beat, false: back of beat
     pub position: PedalPos, // pedal position
 }
 #[allow(dead_code)]
@@ -174,7 +187,9 @@ pub enum PhrEvt {
     NoteList(NoteListEvt),
     BrkPtn(BrkPatternEvt),
     ClsPtn(ClsPatternEvt),
-    Pedal(PedalEvt),
+    Damper(PedalEvt),
+    Sostenuto(PedalEvt),
+    Shift(PedalEvt),
     Info(InfoEvt),
 }
 impl PhrEvt {
@@ -184,8 +199,8 @@ impl PhrEvt {
             PhrEvt::NoteList(e) => e.dur,
             PhrEvt::BrkPtn(e) => e.dur,
             PhrEvt::ClsPtn(e) => e.dur,
-            PhrEvt::Pedal(_) => 0,
             PhrEvt::Info(e) => e.dur,
+            _ => 0,
         }
     }
     pub fn set_dur(&mut self, dur: i16) {
@@ -204,8 +219,8 @@ impl PhrEvt {
             PhrEvt::NoteList(e) => e.tick,
             PhrEvt::BrkPtn(e) => e.tick,
             PhrEvt::ClsPtn(e) => e.tick,
-            PhrEvt::Pedal(e) => e.tick,
             PhrEvt::Info(e) => e.tick,
+            _ => 0,
         }
     }
     pub fn set_tick(&mut self, tick: i16) {
@@ -214,8 +229,8 @@ impl PhrEvt {
             PhrEvt::NoteList(e) => e.tick = tick,
             PhrEvt::BrkPtn(e) => e.tick = tick,
             PhrEvt::ClsPtn(e) => e.tick = tick,
-            PhrEvt::Pedal(e) => e.tick = tick,
             PhrEvt::Info(e) => e.tick = tick,
+            _ => {}
         }
     }
     pub fn set_artic(&mut self, artic: i16) {
@@ -374,7 +389,7 @@ impl CmpData {
 }
 //-------------------------------------------------------------------
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct DmprEvt {
+pub struct PedalElpsEvt {
     pub mtype: i16, // message type
     pub tick: i16,
     pub dur: i16,      // duration

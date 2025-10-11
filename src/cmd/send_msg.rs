@@ -39,6 +39,9 @@ impl MessageSender {
             self.send_msg_to_elapse(pdt.get_final(part as i16, vari));
         }
     }
+    pub fn send_pedal_to_elapse(&self, part: usize, gdt: &SeqDataStock) {
+        self.send_msg_to_elapse(gdt.get_pdlstk(part).get_final(part as i16));
+    }
     pub fn clear_phrase_to_elapse(&self, part: usize) {
         self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16));
     }

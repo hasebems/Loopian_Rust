@@ -23,8 +23,9 @@ pub struct PedalPart {
     next_tick: i32,
     start_flag: bool,
     position: i16,
+    damper_msg: Vec<PedalEvt>,
 
-    evt: Vec<DmprEvt>,
+    evt: Vec<PedalElpsEvt>,
     play_counter: usize,
     whole_tick: i32,
 }
@@ -43,6 +44,7 @@ impl PedalPart {
             next_tick: 0,
             start_flag: false,
             position: 127,
+            damper_msg: Vec::new(),
 
             evt: Vec::new(),
             play_counter: 0,
@@ -180,16 +182,16 @@ impl PedalPart {
         chord_map: Vec<PedalPos>,
         tick_for_onebeat: i32,
         beat_num: usize,
-    ) -> (Vec<DmprEvt>, i32) {
+    ) -> (Vec<PedalElpsEvt>, i32) {
         let mut keep: usize = beat_num;
-        let mut dmpr_evt: Vec<DmprEvt> = Vec::new();
+        let mut dmpr_evt: Vec<PedalElpsEvt> = Vec::new();
         let mut first_tick = NO_DATA;
         const PDL_MARGIN_TICK: i32 = 60;
         for (j, k) in chord_map.iter().enumerate() {
             if *k == PedalPos::Full {
                 if keep != beat_num {
                     let tick = ((keep as i32) * tick_for_onebeat + PDL_MARGIN_TICK) as i16;
-                    dmpr_evt.push(DmprEvt {
+                    dmpr_evt.push(PedalElpsEvt {
                         mtype: TYPE_DAMPER,
                         tick,
                         dur: (((j - keep) as i32) * tick_for_onebeat - PDL_MARGIN_TICK) as i16,
@@ -204,7 +206,7 @@ impl PedalPart {
         }
         if keep != beat_num {
             let tick = ((keep as i32) * tick_for_onebeat + PDL_MARGIN_TICK) as i16;
-            dmpr_evt.push(DmprEvt {
+            dmpr_evt.push(PedalElpsEvt {
                 mtype: TYPE_DAMPER,
                 tick,
                 dur: (((beat_num - keep) as i32) * tick_for_onebeat - PDL_MARGIN_TICK) as i16,
@@ -216,20 +218,28 @@ impl PedalPart {
         }
         (dmpr_evt, first_tick)
     }
-    pub fn rcv_phr_msg(&mut self, phr: PhrData, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack) {
-        let evts = phr.evts;
+    pub fn rcv_phr_msg(&mut self, msg: PhrData, _crnt_: &CrntMsrTick, _estk_: &mut ElapseStack) {
+        let evts = msg.evts;
+        let mut damper_flag: bool = false;
+        let mut sostenuto_flag: bool = false;
+        let mut shift_flag: bool = false;
         for e in evts {
             match e {
-                PhrEvt::Pedal(p) => {
-                    if p.which == 0 {
-                        // Damper Pedal Event
-                        let new_evt = DmprEvt {
-                            mtype: TYPE_DAMPER,
-                            tick: p.tick,
-                            dur: 0,
-                            position: Self::convert_pos_to_value(p.position),
-                        };
-                        self.evt.push(new_evt);
+                PhrEvt::Damper(p) => {
+                    if !damper_flag {
+                        self.damper_msg.clear();
+                        damper_flag = true;
+                    }
+                    self.damper_msg.push(p);
+                }
+                PhrEvt::Sostenuto(_p) => {
+                    if !sostenuto_flag {
+                        sostenuto_flag = true;
+                    }
+                }
+                PhrEvt::Shift(_p) => {
+                    if !shift_flag {
+                        shift_flag = true;
                     }
                 }
                 _ => {
@@ -237,8 +247,11 @@ impl PedalPart {
                 }
             }
         }
+        if damper_flag {
+            // Damper 再生の初期化
+        }
     }
-    fn convert_pos_to_value(pos: PedalPos) -> i16 {
+    fn _convert_pos_to_value(pos: PedalPos) -> i16 {
         match pos {
             PedalPos::NoEvt => 0,
             PedalPos::Off => 0,

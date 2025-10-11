@@ -262,7 +262,7 @@ impl Damper {
         sid: u32,
         pid: u32,
         _estk: &mut ElapseStack,
-        ev: &DmprEvt,
+        ev: &PedalElpsEvt,
         msr: i32,
         tick: i32,
     ) -> Rc<RefCell<Self>> {
