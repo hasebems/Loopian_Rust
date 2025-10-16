@@ -14,7 +14,7 @@ pub struct CrntMsrTick {
     pub msr: i32,
     pub tick: i32,
     pub tick_for_onemsr: i32,
-    pub imaginary_tick: Option<i32>,    // Fermata の時に進む tick (実際には進まない)
+    pub imaginary_tick: Option<i32>, // Fermata の時に進む tick (実際には進まない)
 }
 impl Default for CrntMsrTick {
     fn default() -> Self {
@@ -75,16 +75,19 @@ pub enum RitType {
 pub struct TickGen {
     bpm: i16,
     meter: Meter,
-    tick_for_onemsr: i32,    // meter によって決まる１小節の tick 数
-    tick_for_beat: i32,      // 1拍の tick 数
-    bpm_stock: i16,          // change bpm で BPM を変えた直後の値
-    origin_time: Instant,    // start 時の絶対時間
-    bpm_start_time: Instant, // tempo/meter が変わった時点の絶対時間、tick 計測の開始時間
-    bpm_start_tick: i32,     // tempo が変わった時点の tick, meter が変わったとき0clear
-    meter_start_msr: i32,    // meter が変わった時点の経過小節数
-    crnt_msr: i32,           // start からの小節数（最初の小節からイベントを出すため、-1初期化)
-    crnt_tick_inmsr: i32,    // 現在の小節内の tick 数
-    crnt_time: Instant,      // 現在の時刻
+    tick_for_onemsr: i32,        // meter によって決まる１小節の tick 数
+    tick_for_beat: i32,          // 1拍の tick 数
+    bpm_stock: i16,              // change bpm で BPM を変えた直後の値
+    origin_time: Instant,        // start 時の絶対時間
+    bpm_start_time: Instant,     // tempo/meter が変わった時点の絶対時間、tick 計測の開始時間
+    bpm_start_tick: i32,         // tempo が変わった時点の tick, meter が変わったとき0clear
+    meter_start_msr: i32,        // meter が変わった時点の経過小節数
+    crnt_msr: i32,               // start からの小節数（最初の小節からイベントを出すため、-1初期化)
+    crnt_tick_inmsr: i32,        // 現在の小節内の tick 数
+    last_time: Instant,          // 1つ前に gen_tick を呼んだ時の時刻
+    crnt_time: Instant,          // 現在の時刻
+    tick_from_meter_starts: f64, // meter_start_msr からの経過 tick 数
+    bpm_rate: i16,               // bpm 変化率[%] (100=変化なし、50=1/2、200=2倍)
 
     prepare_rit: bool, // rit. 開始準備中
     rit_state: bool,
@@ -115,9 +118,12 @@ impl TickGen {
             bpm_start_time: Instant::now(),
             bpm_start_tick: 0,
             meter_start_msr: 0,
+            bpm_rate: 100,
             crnt_msr: -1,
             crnt_tick_inmsr: 0,
+            last_time: Instant::now(),
             crnt_time: Instant::now(),
+            tick_from_meter_starts: 0.0,
             prepare_rit: false,
             rit_state: false,
             prm: RitPrm::default(),
@@ -135,6 +141,7 @@ impl TickGen {
         self.tick_for_onemsr = tick_for_onemsr;
         self.meter = meter;
         self.meter_start_msr = self.crnt_msr;
+        self.tick_from_meter_starts = 0.0;
         self.bpm_start_time = self.crnt_time;
         self.bpm_start_tick = 0;
         // DEFAULT_TICK_FOR_ONE_MEASURE を分母で割った値が 1拍の tick 数で正しい！
@@ -161,6 +168,7 @@ impl TickGen {
         self.rit_state = false;
         self.fermata_state = false;
         self.origin_time = time;
+        self.last_time = time;
         self.crnt_time = time;
         self.bpm_start_tick = 0;
         self.bpm_start_time = time;
@@ -173,7 +181,10 @@ impl TickGen {
         } else {
             self.meter_start_msr = 0;
         }
+        self.tick_from_meter_starts = 0.0;
     }
+    /// 再生中に Tick を進める
+    /// @return (new_msr, new_beat, beat_num)
     pub fn gen_tick(&mut self, crnt_time: Instant) -> (bool, bool, i32) {
         let former_msr = self.crnt_msr;
         let former_tick = self.crnt_tick_inmsr;
@@ -182,19 +193,21 @@ impl TickGen {
             self.gen_rit();
         } else if self.fermata_state {
             let diff = self.crnt_time - self.fermata_start_time;
-            self.fermata_tick_inmsr =
-                ((self.fermata_tps as f32) * diff.as_secs_f32()) as i32; // tick_for_beat * self.bpm as f32 * diff.as_secs_f32() / 60.0;
+            self.fermata_tick_inmsr = ((self.fermata_tps as f32) * diff.as_secs_f32()) as i32; // tick_for_beat * self.bpm as f32 * diff.as_secs_f32() / 60.0;
         } else {
             // same bpm
-            let tick_from_meter_starts = self.calc_crnt_tick();
-            self.crnt_msr = tick_from_meter_starts / self.tick_for_onemsr + self.meter_start_msr;
-            self.crnt_tick_inmsr = tick_from_meter_starts % self.tick_for_onemsr;
+            //let tick_from_meter_starts = self.calc_crnt_tick();
+            self.tick_from_meter_starts += self.calc_diff_tick();
+            self.crnt_msr =
+                (self.tick_from_meter_starts as i32) / self.tick_for_onemsr + self.meter_start_msr;
+            self.crnt_tick_inmsr = (self.tick_from_meter_starts as i32) % self.tick_for_onemsr;
             if self.prepare_rit && self.is_over(self.start_mt) {
                 self.start_rit(self.crnt_time);
             }
         }
+        self.last_time = self.crnt_time;
 
-        // Gen Event
+        // Generate Event
         let new_msr = self.crnt_msr != former_msr;
         if new_msr && !self.rit_state && (self.bpm != self.bpm_stock) {
             // Tempo Change
@@ -235,6 +248,7 @@ impl TickGen {
         self.bpm_start_tick = 0;
         self.crnt_msr = msr;
         self.meter_start_msr = msr;
+        self.tick_from_meter_starts = 0.0;
         self.crnt_tick_inmsr = 0;
     }
     pub fn get_tick(&self) -> (i32, i32, i32, i32) {
@@ -251,6 +265,9 @@ impl TickGen {
     pub fn get_bpm(&self) -> i16 {
         self.bpm
     }
+    pub fn get_bpm_rate(&self) -> i16 {
+        self.bpm_rate
+    }
     pub fn get_real_bpm(&self) -> i16 {
         if self.rit_state {
             self.ritgen.get_real_bpm()
@@ -264,11 +281,26 @@ impl TickGen {
     pub fn get_origin_time(&self) -> Instant {
         self.origin_time
     }
+    pub fn set_relative_tempo(&mut self, ratio: i16) {
+        // -90 to +90[%]
+        let br = 100 + ratio;
+        if br != self.bpm_rate {
+            println!(">>> Set Relative Tempo: {}%", br);
+            self.bpm_rate = br;
+        }
+    }
+    // 拍子が変わってからの経過 tick 数を計算する
     fn calc_crnt_tick(&self) -> i32 {
         let diff = self.crnt_time - self.bpm_start_time;
         let elapsed_tick =
             ((self.tick_for_beat as f32) * (self.bpm as f32) * diff.as_secs_f32()) / 60.0;
         elapsed_tick as i32 + self.bpm_start_tick
+    }
+    // 直前の gen_tick 呼び出しからの経過 tick 数(float)を計算する
+    fn calc_diff_tick(&self) -> f64 {
+        let crnt_bpm = ((self.bpm as f64) * (self.bpm_rate as f64)) / 100.0;
+        let diff = (self.crnt_time - self.last_time).as_secs_f64();
+        ((self.tick_for_beat as f64) * crnt_bpm * diff) / 60.0
     }
     /// rit. を開始準備する
     /// 現在の時間と tick を得るが、rit. 開始は拍にクオンタイズされるため、すぐに開始しない
@@ -293,6 +325,7 @@ impl TickGen {
         }
         self.rit_state = true;
         self.meter_start_msr = self.crnt_msr;
+        self.tick_from_meter_starts = 0.0;
         self.bpm_start_time = start_time;
     }
     fn gen_rit(&mut self) {
@@ -304,6 +337,7 @@ impl TickGen {
             self.prepare_rit = false;
             self.rit_state = false;
             self.meter_start_msr = self.crnt_msr;
+            self.tick_from_meter_starts = 0.0;
             self.bpm_start_time = self.crnt_time;
             self.bpm_start_tick = self.crnt_tick_inmsr;
             self.prm = RitPrm::default();
@@ -318,7 +352,8 @@ impl TickGen {
                 self.fermata_tick_inmsr = 0;
                 println!(
                     ">>>Fermata Start: tps:{}, bpm:{}",
-                    self.fermata_tps, self.get_real_bpm()
+                    self.fermata_tps,
+                    self.get_real_bpm()
                 );
             }
         }

@@ -62,6 +62,10 @@ impl LoopianCmd {
         self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_CLEAR));
         println!("*** All data has been erased at Elapse thread! ***");
     }
+    pub fn set_riten(&mut self, percent: i16) {
+        self.sndr
+            .send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_RITEN, percent]));
+    }
     #[cfg(feature = "raspi")]
     pub fn send_reconnect(&self) {
         self.sndr

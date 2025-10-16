@@ -527,20 +527,27 @@ impl ElapseStack {
         let strength_set: [(i16, i32); 3] =
             [(MSG_RIT_POCO, 80), (MSG_RIT_NRM, 60), (MSG_RIT_MLT, 40)];
         let strength_msg = msg[0] % 10;
-        let bar = (msg[0] / 10) as i32;
-        let target_bpm: i16;
-        let strength = strength_set
-            .into_iter()
-            .find(|x| x.0 == strength_msg)
-            .unwrap_or(strength_set[0]);
-        if msg[1] == MSG2_RIT_ATMP {
-            target_bpm = self.tg.get_bpm();
-        } else if msg[1] == MSG2_RIT_FERMATA {
-            target_bpm = 0;
-        } else {
-            target_bpm = msg[1];
+        if strength_msg < MSG_RIT_MLT + 1 {
+            // rit.
+            let bar = (msg[0] / 10) as i32;
+            let target_bpm: i16;
+            let strength = strength_set
+                .into_iter()
+                .find(|x| x.0 == strength_msg)
+                .unwrap_or(strength_set[0]);
+            if msg[1] == MSG2_RIT_ATMP {
+                target_bpm = self.tg.get_bpm();
+            } else if msg[1] == MSG2_RIT_FERMATA {
+                target_bpm = 0;
+            } else {
+                target_bpm = msg[1];
+            }
+            self.tg.prepare_rit(strength.1, bar, target_bpm);
+        } else if strength_msg == MSG_RIT_RITEN {
+            // riten.
+            let rate = msg[1].clamp(-90, 90);
+            self.tg.set_relative_tempo(rate);
         }
-        self.tg.prepare_rit(strength.1, bar, target_bpm);
     }
     fn setting_cmnd(&mut self, msg: [i16; 2]) {
         if msg[0] == MSG_SET_BPM {
@@ -683,7 +690,7 @@ impl ElapseStack {
             let beat = self.tg.get_meter();
             self.send_msg_to_ui(UiMsg::Meter(beat.0, beat.1));
             // bpm
-            self.send_msg_to_ui(UiMsg::BpmUi(self.get_bpm()));
+            self.send_msg_to_ui(UiMsg::BpmUi(self.get_bpm(), self.tg.get_bpm_rate()));
             // tick
             let (m, b, t, _c) = self.tg.get_tick();
             self.send_msg_to_ui(UiMsg::TickUi(self.during_play, m, b, t));

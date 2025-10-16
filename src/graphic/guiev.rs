@@ -79,8 +79,13 @@ impl GuiEv {
             UiMsg::NewBeat(beat) => {
                 self.graphic_ev.push(GraphicEv::BeatEv(beat));
             }
-            UiMsg::BpmUi(bpm) => {
-                self.indicator[INDC_BPM] = format!("{}", bpm);
+            UiMsg::BpmUi(bpm, bpm_rate) => {
+                let rate_txt = if bpm_rate == 100 {
+                    "".to_string()
+                } else {
+                    format!("<{}%", bpm_rate)
+                };
+                self.indicator[INDC_BPM] = format!("{}{}", bpm, rate_txt);
             }
             UiMsg::Meter(nume, denomi) => {
                 self.indicator[INDC_METER] = format!("{}/{}", nume, denomi);

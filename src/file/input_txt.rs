@@ -46,6 +46,7 @@ pub struct InputText {
     shift_pressed: bool,
     ctrl_pressed: bool,
     just_after_hokan: bool,
+    riten_sent: bool,
 }
 impl InputText {
     const CURSOR_MAX_VISIBLE_LOCATE: usize = 65;
@@ -67,6 +68,7 @@ impl InputText {
             shift_pressed: false,
             ctrl_pressed: false,
             just_after_hokan: false,
+            riten_sent: false,
         }
     }
     pub fn get_history_locate(&self) -> usize {
@@ -104,7 +106,7 @@ impl InputText {
                 ..
             } => {
                 // 制御文字（例: バックスペース）を除外
-                if !c.is_control() && ((c != ' ') || !self.shift_pressed) {
+                if self.exclusion_condition(&c) {
                     self.input_letter(&c);
                 }
             }
@@ -113,14 +115,12 @@ impl InputText {
                 ..
             } => {
                 self.key_pressed(&key, graphmsg);
-                //println!("Key pressed: {:?}", key);
             }
             Event::WindowEvent {
                 simple: Some(WindowEvent::KeyReleased(key)),
                 ..
             } => {
                 self.key_released(&key);
-                //println!("Key released: {:?}", key);
             }
             _ => {}
         }
@@ -195,6 +195,27 @@ impl InputText {
                     self.visible_locate = 0;
                 }
             }
+            &Key::Key1 | &Key::Key2 | &Key::Key3 | &Key::Key4 | &Key::Key5 | &Key::Key6
+            | &Key::Key7 | &Key::Key8 | &Key::Key9 => {
+                if self.ctrl_pressed {
+                    let num = match key {
+                        Key::Key1 => 1,
+                        Key::Key2 => 2,
+                        Key::Key3 => 3,
+                        Key::Key4 => 4,
+                        Key::Key5 => 5,
+                        Key::Key6 => 6,
+                        Key::Key7 => 7,
+                        Key::Key8 => 8,
+                        Key::Key9 => 9,
+                        _ => 0,
+                    };
+                    if num > 0 {
+                        self.cmd.set_riten(num * -10);
+                        self.riten_sent = true;
+                    }
+                }
+            }
             &Key::RControl => {}
             &Key::LAlt => {}
             &Key::RAlt => {}
@@ -210,14 +231,27 @@ impl InputText {
         self.just_after_hokan = false;
     }
     fn key_released(&mut self, key: &Key) {
-        if key == &Key::LShift || key == &Key::RShift {
-            self.shift_pressed = false;
-        } else
-        /*if key == &Key::LControl*/
-        {
-            // カーソルKeyに使うと Ctrl Released が反応しないため
-            self.ctrl_pressed = false;
+        match key {
+            &Key::LShift | &Key::RShift => {
+                self.shift_pressed = false;
+            }
+            &Key::Key1 | &Key::Key2 | &Key::Key3 | &Key::Key4 | &Key::Key5 | &Key::Key6
+            | &Key::Key7 | &Key::Key8 | &Key::Key9 => {
+                if self.riten_sent {
+                    self.cmd.set_riten(0); // Normal
+                    self.riten_sent = false;
+                }
+            }
+            _ => {
+                // カーソルKeyに使うと Ctrl Released が反応しないため
+                self.ctrl_pressed = false;                
+            }
         }
+    }
+    fn exclusion_condition(&self, c: &char) -> bool {
+        !c.is_control() && ((*c != ' ') || !self.shift_pressed) &&
+        (!self.ctrl_pressed || ((*c != '1') && (*c != '2') && (*c != '3') && (*c != '4') &&
+         (*c != '5') && (*c != '6') && (*c != '7') && (*c != '8') && (*c != '9')))
     }
     fn input_letter(&mut self, ltr: &char) {
         self.input_text.insert(self.input_locate, *ltr);

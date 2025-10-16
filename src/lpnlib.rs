@@ -429,10 +429,11 @@ pub const _MSG_CTRL_ENDFLOW: i16 = 110;
 pub const MSG_SYNC_LFT: i16 = 5;
 pub const MSG_SYNC_RGT: i16 = 6;
 pub const MSG_SYNC_ALL: i16 = 7;
-//  Rit : rit.を１小節以上かける場合、1byte目に [小節数*10] を足す
+//  Rit : rit.を１小節以上かける場合、1byte目に [小節数*10] を足す（コマンドは10以下のみ）
 pub const MSG_RIT_NRM: i16 = 1;
 pub const MSG_RIT_POCO: i16 = 2;
 pub const MSG_RIT_MLT: i16 = 3;
+pub const MSG_RIT_RITEN: i16 = 8; // 2byte目: 現状のテンポへの倍率: 90..10..0..-10..-90[%]
 pub const MSG2_RIT_ATMP: i16 = 9999;
 pub const MSG2_RIT_FERMATA: i16 = 10000;
 //  Set
@@ -477,7 +478,7 @@ pub enum GraphicEv {
 pub enum UiMsg {
     NewMeasure,
     NewBeat(i32),
-    BpmUi(i16),
+    BpmUi(i16, i16), // bpm, bpm_rate
     Meter(i32, i32),
     TickUi(bool, i32, i32, i32), //running, tick_in_beat, beat, msr
     PartUi(usize, PartUi),       // part_num
