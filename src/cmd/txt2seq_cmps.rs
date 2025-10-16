@@ -9,14 +9,14 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          Chord Tables and IF
 //*******************************************************************
-const ROOT_NAME: [&str; 7] = ["I", "II", "III", "IV", "V", "VI", "VII"];
+const ROOT_NAME: &[&str] = &["I", "II", "III", "IV", "V", "VI", "VII"];
 struct ChordTable {
     name: &'static str,
     table: &'static [i16],
 }
 
 #[rustfmt::skip]
-const CHORD_TABLE: [ChordTable; 59] = [
+const CHORD_TABLE: &[ChordTable] = &[
     ChordTable {name: "X",      table: &THRU,}, // noped
     ChordTable {name: "O",      table: &THRU,},
     ChordTable {name: "_",      table: &MAJOR,},
@@ -57,6 +57,7 @@ const CHORD_TABLE: [ChordTable; 59] = [
     ChordTable {name: "_lyd",   table: &IONIAN,}, // IVが音程そのまま。IVとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name: "_mix",   table: &IONIAN,}, // Vが音程そのまま。Vとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name: "_aeo",   table: &IONIAN,}, // VIが音程そのまま。VIとの差分分並行移動し、音程をkeyに合わせる
+    ChordTable {name: "_drmslt",table: &IONIAN,},
     ChordTable {name: "diatonic",table: &IONIAN,},
     ChordTable {name: "dorian", table: &DORIAN,},
     ChordTable {name: "lydian", table: &LYDIAN,},
@@ -72,8 +73,8 @@ const CHORD_TABLE: [ChordTable; 59] = [
     ChordTable {name: "sc2",    table: &SC2,},
     ChordTable {name: "sc3",    table: &SC3,},
     ChordTable {name: "sc4",    table: &SC4,},
-    ChordTable {name: "sc5",    table: &MIXOLYDIAN,},
 
+    ChordTable {name: "sc5",    table: &MIXOLYDIAN,},
     ChordTable {name: "sc6",    table: &SC6,},
     ChordTable {name: "sc7",    table: &LYDIAN,},
     ChordTable {name: "sc8",    table: &SC8,},
