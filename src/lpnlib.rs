@@ -45,6 +45,7 @@ pub const MAX_ALL_KBD_PART: usize = MAX_KBD_PART + 1; // Flow part included
 pub const DAMPER_PART: usize = MAX_ALL_KBD_PART + 1; // Elapse inside Part
 pub const SOSTENUTO_PART: usize = MAX_ALL_KBD_PART + 2; // Elapse inside Part
 pub const SHIFT_PART: usize = MAX_ALL_KBD_PART + 3; // Elapse inside Part
+pub const MAX_PEDAL_PART: usize = SHIFT_PART - MAX_ALL_KBD_PART; // Damper, Sostenuto, Shift
 pub const NONE_NUM: usize = 255;
 #[allow(dead_code)]
 pub enum Part {

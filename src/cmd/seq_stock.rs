@@ -19,7 +19,7 @@ use crate::lpnlib::*;
 pub struct SeqDataStock {
     pdt: Vec<Vec<PhraseDataStock>>,
     cdt: [CompositionDataStock; MAX_COMPOSITION_PART],
-    pdldt: [PedalDataStock; 3],
+    pdldt: [PedalDataStock; MAX_PEDAL_PART],
     input_mode: InputMode,
     cluster_memory: String,
     raw_additional: String,
@@ -41,7 +41,7 @@ impl SeqDataStock {
         Self {
             pdt: pd,
             cdt: Default::default(),
-            pdldt: [PedalDataStock::new(), PedalDataStock::new(), PedalDataStock::new()],
+            pdldt: Default::default(),
             input_mode: InputMode::Closer,
             cluster_memory: "".to_string(),
             raw_additional: "".to_string(),
@@ -125,6 +125,17 @@ impl SeqDataStock {
                         false,
                     );
                 }
+            }
+        } else if (DAMPER_PART..=SHIFT_PART).contains(&part) {
+            // Damper/Sostenuto/Shift part の場合
+            if self.pdldt[part - MAX_ALL_KBD_PART].set_raw("[]".to_string(), &self.cluster_memory) {
+                self.pdldt[part - MAX_ALL_KBD_PART].set_recombined(
+                    self.input_mode,
+                    self.bpm,
+                    self.tick_for_onemsr,
+                    self.tick_for_beat,
+                    false,
+                );
             }
         }
     }

@@ -13,6 +13,11 @@ use crate::lpnlib::*;
 pub struct PedalDataStock {
     _pdl: Vec<PhrEvt>,
 }
+impl Default for PedalDataStock {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl PedalDataStock {
     pub fn new() -> Self {
         Self {
