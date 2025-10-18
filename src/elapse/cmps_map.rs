@@ -176,7 +176,7 @@ impl CompositionMap {
         let mut damper_map = vec![PedalPos::NoEvt; max_beat];
         let mut damper_exists = false;
         for (i, ele) in damper_map.iter_mut().enumerate() {
-            if i < max_beat {
+            if i < max_beat && cmsr < self.damper_map.len() {
                 if let Some(c) = &self.damper_map[cmsr][i] {
                     *ele = if c.1 && c.0.position == PedalPos::Full {
                         PedalPos::Full
