@@ -84,6 +84,12 @@ impl LoopianCmd {
                 } else {
                     "what?".to_string()
                 }
+            } else if cmd == "flowvel" {
+                if self.change_flow_velocity(prm) {
+                    "Flow velocity has changed!".to_string()
+                } else {
+                    "what?".to_string()
+                }
             } else {
                 "what?".to_string()
             }
@@ -207,6 +213,15 @@ impl LoopianCmd {
         if let Ok(turn_note) = ntnum.parse::<i16>() {
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_TICK_RESOLUTION, turn_note]));
+            true
+        } else {
+            false
+        }
+    }
+    fn change_flow_velocity(&mut self, vel_txt: &str) -> bool {
+        if let Ok(vel) = vel_txt.parse::<i16>() {            
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
             true
         } else {
             false

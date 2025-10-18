@@ -483,9 +483,7 @@ impl LoopianCmd {
                         rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
                     }
                     "FLOW" => {
-                        if first_letter == "{" {
-                            rtn_str = self.call_bracket_brace(FLOW_PART, first_letter, rest_text);
-                        }
+                        rtn_str = self.flow_part_command(first_letter, rest_text);
                     }
                     "D" | "DAMPER" => {
                         if first_letter == "[" {
@@ -515,6 +513,24 @@ impl LoopianCmd {
             }
         }
         rtn_str
+    }
+    fn flow_part_command(&mut self, first_letter: &str, input_text: &str) -> String {
+        let len = input_text.chars().count();
+        if first_letter == "{" {
+            self.call_bracket_brace(FLOW_PART, first_letter, input_text)
+        } else if len >= 3 && &input_text[0..3] == "dyn" {
+            let dyntxt = extract_texts_from_parentheses(input_text);
+            let vel = if dyntxt.is_empty() {
+                0
+            } else {
+                convert_exp2vel(dyntxt) as i16
+            };
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
+            "Flow Velocity Changed!".to_string()
+        } else {
+            "what?".to_string()
+        }
     }
     fn detect_part(part_str: &str) -> Option<usize> {
         let len = part_str.chars().count();

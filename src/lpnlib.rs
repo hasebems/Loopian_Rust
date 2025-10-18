@@ -443,6 +443,7 @@ pub const MSG_SET_KEY: i16 = 2;
 pub const MSG_SET_TURN: i16 = 3;
 pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
 pub const MSG_SET_FLOW_TICK_RESOLUTION: i16 = 5; // Flow の Tick 解像度を設定
+pub const MSG_SET_FLOW_VELOCITY: i16 = 6; // Flow の Velocity を設定
 //  Set BEAT  : numerator, denomirator
 //  Effect
 pub const MSG_EFCT_DMP: i16 = 1;

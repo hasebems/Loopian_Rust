@@ -570,6 +570,11 @@ impl ElapseStack {
             if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
                 fl.borrow_mut().set_tick_resolution(msg[1] as i32);
             }
+        } else if msg[0] == MSG_SET_FLOW_VELOCITY {
+            println!("Set Flow Velocity: {}", msg[1]);
+            if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+                fl.borrow_mut().set_velocity(msg[1]);
+            }
         }
     }
     fn efct(&mut self, msg: [i16; 2]) {

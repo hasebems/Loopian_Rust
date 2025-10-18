@@ -39,6 +39,7 @@ pub struct Flow {
     root: i16,
     translation_tbl: i16,
     tick_resolution: i32,
+    set_velocity: i16,
 
     // for super's member
     during_play: bool,
@@ -67,6 +68,7 @@ impl Flow {
             root: 0,
             translation_tbl: NO_TABLE,
             tick_resolution: TICK_RESOLUTION,
+            set_velocity: 0,
 
             // for super's member
             during_play,
@@ -86,6 +88,9 @@ impl Flow {
     }
     pub fn set_tick_resolution(&mut self, reso: i32) {
         self.tick_resolution = reso;
+    }
+    pub fn set_velocity(&mut self, vel: i16) {
+        self.set_velocity = vel;
     }
     pub fn get_keynote(&self) -> u8 {
         self.keynote
@@ -167,12 +172,17 @@ impl Flow {
             self.note_stock[last - 1].2 = locate;
             return; // 同じノートが連続している場合は、locate だけ更新
         }
+        let vel = if self.set_velocity != 0 {
+            self.set_velocity
+        } else {
+            vel as i16
+        };
         let ev = NoteEvt {
             tick: crnt_.tick as i16,
             dur: 0, // 必要ない
             note: real_note,
             floating: false,
-            vel: vel as i16,
+            vel,
             trns: TrnsType::NoTrns,
             artic: 100,
         };
