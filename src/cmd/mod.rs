@@ -8,3 +8,4 @@ pub mod txt2seq_dp;
 pub mod txt2seq_pdl;
 pub mod txt2seq_phr;
 pub mod txt_common;
+pub mod input_txt;

@@ -20,7 +20,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 
 use elapse::stack_elapse::ElapseStack;
-use file::input_txt::InputText;
+use cmd::input_txt::InputText;
 use file::settings::Settings;
 use graphic::draw_graph::{Graphic, Resize};
 use graphic::guiev::GuiEv;

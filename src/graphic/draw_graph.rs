@@ -10,7 +10,7 @@ use std::io::Read;
 use super::generative_view::*;
 use super::guiev::*;
 use super::view_waterripple::WaterRipple;
-use crate::file::input_txt::InputText;
+use crate::cmd::input_txt::InputText;
 use crate::lpnlib::*;
 
 //*******************************************************************

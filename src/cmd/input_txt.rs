@@ -7,11 +7,11 @@ use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use nannou::prelude::*;
 use std::sync::mpsc;
 
-use super::cnv_file;
-use super::history::History;
-use crate::cmd::cmdparse::*;
-use crate::cmd::txt_common::*;
+use super::cmdparse::*;
+use super::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
+use crate::file::cnv_file;
+use crate::file::history::History;
 use crate::graphic::guiev::GuiEv;
 use crate::lpnlib::*;
 
@@ -195,8 +195,15 @@ impl InputText {
                     self.visible_locate = 0;
                 }
             }
-            &Key::Key1 | &Key::Key2 | &Key::Key3 | &Key::Key4 | &Key::Key5 | &Key::Key6
-            | &Key::Key7 | &Key::Key8 | &Key::Key9 => {
+            &Key::Key1
+            | &Key::Key2
+            | &Key::Key3
+            | &Key::Key4
+            | &Key::Key5
+            | &Key::Key6
+            | &Key::Key7
+            | &Key::Key8
+            | &Key::Key9 => {
                 if self.ctrl_pressed {
                     let num = match key {
                         Key::Key1 => 1,
@@ -235,8 +242,15 @@ impl InputText {
             &Key::LShift | &Key::RShift => {
                 self.shift_pressed = false;
             }
-            &Key::Key1 | &Key::Key2 | &Key::Key3 | &Key::Key4 | &Key::Key5 | &Key::Key6
-            | &Key::Key7 | &Key::Key8 | &Key::Key9 => {
+            &Key::Key1
+            | &Key::Key2
+            | &Key::Key3
+            | &Key::Key4
+            | &Key::Key5
+            | &Key::Key6
+            | &Key::Key7
+            | &Key::Key8
+            | &Key::Key9 => {
                 if self.riten_sent {
                     self.cmd.set_riten(0); // Normal
                     self.riten_sent = false;
@@ -244,14 +258,14 @@ impl InputText {
             }
             _ => {
                 // カーソルKeyに使うと Ctrl Released が反応しないため
-                self.ctrl_pressed = false;                
+                self.ctrl_pressed = false;
             }
         }
     }
     fn exclusion_condition(&self, c: &char) -> bool {
-        !c.is_control() && ((*c != ' ') || !self.shift_pressed) &&
-        (!self.ctrl_pressed || ((*c != '1') && (*c != '2') && (*c != '3') && (*c != '4') &&
-         (*c != '5') && (*c != '6') && (*c != '7') && (*c != '8') && (*c != '9')))
+        !c.is_control() && // 制御文字を除外
+        ((*c != ' ') || !self.shift_pressed) && // Shift+Space を除外
+        !self.ctrl_pressed // Ctrl 押下中は除外
     }
     fn input_letter(&mut self, ltr: &char) {
         self.input_text.insert(self.input_locate, *ltr);
