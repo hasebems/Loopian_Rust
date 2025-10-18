@@ -193,32 +193,31 @@ impl PhraseComplemented {
     }
     /// *n の繰り返しを展開する(acciaccatura も同様に展開)
     fn note_repeat(&mut self) {
-        loop {
-            let mut note_vec = self.note_info.clone();
-            let mut no_exist: bool = true;
-            for (i, one) in self.note_info.iter().enumerate() {
-                if one.contains("*") {
-                    no_exist = false;
-                    for (j, ltr) in one.chars().enumerate() {
-                        if ltr == '*' {
-                            note_vec[i] = one[..j].to_string();
-                            let number: i32 = one[j + 1..].parse().unwrap_or(0);
-                            if number > 1 {
-                                for _ in 0..number - 1 {
-                                    note_vec.insert(i + 1, one[..j].to_string());
-                                }
-                            }
-                            break;
-                        }
+        // 単一パスで '*n' を展開する実装
+        let mut out: Vec<String> = Vec::with_capacity(self.note_info.len());
+        for note in self.note_info.iter() {
+            if let Some(pos) = note.find('*') {
+                // '*' の前までを基底ノート文字列とする
+                let base = note[..pos].to_string();
+                let number: i32 = note[pos + 1..].parse().unwrap_or(0);
+                // 最低1回は出力（既存の1つ分）。number>1 の場合は追加分を出す
+                out.push(base.clone());
+                if number > 1 {
+                    // +- 指示がある場合は、2回目以降先頭の1文字を削除しておく（UTF-8 安全）
+                    let base = if base.starts_with('-') || base.starts_with('+') {
+                        base.chars().skip(1).collect::<String>()
+                    } else {
+                        base
+                    };
+                    for _ in 0..number - 1 {
+                        out.push(base.clone());
                     }
-                    break;
                 }
-            }
-            self.note_info = note_vec;
-            if no_exist {
-                break;
+            } else {
+                out.push(note.clone());
             }
         }
+        self.note_info = out;
     }
     /// 同じ Phrase を指定回数回、コピーし追加する(acciaccatura も同様に展開)
     fn repeat_ntimes(&mut self, ne: &str) {
