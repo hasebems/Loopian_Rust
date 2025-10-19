@@ -1,4 +1,4 @@
-// Prelude No.4
+// Prelude No.4 with Performance
 //  Voice: Bosendorfer VC new age
 //
 // set.path(classy)
@@ -57,5 +57,53 @@ R1.[-h'l,qt%/-hl%,x//].dyn(p)
 L2.[-emlr,mlr,mldi,mldi,mld*4/-hmafd,x//].dyn(pp)
 
 !msr(24)
+R1.[--hltml,-sitmsi//].dyn(p)
+L2.[-hm+m,mtm//].dyn(pp)
+
+!msr(25)
+FLOW.{Iion/III7-9/IIIdim}
+L2.[edml*8/-trl*4,trla*4/-tarla*4,tars,tars,tadis,tadis//].dyn(pp)
+
+!msr(28)
+FLOW.{VI7/VIm7/VIdim/V9}
+L2.[-eldis*4,lds,lds,ldfi,ldfi/ldf*4,ltf*4/ltf*4,-sitf*4/-stf*8//].dyn(pp)
+
+!msr(32)
+FLOW.{Vm6/IVM9/III7.,IV6}
+L2.[-estaf*4,stam*4/-flm,flm,flr*6/-mlr,mlr,msir,msir,flr*4//].dyn(pp)
+
+!msr(35)
+FLOW.{III7/III7-9}
+L2.[-emsir*8/qmsir,x,x,x//].dyn(pp)
+
+!msr(37)
+FLOW.{Iion/III7-9/IIIdim.,IV7}
+L2.[edml*8/-trl*4,-tarla*4/tarala,tarala,taras,taras,-ldis,ldis^,ldis^^,ldis^^//].dyn(p)
+
+!msr(40)
+FLOW.{IVdim}
+L2.[-elds,lds,ldfi,ldfi,-filri,filri,-flr,flr//].dyn(mp)
+
+!msr(41)
+FLOW.{III7-9}
+ALL.{O.,X}
+L2.[--em+m^^,+rftr*3,-dmsit,dml*3//].dyn(mp)
+
+!msr(42)
+FLOW.{IIm9}
+ALL.{X,O,X}
+L2.[erfl,rfl,-r^^,ltf,-mlm,mlm,flr%,flr%//].dyn(mp)
+
+!msr(43)
+FLOW.{III7sus4.,IV6/III7sus4.,III7/IV9}
+ALL.{X}
+L2.[-emlm*4,flr*4/-mlr*4,msim,msim,msir,msir/efd*4,fma,fma,flr,flr//].dyn(p)
+
+!msr(46)
+FLOW.{VIm9/IV9}
+L2.[-emlr,mlr,mldi,mldi,mld*4/-hmafd,x//].dyn(pp)
+
+!msr(48)
+FLOW.{Iion}
 R1.[--hltml,-sitmsi/ldmlo//].dyn(p)
 L2.[-hm+m,mtm/-l+lo//].dyn(pp)
