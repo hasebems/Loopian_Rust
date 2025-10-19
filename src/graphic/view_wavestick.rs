@@ -3,6 +3,9 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+//  originally based on p5.js code by takawo
+//      https://openprocessing.org/sketch/1914365
+//
 use nannou::noise::{NoiseFn, Perlin};
 use nannou::prelude::*;
 use super::draw_graph::Resize;

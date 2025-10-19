@@ -2,7 +2,10 @@
 //  Copyright (c) 2025 Hasebe Masahiko.
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
-
+//
+//  originally based on p5.js code by zhaoyc
+//      https://openprocessing.org/sketch/1608539
+//
 use super::draw_graph::Resize;
 use crate::graphic::generative_view::{GenerativeView, GraphMode};
 use nannou::prelude::*;
