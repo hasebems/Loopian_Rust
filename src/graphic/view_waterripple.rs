@@ -7,8 +7,6 @@ use nannou::prelude::*;
 
 use super::draw_graph::Resize;
 use super::generative_view::*;
-use crate::lpnlib::GraphMode;
-//use crate::lpnlib::*;
 
 pub struct WaterRipple {
     mode: GraphMode,

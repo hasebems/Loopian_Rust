@@ -15,12 +15,38 @@ use super::view_raineffect::*;
 use super::view_sinewave::*;
 use super::view_voice4::*;
 use super::view_waterripple::*;
+use super::view_wavestick::*;
 use crate::cmd::txt_common::*;
-use crate::lpnlib::*;
 
 //*******************************************************************
 //      Enum, Table
 //*******************************************************************
+// return msg from command receiving job
+pub struct CmndRtn(pub String, pub GraphicMsg);
+
+// Graphic Message
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum GraphicMsg {
+    What,
+    NoMsg,
+    LightMode,
+    DarkMode,
+    TextVisibleCtrl,
+    RipplePattern,
+    VoicePattern,
+    LissajousPattern,
+    BeatLissaPattern(i32),
+    SineWavePattern,
+    RainEffectPattern,
+    FishPattern,
+    JumpingPattern,
+    WaveStickPattern,
+}
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum GraphMode {
+    Dark,
+    Light,
+}
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum GraphicPattern {
     Ripple,
@@ -31,9 +57,10 @@ pub enum GraphicPattern {
     RainEffect,
     SchoolOfFish,
     Jumping,
+    WaveStick,
 }
 pub struct GraphicPatternName(pub GraphicPattern, pub GraphicMsg, pub &'static str);
-pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 9] = [
+pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 10] = [
     GraphicPatternName(GraphicPattern::Ripple, GraphicMsg::RipplePattern, "ripple"),
     GraphicPatternName(GraphicPattern::Voice4, GraphicMsg::VoicePattern, "voice"),
     GraphicPatternName(
@@ -70,6 +97,11 @@ pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 9] = [
         GraphicPattern::Jumping,
         GraphicMsg::JumpingPattern,
         "jumping",
+    ),
+    GraphicPatternName(
+        GraphicPattern::WaveStick,
+        GraphicMsg::WaveStickPattern,
+        "wavestick",
     ),
 ];
 
@@ -164,6 +196,10 @@ pub fn get_view_instance(
         GraphicMsg::JumpingPattern => {
             gptn = Some(GRAPHIC_PATTERN_NAME[8].0);
             view = Some(Box::new(Jumping::new()));
+        }
+        GraphicMsg::WaveStickPattern => {
+            gptn = Some(GRAPHIC_PATTERN_NAME[5].0);
+            view = Some(Box::new(WaveStick::new()));
         }
         _ => {
             gptn = None;

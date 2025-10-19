@@ -8,7 +8,7 @@ use std::sync::mpsc;
 use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
-use crate::graphic::generative_view::GRAPHIC_PATTERN_NAME;
+use crate::graphic::generative_view::{GRAPHIC_PATTERN_NAME, CmndRtn, GraphicMsg};
 use crate::lpnlib::*;
 
 //  LoopianCmd の責務

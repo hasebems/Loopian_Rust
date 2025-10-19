@@ -3,9 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::graphic::draw_graph::*;
-use crate::graphic::generative_view::GenerativeView;
-use crate::lpnlib::GraphMode;
+use super::draw_graph::*;
+use super::generative_view::{GenerativeView, GraphMode};
 use nannou::prelude::*;
 use std::collections::VecDeque;
 

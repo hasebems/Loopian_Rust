@@ -13,6 +13,7 @@ use crate::elapse::tickgen::CrntMsrTick;
 use crate::file::cnv_file;
 use crate::file::history::History;
 use crate::graphic::guiev::GuiEv;
+use crate::graphic::generative_view::{CmndRtn, GraphicMsg};
 use crate::lpnlib::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

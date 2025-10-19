@@ -4,8 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 
 use super::draw_graph::Resize;
-use crate::graphic::generative_view::GenerativeView;
-use crate::lpnlib::GraphMode;
+use crate::graphic::generative_view::{GenerativeView, GraphMode};
 use nannou::prelude::*;
 
 // 定数定義を追加（必要に応じてモジュールやスコープに配置）

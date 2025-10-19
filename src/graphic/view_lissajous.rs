@@ -7,8 +7,8 @@ use nannou::prelude::*;
 use std::f32::consts::PI;
 
 use super::draw_graph::Resize;
-use super::generative_view::GenerativeView;
-use crate::lpnlib::{GraphMode, *};
+use super::generative_view::{GenerativeView, GraphMode};
+use crate::lpnlib::*;
 
 pub struct Lissajous {
     crnt_time: f32,

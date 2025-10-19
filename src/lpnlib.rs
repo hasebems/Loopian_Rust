@@ -490,32 +490,6 @@ pub enum UiMsg {
 //*******************************************************************
 //          Command Definition
 //*******************************************************************
-// return msg from command receiving job
-pub struct CmndRtn(pub String, pub GraphicMsg);
-
-// Graphic Message
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum GraphicMsg {
-    What,
-    NoMsg,
-    LightMode,
-    DarkMode,
-    TextVisibleCtrl,
-    RipplePattern,
-    VoicePattern,
-    LissajousPattern,
-    BeatLissaPattern(i32),
-    SineWavePattern,
-    RainEffectPattern,
-    FishPattern,
-    JumpingPattern,
-}
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum GraphMode {
-    Dark,
-    Light,
-}
-//-------------------------------------------------------------------
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum InputMode {
     Fixed,    // 階名のオクターブ位置は固定。絶対位置を指定

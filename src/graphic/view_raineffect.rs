@@ -3,12 +3,10 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 
-use crate::graphic::generative_view::GenerativeView;
+use crate::graphic::generative_view::{GenerativeView, GraphMode};
 use nannou::prelude::*;
 use std::collections::VecDeque;
-//use crate::graphic::draw_graph::*;
 use super::draw_graph::Resize;
-use crate::lpnlib::GraphMode;
 
 //*******************************************************************
 //      Rain Effect Graphic

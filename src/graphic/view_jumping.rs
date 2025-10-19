@@ -4,8 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::draw_graph::Resize;
-use crate::graphic::generative_view::GenerativeView;
-use crate::lpnlib::GraphMode;
+use crate::graphic::generative_view::{GenerativeView, GraphMode};
 use nannou::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
