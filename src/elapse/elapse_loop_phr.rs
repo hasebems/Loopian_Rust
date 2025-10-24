@@ -14,7 +14,7 @@ use super::floating_tick::FloatingTick;
 use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use crate::cmd::txt2seq_cmps;
+use crate::cmd::{txt2seq_cmps, txt2seq_cmps::*};
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -287,7 +287,7 @@ impl PhraseLoop {
         let ctbl = rt_tbl.1;
         let deb_txt: String;
         let trans_note: u8;
-        let root: i16 = ROOT2NTNUM[rt_tbl.0 as usize];
+        let root: i16 = get_note_from_root(rt_tbl.0);
         let (movable_scale, mut para_note) = txt2seq_cmps::is_movable_scale(ctbl, root);
         if movable_scale {
             if para_note > self.turnnote {

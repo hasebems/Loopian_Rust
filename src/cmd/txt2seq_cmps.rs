@@ -134,6 +134,16 @@ const SC9: [i16; 7] = [1, 2, 4, 6, 8, 9, 11];
 const SC10: [i16; 7] = [0, 2, 3, 5, 7, 9, 10];
 const SC11: [i16; 7] = [1, 3, 4, 6, 8, 10, 11];
 
+const ROOT2NTNUM: [i16; 22] = [
+    0, -1, 0, 1, 1, 2, 3, 3, 4, 5, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 12,
+];
+
+//*******************************************************************
+//          Functions
+//*******************************************************************
+pub fn get_note_from_root(root: i16) -> i16 {
+    ROOT2NTNUM[root as usize]
+}
 pub fn get_root_name(idx_num: usize) -> &'static str {
     assert!(idx_num < ROOT_NAME.len());
     ROOT_NAME[idx_num]

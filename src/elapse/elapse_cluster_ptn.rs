@@ -9,11 +9,10 @@ use std::rc::Rc;
 use super::elapse_base::*;
 use super::elapse_note::*;
 use super::floating_tick::FloatingTick;
-use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_ana;
-use crate::cmd::txt2seq_cmps;
+use crate::cmd::{txt2seq_cmps, txt2seq_cmps::*};
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -141,7 +140,7 @@ impl ClusterPattern {
             let cmp_med = pt_borrowed.get_cmps_med();
             // 和音情報を読み込む
             let (rt, mut tbl) = cmp_med.get_chord(crnt_);
-            let root = ROOT2NTNUM[rt as usize];
+            let root = get_note_from_root(rt);
             if tbl == NO_TABLE {
                 // 対応する Chord Table が存在しない場合
                 tbl = 0;

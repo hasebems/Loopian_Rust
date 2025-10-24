@@ -11,6 +11,7 @@ use super::note_translation::*;
 use super::elapse_note::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
+use crate::cmd::txt2seq_cmps::*;
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -253,11 +254,11 @@ impl Flow {
                 if ctbl == NO_TABLE {
                     return real_note;
                 }
-                let root: i16 = ROOT2NTNUM[rt as usize];
+                let root: i16 = get_note_from_root(rt);
                 real_note = translate_note_com(root, ctbl, temp_note as u8);
             }
         } else {
-            let root: i16 = ROOT2NTNUM[self.root as usize];
+            let root: i16 = get_note_from_root(self.root);
             real_note = translate_note_com(root, self.translation_tbl, temp_note as u8);
         }
 
