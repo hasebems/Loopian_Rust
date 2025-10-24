@@ -17,7 +17,8 @@ pub fn translate_note_parascl(para_note: i16, ctbl: i16, ntev: u8) -> u8 {
     let input_oct = input_nt / 12;
     let mut output_doremi = 0;
     let mut former_nt = 0;
-    let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+    let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+    let tbl: &[i16] = tbl_cow.as_ref();
     for ntx in tbl.iter() {
         match ntx.cmp(&input_doremi) {
             Ordering::Equal => {
@@ -51,7 +52,8 @@ pub fn translate_note_parascl(para_note: i16, ctbl: i16, ntev: u8) -> u8 {
 pub fn translate_note_com(root: i16, ctbl: i16, tgt_nt: u8) -> u8 {
     let tgt_nt = tgt_nt as i16;
     let mut proper_nt = tgt_nt;
-    let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+    let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+    let tbl: &[i16] = tbl_cow.as_ref();
     let real_root = root + DEFAULT_NOTE_NUMBER as i16;
     let mut former_nt: i16 = 0;
     let mut found = false;
@@ -102,7 +104,8 @@ pub fn _translate_note_arp(root: i16, ctbl: i16, nt_diff: i16, last_note: i16) -
     // arp_nt: 前回発音したノートに nt_diff を足したもの
     let arp_nt = last_note + nt_diff;
     let mut nty = DEFAULT_NOTE_NUMBER as i16;
-    let (tbl, _take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+    let (tbl_cow, _take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+    let tbl: &[i16] = tbl_cow.as_ref();
     match nt_diff.cmp(&0) {
         Ordering::Equal => arp_nt,
         Ordering::Greater => {
@@ -148,7 +151,8 @@ pub fn _translate_note_arp(root: i16, ctbl: i16, nt_diff: i16, last_note: i16) -
 pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: u8, nt_diff: i16, last_note: i16) -> u8 {
     let tgt_nt = tgt_nt as i16;
     let mut proper_nt = tgt_nt;
-    let (tbl, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+    let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
+    let tbl: &[i16] = tbl_cow.as_ref();
     let real_root = root + DEFAULT_NOTE_NUMBER as i16;
     let mut former_nt: i16 = 0;
     let mut found = false;

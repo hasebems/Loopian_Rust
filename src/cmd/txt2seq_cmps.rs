@@ -5,6 +5,7 @@
 //
 use super::txt_common::*;
 use crate::lpnlib::*;
+use std::borrow::Cow;
 
 //*******************************************************************
 //          Chord Tables and IF
@@ -61,13 +62,13 @@ const CHORD_TABLE: &[ChordTable] = &[
     ChordTable {name: "diatonic",table: &IONIAN,},
     ChordTable {name: "dorian", table: &DORIAN,},
     ChordTable {name: "lydian", table: &LYDIAN,},
-    ChordTable {name: "mixolydian",table: &MIXOLYDIAN,},
 
+    ChordTable {name: "mixolydian",table: &MIXOLYDIAN,},
     ChordTable {name: "aeolian",table: &AEOLIAN,},
     ChordTable {name: "comdim", table: &COMDIM,},
     ChordTable {name: "pentatonic",table: &PENTATONIC,},
     ChordTable {name: "blues",  table: &BLUES,},
-    // scale n(38-49): n半音分上の diatonic scale
+    // scale n: n半音分上の diatonic scale
     ChordTable {name: "sc0",    table: &IONIAN,},
     ChordTable {name: "sc1",    table: &SC1,},
     ChordTable {name: "sc2",    table: &SC2,},
@@ -87,7 +88,9 @@ const CHORD_TABLE: &[ChordTable] = &[
 ];
 
 pub const NO_LOOP: i16 = (CHORD_TABLE.len() - 1) as i16;
-pub const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
+const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
+pub const UPPER: i16 = MAX_CHORD_TABLE as i16;
+pub const DIRECT_MAP: i16 = (MAX_CHORD_TABLE*2) as i16;
 const THRU: [i16; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const MAJOR: [i16; 3] = [0, 4, 7];
 const MINOR: [i16; 3] = [0, 3, 7];
@@ -148,30 +151,47 @@ pub fn get_root_name(idx_num: usize) -> &'static str {
     assert!(idx_num < ROOT_NAME.len());
     ROOT_NAME[idx_num]
 }
-pub fn get_table(idx_num: usize) -> (&'static [i16], bool) {
-    let mut idx = idx_num;
+pub fn get_table(idx_num: usize) -> (Cow<'static, [i16]>, bool) {
+    let mut idx = idx_num as i16;
     let mut upper = false;
-    if idx > UPPER as usize {
-        idx -= UPPER as usize;
+    if UPPER < idx && idx < DIRECT_MAP {
+        idx -= UPPER;
         upper = true;
     }
-    assert!(idx < MAX_CHORD_TABLE);
-    (CHORD_TABLE[idx].table, upper)
-}
-pub fn get_table_name(idx_num: i16) -> &'static str {
-    if idx_num == NO_TABLE {
-        return "";
+    // 数字からその場でテーブル作成
+    if (DIRECT_MAP..0x1000).contains(&idx) {
+        let mut note_bmap: Vec<i16> = Vec::new();
+        for i in 0..3 {
+            let mut idxh = (idx >> (4 * (2 - i))) & 0x000f;
+            for j in 0..4 {
+                if idxh >= (8 >> j) {
+                    note_bmap.push((j + (i * 4)) as i16);
+                    idxh -= 8 >> j;
+                }
+            }
+        }
+        //println!("$$$ Generated chord table: {:?}", note_bmap);
+        (Cow::Owned(note_bmap), upper)
+    } else {
+        let tbl = CHORD_TABLE[idx as usize].table;
+        //println!("$$$ Generated chord table: {:?}", tbl);
+        (Cow::Borrowed(tbl), upper)
     }
+}
+pub fn get_table_name(idx_num: i16) -> Cow<'static, str> {
+    if idx_num == NO_TABLE {
+        return Cow::Borrowed("");
+    }
+    if idx_num >= (MAX_CHORD_TABLE*2) as i16 {
+        return Cow::Owned(format!("{:x}", idx_num));
+    }
+
     let idx: usize = if idx_num > UPPER {
         (idx_num - UPPER) as usize
     } else {
         idx_num as usize
     };
-    if idx >= MAX_CHORD_TABLE {
-        eprintln!("Error: idx_num out of bounds: {idx}"); // idx_num を表示
-        panic!("Assertion failed: idx_num < MAX_CHORD_TABLE");
-    }
-    CHORD_TABLE[idx].name
+    Cow::Borrowed(CHORD_TABLE[idx].name)
 }
 pub fn get_table_num(kind: &str) -> i16 {
     let mut table: i16 = (MAX_CHORD_TABLE - 2) as i16;
@@ -308,7 +328,7 @@ pub fn recombine_to_chord_loop(
                 .to_digit(10)
                 .unwrap_or(0) as i16;
             if num > 0 && num <= 9 {
-                rcmb.push(CmpEvt::Vari(VariEvt {tick, vari: num}))
+                rcmb.push(CmpEvt::Vari(VariEvt { tick, vari: num }))
             }
             if !msgs_sp[1][1..].is_empty() {
                 let rest = msgs_sp[1][1..].to_string();
@@ -330,9 +350,16 @@ pub fn recombine_to_chord_loop(
 
         let (root, table) = convert_chord_to_num(chord);
         if table == NO_LOOP {
-            rcmb.push(CmpEvt::Control( ControlEvt { tick, ctrl: NO_LOOP } )); // loop end control
+            rcmb.push(CmpEvt::Control(ControlEvt {
+                tick,
+                ctrl: NO_LOOP,
+            })); // loop end control
         } else {
-            rcmb.push(CmpEvt::Chord(ChordEvt {tick, root, tbl: table}))
+            rcmb.push(CmpEvt::Chord(ChordEvt {
+                tick,
+                root,
+                tbl: table,
+            }))
         }
 
         read_ptr += 1;
@@ -378,10 +405,6 @@ fn divide_chord_and_dur(mut chord: String) -> (String, i32) {
     (chord, dur)
 }
 fn convert_chord_to_num(mut chord: String) -> (i16, i16) {
-    let mut root: i16 = 2;
-    let mut kind: String = "".to_string();
-    let mut root_str: String = "".to_string();
-    let mut ltr_cnt = 0;
     let length = chord.len();
     let last_ltr = chord.chars().last().unwrap_or(' ');
     let mut take_upper = false;
@@ -392,11 +415,46 @@ fn convert_chord_to_num(mut chord: String) -> (i16, i16) {
         chord = chord[0..length - 1].to_string();
     }
 
+    let first_ltr = chord.chars().next().unwrap_or(' ');
+    if (first_ltr == 'O' || first_ltr == 'X') && length > 1 {
+        let num = i16::from_str_radix(&chord[1..], 16).unwrap_or(NO_TABLE);
+        //println!("$$$ convert_chord_to_num: Chord '{chord}' converted to table number {num}");
+        return (0, num);
+    }
+
     // extract root from chord
-    loop {
-        if length <= ltr_cnt {
-            break;
+    let (root_str, ltr_cnt, mut root) = extract_code_str(&chord, length);
+
+    //  separate with chord, decide root number
+    let mut kind: String = "".to_string();
+    if length > ltr_cnt {
+        kind = chord[ltr_cnt..].to_string();
+    }
+    let mut found = false;
+
+    ROOT_NAME.iter().enumerate().for_each(|(i, rn)| {
+        if rn == &root_str {
+            root += 3 * (i as i16);
+            kind = "_".to_string() + &kind;
+            found = true;
         }
+    });
+
+    if !found {
+        root = NO_ROOT;
+    }
+
+    //  search chord type from Table
+    let table = get_table_num(&kind) + if take_upper { UPPER } else { 0 };
+
+    (root, table)
+}
+fn extract_code_str(chord: &str, length: usize) -> (String, usize, i16) {
+    // extract root from chord
+    let mut root: i16 = 2;
+    let mut root_str: String = "".to_string();
+    let mut ltr_cnt = 0;
+    while ltr_cnt < length {
         let ltr = chord.chars().nth(ltr_cnt).unwrap_or(' ');
         if ltr == 'I' || ltr == 'V' {
             root_str.push(ltr);
@@ -413,26 +471,5 @@ fn convert_chord_to_num(mut chord: String) -> (i16, i16) {
         }
         ltr_cnt += 1;
     }
-
-    //  separate with chord, decide root number
-    if length > ltr_cnt {
-        kind = chord[ltr_cnt..].to_string();
-    }
-    let mut found = false;
-    for (i, rn) in ROOT_NAME.iter().enumerate() {
-        if rn == &root_str {
-            root += 3 * (i as i16);
-            kind = "_".to_string() + &kind;
-            found = true;
-            break;
-        }
-    }
-    if !found {
-        root = NO_ROOT;
-    }
-
-    //  search chord type from Table
-    let table = get_table_num(&kind) + if take_upper { UPPER } else { 0 };
-
-    (root, table)
+    (root_str, ltr_cnt, root)
 }

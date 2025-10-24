@@ -147,7 +147,8 @@ impl ClusterPattern {
             }
             #[cfg(feature = "verbose")]
             println!("ClusterPattern: root-{root}, table-{tbl}");
-            let (tblptr, vel) = self.gen_each_note(crnt_, estk, tbl);
+            let (tblptr_cow, vel) = self.gen_each_note(crnt_, estk, tbl);
+            let tblptr: &[i16] = tblptr_cow.as_ref();
             let ntlist = self.gen_cluster_list(root, tblptr);
             self.play_cluster(estk, &ntlist, vel);
 
@@ -162,14 +163,14 @@ impl ClusterPattern {
         crnt_: &CrntMsrTick,
         estk: &mut ElapseStack,
         tbl: i16,
-    ) -> (&'static [i16], i16) {
-        let (tblptr, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
+    ) -> (std::borrow::Cow<'static, [i16]>, i16) {
+    let (tblptr_cow, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
         let vel = self.calc_dynamic_vel(
             crnt_.tick_for_onemsr,
             estk.get_bpm(),
             estk.tg().get_meter().1,
         );
-        (tblptr, vel)
+        (tblptr_cow, vel)
     }
     fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
         let mut vel: i16 = self.ptn_vel as i16;

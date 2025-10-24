@@ -338,7 +338,6 @@ impl PhrData {
 }
 //-------------------------------------------------------------------
 // MSG_CHORD
-pub const UPPER: i16 = 1000;
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ChordEvt {
     pub tick: i16,
