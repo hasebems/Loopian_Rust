@@ -363,7 +363,7 @@ impl LoopianCmd {
                 let vari = ltr.to_digit(10).unwrap_or(0);
                 if ltr == 'c' {
                     self.dtstk.set_cluster_memory(split_txt[1].to_string());
-                    return "Set a cluster memory!".to_string();
+                    "Set a cluster memory!".to_string()
                 } else if vari > 0 {
                     if let Some(additional) = self.put_phrase(
                         self.input_part,
@@ -444,7 +444,7 @@ impl LoopianCmd {
     fn shortcut_input(&mut self, input_text: &str) -> String {
         // shortcut input
         let mut rtn_str = "what?".to_string();
-        for (i, ltr) in input_text.chars().enumerate() {
+        for (i, ltr) in input_text.char_indices() {
             if ltr == '.' {
                 let first_letter = &input_text[i + 1..i + 2]; // '{' '['
                 let part_str = &input_text[0..i];

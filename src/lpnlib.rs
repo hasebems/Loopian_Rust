@@ -254,13 +254,12 @@ impl PhrEvt {
         }
     }
     pub fn set_note(&mut self, note: u8) {
-        match self {
-            PhrEvt::Note(e) => e.note = note,
+        if let PhrEvt::Note(e) = self {
+            e.note = note;
         //    PhrEvt::NoteList(e) => e.set_note(note),
         //    PhrEvt::BrkPtn(e) => e.set_note(note),
         //    PhrEvt::ClsPtn(e) => e.set_note(note),
         //    PhrEvt::Info(e) => e.tick = tick,
-            _ => {}
         }
     }
 }

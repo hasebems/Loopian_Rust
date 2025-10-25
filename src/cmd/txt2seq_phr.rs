@@ -892,7 +892,7 @@ fn convert_doremi_upper_closer(doremi: String, last_nt: i32) -> i32 {
 
     let mut oct_pitch = 0;
     let mut pure_doremi = String::from("");
-    for (i, ltr) in doremi.chars().enumerate() {
+    for (i, ltr) in doremi.char_indices() {
         if ltr == 'x' {
             return REST as i32;
         } else if ltr == '+' {
@@ -920,7 +920,7 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
 
     let mut oct_pitch = 0;
     let mut pure_doremi = String::from("");
-    for (i, ltr) in doremi.chars().enumerate() {
+    for (i, ltr) in doremi.char_indices() {
         if ltr == 'x' {
             return REST as i32;
         } else if ltr == '+' {
@@ -949,7 +949,7 @@ fn convert_doremi_fixed(doremi: String) -> i32 {
     }
     let mut base_note: i32 = 0;
     let mut pure_doremi = String::from("");
-    for (i, ltr) in doremi.chars().enumerate() {
+    for (i, ltr) in doremi.char_indices() {
         if ltr == 'x' {
             return REST as i32;
         } else if ltr == '+' {
@@ -974,7 +974,7 @@ pub fn split_notes(txt: String) -> Vec<String> {
         }
         first_locate = i;
     };
-    for (i, ltr) in txt.chars().enumerate() {
+    for (i, ltr) in txt.char_indices() {
         if ltr == '+' || ltr == '-' {
             if !plus_flg {
                 set_vec(i);

@@ -26,7 +26,7 @@ pub fn convert_exp2vel(vel_text: &str) -> i32 {
 pub fn split_by(splitter: char, txt: String) -> Vec<String> {
     let mut splited: Vec<String> = Vec::new();
     let mut old_locate: usize = 0;
-    for (i, ltr) in txt.chars().enumerate() {
+    for (i, ltr) in txt.char_indices() {
         if ltr == splitter {
             splited.push(txt[old_locate..i].to_string());
             old_locate = i + 1;
@@ -39,7 +39,7 @@ pub fn split_by(splitter: char, txt: String) -> Vec<String> {
 pub fn split_by_by(sp1: char, sp2: char, txt: String) -> Vec<String> {
     let mut splited: Vec<String> = Vec::new();
     let mut old_locate: usize = 0;
-    for (i, ltr) in txt.chars().enumerate() {
+    for (i, ltr) in txt.char_indices() {
         if ltr == sp1 || ltr == sp2 {
             splited.push(txt[old_locate..i].to_string());
             old_locate = i + 1;
@@ -100,61 +100,29 @@ pub fn get_pure_doremi(org_nt: i32) -> i32 {
 //          extract_xxx_from_parentheses
 //*******************************************************************
 pub fn extract_number_from_parentheses(ne: &str) -> Option<usize> {
-    if let Some(i) = ne.find('(') {
-        if let Some(e) = ne.find(')') {
-            if i < e {
-                let num = if i + 1 < e {
-                    match ne[(i + 1)..e].to_string().parse() {
-                        Ok(n) => Some(n),
-                        Err(_) => None,
-                    }
-                } else {
-                    None
-                };
-                return num;
-            }
-        }
+    match (ne.find('('), ne.find(')')) {
+        (Some(i), Some(e)) if i + 1 < e => ne[(i + 1)..e].to_string().parse().ok(),
+        _ => None,
     }
-    None
 }
 #[allow(dead_code)]
 pub fn extract_anynumber_from_parentheses<T: std::str::FromStr>(ne: &str) -> Option<T> {
-    if let Some(i) = ne.find('(') {
-        if let Some(e) = ne.find(')') {
-            if i < e {
-                let num = if i + 1 < e {
-                    match ne[(i + 1)..e].to_string().parse::<T>() {
-                        Ok(n) => Some(n),
-                        Err(_) => None,
-                    }
-                } else {
-                    None
-                };
-                return num;
-            }
-        }
+    match (ne.find('('), ne.find(')')) {
+        (Some(i), Some(e)) if i + 1 < e => ne[(i + 1)..e].parse::<T>().ok(),
+        _ => None,
     }
-    None
 }
 pub fn extract_texts_from_parentheses(ne: &str) -> &str {
-    if let Some(i) = ne.find('(') {
-        if let Some(e) = ne.find(')') {
-            if i <= e {
-                return &ne[(i + 1)..e];
-            }
-        }
+    match (ne.find('('), ne.find(')')) {
+        (Some(i), Some(e)) if i < e => &ne[(i + 1)..e],
+        _ => "",
     }
-    ""
 }
 pub fn separate_cmnd_and_str(cn: &str) -> Option<(&str, &str)> {
-    if let Some(i) = cn.find('(') {
-        if let Some(e) = cn.find(')') {
-            if i <= e {
-                return Some((&cn[0..i], &cn[(i + 1)..e]));
-            }
-        }
+    match (cn.find('('), cn.find(')')) {
+        (Some(i), Some(e)) if i < e => Some((&cn[0..i], &cn[(i + 1)..e])),
+        _ => None,
     }
-    None
 }
 //*******************************************************************
 //          Data Time Text

@@ -213,34 +213,32 @@ impl MidiRxThread {
     /// MIDI IN ポートからのイベントをチェックし、あれば ElpsMsg::MIDIRx に変換して Elapse に送信する
     fn receive_midi_event(&mut self) {
         for i in 0..2 {
-            if self.mdr_buf[i].is_some() {
-                if let Some(msg_ext) = self.mdr_buf[i].as_ref().unwrap().lock().unwrap().take() {
-                    let msg = msg_ext.1;
-                    if cfg!(feature = "verbose") {
-                        let length = msg.len();
-                        println!(
-                            "MIDI{} Received >{}: {:x}-{:x}-{:x} (len = {})",
-                            i + 1,
-                            msg_ext.0,
-                            msg[0],
-                            msg[1],
-                            if length > 2 { msg[2] } else { 0 },
-                            length
-                        );
-                    } else {
-                        println!("{:x}-{:x}-{:x} ", msg[0], msg[1], if msg.len() > 2 { msg[2] } else { 0 });
-                    }
-                    // midi ch=12,13 のみ受信 (Loopian::ORBIT/CUBIT)
-                    let status = msg[0] & 0xf0;
-                    let input_ch = msg[0] & 0x0f;
-                    if input_ch != 0x0b && input_ch != 0x0c {
-                        return;
-                    }
-                    if status == 0xc0 || status == 0xd0 {
-                        self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0, 0));
-                    } else if status == 0x90 || status == 0x80 || status == 0xa0 || status == 0xb0 || status == 0xe0 {
-                        self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2], 0));
-                    }
+            if let Some(msg_ext) = self.mdr_buf[i].as_ref().unwrap().lock().unwrap().take() {
+                let msg = msg_ext.1;
+                if cfg!(feature = "verbose") {
+                    let length = msg.len();
+                    println!(
+                        "MIDI{} Received >{}: {:x}-{:x}-{:x} (len = {})",
+                        i + 1,
+                        msg_ext.0,
+                        msg[0],
+                        msg[1],
+                        if length > 2 { msg[2] } else { 0 },
+                        length
+                    );
+                } else {
+                    println!("{:x}-{:x}-{:x} ", msg[0], msg[1], if msg.len() > 2 { msg[2] } else { 0 });
+                }
+                // midi ch=12,13 のみ受信 (Loopian::ORBIT/CUBIT)
+                let status = msg[0] & 0xf0;
+                let input_ch = msg[0] & 0x0f;
+                if input_ch != 0x0b && input_ch != 0x0c {
+                    return;
+                }
+                if status == 0xc0 || status == 0xd0 {
+                    self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0, 0));
+                } else if status == 0x90 || status == 0x80 || status == 0xa0 || status == 0xb0 || status == 0xe0 {
+                    self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2], 0));
                 }
             }
         }
