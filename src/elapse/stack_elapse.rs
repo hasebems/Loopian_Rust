@@ -14,10 +14,10 @@ use std::time::{Duration, Instant};
 use std::vec::Vec;
 
 use super::elapse_base::*;
-use super::elapse_pedal::PedalPart;
 use super::elapse_flow::Flow;
 use super::elapse_loop_phr::PhraseLoop;
 use super::elapse_part::Part;
+use super::elapse_pedal::PedalPart;
 use super::tickgen::{CrntMsrTick, RitType, TickGen};
 use crate::lpnlib::{ElpsMsg::*, *};
 use crate::midi::midirx::MidiRxThread;
@@ -422,8 +422,7 @@ impl ElapseStack {
             if (sts & 0xe0) == 0x80 {
                 // 再生中 & Note Message
                 if let Some(flow) = self.get_flow() {
-                    flow.borrow_mut()
-                        .rcv_midi(self, crnt_, sts & 0xf0, nt, vel);
+                    flow.borrow_mut().rcv_midi(self, crnt_, sts & 0xf0, nt, vel);
                 }
             } else if (sts & 0xf0) == 0xc0 {
                 // PCN は Pattern 切り替えに使用する

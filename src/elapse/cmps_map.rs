@@ -16,7 +16,7 @@ use crate::lpnlib::*;
 //*******************************************************************
 #[derive(Clone, Debug)]
 pub struct CompositionMap {
-    chord_map: ChordEvtMap, // [msr][beat][num]
+    chord_map: ChordEvtMap,  // [msr][beat][num]
     damper_map: PedalEvtMap, // [msr][beat][num]
     vari_map: Vec<Option<i16>>,
 

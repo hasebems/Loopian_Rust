@@ -550,7 +550,7 @@ impl PhraseRecombined {
             accia_note.set_tick(accia_note.tick() - Self::ACCIACCATURA_LENGTH * (acnum - i as i16));
             //println!("Added accia note: {:?}", nt);
             self.rcmb.push(accia_note);
-        }       
+        }
     }
 }
 //*******************************************************************

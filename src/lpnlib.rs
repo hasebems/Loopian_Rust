@@ -178,7 +178,7 @@ pub enum PedalPos {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PedalEvt {
     pub beat: i16,
-    pub front: bool, // true: front of beat, false: back of beat
+    pub front: bool,        // true: front of beat, false: back of beat
     pub position: PedalPos, // pedal position
 }
 #[allow(dead_code)]
@@ -247,19 +247,19 @@ impl PhrEvt {
         match self {
             PhrEvt::Note(e) => e.note,
             PhrEvt::NoteList(e) => e.notes[e.notes.len() - 1], // last note
-        //    PhrEvt::BrkPtn(e) => e.note,
-        //    PhrEvt::ClsPtn(e) => e.note,
-        //    PhrEvt::Info(e) => e.tick,
+            //    PhrEvt::BrkPtn(e) => e.note,
+            //    PhrEvt::ClsPtn(e) => e.note,
+            //    PhrEvt::Info(e) => e.tick,
             _ => NO_NOTE,
         }
     }
     pub fn set_note(&mut self, note: u8) {
         if let PhrEvt::Note(e) = self {
             e.note = note;
-        //    PhrEvt::NoteList(e) => e.set_note(note),
-        //    PhrEvt::BrkPtn(e) => e.set_note(note),
-        //    PhrEvt::ClsPtn(e) => e.set_note(note),
-        //    PhrEvt::Info(e) => e.tick = tick,
+            //    PhrEvt::NoteList(e) => e.set_note(note),
+            //    PhrEvt::BrkPtn(e) => e.set_note(note),
+            //    PhrEvt::ClsPtn(e) => e.set_note(note),
+            //    PhrEvt::Info(e) => e.tick = tick,
         }
     }
 }
@@ -406,11 +406,11 @@ pub enum ElpsMsg {
     //    SetBpm([i16; 3]),
     SetMeter([i16; 2]),
     //    SetKey([i16; 3]),
-    Phr(i16, PhrData),          //  Phr : part, (whole_tick,evts)
-    PhrX(i16),                  //  PhrX : part
-    Cmp(i16, CmpData),          //  Cmp : part, (whole_tick,evts)
-    CmpX(i16),                  //  CmpX : part
-    MIDIRx(u8, u8, u8, u8),     //  status, dt1, dt2, extra
+    Phr(i16, PhrData),      //  Phr : part, (whole_tick,evts)
+    PhrX(i16),              //  PhrX : part
+    Cmp(i16, CmpData),      //  Cmp : part, (whole_tick,evts)
+    CmpX(i16),              //  CmpX : part
+    MIDIRx(u8, u8, u8, u8), //  status, dt1, dt2, extra
 }
 //  Ctrl
 pub const MSG_CTRL_QUIT: i16 = -1;

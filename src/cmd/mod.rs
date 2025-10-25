@@ -1,5 +1,6 @@
 pub mod cmd_set;
 pub mod cmdparse;
+pub mod input_txt;
 pub mod send_msg;
 pub mod seq_stock;
 pub mod txt2seq_ana;
@@ -8,4 +9,3 @@ pub mod txt2seq_dp;
 pub mod txt2seq_pdl;
 pub mod txt2seq_phr;
 pub mod txt_common;
-pub mod input_txt;

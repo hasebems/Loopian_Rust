@@ -19,8 +19,8 @@ use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 
-use elapse::stack_elapse::ElapseStack;
 use cmd::input_txt::InputText;
+use elapse::stack_elapse::ElapseStack;
 use file::settings::Settings;
 use graphic::draw_graph::{Graphic, Resize};
 use graphic::guiev::GuiEv;

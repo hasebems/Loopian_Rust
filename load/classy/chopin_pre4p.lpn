@@ -7,9 +7,9 @@ graph.wavestick
 clear
 set.key(G)
 set.beat(4/4)
-set.bpm(60)
+set.bpm(54)
 set.input(upcloser)
-set.flowvel(70)
+set.flowvel(90)
 
 !msr(1)
 FLOW.{Iion}
@@ -27,7 +27,7 @@ L2.[-estaf*4,stam*4/-flm,flm,flr*6/-mlr,mlr,msir,msir,flr*4//].dyn(pp)
 
 !msr(11)
 R1.[-h't,(2)qr/-ed,-t,-f^,-m,si^,t^,3es^^,-f^^,-m^^//].dyn(p)
-L2.[-emsir*8/qmsir,x,x,x//].dyn(pp)
+L2.[-emsir*4,flr*4/-qmsir,x,x,x//].dyn(pp)
 
 !msr(13)
 R1.[h'm^,qf/-h'm,qf/-h'm,qf//].dyn(mp)
@@ -54,56 +54,67 @@ L2.[-emlm*4,flr*4/-mlr*4,msim,msim,msir,msir/efd*4,fma,fma,flr,flr//].dyn(p)
 
 !msr(22)
 R1.[-h'l,qt%/-hl%,x//].dyn(p)
-L2.[-emlr,mlr,mldi,mldi,mld*4/-hmafd,x//].dyn(pp)
+L2.[-emlr^,mlr^,mldi,mldi,mld*4/-hmafd,x//].dyn(pp)
 
 !msr(24)
 R1.[--hltml,-sitmsi//].dyn(p)
 L2.[-hm+m,mtm//].dyn(pp)
 
+// (1) {VIm/III7sus4.,III7/III7-5.,IIIm7-5}
 !msr(25)
-FLOW.{Iion/III7-9/IIIdim}
+FLOW.{Oad5/Oad5.,Oada/O5dd}
 L2.[edml*8/-trl*4,trla*4/-tarla*4,tars,tars,tadis,tadis//].dyn(pp)
 
+// (4) {VI7/VIm7/VIdim/V9}
 !msr(28)
-FLOW.{VI7/VIm7/VIdim/V9}
+FLOW.{O6b5..,Ob5a/0ad5/Oa95.,Oadb/Oa95}
 L2.[-eldis*4,lds,lds,ldfi,ldfi/ldf*4,ltf*4/ltf*4,-sitf*4/-stf*8//].dyn(pp)
 
+// (8) {Vm6/IVM9/III7.,IV6}
 !msr(32)
-FLOW.{Vm6/IVM9/III7.,IV6}
+FLOW.{O6b6/O6b6..,O6b6/Oaad}
 L2.[-estaf*4,stam*4/-flm,flm,flr*6/-mlr,mlr,msir,msir,flr*4//].dyn(pp)
 
+// (11) {III7/III7-9}
 !msr(35)
-FLOW.{III7/III7-9}
+FLOW.{Oaad/O6d9}
 L2.[-emsir*8/qmsir,x,x,x//].dyn(pp)
 
+// (13) {Iion/III7-9/IIIdim.,IV7}
 !msr(37)
-FLOW.{Iion/III7-9/IIIdim.,IV7}
+FLOW.{Oad5/Oad5.,Oada/O6d2.,O6d5}
 L2.[edml*8/-trl*4,-tarla*4/tarala,tarala,taras,taras,-ldis,ldis^,ldis^^,ldis^^//].dyn(p)
 
+// (16) {IVdim}
 !msr(40)
-FLOW.{IVdim}
+FLOW.{O5d5}
 L2.[-elds,lds,ldfi,ldfi,-filri,filri,-flr,flr//].dyn(mp)
 
-!msr(41)
-FLOW.{III7-9}
+// (17) {III7-9}
+!msr(41) 
+FLOW.{Oacd}
 ALL.{O.,X}
 L2.[--em+m^^,+rftr*3,-dmsit,dml*3//].dyn(mp)
 
+// (18) {IIm9}
 !msr(42)
-FLOW.{IIm9}
+FLOW.{Oad5}
 ALL.{X,O,X}
 L2.[erfl,rfl,-r^^,ltf,-mlm,mlm,flr%,flr%//].dyn(mp)
 
+// (19) {III7sus4.,IV6/III7sus4.,III7/IV9}
 !msr(43)
-FLOW.{III7sus4.,IV6/III7sus4.,III7/IV9}
+FLOW.{Oad5/Oad5.,Oaad/Ob55}
 ALL.{X}
 L2.[-emlm*4,flr*4/-mlr*4,msim,msim,msir,msir/efd*4,fma,fma,flr,flr//].dyn(p)
 
+// (22) {VIm9/IV9}
 !msr(46)
-FLOW.{VIm9/IV9}
-L2.[-emlr,mlr,mldi,mldi,mld*4/-hmafd,x//].dyn(pp)
+FLOW.{Oad5,O5b5,Oad5./Ob55}
+L2.[-emlr^,mlr^,mldi,mldi,mld*4/-hmafd,x//].dyn(pp)
 
+// (24)
 !msr(48)
-FLOW.{Iion}
+FLOW.{Oad5.,O2a9/Oa95}
 R1.[--hltml,-sitmsi/ldmlo//].dyn(p)
 L2.[-hm+m,mtm/-l+lo//].dyn(pp)

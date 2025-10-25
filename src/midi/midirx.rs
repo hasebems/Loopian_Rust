@@ -227,7 +227,12 @@ impl MidiRxThread {
                         length
                     );
                 } else {
-                    println!("{:x}-{:x}-{:x} ", msg[0], msg[1], if msg.len() > 2 { msg[2] } else { 0 });
+                    println!(
+                        "{:x}-{:x}-{:x} ",
+                        msg[0],
+                        msg[1],
+                        if msg.len() > 2 { msg[2] } else { 0 }
+                    );
                 }
                 // midi ch=12,13 のみ受信 (Loopian::ORBIT/CUBIT)
                 let status = msg[0] & 0xf0;
@@ -237,7 +242,12 @@ impl MidiRxThread {
                 }
                 if status == 0xc0 || status == 0xd0 {
                     self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0, 0));
-                } else if status == 0x90 || status == 0x80 || status == 0xa0 || status == 0xb0 || status == 0xe0 {
+                } else if status == 0x90
+                    || status == 0x80
+                    || status == 0xa0
+                    || status == 0xb0
+                    || status == 0xe0
+                {
                     self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2], 0));
                 }
             }

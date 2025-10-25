@@ -164,7 +164,7 @@ impl ClusterPattern {
         estk: &mut ElapseStack,
         tbl: i16,
     ) -> (std::borrow::Cow<'static, [i16]>, i16) {
-    let (tblptr_cow, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
+        let (tblptr_cow, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
         let vel = self.calc_dynamic_vel(
             crnt_.tick_for_onemsr,
             estk.get_bpm(),

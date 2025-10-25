@@ -6,10 +6,10 @@
 //  originally based on p5.js code by takawo
 //      https://openprocessing.org/sketch/1914365
 //
-use nannou::noise::{NoiseFn, Perlin};
-use nannou::prelude::*;
 use super::draw_graph::Resize;
 use super::generative_view::{GenerativeView, GraphMode};
+use nannou::noise::{NoiseFn, Perlin};
+use nannou::prelude::*;
 
 //*******************************************************************
 //      Screen Graphic
@@ -26,7 +26,7 @@ impl WaveStick {
     const DEFAULT_AMP: f32 = 0.1;
     const DECAY_RATE: f32 = 2.5;
     const RESPONSE_SPEED: f32 = 1.5;
-    const BRIGHTNESS: f32 = 50.0;   // 0..255
+    const BRIGHTNESS: f32 = 50.0; // 0..255
 
     pub fn new() -> Self {
         Self {

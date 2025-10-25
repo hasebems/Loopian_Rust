@@ -90,7 +90,7 @@ const CHORD_TABLE: &[ChordTable] = &[
 pub const NO_LOOP: i16 = (CHORD_TABLE.len() - 1) as i16;
 const MAX_CHORD_TABLE: usize = CHORD_TABLE.len();
 pub const UPPER: i16 = MAX_CHORD_TABLE as i16;
-pub const DIRECT_MAP: i16 = (MAX_CHORD_TABLE*2) as i16;
+pub const DIRECT_MAP: i16 = (MAX_CHORD_TABLE * 2) as i16;
 const THRU: [i16; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const MAJOR: [i16; 3] = [0, 4, 7];
 const MINOR: [i16; 3] = [0, 3, 7];
@@ -182,7 +182,7 @@ pub fn get_table_name(idx_num: i16) -> Cow<'static, str> {
     if idx_num == NO_TABLE {
         return Cow::Borrowed("");
     }
-    if idx_num >= (MAX_CHORD_TABLE*2) as i16 {
+    if idx_num >= (MAX_CHORD_TABLE * 2) as i16 {
         return Cow::Owned(format!("{:x}", idx_num));
     }
 

@@ -219,7 +219,7 @@ impl LoopianCmd {
         }
     }
     fn change_flow_velocity(&mut self, vel_txt: &str) -> bool {
-        if let Ok(vel) = vel_txt.parse::<i16>() {            
+        if let Ok(vel) = vel_txt.parse::<i16>() {
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
             true

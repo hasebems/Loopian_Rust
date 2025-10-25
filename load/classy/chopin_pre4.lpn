@@ -7,7 +7,7 @@ graph.wavestick
 clear
 set.key(G)
 set.beat(4/4)
-set.bpm(60)
+set.bpm(54)
 set.input(upcloser)
 set.flowvel(70)
 
@@ -27,7 +27,7 @@ L2.[-estaf*4,stam*4/-flm,flm,flr*6/-mlr,mlr,msir,msir,flr*4//].dyn(pp)
 
 !msr(11)
 R1.[-h't,(2)qr/-ed,-t,-f^,-m,si^,t^,3es^^,-f^^,-m^^//].dyn(p)
-L2.[-emsir*8/qmsir,x,x,x//].dyn(pp)
+L2.[-emsir*4,flr*4/-qmsir,x,x,x//].dyn(pp)
 
 !msr(13)
 R1.[h'm^,qf/-h'm,qf/-h'm,qf//].dyn(mp)
@@ -54,7 +54,7 @@ L2.[-emlm*4,flr*4/-mlr*4,msim,msim,msir,msir/efd*4,fma,fma,flr,flr//].dyn(p)
 
 !msr(22)
 R1.[-h'l,qt%/-hl%,x//].dyn(p)
-L2.[-emlr,mlr,mldi,mldi,mld*4/-hmafd,x//].dyn(pp)
+L2.[-emlr^,mlr^,mldi,mldi,mld*4/-hmafd,x//].dyn(pp)
 
 !msr(24)
 R1.[--hltml,-sitmsi/ldmlo//].dyn(p)

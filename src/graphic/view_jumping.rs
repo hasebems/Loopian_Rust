@@ -32,7 +32,7 @@ pub struct Jumping {
     x_normalized: f32,
     y_normalized: f32,
     amplitude: f32,
-    vel_move: Vec<f32>, 
+    vel_move: Vec<f32>,
     obj: Vec<JumpingObject>,
     inverting: bool,
 }
@@ -148,7 +148,8 @@ impl JumpingObject {
     fn update(&mut self, crnt_time: f32, y_axis: f32) {
         self.y_axis = Self::BASE_Y_AXIS + y_axis * self.y_multify;
         self.x_axis = self.last_jumping_x + (crnt_time - self.last_jumping_time) * self.x_multify;
-        self.over_bounds = self.x_axis.abs() > self.x_limit + 1.0 || y_axis.abs() > self.y_limit + 1.0;
+        self.over_bounds =
+            self.x_axis.abs() > self.x_limit + 1.0 || y_axis.abs() > self.y_limit + 1.0;
     }
     fn jump(&mut self, inverting: bool, crnt_time: f32) {
         if (inverting && self.x_multify > 0.0) || (!inverting && self.x_multify < 0.0) {
@@ -186,15 +187,15 @@ impl JumpingObject {
         } else if self.obj_type == ObjectType::Triangle {
             draw.tri()
                 .points(
-                    pt2(- self.size / 2.0, - self.size / 2.0),
-                    pt2(self.size / 2.0,  - self.size / 2.0),
+                    pt2(-self.size / 2.0, -self.size / 2.0),
+                    pt2(self.size / 2.0, -self.size / 2.0),
                     pt2(0.0, self.size / 2.0),
-            )
-            .x_y(self.x_axis, self.y_axis)
-            .no_fill()
-            .stroke_weight(2.0)
-            .stroke(WHITE)
-            .rotate(-self.x_axis * PI / 400.0);
+                )
+                .x_y(self.x_axis, self.y_axis)
+                .no_fill()
+                .stroke_weight(2.0)
+                .stroke(WHITE)
+                .rotate(-self.x_axis * PI / 400.0);
         }
     }
 }

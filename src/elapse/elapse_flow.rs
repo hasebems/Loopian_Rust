@@ -7,8 +7,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::note_translation::*;
 use super::elapse_note::*;
+use super::note_translation::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_cmps::*;
@@ -129,7 +129,7 @@ impl Flow {
             // 再生中
             if status & 0xf0 == 0x90 {
                 if vel != 0 {
-                    let (msr, tick ) = if !self.note_stock.is_empty() {
+                    let (msr, tick) = if !self.note_stock.is_empty() {
                         self.calculate_tick(crnt_)
                     } else {
                         (crnt_.msr, crnt_.tick)

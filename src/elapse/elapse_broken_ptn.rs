@@ -137,8 +137,8 @@ impl BrokenPattern {
         }
     }
     fn gen_each_note(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, root: i16, tbl: i16) {
-    let (tblptr_cow, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
-    let tblptr: &[i16] = tblptr_cow.as_ref();
+        let (tblptr_cow, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
+        let tblptr: &[i16] = tblptr_cow.as_ref();
         let vel = self.calc_dynamic_vel(
             crnt_.tick_for_onemsr,
             estk.get_bpm(),
