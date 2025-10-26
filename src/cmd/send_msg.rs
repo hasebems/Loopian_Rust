@@ -24,10 +24,8 @@ impl MessageSender {
         for i in 0..MAX_VARIATION {
             if i == 0 {
                 // Normal の場合、Phrase が空でない、do_loop の場合のみ送信
-                if let Some(pdt) = gdt.get_pdstk(part, PhraseAs::Normal) {
-                    if !pdt.get_phr().is_empty() {
-                        self.send_phrase_to_elapse(part, PhraseAs::Normal, gdt);
-                    }
+                if let Some(_pdt) = gdt.get_pdstk(part, PhraseAs::Normal).filter(|p| !p.get_phr().is_empty()) {
+                    self.send_phrase_to_elapse(part, PhraseAs::Normal, gdt);
                 }
             } else {
                 self.send_phrase_to_elapse(part, PhraseAs::Variation(i), gdt);

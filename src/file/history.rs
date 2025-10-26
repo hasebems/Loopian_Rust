@@ -125,12 +125,8 @@ impl History {
                 for line in content.lines() {
                     if line.len() >= 4 && &line[0..4] == "!rd(" {
                         let rd_line = split_by(':', line.to_string());
-                        if rd_line.len() == 2 {
-                            if let Some(rd_num) = extract_number_from_parentheses(&rd_line[0]) {
-                                if rd_num == num {
-                                    return Some(rd_line[1].clone());
-                                }
-                            }
+                        if rd_line.len() == 2 && extract_number_from_parentheses(&rd_line[0]) == Some(num) {
+                            return Some(rd_line[1].clone());
                         }
                     }
                 }
@@ -178,13 +174,9 @@ impl History {
         if start_msr != 0 {
             for crnt in self.loaded_text.iter().enumerate() {
                 let ctxt = crnt.1;
-                if msr_exists(ctxt) {
-                    if let Some(file_msr) = extract_number_from_parentheses(ctxt) {
-                        if file_msr == start_msr {
-                            idx = crnt.0 + 1;
-                            break;
-                        }
-                    }
+                if msr_exists(ctxt) && extract_number_from_parentheses(ctxt) == Some(start_msr) {
+                    idx = crnt.0 + 1;
+                    break;
                 }
             }
         }
@@ -192,12 +184,7 @@ impl History {
         for n in idx..self.loaded_text.len() {
             let ctxt = &self.loaded_text[n];
             if msr_exists(ctxt) {
-                let msr;
-                if let Some(m) = extract_number_from_parentheses(ctxt) {
-                    msr = m;
-                } else {
-                    msr = 0;
-                }
+                let msr = extract_number_from_parentheses(ctxt).unwrap_or(0);
                 return (
                     txt_this_time,
                     Some(CrntMsrTick {
@@ -235,16 +222,14 @@ impl History {
                 let ctxt = crnt.1;
                 if msr_exists(ctxt) {
                     // !msr() の場合
-                    if let Some(msr) = extract_number_from_parentheses(ctxt) {
-                        if msr >= crnt_msr {
-                            next_msr_tick = Some(CrntMsrTick {
-                                msr: (msr as i32),
-                                tick: 0,
-                                tick_for_onemsr: 0,
-                                ..Default::default()
-                            });
-                            break;
-                        }
+                    if let Some(msr) = extract_number_from_parentheses(ctxt) && msr >= crnt_msr {
+                        next_msr_tick = Some(CrntMsrTick {
+                            msr: (msr as i32),
+                            tick: 0,
+                            tick_for_onemsr: 0,
+                            ..Default::default()
+                        });
+                        break;
                     }
                 } else {
                     txt_this_time.push(ctxt.clone());

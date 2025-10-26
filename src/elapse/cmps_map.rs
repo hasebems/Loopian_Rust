@@ -176,17 +176,20 @@ impl CompositionMap {
         let mut damper_map = vec![PedalPos::NoEvt; max_beat];
         let mut damper_exists = false;
         for (i, ele) in damper_map.iter_mut().enumerate() {
-            if i < max_beat && cmsr < self.damper_map.len() {
-                if let Some(c) = &self.damper_map[cmsr][i] {
-                    *ele = if c.1 && c.0.position == PedalPos::Full {
-                        PedalPos::Full
-                    } else if c.1 && c.0.position == PedalPos::Half {
-                        PedalPos::Half
-                    } else {
-                        PedalPos::Off
-                    };
-                    damper_exists = true;
-                }
+            if let Some(c) = self
+                .damper_map
+                .get(cmsr)
+                .and_then(|row| row.get(i))
+                .and_then(|opt| opt.as_ref())
+            {
+                *ele = if c.1 && c.0.position == PedalPos::Full {
+                    PedalPos::Full
+                } else if c.1 && c.0.position == PedalPos::Half {
+                    PedalPos::Half
+                } else {
+                    PedalPos::Off
+                };
+                damper_exists = true;
             }
         }
         if damper_exists {
@@ -197,10 +200,8 @@ impl CompositionMap {
         // Damper イベントが無かったら、和音から Damper 情報を生成する
         if self.max_msr > cmsr {
             for (j, damper) in damper_map.iter_mut().enumerate() {
-                if let Some(c) = &self.chord_map[cmsr][j] {
-                    if c.1 && c.0.tbl != NO_PED_TBL_NUM {
-                        *damper = PedalPos::Full;
-                    }
+                if matches!(&self.chord_map[cmsr][j], Some(c) if c.1 && c.0.tbl != NO_PED_TBL_NUM) {
+                    *damper = PedalPos::Full;
                 }
             }
         }

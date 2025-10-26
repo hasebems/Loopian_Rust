@@ -149,13 +149,11 @@ impl CnvFile {
             }
             let separated_line = split_by('=', line.to_string());
             let mut ptidx = idx;
-            if let Some(msr_num) = extract_number_from_parentheses(&separated_line[0]) {
-                if msr_num == msr {
-                    let phr = ptstr.to_string() + &separated_line[1];
-                    output.push_str(&phr);
-                    output.push('\n');
-                    ptidx += 1;
-                }
+            if let Some(msr_num) = extract_number_from_parentheses(&separated_line[0]) && msr_num == msr {
+                let phr = ptstr.to_string() + &separated_line[1];
+                output.push_str(&phr);
+                output.push('\n');
+                ptidx += 1;
             }
             Some(ptidx)
         } else {

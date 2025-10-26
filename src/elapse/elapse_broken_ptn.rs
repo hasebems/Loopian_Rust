@@ -57,22 +57,17 @@ impl BrokenPattern {
         // generate para_note_base
         let mut para = false;
         ana.iter().for_each(|x| {
-            if let AnaEvt::Exp(e) = x {
-                if e.atype == ExpType::ParaRoot {
-                    para = true;
-                }
+            if let AnaEvt::Exp(e) = x && e.atype == ExpType::ParaRoot {
+                para = true;
             }
         });
         // generate staccato rate
         let mut staccato_rate = 90;
         ana.iter().for_each(|x| {
-            if let AnaEvt::Exp(e) = x {
-                if e.atype == ExpType::ParaRoot {
-                    staccato_rate = e.cnt as i32;
-                }
+            if let AnaEvt::Exp(e) = x && e.atype == ExpType::ParaRoot {
+                staccato_rate = e.cnt as i32;
             }
         });
-
         #[cfg(feature = "verbose")]
         println!("New BrkPtn: para:{para}");
 
@@ -210,14 +205,16 @@ impl BrokenPattern {
                     break;
                 }
                 let inc = note < self.note_close_to;
-                if old_inc.is_none() {
-                    old_inc = Some(inc);
-                } else if let Some(oinc) = old_inc {
-                    if oinc != inc {
+                match old_inc {
+                    None => {
+                        old_inc = Some(inc);
+                    }
+                    Some(oinc) if oinc != inc => {
                         self.next_index = index;
                         self.oct_up = oct_up;
                         break;
                     }
+                    _ => {}
                 }
                 (index, oct_up) = incdec_idx(inc, index, oct_up);
             }

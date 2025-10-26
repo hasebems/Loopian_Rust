@@ -441,10 +441,8 @@ impl ElapseStack {
         // すべての Part の開始beatを調べる
         let mut first_beat = FULL;
         self.part_vec.iter_mut().for_each(|x| {
-            if let Some(auf) = x.borrow().get_start_beat() {
-                if auf < first_beat {
-                    first_beat = auf;
-                }
+            if let Some(auf) = x.borrow().get_start_beat() && auf < first_beat {
+                first_beat = auf;
             }
         });
 
