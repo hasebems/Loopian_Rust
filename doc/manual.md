@@ -187,15 +187,6 @@ cd /path/to/loopian
 - `set.oct(+1)` : 現状から１オクターブ上げる
     - `oct(0)` : 0は、現状の値を無視し、初期値に戻す
 - `set.msr(5)` : 次に `resume` を入力したとき、5小節目から開始する
-- `set.input(fixed)` : オクターブ指定法（詳細は後述）
-    - `fixed` は、入力する階名は絶対位置(d-tまでを同じオクターブ内とする)
-    - `closer` は、+-指示がない限り、前回に近い音程(-5..6) (default)
-    - `upcloser` は、+-指示がない限り、前回より1オクターブ上の範囲(0..11)
-- `set.samenote(modeling)` : 同音連打の動き方
-    - `modeling` は、モデリング音源向けで、note off は一度しか送らない（default）
-    - `common` は、一般的なMIDI音源向けで、note off は note on の数だけ送られる
-- `set.turnnote(5)` : para 指定時、変換後の音程を折り返す位置(0-11, default=5)
-- `set.path(name)` : load の下にある読み込みたいディレクトリ名を指定
 
 
 ## Phrase 指定
@@ -289,7 +280,8 @@ cd /path/to/loopian
 - `d~` : 最後に `~` をつけると音の長さが音価の120%になる。(stacc(),legato()より強い)
 - `<d,r,m>!`: 複数のNoteを`<>!`で囲むと、それらの音の長さが音価の半分になる
 - `<d,r,m>~`: 複数のNoteを`<>~`で囲むと、それらの音の長さが音価の120%になる
-- `[h$drm]` : 同時に演奏する音符と、音価情報の間に `$` がある場合、アルペジオ演奏を行う。
+- `[h$drm]` : 同時に演奏する音符と、音価情報の間に `$` がある場合、アルペジオ演奏を行う
+- `[qs,(-1)ed,r..]` : `,`の直後に()内に数値を書くことで、前打音を指定できる。`(-1)`であれば、半音下の音の前打音が発音する
 
 
 ### Phraseに後続する関数表記
@@ -440,6 +432,11 @@ cd /path/to/loopian
     |スルー(rootなし)|O|`oooo-oooo-oooo`|
     |スルー、pedal無し(rootなし)|X|`oooo-oooo-oooo`| 
 
+### スケールのダイレクト指定機能
+
+- 12個のon/off情報を三桁の16進数で表すことで、スケールを直接 Composition の中で指定できる
+    - `Onnn`/`Xnnn`: `O` あるいは `X` の後に、三桁の16進数(nnn)を記述する
+    - 例えばイオニア旋法の場合、oxox-ooxo-xoxo なので、`Oad5` と記述
 
 ## Part/Compositionの共通仕様、及びその連携
 
@@ -534,9 +531,11 @@ cd /path/to/loopian
     - [データの打ち込み方法](#データの打ち込み方法)参照のこと
 
 
-## 再生コントロールの拡張仕様
+## その他の拡張仕様
 
-* `rit.` : テンポをだんだん遅くして、次の小節の頭で元のテンポ
+### 再生に関する仕様
+
+- `rit.` : テンポをだんだん遅くして、次の小節の頭で元のテンポ
     - `rit.poco` : 遅さが弱い
     - `rit.molto` : 遅さが強い 
     - `rit.fermata`  : rit.の次の小節の頭の拍を再生して停止
@@ -547,18 +546,32 @@ cd /path/to/loopian
         - `rit.poco.bar(2)`
         - `rit.poco.bar(2).bpm(100)`
         - bar(N) の N は任意の数値
-* `sync` : 次の小節の頭で、そのパートの Phrase, Composition を同期させる
+- `sync` : 次の小節の頭で、そのパートの Phrase, Composition を同期させる
     - `sync.right` : 右手パート(right1/2)
     - `sync.left`  : 左手パート(left1/2)
     - `sync.all`   : 全パート
-* `clear` : データの中身を消去
+- `clear` : データの中身を消去
     - 引数がない場合、全パート消去し、再生も止まる
     - `clear.L1` : L1パートの中身を消去。同様に L2,R1,R2 も指定可
     - `clear.env` : データではなく key, meter, bpm, oct をデフォルト値に戻す
-* `efct` : MIDI Controller の出力
+- `efct` : MIDI Controller の出力
     - `efct.cc70(nn)` : cc70に対して nn(0-127) を送る
     - `efct.dmp(nn)` : cc64のDamperが on になったとき、nn(0-127) を送る
+- 演奏中にctrl+数字キーを押すことで、その時だけテンポを、(数字×10%)だけ遅くすることができる
 
+### set command のその他の仕様
+
+- `set.input(fixed)` : オクターブ指定法
+    - `fixed` は、入力する階名は絶対位置(d-tまでを同じオクターブ内とする)
+    - `closer` は、+-指示がない限り、前回に近い音程(-5..6/g..fi) (default)
+    - `upcloser` は、+-指示がない限り、前回より1オクターブ上の範囲(0..11/d..t)
+- `set.samenote(modeling)` : 同音連打の動き方
+    - `modeling` は、モデリング音源向けで、note off は一度しか送らない（default）
+    - `common` は、一般的なMIDI音源向けで、note off は note on の数だけ送られる
+- `set.turnnote(5)` : para 指定時、変換後の音程を折り返す位置(0-11, default=5)
+- `set.path(name)` : load の下にある読み込みたいディレクトリ名を指定
+- `set.flowreso(reso)` : 
+- `set.flowvel(vel)` : FLOW.dyn(xx) と機能は同じだが、こちらは velocity 値を直接指定する
 
 ## Graphic
 
@@ -572,6 +585,8 @@ cd /path/to/loopian
 - `graph.sinewave` : 音に合わせたサイン波
 - `graph.rain` : 雨が降っている様子を模したパターン
 - `graph.fish` : 魚が泳いでいる様子を模したパターン
+- `graph.jumping` : 図形が beat に合わせて跳ねるパターン
+- `graph.wavestick` : 画面全体に、棒状の図形がサイン波の模様を作るパターン
 - shift + space で、以下のように4段階で表示する Text の状況を変化させられる。4の次は1に戻る。
     - 1: 通常の表示。Graphic は文字の後ろのレイヤーとして表示。
     - 2: Scroll Text が少し薄くなる。Graphic は文字の前のレイヤーとして表示。
@@ -591,11 +606,13 @@ cd /path/to/loopian
 - [command] の `init_commands` では、アプリ起動時に自動的に入力してほしいコマンドを、配列の形式で記述できる
 
 
-## Loopian::ORBIT での演奏
+## Loopian::ORBIT/QUBIT での演奏
 
-- Loopian::ORBIT からの MIDI 情報は、`FLOW` パートという内部パートが受信し、適切な処理を行う。
-    - `FLOW` パートは `FLOW.{...}` のように、パート指定による Composition 入力が可能である。Phrase は入力できない。
-    - `FLOW` パート自体を入力パートにすることはできない。
+- Loopian::ORBIT/QUBIT からの MIDI 情報は、`FLOW` パートという内部パートが受信し、適切な処理を行う。
+- `FLOW` パートは `FLOW.{...}` のように、パート指定による Composition 入力が可能である
+    - Phrase は入力できない
+- `FLOW.dyn(mp)` : velocity 値をdyn()と同じ指定方法で変更する
+    - `FLOW.dyn()` : 引数に何も書かないと、入力 velocity と同じになる(default)
 - FLOWパートで再生されている Composition は、USB MIDI 経由で外部出力され、入力側は UART MIDI で受信する。
     - Composition は、AAh-0rh-cch の形式で送信される。
         - AAh : Poly After Touch を MIDI Ch.11 に送信

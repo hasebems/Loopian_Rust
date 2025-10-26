@@ -178,15 +178,6 @@ This document explains all features of Loopian.
 - `set.oct(+1)`: Raise one octave from current state
     - `oct(0)`: 0 ignores current value and returns to initial value
 - `set.msr(5)`: When `resume` is next input, start from measure 5
-- `set.input(fixed)`: Method for determining octave when inputting scale degrees
-    - `fixed`: Input scale degrees are absolute positions (d-t within same octave)
-    - `closer`: Without +- indication, uses pitch close to previous note (-5..6) (default)
-    - `upcloser`: Without +- indication, uses range one octave above previous note (0..11)
-- `set.samenote(modeling)`: Behavior for repeated notes
-    - `modeling`: For modeling sound sources, note off is sent only once (default)
-    - `common`: For general MIDI sound sources, note off is sent as many times as note on
-- `set.turnnote(5)`: Position to fold converted pitch in para specification (0-11, default=5)
-- `set.path(name)`: Specify directory name under load to read from
 
 ## Phrase Specification
 
@@ -272,6 +263,7 @@ This document explains all features of Loopian.
 - `<d,r,m>!`: Enclosing multiple Notes in `<>!` makes their lengths half of the note value
 - `<d,r,m>~`: Enclosing multiple Notes in `<>~` makes their lengths 120% of the note value
 - `[h$drm]`: When there is a `$` between simultaneous notes and note value information, arpeggio performance is executed.
+- `[qs,(-1)ed,r..]`: When you write a number in parentheses immediately after a comma, you can specify a grace note. (-1) plays a grace note a semitone below the main note.
 
 ### Function Notation Following Phrases
 - By specifying `.fn()` after the `[]` containing the Phrase, you can give instructions for the entire Phrase
@@ -413,6 +405,12 @@ This document explains all features of Loopian.
     |Through (no root)|O|`oooo-oooo-oooo`|
     |Through, no pedal (no root)|X|`oooo-oooo-oooo`|
 
+### Direct scale specification
+
+- You can specify a scale directly in a Composition by encoding the 12 on/off bits as a three‑digit hexadecimal number.
+    - `Onnn` / `Xnnn`: write a three‑digit hexadecimal number (nnn) after `O` or `X`.
+    - For example, Ionian mode is oxox-ooxo-xoxo, so write `Oad5`.
+
 ## Common Specifications for Parts/Compositions and Their Coordination
 
 ### Part Specification Notation
@@ -497,9 +495,11 @@ This document explains all features of Loopian.
     - `!cnv2tl.`*filename* converts and saves with filename+tl.lpn
     - Refer to [Data Input Methods](#data-input-methods)
 
-## Extended Playback Control Specifications
+##  Addtional Extended Specifications
 
-* `rit.`: Gradually slow tempo, return to original tempo at beginning of next measure
+### Playback Control Specifications
+
+- `rit.`: Gradually slow tempo, return to original tempo at beginning of next measure
     - `rit.poco`: Weak slowdown
     - `rit.molto`: Strong slowdown
     - `rit.fermata`: Play first beat of measure after rit. and stop
@@ -510,17 +510,30 @@ This document explains all features of Loopian.
         - `rit.poco.bar(2)`
         - `rit.poco.bar(2).bpm(100)`
         - N in bar(N) can be any number
-* `sync`: Synchronize that part's Phrase and Composition at beginning of next measure
+- `sync`: Synchronize that part's Phrase and Composition at beginning of next measure
     - `sync.right`: Right hand parts (right1/2)
     - `sync.left`: Left hand parts (left1/2)
     - `sync.all`: All parts
-* `clear`: Clear data content
+- `clear`: Clear data content
     - Without arguments, clears all parts and stops playback
     - `clear.L1`: Clear L1 part content. Similarly for L2,R1,R2
     - `clear.env`: Reset key, meter, bpm, oct to default values rather than data
-* `efct`: MIDI Controller output
+- `efct`: MIDI Controller output
     - `efct.cc70(nn)`: Send nn(0-127) to cc70
     - `efct.dmp(nn)`: Send nn(0-127) when cc64 Damper turns on
+- When you press Ctrl plus a number key during playback, the tempo is temporarily reduced by (number × 10) percent.
+
+### Addtional Set Command Specifications
+
+- `set.input(fixed)`: Method for determining octave when inputting scale degrees
+    - `fixed`: Input scale degrees are absolute positions (d-t within same octave)
+    - `closer`: Without +- indication, uses pitch close to previous note (-5..6/g..fi) (default)
+    - `upcloser`: Without +- indication, uses range one octave above previous note (0..11/d..t)
+- `set.samenote(modeling)`: Behavior for repeated notes
+    - `modeling`: For modeling sound sources, note off is sent only once (default)
+    - `common`: For general MIDI sound sources, note off is sent as many times as note on
+- `set.turnnote(5)`: Position to fold converted pitch in para specification (0-11, default=5)
+- `set.path(name)`: Specify directory name under load to read from
 
 ## Graphic
 
@@ -534,6 +547,8 @@ This document explains all features of Loopian.
 - `graph.sinewave`: Sine wave synchronized with the sound.
 - `graph.rain` : A pattern that simulates the appearance of falling rain
 - `graph.fish` : A pattern that simulates the appearance of fish swimming
+- `graph.jumping`: A pattern where shapes bounce in time with the beat.
+- `graph.wavestick`: A pattern where stick‑like shapes across the screen form a sine‑wave pattern.
 - Pressing shift + space changes Text display status in 4 stages as follows. After 4 returns to 1.
     - 1: Normal display. Graphic displays as layer behind text.
     - 2: Scroll Text becomes slightly transparent. Graphic displays as layer in front of text.
@@ -551,11 +566,13 @@ This document explains all features of Loopian.
         - After line saying `--MIDI Input List--`, list of MIDI Devices that can input to Loopian is displayed
 - [command] `init_commands` allows you to describe commands that you want to be automatically input at application startup as an array
 
-## Performance with Loopian::ORBIT
+## Performance with Loopian::ORBIT/QUBIT
 
-- MIDI information from Loopian::ORBIT is received by an internal part called `FLOW` part, which performs appropriate processing
-    - `FLOW` part can input Composition with part specification like `FLOW.{...}`. Cannot input Phrase.
-    - Cannot set `FLOW` part itself as input part
+- MIDI information from Loopian::ORBIT/QUBIT is received by an internal part called `FLOW` part, which performs appropriate processing
+- `FLOW` part can input Composition with part specification like `FLOW.{...}`.
+    - Cannot input Phrase.
+- `FLOW.dyn(mp)`: Change the velocity value using the same specification method as dyn().
+    - `FLOW.dyn()`: When no argument is provided, it uses the input velocity (default).
 - Composition playing in FLOW part is output externally via USB MIDI, and input side receives via UART MIDI
     - Composition is transmitted in AAh-0rh-cch format
         - AAh: Send Poly After Touch to MIDI Ch.11
