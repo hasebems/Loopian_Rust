@@ -11,14 +11,18 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          Func
 //*******************************************************************
-pub fn translate_note_parascl(para_note: i16, ctbl: i16, ntev: u8) -> u8 {
-    let input_nt = (ntev as i16) + para_note;
+pub fn translate_note_parascl(para_note: i16, ctbl: i16, ev_note: u8) -> u8 {
+    let input_nt = (ev_note as i16) + para_note;
     let input_doremi = input_nt % 12;
     let input_oct = input_nt / 12;
     let mut output_doremi = 0;
     let mut former_nt = 0;
     let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     let tbl: &[i16] = tbl_cow.as_ref();
+    if tbl == txt2seq_cmps::THRU {
+        // THRU の場合はそのまま返す
+        return ev_note;
+    }
     for ntx in tbl.iter() {
         match ntx.cmp(&input_doremi) {
             Ordering::Equal => {
@@ -54,6 +58,10 @@ pub fn translate_note_com(root: i16, ctbl: i16, tgt_nt: u8) -> u8 {
     let mut proper_nt = tgt_nt;
     let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     let tbl: &[i16] = tbl_cow.as_ref();
+    if tbl == txt2seq_cmps::THRU {
+        // THRU の場合はそのまま返す
+        return tgt_nt as u8;
+    }
     let real_root = root + DEFAULT_NOTE_NUMBER as i16;
     let mut former_nt: i16 = 0;
     let mut found = false;
@@ -153,6 +161,10 @@ pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: u8, nt_diff: i16, last_
     let mut proper_nt = tgt_nt;
     let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     let tbl: &[i16] = tbl_cow.as_ref();
+    if tbl == txt2seq_cmps::THRU {
+        // THRU の場合はそのまま返す
+        return tgt_nt as u8;
+    }
     let real_root = root + DEFAULT_NOTE_NUMBER as i16;
     let mut former_nt: i16 = 0;
     let mut found = false;
