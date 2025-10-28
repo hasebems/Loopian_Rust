@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use super::seq_stock::SeqDataStock;
+use super::seq_stock::*;
 use crate::lpnlib::*;
 use std::sync::mpsc;
 
@@ -34,17 +34,17 @@ impl MessageSender {
     }
     pub fn send_phrase_to_elapse(&self, part: usize, vari: PhraseAs, gdt: &SeqDataStock) {
         if let Some(pdt) = gdt.get_pdstk(part, vari.clone()) {
-            self.send_msg_to_elapse(pdt.get_final(part as i16, vari));
+            self.send_msg_to_elapse(pdt.get_final(part as i16, Some(vari)));
         }
     }
     pub fn send_pedal_to_elapse(&self, part: usize, gdt: &SeqDataStock) {
-        self.send_msg_to_elapse(gdt.get_pdlstk(part).get_final(part as i16));
+        self.send_msg_to_elapse(gdt.get_pdlstk(part).get_final(part as i16, None));
     }
     pub fn clear_phrase_to_elapse(&self, part: usize) {
         self.send_msg_to_elapse(ElpsMsg::PhrX(part as i16));
     }
     pub fn send_composition_to_elapse(&self, part: usize, gdt: &SeqDataStock) {
-        let cdt = gdt.get_cdstk(part).get_final(part as i16);
+        let cdt = gdt.get_cdstk(part).get_final(part as i16, None);
         let cmsg = cdt.clone();
         if let ElpsMsg::Cmp(_c0, cv) = cdt {
             if cv.evts.is_empty() {
