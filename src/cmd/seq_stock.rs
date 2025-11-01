@@ -363,6 +363,31 @@ impl PhraseDataStock {
     pub fn get_phr(&self) -> &Vec<PhrEvt> {
         &self.phr
     }
+    fn debug_print(&self) {
+        println!(
+            "complement_phrase: {:?} exp: {:?} atrb: {:?} accia: {:?}",
+            if self.cmpl.is_some() {
+                self.cmpl.as_ref().unwrap().note_info.clone()
+            } else {
+                ["-".to_string()].to_vec()
+            },
+            if self.cmpl.is_some() {
+                self.cmpl.as_ref().unwrap().music_exp.clone()
+            } else {
+                ["-".to_string()].to_vec()
+            },
+            if self.cmpl.is_some() {
+                self.cmpl.as_ref().unwrap().note_attribute.clone()
+            } else {
+                [None].to_vec()
+            },
+            if self.cmpl.is_some() {
+                self.cmpl.as_ref().unwrap().accia_info.clone()
+            } else {
+                [None].to_vec()
+            }
+        );
+    }
 }
 impl DataStock for PhraseDataStock {
     fn set_raw(&mut self, input_text: String, cluster_word: Option<&str>) -> bool {
@@ -373,29 +398,7 @@ impl DataStock for PhraseDataStock {
         // 2.complement data
         self.cmpl = Some(complement_phrase(input_text, cluster_word.unwrap_or("")));
         if cfg!(feature = "verbose") {
-            println!(
-                "complement_phrase: {:?} exp: {:?} atrb: {:?} accia: {:?}",
-                if self.cmpl.is_some() {
-                    self.cmpl.as_ref().unwrap().note_info.clone()
-                } else {
-                    ["-".to_string()].to_vec()
-                },
-                if self.cmpl.is_some() {
-                    self.cmpl.as_ref().unwrap().music_exp.clone()
-                } else {
-                    ["-".to_string()].to_vec()
-                },
-                if self.cmpl.is_some() {
-                    self.cmpl.as_ref().unwrap().note_attribute.clone()
-                } else {
-                    [None].to_vec()
-                },
-                if self.cmpl.is_some() {
-                    self.cmpl.as_ref().unwrap().accia_info.clone()
-                } else {
-                    [None].to_vec()
-                }
-            );
+            self.debug_print();
         }
         true
     }
@@ -555,13 +558,13 @@ impl DataStock for CompositionDataStock {
 //*******************************************************************
 #[derive(Debug, Default)]
 pub struct PedalDataStock {
-    pub pdl_str: String,
+    pub raw: String,
     _pdl: Vec<PhrEvt>,
 }
 impl DataStock for PedalDataStock {
     fn set_raw(&mut self, input_text: String, _additional_word: Option<&str>) -> bool {
-        self.pdl_str = input_text;
-        println!("PedalDataStock: {}", self.pdl_str);
+        self.raw = input_text;
+        println!("PedalDataStock: {}", self.raw);
         true
     }
     fn set_recombined(
