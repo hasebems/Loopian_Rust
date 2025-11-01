@@ -28,22 +28,22 @@ pub struct Resize {
 }
 impl Resize {
     pub fn new(app: &App) -> Resize {
-        const INPUT_TXT_LOWER_MERGIN: f32 = 80.0; // input text
-        const MIN_LEFT_MERGIN: f32 = 140.0;
-        const MIN_RIGHT_MERGIN: f32 = 30.0;
+        const INPUT_TXT_LOWER_MARGIN: f32 = 100.0; // input text
+        const MIN_LEFT_MARGIN: f32 = 140.0;
+        const MIN_RIGHT_MARGIN: f32 = 30.0;
 
         let win = app.main_window();
         let win_rect = win.rect();
         let win_width = win_rect.w();
         let win_height = win_rect.h();
-        let st_left_mergin = -win_width / 2.0 + MIN_LEFT_MERGIN;
+        let st_left_margin = -win_width / 2.0 + MIN_LEFT_MARGIN;
 
         Resize {
             full_size_x: win_width,
             full_size_y: win_height,
-            eight_indic_left: win_width / 2.0 - MIN_RIGHT_MERGIN,
-            scroll_txt_left: st_left_mergin,
-            input_txt_top: -win_height / 2.0 + INPUT_TXT_LOWER_MERGIN,
+            eight_indic_left: win_width / 2.0 - MIN_RIGHT_MARGIN,
+            scroll_txt_left: st_left_margin,
+            input_txt_top: -win_height / 2.0 + INPUT_TXT_LOWER_MARGIN,
             input_txt_left: 0.0,
         }
     }
@@ -102,7 +102,10 @@ impl Graphic {
     const SCRTXT_FONT_WIDTH: f32 = 12.0;
     const SCRTXT_BOTTOM_MARGIN: f32 = 160.0;
     const TOP_MARGIN: f32 = 40.0;
-    const TOP_MARGIN_WITH_TITLE: f32 = 140.0;
+    const TOP_MARGIN_WITH_TITLE: f32 = 160.0;
+    // color
+    const ALMOST_WHITE: u8 = 230;
+    const CURSOR_GRAY: u8 = 200;
 
     pub fn new(app: &App) -> Graphic {
         // フォントをロード（初期化時に一度だけ）
@@ -248,7 +251,7 @@ impl Graphic {
         let scroll_texts = itxt.get_scroll_lines();
         let lines = scroll_texts.len();
         let mut top_visible_line = self.top_visible_line;
-        let sz_y_limit = if self.title.is_empty() {
+        let sz_y_limit = if self.title.is_empty() && self.subtitle.is_empty() {
             Graphic::SCRTXT_BOTTOM_MARGIN + Graphic::TOP_MARGIN
         } else {
             Graphic::SCRTXT_BOTTOM_MARGIN + Graphic::TOP_MARGIN_WITH_TITLE
@@ -334,7 +337,7 @@ impl Graphic {
         if !self.subtitle.is_empty() {
             draw.text(self.subtitle.as_str())
                 .font(self.font_title.clone()) // 事前にロードしたフォントを使用
-                .font_size(16)
+                .font_size(20)
                 .color(title_color)
                 .center_justify()
                 .x_y(0.0, self.rs.full_size_y / 2.0 - SUB_TOP_MARGIN)
@@ -349,31 +352,36 @@ impl Graphic {
                 .x_y(0.0, self.rs.full_size_y / 2.0 - TOP_MARGIN)
                 .w_h(self.rs.full_size_x - 80.0, 80.0);
         }
+        draw.text(&txt_common::get_crnt_date_txt())
+            .font(self.font_nrm.clone())
+            .font_size(14)
+            .color(title_color)
+            .center_justify()
+            .x_y(0.0, 16.0 - self.rs.full_size_y / 2.0);
         draw.text("Loopian")
             .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
             .font_size(28)
             .color(title_color)
             .center_justify()
-            .x_y(0.0, 35.0 - self.rs.full_size_y / 2.0);
-        draw.text(&txt_common::get_crnt_date_txt())
-            .font(self.font_nrm.clone())
-            .font_size(16)
+            .x_y(-50.0, 56.0 - self.rs.full_size_y / 2.0)
+            .w_h(self.rs.full_size_x - 200.0, 40.0);
+        draw.text("by Kigakudoh")
+            .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
+            .font_size(18)
             .color(title_color)
-            .x_y(
-                self.rs.full_size_x / 2.0 - 100.0,
-                30.0 - self.rs.full_size_y / 2.0,
-            );
+            .center_justify()
+            .x_y(70.0, 54.0 - self.rs.full_size_y / 2.0);
     }
     /// Eight Indicator の描画
     fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {
         let txt_color = self.get_text_color(false);
         let msr = guiev.get_indicator(INDC_TICK);
-        let top_mergin = if self.title.is_empty() {
+        let top_margin = if self.title.is_empty() && self.subtitle.is_empty() {
             Graphic::TOP_MARGIN
         } else {
             Graphic::TOP_MARGIN_WITH_TITLE
         };
-        let eight_indic_top = self.rs.full_size_y / 2.0 - top_mergin;
+        let eight_indic_top = self.rs.full_size_y / 2.0 - top_margin;
         draw.text(msr)
             .font(self.font_bold.clone())
             .font_size(40)
@@ -543,17 +551,25 @@ impl Graphic {
     }
     /// Scroll Text の描画
     fn scroll_text(&self, draw: Draw, itxt: &InputText, text_visible: TextVisible) {
+        fn get_ratio(cnt: usize, max: usize) -> f32 {
+            let fbase = max as f32;
+            if fbase == 0.0 {
+                1.0
+            } else {
+                (fbase + (cnt as f32) * 2.0) / (fbase * 3.0)
+            }
+        }
         const LINE_THICKNESS: f32 = 2.0;
         const SCRTXT_FONT_SIZE: u32 = 18;
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
 
         // Draw Letters
-        let top_mergin = if self.title.is_empty() {
+        let top_margin = if self.title.is_empty() && self.subtitle.is_empty() {
             Graphic::TOP_MARGIN
         } else {
             Graphic::TOP_MARGIN_WITH_TITLE
         };
-        let scroll_txt_top = self.rs.full_size_y / 2.0 - top_mergin;
+        let scroll_txt_top = self.rs.full_size_y / 2.0 - top_margin;
         let top_visible_line = self.top_visible_line;
         let max_lines = self.max_lines;
         let crnt_line = self.crnt_line;
@@ -569,11 +585,22 @@ impl Graphic {
             let past_text = past_text_set.2;
             let ltrcnt = past_text.chars().count();
             let center_adjust = ltrcnt as f32 * Graphic::SCRTXT_FONT_WIDTH / 2.0;
+            let dissapiering = get_ratio(i, max_lines);
+            let alpha = match text_visible {
+                TextVisible::Full => 1,
+                TextVisible::Pale => 2,
+                TextVisible::VeryPale => 3,
+                TextVisible::Invisible => 0,
+            };
 
             // underline
             if top_visible_line + i == crnt_line {
                 draw.rect()
-                    .color(srgb::<u8>(200, 200, 200))
+                    .color(srgb::<u8>(
+                        (Self::CURSOR_GRAY as f32 * dissapiering) as u8 / alpha,
+                        (Self::CURSOR_GRAY as f32 * dissapiering) as u8 / alpha,
+                        (Self::CURSOR_GRAY as f32 * dissapiering) as u8 / alpha,
+                    ))
                     .x_y(
                         self.rs.scroll_txt_left + center_adjust - 60.0,
                         scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
@@ -582,17 +609,11 @@ impl Graphic {
             }
 
             // string
-            let alpha = match text_visible {
-                TextVisible::Full => 1,
-                TextVisible::Pale => 2,
-                TextVisible::VeryPale => 3,
-                TextVisible::Invisible => 0,
-            };
             let tcolor = self.get_text_color(answer);
             let txt_color = Srgb::new(
-                tcolor.red / alpha,
-                tcolor.green / alpha,
-                tcolor.blue / alpha,
+                (tcolor.red as f32 * dissapiering) as u8 / alpha,
+                (tcolor.green as f32 * dissapiering) as u8 / alpha,
+                (tcolor.blue as f32 * dissapiering) as u8 / alpha,
             );
             let fontname = if answer {
                 &self.font_italic
@@ -614,7 +635,6 @@ impl Graphic {
             }
         }
     }
-    const ALMOST_WHITE: u8 = 230;
     fn get_text_color(&self, magenta: bool) -> Srgb<u8> {
         if magenta {
             //Srgb::new(Self::ALMOST_WHITE, 0, Self::ALMOST_WHITE)
