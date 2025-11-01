@@ -80,12 +80,13 @@ impl GuiEv {
                 self.graphic_ev.push(GraphicEv::BeatEv(beat));
             }
             UiMsg::BpmUi(bpm, bpm_rate) => {
+                let disp_bpm = bpm * bpm_rate / 100;
                 let rate_txt = if bpm_rate == 100 {
                     "".to_string()
                 } else {
-                    format!("<{}%", bpm_rate)
+                    " ↓".to_string()
                 };
-                self.indicator[INDC_BPM] = format!("{}{}", bpm, rate_txt);
+                self.indicator[INDC_BPM] = format!("{}{}", disp_bpm, rate_txt);
             }
             UiMsg::Meter(nume, denomi) => {
                 self.indicator[INDC_METER] = format!("{}/{}", nume, denomi);

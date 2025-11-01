@@ -1,6 +1,8 @@
 [window_size]
 window_x_default = 2880
 window_y_default = 1620
+# window_x_default = 1080 # for short movie
+# window_y_default = 1920 # for short movie
 
 [midi]
 midi_out = "IAC"

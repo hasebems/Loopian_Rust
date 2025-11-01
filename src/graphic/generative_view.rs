@@ -25,13 +25,14 @@ use crate::cmd::txt_common::*;
 pub struct CmndRtn(pub String, pub GraphicMsg);
 
 // Graphic Message
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum GraphicMsg {
     What,
     NoMsg,
     LightMode,
     DarkMode,
     TextVisibleCtrl,
+    Title(String, String),
     RipplePattern,
     VoicePattern,
     LissajousPattern,
@@ -154,7 +155,7 @@ pub trait BeatObj {
 pub fn get_view_instance(
     guiev: &mut GuiEv,
     crnt_time: f32,
-    gmsg: GraphicMsg,
+    gmsg: &GraphicMsg,
     gmode: GraphMode,
     font_nrm: nannou::text::Font,
 ) -> (Option<GraphicPattern>, Option<Box<dyn GenerativeView>>) {
@@ -179,7 +180,7 @@ pub fn get_view_instance(
             let num_str = split_by('/', mt);
             let num = num_str[0].parse::<i32>().unwrap_or(0);
             gptn = Some(GRAPHIC_PATTERN_NAME[3].0);
-            view = Some(Box::new(BeatLissa::new(num, crnt_time, md, gmode)));
+            view = Some(Box::new(BeatLissa::new(num, crnt_time, *md, gmode)));
         }
         GraphicMsg::SineWavePattern => {
             gptn = Some(GRAPHIC_PATTERN_NAME[5].0);

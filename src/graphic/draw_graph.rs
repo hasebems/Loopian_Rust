@@ -11,6 +11,7 @@ use super::generative_view::*;
 use super::guiev::*;
 use super::view_waterripple::WaterRipple;
 use crate::cmd::input_txt::InputText;
+use crate::cmd::txt_common;
 use crate::lpnlib::*;
 
 //*******************************************************************
@@ -20,20 +21,16 @@ use crate::lpnlib::*;
 pub struct Resize {
     full_size_x: f32,
     full_size_y: f32,
-    eight_indic_top: f32,
     eight_indic_left: f32,
-    scroll_txt_top: f32,
     scroll_txt_left: f32,
     input_txt_top: f32,
     input_txt_left: f32,
 }
 impl Resize {
     pub fn new(app: &App) -> Resize {
-        const EIGHT_INDIC_TOP: f32 = 40.0; // eight indicator
-        const SCROLL_TXT_TOP: f32 = 80.0; // scroll text
         const INPUT_TXT_LOWER_MERGIN: f32 = 80.0; // input text
         const MIN_LEFT_MERGIN: f32 = 140.0;
-        const MIN_RIGHT_MERGIN: f32 = 140.0;
+        const MIN_RIGHT_MERGIN: f32 = 30.0;
 
         let win = app.main_window();
         let win_rect = win.rect();
@@ -44,9 +41,7 @@ impl Resize {
         Resize {
             full_size_x: win_width,
             full_size_y: win_height,
-            eight_indic_top: win_height / 2.0 - EIGHT_INDIC_TOP,
             eight_indic_left: win_width / 2.0 - MIN_RIGHT_MERGIN,
-            scroll_txt_top: win_height / 2.0 - SCROLL_TXT_TOP,
             scroll_txt_left: st_left_mergin,
             input_txt_top: -win_height / 2.0 + INPUT_TXT_LOWER_MERGIN,
             input_txt_left: 0.0,
@@ -82,7 +77,9 @@ impl TextVisible {
 pub struct Graphic {
     graphmsg: Vec<GraphicMsg>,
     font_nrm: nannou::text::Font,
+    font_bold: nannou::text::Font,
     font_italic: nannou::text::Font,
+    font_title: nannou::text::Font,
     font_newyork: nannou::text::Font,
     rs: Resize,
     svce: Option<Box<dyn GenerativeView>>, // Generaative View
@@ -93,6 +90,8 @@ pub struct Graphic {
     top_visible_line: usize,
     max_lines: usize,
     crnt_line: usize,
+    title: String,
+    subtitle: String,
 }
 
 //*******************************************************************
@@ -101,18 +100,24 @@ pub struct Graphic {
 impl Graphic {
     const SCRTXT_FONT_HEIGHT: f32 = 25.0;
     const SCRTXT_FONT_WIDTH: f32 = 12.0;
-    const SCRTXT_HEIGHT_LIMIT: f32 = 240.0;
+    const SCRTXT_BOTTOM_MARGIN: f32 = 160.0;
+    const TOP_MARGIN: f32 = 40.0;
+    const TOP_MARGIN_WITH_TITLE: f32 = 140.0;
 
     pub fn new(app: &App) -> Graphic {
         // フォントをロード（初期化時に一度だけ）
-        let font_nrm = Self::load_font(app, "CourierPrime-Regular.ttf");
-        let font_italic = Self::load_font(app, "CourierPrime-Italic.ttf");
+        let font_nrm = Self::load_font(app, "JetBrainsMono-ExtraLight.ttf");
+        let font_bold = Self::load_font(app, "JetBrainsMono-SemiBold.ttf");
+        let font_italic = Self::load_font(app, "JetBrainsMono-ExtraLightItalic.ttf");
+        let font_title = Self::load_font(app, "JetBrainsMono-ExtraBold.ttf");
         let font_newyork = Self::load_font(app, "NewYork.ttf");
 
         Self {
             graphmsg: Vec::new(),
-            font_nrm: font_nrm.clone(),
+            font_nrm,  //: font_nrm.clone(),
+            font_bold, //: font_bold.clone(),
             font_italic,
+            font_title,
             font_newyork,
             rs: Resize::default(),
             svce: Some(Box::new(WaterRipple::new(GraphMode::Dark))),
@@ -123,6 +128,8 @@ impl Graphic {
             top_visible_line: 0,
             max_lines: 0,
             crnt_line: 0,
+            title: String::new(),
+            subtitle: String::new(),
         }
     }
     fn load_font(app: &App, font_path: &str) -> nannou::text::Font {
@@ -154,9 +161,9 @@ impl Graphic {
 
         // 画面モードの変化イベントの受信
         if !self.graphmsg.is_empty() {
-            let msg = self.graphmsg[0];
-            self.rcv_graph_command(guiev, crnt_time, msg);
-            self.graphmsg.remove(0);
+            // `msg` is owned; pass by reference to the handler.
+            let msg = self.graphmsg.remove(0);
+            self.rcv_graph_command(guiev, crnt_time, &msg);
         }
 
         // Note/Beat Event を受信、generative_view へ送る
@@ -196,7 +203,7 @@ impl Graphic {
         self.update_scroll_text(itxt);
     }
     /// Graphic Command の受信
-    fn rcv_graph_command(&mut self, guiev: &mut GuiEv, crnt_time: f32, msg: GraphicMsg) {
+    fn rcv_graph_command(&mut self, guiev: &mut GuiEv, crnt_time: f32, msg: &GraphicMsg) {
         match msg {
             GraphicMsg::LightMode => {
                 self.gmode = GraphMode::Light;
@@ -213,6 +220,10 @@ impl Graphic {
             GraphicMsg::TextVisibleCtrl => {
                 self.text_visible = self.text_visible.next();
             }
+            GraphicMsg::Title(title, subtitle) => {
+                self.title = title.clone();
+                self.subtitle = subtitle.clone();
+            }
             _ => {
                 // graphic pattern の変更
                 let (gptn, svce) =
@@ -228,8 +239,8 @@ impl Graphic {
     }
     pub fn get_bgcolor(&self) -> Srgb<u8> {
         match self.gmode {
-            GraphMode::Dark => srgb::<u8>(0, 0, 0),
-            GraphMode::Light => srgb::<u8>(255, 255, 255),
+            GraphMode::Dark => srgb::<u8>(16, 16, 16),
+            GraphMode::Light => srgb::<u8>(240, 240, 240),
         }
     }
     fn update_scroll_text(&mut self, itxt: &InputText) {
@@ -237,8 +248,13 @@ impl Graphic {
         let scroll_texts = itxt.get_scroll_lines();
         let lines = scroll_texts.len();
         let mut top_visible_line = self.top_visible_line;
-        let max_lines_in_window = ((self.rs.full_size_y - Graphic::SCRTXT_HEIGHT_LIMIT) as usize)
-            / (Graphic::SCRTXT_FONT_HEIGHT as usize);
+        let sz_y_limit = if self.title.is_empty() {
+            Graphic::SCRTXT_BOTTOM_MARGIN + Graphic::TOP_MARGIN
+        } else {
+            Graphic::SCRTXT_BOTTOM_MARGIN + Graphic::TOP_MARGIN_WITH_TITLE
+        };
+        let max_lines_in_window =
+            ((self.rs.full_size_y - sz_y_limit) as usize) / (Graphic::SCRTXT_FONT_HEIGHT as usize);
         let mut max_lines = max_lines_in_window;
         let max_histories = scroll_texts
             .iter()
@@ -287,6 +303,8 @@ impl Graphic {
         if self.text_visible != TextVisible::Full && self.text_visible != TextVisible::Invisible {
             self.scroll_text(draw.clone(), itxt, self.text_visible);
         }
+        // Title の表示
+        self.view_title(draw.clone());
 
         // Gererative Pattern
         self.view_loopian_generative_view(draw.clone(), tm);
@@ -299,7 +317,8 @@ impl Graphic {
         {
             self.input_text(draw.clone(), guiev, itxt, tm);
         }
-        self.title(draw.clone());
+
+        // Eight Indicator の表示
         self.eight_indicator(draw.clone(), guiev);
     }
     fn view_loopian_generative_view(&self, draw: Draw, tm: f32) {
@@ -308,179 +327,219 @@ impl Graphic {
         }
     }
     /// title の描画
-    fn title(&self, draw: Draw) {
-        let title_color = if self.gmode == GraphMode::Light {
-            GRAY
-        } else {
-            WHITE
-        };
+    fn view_title(&self, draw: Draw) {
+        const TOP_MARGIN: f32 = 40.0;
+        const SUB_TOP_MARGIN: f32 = 90.0;
+        let title_color = self.get_text_color(false);
+        if !self.subtitle.is_empty() {
+            draw.text(self.subtitle.as_str())
+                .font(self.font_title.clone()) // 事前にロードしたフォントを使用
+                .font_size(16)
+                .color(title_color)
+                .center_justify()
+                .x_y(0.0, self.rs.full_size_y / 2.0 - SUB_TOP_MARGIN)
+                .w_h(self.rs.full_size_x - 80.0, 80.0);
+        }
+        if !self.title.is_empty() {
+            draw.text(self.title.as_str())
+                .font(self.font_title.clone()) // 事前にロードしたフォントを使用
+                .font_size(36)
+                .color(title_color)
+                .center_justify()
+                .x_y(0.0, self.rs.full_size_y / 2.0 - TOP_MARGIN)
+                .w_h(self.rs.full_size_x - 80.0, 80.0);
+        }
         draw.text("Loopian")
             .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
-            .font_size(32)
+            .font_size(28)
             .color(title_color)
             .center_justify()
-            .x_y(0.0, 42.0 - self.rs.full_size_y / 2.0);
+            .x_y(0.0, 35.0 - self.rs.full_size_y / 2.0);
+        draw.text(&txt_common::get_crnt_date_txt())
+            .font(self.font_nrm.clone())
+            .font_size(16)
+            .color(title_color)
+            .x_y(
+                self.rs.full_size_x / 2.0 - 100.0,
+                30.0 - self.rs.full_size_y / 2.0,
+            );
     }
     /// Eight Indicator の描画
     fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {
-        let txt_color = if self.gmode == GraphMode::Light {
-            GRAY
-        } else {
-            WHITE
-        };
+        let txt_color = self.get_text_color(false);
         let msr = guiev.get_indicator(INDC_TICK);
+        let top_mergin = if self.title.is_empty() {
+            Graphic::TOP_MARGIN
+        } else {
+            Graphic::TOP_MARGIN_WITH_TITLE
+        };
+        let eight_indic_top = self.rs.full_size_y / 2.0 - top_mergin;
         draw.text(msr)
-            .font(self.font_nrm.clone())
+            .font(self.font_bold.clone())
             .font_size(40)
             .color(txt_color)
             .left_justify()
-            .x_y(self.rs.eight_indic_left, self.rs.eight_indic_top)
+            .x_y(self.rs.eight_indic_left - 25.0, eight_indic_top)
             .w_h(400.0, 40.0);
 
         let bpm = guiev.get_indicator(INDC_BPM);
+        let txt_mcolor = self.get_text_color(true);
         draw.text("bpm:")
-            .font(self.font_nrm.clone())
+            .font(self.font_bold.clone())
             .font_size(28)
-            .color(MAGENTA)
+            .color(txt_mcolor)
             .left_justify()
-            .x_y(
-                self.rs.eight_indic_left + 40.0,
-                self.rs.eight_indic_top - 70.0,
-            )
+            .x_y(self.rs.eight_indic_left, eight_indic_top - 70.0)
             .w_h(400.0, 40.0);
         draw.text(bpm)
-            .font(self.font_nrm.clone())
+            .font(self.font_bold.clone())
             .font_size(28)
             .color(txt_color)
             .left_justify()
-            .x_y(
-                self.rs.eight_indic_left + 170.0,
-                self.rs.eight_indic_top - 70.0,
-            )
+            .x_y(self.rs.eight_indic_left + 120.0, eight_indic_top - 70.0)
             .w_h(400.0, 40.0);
 
         let meter = guiev.get_indicator(INDC_METER);
         draw.text("meter:")
-            .font(self.font_nrm.clone())
+            .font(self.font_bold.clone())
             .font_size(28)
-            .color(MAGENTA)
+            .color(txt_mcolor)
             .left_justify()
-            .x_y(
-                self.rs.eight_indic_left + 40.0,
-                self.rs.eight_indic_top - 110.0,
-            )
+            .x_y(self.rs.eight_indic_left, eight_indic_top - 110.0)
             .w_h(400.0, 40.0);
         draw.text(meter)
-            .font(self.font_nrm.clone())
+            .font(self.font_bold.clone())
             .font_size(28)
             .color(txt_color)
             .left_justify()
-            .x_y(
-                self.rs.eight_indic_left + 170.0,
-                self.rs.eight_indic_top - 110.0,
-            )
+            .x_y(self.rs.eight_indic_left + 120.0, eight_indic_top - 110.0)
             .w_h(400.0, 40.0);
 
         let key = guiev.get_indicator(INDC_KEY);
         draw.text("key:")
-            .font(self.font_nrm.clone())
+            .font(self.font_bold.clone())
             .font_size(28)
-            .color(MAGENTA)
+            .color(txt_mcolor)
             .left_justify()
-            .x_y(
-                self.rs.eight_indic_left + 40.0,
-                self.rs.eight_indic_top - 150.0,
-            )
+            .x_y(self.rs.eight_indic_left, eight_indic_top - 150.0)
             .w_h(400.0, 40.0);
         draw.text(key)
-            .font(self.font_nrm.clone())
+            .font(self.font_bold.clone())
             .font_size(28)
             .color(txt_color)
             .left_justify()
-            .x_y(
-                self.rs.eight_indic_left + 170.0,
-                self.rs.eight_indic_top - 150.0,
-            )
+            .x_y(self.rs.eight_indic_left + 120.0, eight_indic_top - 150.0)
             .w_h(400.0, 40.0);
 
         for i in 0..4 {
             let pt = guiev.get_indicator(7 - i);
             draw.text(&(guiev.get_part_txt(3 - i).to_string() + pt))
-                .font(self.font_nrm.clone())
+                .font(self.font_bold.clone())
                 .font_size(20)
                 .color(txt_color)
                 .left_justify()
                 .x_y(
-                    self.rs.eight_indic_left + 40.0,
-                    self.rs.eight_indic_top - 190.0 - (i as f32) * 30.0,
+                    self.rs.eight_indic_left,
+                    eight_indic_top - 190.0 - (i as f32) * 30.0,
                 )
                 .w_h(400.0, 30.0);
         }
     }
     /// Input Text の描画
     fn input_text(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
-        const INPUT_TXT_X_SZ: f32 = 1240.0;
         const INPUT_TXT_Y_SZ: f32 = 40.0;
-        const LETTER_SZ_X: f32 = 16.0;
+        const LETTER_SZ_X: f32 = 15.0;
         const CURSOR_THICKNESS: f32 = 5.0;
+        const CURSOR_HEIGHT_ADJ: f32 = 18.0;
         const LETTER_MARGIN_Y: f32 = 3.0;
-        const PROMPT_LTR_NUM: f32 = 7.0;
+        const PROMPT_LTR_NUM: f32 = 3.0; // プロンプト文字数分のスペース
 
+        let input_txt_w_sz = self.rs.get_full_size_x() - 100.0;
         let input_bg_color: Srgb<u8> = srgb::<u8>(50, 50, 50);
         let input_locate_x: f32 = self.rs.input_txt_left; // 入力スペースの中心座標
         let input_locate_y: f32 = self.rs.input_txt_top; // 入力スペースの中心座標
-        let input_start_x: f32 = input_locate_x - INPUT_TXT_X_SZ / 2.0 + 120.0;
-        let cursor_y: f32 = input_locate_y - INPUT_TXT_Y_SZ / 2.0 + 2.0;
-        let cursor_locate: f32 = itxt.get_cursor_locate() as f32;
+        let left_edge: f32 = input_locate_x - input_txt_w_sz / 2.0;
+        let input_start_x: f32 = left_edge + 10.0;
 
-        // Input Space
+        let (input_lines, cursor_locate, cursor_line) =
+            itxt.get_input_text(input_txt_w_sz - PROMPT_LTR_NUM * LETTER_SZ_X, LETTER_SZ_X);
+        let lines = if input_lines.is_empty() {
+            1
+        } else {
+            input_lines.len()
+        };
+
+        // 行数に応じて入力ボックスの中心と高さを決める（下端を固定して上方向へ伸ばす）
+        let line_h = INPUT_TXT_Y_SZ;
+        let box_h = (lines as f32) * line_h;
+        // ボックスの中心位置（下端を固定したまま高さを伸ばすための中心計算）
+        let box_center_y = input_locate_y + ((lines as f32 - 1.0) * line_h) / 2.0;
+
+        // Input Space（高さは行数に応じる）
         draw.rect()
             .color(input_bg_color)
-            .x_y(input_locate_x, input_locate_y)
-            .w_h(INPUT_TXT_X_SZ, INPUT_TXT_Y_SZ)
+            .x_y(input_locate_x, box_center_y)
+            .w_h(input_txt_w_sz, box_h)
             .stroke_weight(0.2)
             .stroke_color(WHITE);
 
-        // Cursor
+        // 下端基準のテキスト描画用 Y 基準（bottom baseline）
+        let bottom_y = box_center_y - box_h / 2.0 + 20.0;
+        // プロンプト／カーソルのベース Y（最下行）
+        let base_y = bottom_y + line_h / 2.0 + LETTER_MARGIN_Y - line_h / 2.0;
+
+        // プロンプトの描画（最上行に揃える）
+        let prompt_txt: &str = &(guiev.get_part_txt(itxt.get_input_part()).to_string() + ">");
+        let txt_color = self.get_text_color(true);
+        for (i, c) in prompt_txt.chars().enumerate() {
+            draw.text(&c.to_string())
+                .font(self.font_bold.clone()) // 事前にロードしたフォントを使用
+                .font_size(24)
+                .color(txt_color)
+                .left_justify()
+                .x_y(
+                    (i as f32) * LETTER_SZ_X + input_start_x,
+                    base_y + (lines as f32 - 1.0) * line_h,
+                )
+                .w_h(LETTER_SZ_X, line_h);
+        }
+
+        // Cursor（最下行に揃える）
+        let cursor_y = base_y - CURSOR_HEIGHT_ADJ;
         if (tm % 0.5) < 0.3 {
             // Cursor Blink
             draw.rect()
                 .color(LIGHTGRAY)
                 .x_y(
-                    (cursor_locate + 1.0) * LETTER_SZ_X + input_start_x + 5.0,
-                    cursor_y,
+                    (cursor_locate + PROMPT_LTR_NUM) * LETTER_SZ_X + input_start_x,
+                    cursor_y + ((lines - cursor_line - 1) as f32) * line_h,
                 )
                 .w_h(LETTER_SZ_X, CURSOR_THICKNESS);
         }
 
-        // プロンプトの描画
-        let hcnt = itxt.get_history_locate() % 1000;
-        let prompt_txt: &str =
-            &(format!("{:03}:", hcnt) + guiev.get_part_txt(itxt.get_input_part()) + ">");
-        for (i, c) in prompt_txt.chars().enumerate() {
-            draw.text(&c.to_string())
-                .font(self.font_nrm.clone()) // 事前にロードしたフォントを使用
-                .font_size(22)
-                .color(MAGENTA)
-                .left_justify()
-                .x_y(
-                    (i as f32) * LETTER_SZ_X + input_start_x,
-                    input_locate_y + LETTER_MARGIN_Y,
-                );
+        // テキストを描画（最下行を基準に上方向へ積む）
+        let txt_color = self.get_text_color(false);
+        for (l, displayed_txt) in input_lines.iter().enumerate() {
+            let displayed_txt = displayed_txt.as_str();
+            // 下からのオフセット（最下行が offset = 0）
+            let offset_from_bottom = (lines - 1).saturating_sub(l) as f32;
+            let y = base_y + offset_from_bottom * line_h;
+            for (i, c) in displayed_txt.chars().enumerate() {
+                draw.text(&c.to_string())
+                    .font(self.font_bold.clone()) // 事前にロードしたフォントを使用
+                    .font_size(24)
+                    .color(txt_color)
+                    .left_justify()
+                    .x_y(
+                        ((i as f32) + PROMPT_LTR_NUM) * LETTER_SZ_X + input_start_x,
+                        y,
+                    )
+                    .w_h(LETTER_SZ_X, line_h);
+            }
         }
-
-        // テキストを描画
-        for (i, c) in itxt.get_input_text().chars().enumerate() {
-            draw.text(&c.to_string())
-                .font(self.font_nrm.clone()) // 事前にロードしたフォントを使用
-                .font_size(22)
-                .color(WHITE)
-                .left_justify()
-                .x_y(
-                    ((i as f32) + PROMPT_LTR_NUM) * LETTER_SZ_X + input_start_x,
-                    input_locate_y + LETTER_MARGIN_Y,
-                );
-        }
+        // 座標チェック用デバッグ表示
+        //draw.rect().color(srgb8(255,0,0)).x_y(left_edge, base_y).w_h(4.0,4.0);
+        //draw.rect().color(srgb8(0,255,0)).x_y(input_start_x, base_y).w_h(4.0,4.0);
     }
     /// Scroll Text の描画
     fn scroll_text(&self, draw: Draw, itxt: &InputText, text_visible: TextVisible) {
@@ -489,26 +548,35 @@ impl Graphic {
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
 
         // Draw Letters
+        let top_mergin = if self.title.is_empty() {
+            Graphic::TOP_MARGIN
+        } else {
+            Graphic::TOP_MARGIN_WITH_TITLE
+        };
+        let scroll_txt_top = self.rs.full_size_y / 2.0 - top_mergin;
         let top_visible_line = self.top_visible_line;
         let max_lines = self.max_lines;
         let crnt_line = self.crnt_line;
         let scroll_texts = itxt.get_scroll_lines();
+
         for i in 0..max_lines {
             if top_visible_line + i >= scroll_texts.len() {
                 break;
             }
             let past_text_set = scroll_texts[top_visible_line + i].clone();
-            let past_text = past_text_set.1.clone() + &past_text_set.2;
+            let answer = past_text_set.0 == TextAttribute::Answer;
+            //let past_text = past_text_set.1.clone() + &past_text_set.2;
+            let past_text = past_text_set.2;
             let ltrcnt = past_text.chars().count();
             let center_adjust = ltrcnt as f32 * Graphic::SCRTXT_FONT_WIDTH / 2.0;
 
             // underline
             if top_visible_line + i == crnt_line {
                 draw.rect()
-                    .color(LIGHTGRAY)
+                    .color(srgb::<u8>(200, 200, 200))
                     .x_y(
                         self.rs.scroll_txt_left + center_adjust - 60.0,
-                        self.rs.scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
+                        scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
                     )
                     .w_h(Graphic::SCRTXT_FONT_WIDTH * (ltrcnt as f32), LINE_THICKNESS);
             }
@@ -520,21 +588,16 @@ impl Graphic {
                 TextVisible::VeryPale => 3,
                 TextVisible::Invisible => 0,
             };
-            let (txt_color, fontname) = if past_text_set.0 == TextAttribute::Answer {
-                let magenta_with_alpha = Srgb::new(
-                    MAGENTA.red / alpha,
-                    MAGENTA.green / alpha,
-                    MAGENTA.blue / alpha,
-                );
-                (magenta_with_alpha, &self.font_italic)
-            } else if self.gmode == GraphMode::Light {
-                let gray_with_alpha =
-                    Srgb::new(GRAY.red / alpha, GRAY.green / alpha, GRAY.blue / alpha);
-                (gray_with_alpha, &self.font_nrm)
+            let tcolor = self.get_text_color(answer);
+            let txt_color = Srgb::new(
+                tcolor.red / alpha,
+                tcolor.green / alpha,
+                tcolor.blue / alpha,
+            );
+            let fontname = if answer {
+                &self.font_italic
             } else {
-                let white_with_alpha =
-                    Srgb::new(WHITE.red / alpha, WHITE.green / alpha, WHITE.blue / alpha);
-                (white_with_alpha, &self.font_nrm)
+                &self.font_nrm
             };
             for (j, d) in past_text.chars().enumerate() {
                 draw.text(&d.to_string())
@@ -546,9 +609,20 @@ impl Graphic {
                         self.rs.scroll_txt_left
                             + SPACE2_TXT_LEFT_MARGIN
                             + Graphic::SCRTXT_FONT_WIDTH * (j as f32),
-                        self.rs.scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32),
+                        scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32),
                     );
             }
+        }
+    }
+    const ALMOST_WHITE: u8 = 230;
+    fn get_text_color(&self, magenta: bool) -> Srgb<u8> {
+        if magenta {
+            //Srgb::new(Self::ALMOST_WHITE, 0, Self::ALMOST_WHITE)
+            Srgb::new(255, 102, 204)
+        } else if self.gmode == GraphMode::Light {
+            Srgb::new(GRAY.red, GRAY.green, GRAY.blue)
+        } else {
+            Srgb::new(Self::ALMOST_WHITE, Self::ALMOST_WHITE, Self::ALMOST_WHITE)
         }
     }
 }

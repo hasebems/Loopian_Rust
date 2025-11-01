@@ -216,12 +216,21 @@ impl LoopianCmd {
                 CmndRtn("Changed Graphic!".to_string(), GraphicMsg::LightMode)
             } else if len == 10 && &input_text[6..10] == "dark" {
                 CmndRtn("Changed Graphic!".to_string(), GraphicMsg::DarkMode)
+            } else if len > 11 && &input_text[6..11] == "title" {
+                let txt = extract_texts_from_parentheses(input_text);
+                let txts = txt.split(',').collect::<Vec<&str>>();
+                let title_txt = txts.first().unwrap_or(&"");
+                let subtitle_txt = txts.get(1).unwrap_or(&"");
+                CmndRtn(
+                    format!("Set Title: {}", title_txt),
+                    GraphicMsg::Title(title_txt.to_string(), subtitle_txt.to_string()),
+                )
             } else {
                 let mut matched_msg = None;
                 for ptn in GRAPHIC_PATTERN_NAME.iter() {
                     let ptn_len = ptn.2.len();
                     if len == ptn_len + 6 && &input_text[6..(ptn_len + 6)] == ptn.2 {
-                        matched_msg = Some(ptn.1);
+                        matched_msg = Some(ptn.1.clone());
                         break;
                     }
                 }

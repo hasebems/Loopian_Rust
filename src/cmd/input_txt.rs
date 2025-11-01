@@ -35,7 +35,6 @@ enum AutoLoadState {
 pub struct InputText {
     input_text: String,
     input_locate: usize,
-    visible_locate: usize,
     history_cnt: usize,
     file_name_stock: String,
     next_msr_tick: Option<CrntMsrTick>,
@@ -50,14 +49,13 @@ pub struct InputText {
     riten_sent: bool,
 }
 impl InputText {
-    const CURSOR_MAX_VISIBLE_LOCATE: usize = 65;
+    //const CURSOR_MAX_VISIBLE_LOCATE: usize = 65;
     const COMMAND_INPUT_REST_TICK: i32 = 240;
 
     pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>) -> Self {
         Self {
             input_text: "".to_string(),
             input_locate: 0,
-            visible_locate: 0,
             history_cnt: 0,
             file_name_stock: String::new(),
             next_msr_tick: None,
@@ -87,11 +85,55 @@ impl InputText {
     pub fn put_and_get_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
         self.cmd.put_and_get_responce(input_text)
     }
-    pub fn get_input_text(&self) -> String {
-        self.input_text[self.visible_locate..].to_string()
-    }
     pub fn get_scroll_lines(&self) -> &Vec<(TextAttribute, String, String)> {
         &self.scroll_lines
+    }
+    pub fn get_input_text(&self, max_width_px: f32, char_width_px: f32) -> (Vec<String>, f32, usize) {
+        // 折り返し優先文字
+        const PREF_BREAK: &[char] = &[',', '.', ')'];
+
+        let mut lines = Vec::new();
+        let mut current = String::new();
+        let mut last_break_idx: Option<usize> = None;
+        let mut width = 0.0;
+
+        for ch in self.input_text.chars() {
+            let w = char_width_px;
+            // 折り返し候補を記録
+            if ch.is_whitespace() || PREF_BREAK.contains(&ch) {
+                last_break_idx = Some(current.len());
+            }
+            // この文字を入れるとオーバー？
+            if width + w > max_width_px && !current.is_empty() {
+                let cut = last_break_idx.unwrap_or(current.len());
+                let (push_part, remain_part) = current.split_at(cut);
+                lines.push(push_part.trim_end().to_string());
+
+                // 残りを次行に回す（必要ならリーダーを付与）
+                let mut next = String::new();
+                next.push_str(remain_part.trim_start());
+
+                current = next;
+                width = current.len() as f32 * char_width_px;
+                last_break_idx = None;
+            }
+
+            current.push(ch);
+            width += w;
+        }
+
+        if !current.is_empty() {
+            lines.push(current);
+        }
+
+        let each_len = lines.iter().map(|line| line.len()).collect::<Vec<_>>();
+        let mut cursor_locate = self.input_locate;
+        let mut cursor_line = 0;
+        while cursor_line < each_len.len() && cursor_locate > each_len[cursor_line] {
+            cursor_locate -= each_len[cursor_line];
+            cursor_line += 1;
+        }
+        (lines, cursor_locate as f32, cursor_line)
     }
     #[cfg(feature = "raspi")]
     pub fn send_reconnect(&self) {
@@ -149,10 +191,8 @@ impl InputText {
                 if self.input_locate > 0 {
                     self.input_locate -= 1;
                     self.input_text.remove(self.input_locate);
-                    self.update_visible_locate();
                     if self.just_after_hokan {
                         self.input_text.remove(self.input_locate);
-                        self.update_visible_locate();
                     }
                 }
             }
@@ -162,7 +202,6 @@ impl InputText {
                 } else if self.input_locate > 0 {
                     self.input_locate -= 1;
                 }
-                self.update_visible_locate();
             }
             &Key::Right => {
                 let maxlen = self.input_text.chars().count();
@@ -171,7 +210,6 @@ impl InputText {
                 } else {
                     self.input_locate += 1;
                 }
-                self.update_visible_locate();
                 if self.input_locate > maxlen {
                     self.input_locate = maxlen;
                 }
@@ -183,7 +221,6 @@ impl InputText {
                         self.history_cnt = txt.1;
                     }
                     self.input_locate = 0;
-                    self.visible_locate = 0;
                 }
             }
             &Key::Down => {
@@ -193,7 +230,6 @@ impl InputText {
                         self.history_cnt = txt.1;
                     }
                     self.input_locate = 0;
-                    self.visible_locate = 0;
                 }
             }
             &Key::Key1
@@ -271,7 +307,6 @@ impl InputText {
     fn input_letter(&mut self, ltr: &char) {
         self.input_text.insert(self.input_locate, *ltr);
         self.input_locate += 1;
-        self.update_visible_locate();
         // 括弧の補完
         if *ltr == '(' {
             self.input_text.insert(self.input_locate, ')');
@@ -291,20 +326,6 @@ impl InputText {
             self.input_text = itx.replacen(' ', ".", 100); // egui とぶつかり replace が使えない
         }
     }
-    fn update_visible_locate(&mut self) {
-        if self.input_locate >= Self::CURSOR_MAX_VISIBLE_LOCATE {
-            self.visible_locate = self.input_locate - Self::CURSOR_MAX_VISIBLE_LOCATE;
-        } else if self.input_locate < self.visible_locate {
-            self.visible_locate = self.input_locate;
-        }
-    }
-    pub fn get_cursor_locate(&self) -> usize {
-        if self.input_locate > Self::CURSOR_MAX_VISIBLE_LOCATE {
-            Self::CURSOR_MAX_VISIBLE_LOCATE
-        } else {
-            self.input_locate
-        }
-    }
     /// 手入力で Enter キーが押された
     fn pressed_enter(&mut self, graphmsg: &mut Vec<GraphicMsg>) {
         let itxt = self.input_text.clone();
@@ -313,7 +334,6 @@ impl InputText {
         }
         self.input_text = "".to_string();
         self.input_locate = 0;
-        self.visible_locate = 0;
 
         // cmdparse に行くまでに処理したいコマンド対応
         let len = itxt.chars().count();
