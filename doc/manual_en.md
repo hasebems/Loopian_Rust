@@ -99,7 +99,7 @@ This document explains all features of Loopian.
 
 ### Command Input
 
-<img src="./image/v050_exp.png" width="70%">
+<img src="./image/v064_exp.png" width="70%">
 
 - When the application is launched, an input prompt like below appears in the Input Window at the bottom of the screen:
     - `NNN: L1>` : Input prompt
@@ -449,7 +449,7 @@ This document explains all features of Loopian.
 
 ### Saving Log Files
 
-- When Loopian exits, log files are automatically saved
+- When Loopian exits with `!quit/!q`, log files are automatically saved
     - A /log folder is automatically created in the application folder, and log files (with .lpn extension) are saved there
     - Files are named with date and time, like 2023-06-02_19-56-54.lpn
 - `!save(n).`*filename*
@@ -469,7 +469,7 @@ This document explains all features of Loopian.
 - Loaded content is stored in history and can be recalled line by line using cursor (up/down) keys
 - `!history.`*filename* (or `!h.`*filename*): Load the specified file to history only
     - Commands loaded to history only are not played
-    - Scroll Text displays `">> History: 0000n"` and can be selected using up/down keys
+    - Commands displayed Scroll Text can be selected using up/down keys
 
 ### File Description Rules
 
@@ -541,6 +541,7 @@ This document explains all features of Loopian.
 
 - `graph.light`: Change to white-based screen
 - `graph.dark`: Change to black-based screen
+- `graph.title(XXX,YYY)`: Display XXX as title, YYY as subtitle at the top of screen.
 - `graph.ripple`: Water ripple pattern (default)
 - `graph.voice`: Pattern showing divided voices in circles
 - `graph.lissa`: Pattern showing line connecting two Lissajous figures

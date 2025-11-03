@@ -101,7 +101,7 @@ cd /path/to/loopian
 
 ### コマンド入力
 
-<img src="./image/v050_exp.png" width="70%">
+<img src="./image/v064_exp.png" width="70%">
 
 - アプリを立ち上げると、画面下の Input Window に下記のような入力用プロンプトが表示される
     - `NNN: L1>` : 入力用プロンプト
@@ -479,7 +479,7 @@ cd /path/to/loopian
 
 ### ログファイルのセーブ
 
-- Loopian を終了すると、自動的にログファイルがセーブされる
+- Loopian を `!quit/!q` で終了すると、自動的にログファイルがセーブされる
     - アプリのあるフォルダに、/log フォルダが自動的に作られ、その中にログファイル（拡張子はlpn）がセーブされる
     - 2023-06-02_19-56-54.lpn というように、日時がファイル名となる
 - `!save(n).`*filename* 
@@ -500,7 +500,7 @@ cd /path/to/loopian
 - ロードされた内容は、history の中に格納され、カーソル（上下）キーで一行ずつ呼び出すことができる
 - `!history.`*filename*（あるいは `!h.`*filename*）：指定したファイルを履歴のみにロードする
     - 履歴のみにロードされたコマンドは、再生はされない
-    - Scroll Text には、`">> History: 0000n"` と表示され、上下キーで選ぶことができる
+    - Scroll Text に表示され、上下キーで選ぶことができる
 
 
 ### ファイルの記述ルール
@@ -579,6 +579,7 @@ cd /path/to/loopian
 
 - `graph.light` : 白基調の画面に変化
 - `graph.dark`  : 黒基調の画面に変化
+- `graph.title(XXX,YYY)` : 画面トップにタイトルとしてXXXを表示、サブタイトルとしてYYYを表示
 - `graph.ripple`: 水紋パターン(default)
 - `graph.voice` : 分割された各声部が円で表示されるパターン
 - `graph.lissa` : 二つのリサジューを結んだ線を表示するパターン
