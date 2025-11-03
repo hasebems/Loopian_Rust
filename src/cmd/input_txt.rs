@@ -481,7 +481,18 @@ impl InputText {
             .load_lpn(self.file_name_stock.clone(), self.cmd.get_path().as_deref())
         {
             if !playable {
-                self.input_history(graphmsg);
+                // 履歴にのみロードする場合
+                self.clear_loaded_data();
+                let loaded =
+                    self.history.get_from_mt_to_next(CrntMsrTick::default());
+                self.send_loaddata_to_elapse(
+                    graphmsg,
+                    InputTextType::Any,
+                    false,
+                    loaded.0,
+                    None,
+                );
+                self.next_msr_tick = loaded.1;
             }
             let answer_word = format!("Loaded from file: {}.lpn", self.file_name_stock);
             self.scroll_lines
@@ -494,12 +505,6 @@ impl InputText {
                 "No File.".to_string(),
             ));
         }
-    }
-    fn input_history(&mut self, graphmsg: &mut Vec<GraphicMsg>) {
-        self.clear_loaded_data();
-        let loaded = self.history.get_from_mt_to_next(CrntMsrTick::default());
-        self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, false, loaded.0, None);
-        self.next_msr_tick = loaded.1;
     }
     /// !msr() で指定された小節までのデータをロード
     /// ここでは、指定された小節の直前までのデータをロード
@@ -606,7 +611,7 @@ impl InputText {
                     self.one_command(onecmd.clone(), graphmsg, false);
                     answer = true;
                 } else {
-                    let time = format!("  >> History: {:05} ", i);
+                    let time = format!(" >History: {:05} ", i);
                     self.set_history(time, onecmd.clone(), None);
                 }
             }
