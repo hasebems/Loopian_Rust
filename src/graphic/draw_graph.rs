@@ -88,6 +88,7 @@ pub struct Graphic {
     text_visible: TextVisible,
     crnt_time: f32,
     top_visible_line: usize,
+    max_lines_in_window: usize,
     max_lines: usize,
     crnt_line: usize,
     title: String,
@@ -129,6 +130,7 @@ impl Graphic {
             text_visible: TextVisible::Full,
             crnt_time: 0.0,
             top_visible_line: 0,
+            max_lines_in_window: 0,
             max_lines: 0,
             crnt_line: 0,
             title: String::new(),
@@ -249,7 +251,7 @@ impl Graphic {
     fn update_scroll_text(&mut self, itxt: &InputText) {
         // generating max_lines_in_window, and updating self.top_scroll_line
         let scroll_texts = itxt.get_scroll_lines();
-        let lines = scroll_texts.len();
+        let total_lines = scroll_texts.len();
         let mut top_visible_line = self.top_visible_line;
         let sz_y_limit = if self.title.is_empty() && self.subtitle.is_empty() {
             Graphic::SCRTXT_BOTTOM_MARGIN + Graphic::TOP_MARGIN
@@ -258,24 +260,25 @@ impl Graphic {
         };
         let max_lines_in_window =
             ((self.rs.full_size_y - sz_y_limit) as usize) / (Graphic::SCRTXT_FONT_HEIGHT as usize);
-        let mut max_lines = max_lines_in_window;
+        let max_lines = if total_lines < max_lines_in_window {
+            // not filled yet
+            total_lines
+        } else {
+            max_lines_in_window
+        };
         let max_histories = scroll_texts
             .iter()
             .filter(|x| x.0 == TextAttribute::Common)
             .collect::<Vec<_>>()
             .len();
-        if lines < max_lines_in_window {
-            // not filled yet
-            max_lines = lines;
-        }
 
         // Adjust top_visible_line
         let crnt_history = itxt.get_history_locate();
-        let mut crnt_line: usize = lines;
+        let mut crnt_line: usize = total_lines;
         if crnt_history < max_histories {
             // 対応する履歴が全体のどの位置にあるかを調べる
             let mut linecnt = 0;
-            for (i, st) in scroll_texts.iter().enumerate().take(lines) {
+            for (i, st) in scroll_texts.iter().enumerate().take(total_lines) {
                 if st.0 == TextAttribute::Common {
                     if linecnt == crnt_history {
                         crnt_line = i;
@@ -284,16 +287,19 @@ impl Graphic {
                     linecnt += 1;
                 }
             }
-            if crnt_line < top_visible_line {
-                top_visible_line = crnt_line;
+            top_visible_line = if crnt_line < top_visible_line {
+                crnt_line
             } else if crnt_line >= top_visible_line + max_lines_in_window {
-                top_visible_line = crnt_line - max_lines_in_window + 1;
-            }
-        } else if lines >= max_lines_in_window {
-            top_visible_line = lines - max_lines_in_window;
+                crnt_line - max_lines_in_window + 1
+            } else {
+                top_visible_line
+            };
+        } else if total_lines >= max_lines_in_window {
+            top_visible_line = total_lines - max_lines_in_window;
         }
 
         self.top_visible_line = top_visible_line;
+        self.max_lines_in_window = max_lines_in_window;
         self.max_lines = max_lines;
         self.crnt_line = crnt_line;
     }
@@ -551,25 +557,24 @@ impl Graphic {
     }
     /// Scroll Text の描画
     fn scroll_text(&self, draw: Draw, itxt: &InputText, text_visible: TextVisible) {
-        fn get_ratio(cnt: usize, max: usize) -> f32 {
-            let fbase = max as f32;
+        fn get_ratio(cnt: usize, max_lines_in_window: usize) -> f32 {
+            let position = (max_lines_in_window - cnt) as f32;
+            let fbase = max_lines_in_window as f32;
             if fbase == 0.0 {
                 1.0
             } else {
-                (fbase + (cnt as f32) * 2.0) / (fbase * 3.0)
+                // 薄くなる比率を計算
+                (fbase + (position * 2.0)) / (fbase * 3.0)
             }
         }
         const LINE_THICKNESS: f32 = 2.0;
         const SCRTXT_FONT_SIZE: u32 = 18;
         const SPACE2_TXT_LEFT_MARGIN: f32 = 40.0;
+        const UNDERLINE_POS_ADJ_X: f32 = 60.0;
+        const UNDERLINE_POS_ADJ_Y: f32 = 14.0;
 
         // Draw Letters
-        let top_margin = if self.title.is_empty() && self.subtitle.is_empty() {
-            Graphic::TOP_MARGIN
-        } else {
-            Graphic::TOP_MARGIN_WITH_TITLE
-        };
-        let scroll_txt_top = self.rs.full_size_y / 2.0 - top_margin;
+        let scroll_txt_bottom = -self.rs.full_size_y / 2.0 + Graphic::SCRTXT_BOTTOM_MARGIN;
         let top_visible_line = self.top_visible_line;
         let max_lines = self.max_lines;
         let crnt_line = self.crnt_line;
@@ -581,11 +586,10 @@ impl Graphic {
             }
             let past_text_set = scroll_texts[top_visible_line + i].clone();
             let answer = past_text_set.0 == TextAttribute::Answer;
-            //let past_text = past_text_set.1.clone() + &past_text_set.2;
             let past_text = past_text_set.2;
             let ltrcnt = past_text.chars().count();
             let center_adjust = ltrcnt as f32 * Graphic::SCRTXT_FONT_WIDTH / 2.0;
-            let dissapiering = get_ratio(i, max_lines);
+            let dissapiering = get_ratio(max_lines - 1 - i, self.max_lines_in_window);
             let alpha = match text_visible {
                 TextVisible::Full => 1,
                 TextVisible::Pale => 2,
@@ -602,8 +606,10 @@ impl Graphic {
                         (Self::CURSOR_GRAY as f32 * dissapiering) as u8 / alpha,
                     ))
                     .x_y(
-                        self.rs.scroll_txt_left + center_adjust - 60.0,
-                        scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32) - 14.0,
+                        self.rs.scroll_txt_left + center_adjust - UNDERLINE_POS_ADJ_X,
+                        scroll_txt_bottom
+                            + Graphic::SCRTXT_FONT_HEIGHT * ((max_lines - 1 - i) as f32)
+                            - UNDERLINE_POS_ADJ_Y,
                     )
                     .w_h(Graphic::SCRTXT_FONT_WIDTH * (ltrcnt as f32), LINE_THICKNESS);
             }
@@ -630,7 +636,8 @@ impl Graphic {
                         self.rs.scroll_txt_left
                             + SPACE2_TXT_LEFT_MARGIN
                             + Graphic::SCRTXT_FONT_WIDTH * (j as f32),
-                        scroll_txt_top - Graphic::SCRTXT_FONT_HEIGHT * (i as f32),
+                        scroll_txt_bottom
+                            + Graphic::SCRTXT_FONT_HEIGHT * ((max_lines - 1 - i) as f32),
                     );
             }
         }
