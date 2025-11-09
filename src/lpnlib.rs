@@ -177,6 +177,7 @@ pub enum PedalPos {
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PedalEvt {
+    pub msr: i16,           // measure number
     pub beat: i16,
     pub front: bool,        // true: front of beat, false: back of beat
     pub position: PedalPos, // pedal position
@@ -395,7 +396,12 @@ pub struct PedalElpsEvt {
     pub position: i16, // damper position
 }
 pub const TYPE_DAMPER: i16 = 1003;
-//-------------------------------------------------------------------
+
+//*******************************************************************
+//          Elapse Message Definition
+//*******************************************************************
+//  ElpsMsg <- Phr <- PhrData <- PhrEvt <- NoteEvt / PedalEvt / ...
+//          <- Cmp <- CmpData <- CmpEvt <- Chord / Vari / Control
 #[derive(Clone, Debug)]
 pub enum ElpsMsg {
     Ctrl(i16),

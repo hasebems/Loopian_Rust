@@ -6,7 +6,7 @@
 use super::txt_common::*;
 use super::txt2seq_ana::*;
 use super::txt2seq_cmps::*;
-//use super::txt2seq_pdl::*;
+use super::txt2seq_pdl::*;
 use super::txt2seq_phr::*;
 use crate::lpnlib::*;
 
@@ -558,26 +558,44 @@ impl DataStock for CompositionDataStock {
 //*******************************************************************
 #[derive(Debug, Default)]
 pub struct PedalDataStock {
-    pub raw: String,
-    _pdl: Vec<PhrEvt>,
+    pub raw: Vec<String>,
+    pdl: Vec<PhrEvt>,
+    do_loop: bool,
+    whole_tick: i32,
 }
 impl DataStock for PedalDataStock {
     fn set_raw(&mut self, input_text: String, _additional_word: Option<&str>) -> bool {
-        self.raw = input_text;
-        println!("PedalDataStock: {}", self.raw);
+        self.raw = complement_pedal(input_text);
+        println!("PedalDataStock: {:?}", self.raw);
         true
     }
     fn set_recombined(
         &mut self,
         _input_mode: Option<InputMode>,
         _bpm: i16,
-        _tick_for_onemsr: i32,
-        _tick_for_beat: i32,
+        tick_for_onemsr: i32,
+        tick_for_beat: i32,
         _resend: Option<bool>,
     ) {
+        let (whole_tick, do_loop, rcmb) =
+            recombine_to_internal_format_pedal(&self.raw, tick_for_onemsr, tick_for_beat);
+        self.pdl = rcmb;
+        self.do_loop = do_loop;
+        self.whole_tick = whole_tick;
+        println!("PedalDataStock recombined: {:?}", self.pdl);
     }
-    fn get_final(&self, _part: i16, _vari: Option<PhraseAs>) -> ElpsMsg {
+    fn get_final(&self, part: i16, _vari: Option<PhraseAs>) -> ElpsMsg {
         println!("PedalDataStock::get_final is called");
-        ElpsMsg::Ctrl(0) // Dummy
+        ElpsMsg::Phr(
+            part,
+            PhrData {
+                whole_tick: self.whole_tick as i16,
+                do_loop: self.do_loop,
+                evts: self.pdl.clone(),
+                ana: Vec::new(),
+                vari: PhraseAs::default(),
+                auftakt: 0,
+            },
+        )
     }
 }
