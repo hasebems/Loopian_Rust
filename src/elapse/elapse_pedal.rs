@@ -7,10 +7,127 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::elapse_note::Damper;
+//use super::elapse_note::Damper;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
+
+//*******************************************************************
+//          Damper Event Struct
+//*******************************************************************
+pub struct Damper {
+    id: ElapseId,
+    priority: u32,
+    position: u8,
+    duration: i32,
+    damper_started: bool,
+    destroy: bool,
+    next_msr: i32,
+    next_tick: i32,
+}
+impl Damper {
+    pub fn new(
+        sid: u32,
+        pid: u32,
+        _estk: &mut ElapseStack,
+        ev: &PedalElpsEvt,
+        msr: i32,
+        tick: i32,
+    ) -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Self {
+            id: ElapseId {
+                pid,
+                sid,
+                elps_type: ElapseType::TpNote,
+            },
+            priority: PRI_NOTE,
+            position: ev.position as u8,
+            duration: ev.dur as i32,
+            damper_started: false,
+            destroy: false,
+            next_msr: msr,
+            next_tick: tick,
+        }))
+    }
+    fn damper_on(&mut self, estk: &mut ElapseStack) {
+        let pos = if self.position > 127 {
+            127
+        } else {
+            self.position
+        };
+        estk.midi_out(0xb0, 0x40, pos);
+        #[cfg(feature = "verbose")]
+        println!("Damper-On: {}", self.position);
+    }
+    fn damper_off(&mut self, estk: &mut ElapseStack) {
+        self.destroy = true;
+        self.next_msr = FULL;
+        // midi damper off
+        estk.midi_out(0xb0, 0x40, 0);
+        #[cfg(feature = "verbose")]
+        println!("Damper-Off");
+    }
+}
+impl Elapse for Damper {
+    /// id を得る
+    fn id(&self) -> ElapseId {
+        self.id
+    }
+    /// priority を得る
+    fn prio(&self) -> u32 {
+        self.priority
+    }
+    /// 次に呼ばれる小節番号、Tick数を返す
+    fn next(&self) -> (i32, i32, bool) {
+        (self.next_msr, self.next_tick, false)
+    }
+    /// User による start/play 時にコールされる
+    fn start(&mut self, _msr: i32) {}
+    /// User による stop 時にコールされる
+    fn stop(&mut self, estk: &mut ElapseStack) {
+        if self.damper_started {
+            self.damper_off(estk);
+        }
+    }
+    /// 再生データを消去
+    fn clear(&mut self, estk: &mut ElapseStack) {
+        if self.damper_started {
+            self.damper_off(estk);
+        }
+        self.destroy = true;
+    }
+    /// 再生 msr/tick に達したらコールされる
+    fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+        if (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick)
+            || (crnt_.msr > self.next_msr)
+        {
+            if !self.damper_started {
+                self.damper_started = true;
+                // midi note on
+                self.damper_on(estk);
+
+                let tk = crnt_.tick_for_onemsr;
+                let mut msrcnt = 0;
+                let mut off_tick = self.next_tick + self.duration;
+                while off_tick >= tk {
+                    off_tick -= tk;
+                    msrcnt += 1;
+                }
+                self.next_msr += msrcnt;
+                self.next_tick = off_tick;
+            } else {
+                self.damper_started = false;
+                self.damper_off(estk);
+            }
+        }
+    }
+    fn rcv_sp(&mut self, msg: ElapseMsg, _msg_data: u8) {
+        let _ = msg;
+    }
+    fn destroy_me(&self) -> bool {
+        self.destroy
+    } // 自クラスが役割を終えた時に True を返す
+}
 
 //*******************************************************************
 //          Pedal Part Struct
@@ -23,9 +140,9 @@ pub struct PedalPart {
     next_tick: i32,
     start_flag: bool,
     position: i16,
-    damper_msg: Vec<PedalEvt>,
+    damper_msg: Vec<PedalEvt>,      // new
+    damper_elps_evt: Vec<PedalElpsEvt>,  // old
 
-    evt: Vec<PedalElpsEvt>,
     play_counter: usize,
     whole_tick: i32,
 }
@@ -45,8 +162,7 @@ impl PedalPart {
             start_flag: false,
             position: 127,
             damper_msg: Vec::new(),
-
-            evt: Vec::new(),
+            damper_elps_evt: Vec::new(),
             play_counter: 0,
             whole_tick: 0,
         }))
@@ -73,8 +189,8 @@ impl PedalPart {
     ) -> i32 {
         let mut next_tick: i32;
         let mut trace: usize = self.play_counter;
-        let evt = self.evt.to_vec();
-        let max_ev = self.evt.len();
+        let evt = self.damper_elps_evt.to_vec();
+        let max_ev = self.damper_elps_evt.len();
         loop {
             if max_ev <= trace {
                 next_tick = END_OF_DATA; // means sequence finished
@@ -102,8 +218,9 @@ impl PedalPart {
         self.play_counter = trace;
         next_tick
     }
+    /// 1小節分の Damper Event を生成する。小節頭でコールされる
+    /// 返り値: (Damper Event List, 次の Tick)
     fn gen_events_in_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) -> i32 {
-        // 小節頭でコールされる
         let (tick_for_onemsr, tick_for_onebeat) = estk.tg().get_beat_tick();
         let beat_num: usize = (tick_for_onemsr / tick_for_onebeat) as usize;
         self.whole_tick = tick_for_onemsr;
@@ -127,7 +244,7 @@ impl PedalPart {
             }
         }
         let tick;
-        (self.evt, tick) = self.gen_real_damper_track(chord_map, tick_for_onebeat, beat_num);
+        (self.damper_elps_evt, tick) = self.gen_damper_track_from_chord(chord_map, tick_for_onebeat, beat_num);
         tick
     }
     /// 各パートのChord情報より、Damper 情報を beat にどんどん足していく
@@ -177,7 +294,8 @@ impl PedalPart {
         }
         chord_map
     }
-    fn gen_real_damper_track(
+    /// Damper Event トラックを、chord map から生成する
+    fn gen_damper_track_from_chord(
         &self,
         chord_map: Vec<PedalPos>,
         tick_for_onebeat: i32,
@@ -218,6 +336,7 @@ impl PedalPart {
         }
         (dmpr_evt, first_tick)
     }
+    /// Pedal Part に PhrData メッセージを受信する
     pub fn rcv_phr_msg(&mut self, msg: PhrData, _crnt_: &CrntMsrTick, _estk_: &mut ElapseStack) {
         let evts = msg.evts;
         let mut damper_flag: bool = false;
@@ -284,7 +403,9 @@ impl Elapse for PedalPart {
     }
     /// 再生データを消去
     fn clear(&mut self, _estk: &mut ElapseStack) {
-        self.evt = Vec::new();
+        self.damper_elps_evt = Vec::new();
+        self.damper_msg = Vec::new();
+        self.play_counter = 0;
         self.next_msr = 0;
         self.next_tick = 0;
     }
@@ -305,9 +426,7 @@ impl Elapse for PedalPart {
         if elapsed_tick >= self.next_tick {
             // Damper Event を再生
             let next_tick = self.output_event(crnt_, estk, elapsed_tick);
-            let (msr, tick) = self.gen_next_msr_tick(crnt_, next_tick);
-            self.next_msr = msr;
-            self.next_tick = tick;
+            (self.next_msr, self.next_tick) = self.gen_next_msr_tick(crnt_, next_tick);
         }
     }
     fn rcv_sp(&mut self, _msg: ElapseMsg, _msg_data: u8) {}
