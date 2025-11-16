@@ -566,6 +566,7 @@ pub struct PedalDataStock {
 impl DataStock for PedalDataStock {
     fn set_raw(&mut self, input_text: String, _additional_word: Option<&str>) -> bool {
         self.raw = complement_pedal(input_text);
+        #[cfg(feature = "verbose")]
         println!("PedalDataStock: {:?}", self.raw);
         true
     }
@@ -582,10 +583,10 @@ impl DataStock for PedalDataStock {
         self.pdl = rcmb;
         self.do_loop = do_loop;
         self.whole_tick = whole_tick;
+        #[cfg(feature = "verbose")]
         println!("PedalDataStock recombined: {:?}", self.pdl);
     }
     fn get_final(&self, part: i16, _vari: Option<PhraseAs>) -> ElpsMsg {
-        println!("PedalDataStock::get_final is called");
         ElpsMsg::Phr(
             part,
             PhrData {

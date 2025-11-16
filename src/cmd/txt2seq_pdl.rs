@@ -66,6 +66,7 @@ fn pedal_in_one_msr(
     msr: i16,
     pedal_on: bool, // 前の小節の最後の状態
 ) -> (Vec<PhrEvt>, bool) {
+    #[cfg(feature = "verbose")]
     println!("Analyzing pedal segment: {}", segment);
     let mut result = Vec::new();
     let mut position_before = if pedal_on {
@@ -143,14 +144,15 @@ fn push_pedal_event(
     beat: i16,
     front: bool,
     position: PedalPos,
-    position_before: PedalPos,
+    _position_before: PedalPos,
 ) {
+    #[cfg(feature = "verbose")]
     println!(
         "Pedal change at msr {}, beat {}{}: {:?} -> {:?}",
         msr,
         beat,
         if front { "(f)" } else { "(r)" },
-        position_before,
+        _position_before,
         position
     );
     result.push(PhrEvt::Damper(PedalEvt {
