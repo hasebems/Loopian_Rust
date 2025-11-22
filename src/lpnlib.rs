@@ -387,15 +387,6 @@ impl CmpData {
         }
     }
 }
-//-------------------------------------------------------------------
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct PedalElpsEvt {
-    pub mtype: i16, // message type
-    pub tick: i16,
-    pub dur: i16,      // duration
-    pub position: i16, // damper position
-}
-pub const TYPE_DAMPER: i16 = 1003;
 
 //*******************************************************************
 //          Elapse Message Definition
@@ -448,6 +439,8 @@ pub const MSG_SET_TURN: i16 = 3;
 pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
 pub const MSG_SET_FLOW_TICK_RESOLUTION: i16 = 5; // Flow の Tick 解像度を設定
 pub const MSG_SET_FLOW_VELOCITY: i16 = 6; // Flow の Velocity を設定
+pub const MSG_SET_FLOW_STATIC_SCALE: i16 = 7; // Flow の Static Scale を設定
+pub const MSG_SET_MIDI_UNPUT_CH: i16 = 8; // Flow の MIDI Input Ch を設定
 //  Set BEAT  : numerator, denomirator
 //  Effect
 pub const MSG_EFCT_DMP: i16 = 1;

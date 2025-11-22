@@ -54,6 +54,7 @@ pub struct MidiRxThread {
     midi_stream_status: u8,
     midi_stream_data1: u8,
     keynote: u8,
+    midi_input_ch: u8,
     #[cfg(feature = "raspi")]
     pub uart: Option<Uart>,
 }
@@ -68,6 +69,7 @@ impl MidiRxThread {
             midi_stream_status: INVALID,
             midi_stream_data1: INVALID,
             keynote: 0,
+            midi_input_ch: 0,
             #[cfg(feature = "raspi")]
             uart: None,
         };
@@ -203,6 +205,9 @@ impl MidiRxThread {
                     } else if m == MSG_CTRL_MIDI_RECONNECT {
                         let _b = self.set_connect();
                     }
+                } else if let ElpsMsg::Set(arr) = n && arr[0] == MSG_SET_MIDI_UNPUT_CH {
+                    println!("Set Flow MIDI Input Ch(MIDI Rx): {}", arr[1]);
+                    self.midi_input_ch = arr[1] as u8;
                 }
             }
             Err(TryRecvError::Disconnected) => return true, // Wrong!
@@ -237,7 +242,7 @@ impl MidiRxThread {
                 // midi ch=12,13 のみ受信 (Loopian::ORBIT/CUBIT)
                 let status = msg[0] & 0xf0;
                 let input_ch = msg[0] & 0x0f;
-                if input_ch != 0x0b && input_ch != 0x0c {
+                if input_ch != 0x0b && input_ch != 0x0c && self.midi_input_ch != input_ch + 1{
                     return;
                 }
                 if status == 0xc0 || status == 0xd0 {

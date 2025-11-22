@@ -575,6 +575,14 @@ impl ElapseStack {
             if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
                 fl.borrow_mut().set_velocity(msg[1]);
             }
+        } else if msg[0] == MSG_SET_FLOW_STATIC_SCALE {
+            println!("Set Flow Static Scale: {}", msg[1]);
+            if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+                fl.borrow_mut().set_static_scale(msg[1]);
+            }
+        } else if msg[0] == MSG_SET_MIDI_UNPUT_CH {
+            println!("Set Flow MIDI Input Ch(Elapse): {}", msg[1]);
+            self.send_msg_to_rx(ElpsMsg::Set([MSG_SET_MIDI_UNPUT_CH, msg[1]]));
         }
     }
     fn efct(&mut self, msg: [i16; 2]) {

@@ -28,7 +28,7 @@ use crate::lpnlib::*;
 //
 
 pub const TICK_RESOLUTION: i32 = 120;
-struct NoteStock(Rc<RefCell<Note>>, u8, u8); // 0:note, 1:real_note, 2:locate
+struct NoteStock(Option<Rc<RefCell<Note>>>, u8, u8); // 0:note, 1:real_note, 2:locate
 
 pub struct Flow {
     id: ElapseId,
@@ -93,6 +93,9 @@ impl Flow {
     pub fn set_velocity(&mut self, vel: i16) {
         self.set_velocity = vel;
     }
+    pub fn set_static_scale(&mut self, scale: i16) {
+        self.translation_tbl = scale;
+    }
     pub fn get_keynote(&self) -> u8 {
         self.keynote
     }
@@ -107,18 +110,17 @@ impl Flow {
         let locate = locate - 18;
         #[cfg(feature = "verbose")]
         println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
+        let vel = if self.set_velocity != 0 {
+            self.set_velocity as u8
+        } else {
+            vel
+        };
         if !self.during_play {
             // ORBIT 自身の Pattern が鳴っていない時
             if self.translation_tbl != NO_TABLE {
-                if status & 0xf0 == 0x90 {
-                    if vel != 0 {
-                        self.note_on_flow(estk_, crnt_, locate, vel, (crnt_.msr, crnt_.tick));
-                    } else {
-                        self.note_off_flow(estk_, locate);
-                    }
-                } else if status & 0xf0 == 0x80 {
-                    self.note_off_flow(estk_, locate);
-                }
+                let mut real_note = self.note_appropriate(locate as i16);
+                real_note = translate_note_com(0, self.translation_tbl, real_note);
+                self.static_note_on_off(estk_, status, real_note, vel, locate);
             } else if (4..92).contains(&locate) {
                 // locate >= 4 && locate < 92
                 // 外部から Chord 情報が来ていない時
@@ -140,6 +142,37 @@ impl Flow {
                 }
             } else if status & 0xf0 == 0x80 {
                 self.note_off_flow(estk_, locate);
+            }
+        }
+    }
+    fn static_note_on_off(
+        &mut self,
+        estk_: &mut ElapseStack,
+        status: u8,
+        real_note: u8,
+        vel: u8,
+        locate: u8,
+    ) {
+        if status & 0xf0 == 0x90 && vel != 0 {
+            for nt in self.note_stock.iter_mut() {
+                if nt.1 == real_note {
+                    nt.2 = locate;
+                    return; // 同じノートが連続している場合は、locate だけ更新
+                }
+            }
+            self.note_stock.push(NoteStock(None, real_note, locate));
+            estk_.midi_out_flow(status, real_note + self.keynote, vel);
+        } else if (status & 0xf0 == 0x90 && vel == 0) || (status & 0xf0 == 0x80) {
+            let mut del_number = None;
+            for (i, nt) in self.note_stock.iter().enumerate() {
+                if nt.2 == locate {
+                    del_number = Some(i);
+                    break;
+                }
+            }
+            if let Some(d) = del_number {
+                self.note_stock.remove(d);
+                estk_.midi_out_flow(status, real_note + self.keynote, vel);
             }
         }
     }
@@ -173,17 +206,12 @@ impl Flow {
             self.note_stock[last - 1].2 = locate;
             return; // 同じノートが連続している場合は、locate だけ更新
         }
-        let vel = if self.set_velocity != 0 {
-            self.set_velocity
-        } else {
-            vel as i16
-        };
         let ev = NoteEvt {
             tick: crnt_.tick as i16,
             dur: 0, // 必要ない
             note: real_note,
             floating: false,
-            vel,
+            vel: vel as i16,
             trns: TrnsType::NoTrns,
             artic: 100,
         };
@@ -198,19 +226,24 @@ impl Flow {
             ),
         );
         self.note_stock
-            .push(NoteStock(Rc::clone(&nt), real_note, locate));
+            .push(NoteStock(Some(Rc::clone(&nt)), real_note, locate));
         estk.add_elapse(nt);
     }
     fn note_off_flow(&mut self, estk: &mut ElapseStack, locate: u8) {
         let mut del_number = None;
         for (i, nt) in self.note_stock.iter().enumerate() {
-            if nt.2 == locate && !nt.0.borrow().destroy_me() {
+            if let Some(nte) = &nt.0
+                && nt.2 == locate
+                && !nte.borrow().destroy_me()
+            {
                 del_number = Some(i);
                 break;
             }
         }
         if let Some(d) = del_number {
-            self.note_stock[d].0.borrow_mut().clear(estk);
+            if let Some(nte) = &self.note_stock[d].0 {
+                nte.borrow_mut().clear(estk);
+            }
             self.note_stock.remove(d);
         }
     }
@@ -218,7 +251,9 @@ impl Flow {
         loop {
             let mut del_number = None;
             for (i, nt) in self.note_stock.iter().enumerate() {
-                if nt.0.borrow().destroy_me() {
+                if let Some(nte) = &nt.0
+                    && nte.borrow().destroy_me()
+                {
                     del_number = Some(i);
                     break;
                 }
@@ -236,16 +271,7 @@ impl Flow {
         self.keynote = keynote;
     }
     fn detect_real_note(&mut self, estk: &mut ElapseStack, crnt_: &CrntMsrTick, locate: i16) -> u8 {
-        let mut temp_note = (locate * 12) / 16 + 36;
-        //if self.id.pid / 2 == 0 {
-        //    temp_note += 24
-        //} else {
-        //    temp_note += 36;
-        //}
-        if temp_note >= 128 {
-            temp_note = 127;
-        }
-        let mut real_note: u8 = temp_note as u8;
+        let mut real_note = self.note_appropriate(locate);
         if self.during_play {
             if let Some(pt) = estk.part(self.id.pid) {
                 let mut pt_borrowed = pt.borrow_mut();
@@ -255,14 +281,19 @@ impl Flow {
                     return real_note;
                 }
                 let root: i16 = get_note_from_root(rt);
-                real_note = translate_note_com(root, ctbl, temp_note as u8);
+                println!(">>>Real Note: {}", real_note);
+                real_note = translate_note_com(root, ctbl, real_note);
             }
         } else {
             let root: i16 = get_note_from_root(self.root);
-            real_note = translate_note_com(root, self.translation_tbl, temp_note as u8);
+            real_note = translate_note_com(root, self.translation_tbl, real_note);
         }
 
         real_note.clamp(MIN_NOTE_NUMBER, MAX_NOTE_NUMBER)
+    }
+    fn note_appropriate(&self, locate: i16) -> u8 {
+        let temp_note = (locate * 12) / 16 + 36;
+        temp_note.clamp(MIN_NOTE_NUMBER as i16, MAX_NOTE_NUMBER as i16) as u8
     }
 }
 

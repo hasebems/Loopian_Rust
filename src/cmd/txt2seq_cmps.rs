@@ -404,7 +404,7 @@ fn divide_chord_and_dur(mut chord: String) -> (String, i32) {
 
     (chord, dur)
 }
-fn convert_chord_to_num(mut chord: String) -> (i16, i16) {
+pub fn convert_chord_to_num(mut chord: String) -> (i16, i16) {
     let length = chord.len();
     let last_ltr = chord.chars().last().unwrap_or(' ');
     let mut take_upper = false;

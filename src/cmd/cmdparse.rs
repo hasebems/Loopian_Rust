@@ -8,6 +8,7 @@ use std::sync::mpsc;
 use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
+use super::txt2seq_cmps::*;
 use crate::graphic::generative_view::{CmndRtn, GRAPHIC_PATTERN_NAME, GraphicMsg};
 use crate::lpnlib::*;
 
@@ -536,6 +537,12 @@ impl LoopianCmd {
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
             "Flow Velocity Changed!".to_string()
+        } else if len >= 6 && &input_text[0..6] == "static" {
+            let chord_txt = extract_texts_from_parentheses(input_text);
+            let (_root, table) = convert_chord_to_num(chord_txt.to_string());
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_STATIC_SCALE, table]));
+            "Flow Static Scale Changed!".to_string()
         } else {
             "what?".to_string()
         }

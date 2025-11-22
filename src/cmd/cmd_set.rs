@@ -90,6 +90,17 @@ impl LoopianCmd {
                 } else {
                     "what?".to_string()
                 }
+            } else if cmd == "midi_input_ch" {
+                if let Ok(ch) = prm.parse::<u8>() {
+                    if (1..=16).contains(&ch) {
+                        self.sndr.send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_UNPUT_CH, ch as i16]));
+                        "MIDI Input Ch has changed!".to_string()
+                    } else {
+                        "Channel number is wrong.".to_string()
+                    }
+                } else {
+                    "Channel number is wrong.".to_string()
+                }
             } else {
                 "what?".to_string()
             }
