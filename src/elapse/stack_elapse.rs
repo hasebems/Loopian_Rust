@@ -48,6 +48,7 @@ pub struct ElapseStack {
     bpm_stock: i16,
     beat_stock: Meter,
     fine_stock: bool,
+    current_key: u8,
 
     during_play: bool,
     display_time: Instant,
@@ -115,6 +116,7 @@ impl ElapseStack {
             bpm_stock: DEFAULT_BPM,
             beat_stock: Meter(4, 4),
             fine_stock: false,
+            current_key: 0,
             during_play: false,
             display_time: Instant::now(),
             tg: TickGen::new(RitType::Sigmoid),
@@ -551,6 +553,7 @@ impl ElapseStack {
             self.bpm_stock = msg[1];
             self.tg.change_bpm(msg[1])
         } else if msg[0] == MSG_SET_KEY {
+            self.current_key = msg[1] as u8;
             self.part_vec
                 .iter()
                 .for_each(|x| x.borrow_mut().change_key(msg[1] as u8));
