@@ -58,7 +58,7 @@ pub fn recombine_to_internal_format_pedal(
         result.extend(pdl_evt);
         pedal_on = pdl;
     }
-    (raw_vec.len() as i32, do_loop, result)
+    (raw_vec.len() as i32 * tick_for_onemsr, do_loop, result)
 }
 fn pedal_in_one_msr(
     segment: &str,

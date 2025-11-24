@@ -23,6 +23,7 @@ pub enum ElapseType {
     TpPhraseLoop,
     TpClusterPattern,
     TpBrokenPattern,
+    TpPedalLoop,
     TpNote,
     TpFlow,
 }
