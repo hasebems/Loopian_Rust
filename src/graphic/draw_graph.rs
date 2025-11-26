@@ -105,8 +105,11 @@ impl Graphic {
     const TOP_MARGIN: f32 = 40.0;
     const TOP_MARGIN_WITH_TITLE: f32 = 160.0;
     // color
-    const ALMOST_WHITE: u8 = 230;
     const CURSOR_GRAY: u8 = 200;
+    const ALMOST_WHITE: u8 = 230;
+    const ALMOST_BLACK: u8 = 60;
+    const WHITE_BACK: u8 = 16;
+    const BLACK_BACK: u8 = 240;
 
     pub fn new(app: &App) -> Graphic {
         // フォントをロード（初期化時に一度だけ）
@@ -155,6 +158,12 @@ impl Graphic {
     }
     pub fn set_rs(&mut self, rs: Resize) {
         self.rs = rs;
+    }
+    pub fn bgcolor(&self) -> Srgb<u8> {
+        match self.gmode {
+            GraphMode::Dark => srgb::<u8>(Self::WHITE_BACK, Self::WHITE_BACK, Self::WHITE_BACK),
+            GraphMode::Light => srgb::<u8>(Self::BLACK_BACK, Self::BLACK_BACK, Self::BLACK_BACK),
+        }
     }
 
     //*******************************************************************
@@ -240,12 +249,6 @@ impl Graphic {
                     }
                 }
             }
-        }
-    }
-    pub fn get_bgcolor(&self) -> Srgb<u8> {
-        match self.gmode {
-            GraphMode::Dark => srgb::<u8>(16, 16, 16),
-            GraphMode::Light => srgb::<u8>(240, 240, 240),
         }
     }
     fn update_scroll_text(&mut self, itxt: &InputText) {
@@ -532,7 +535,7 @@ impl Graphic {
         }
 
         // テキストを描画（最下行を基準に上方向へ積む）
-        let txt_color = self.get_text_color(false);
+        let txt_color = Srgb::new(Self::ALMOST_WHITE, Self::ALMOST_WHITE, Self::ALMOST_WHITE);
         for (l, displayed_txt) in input_lines.iter().enumerate() {
             let displayed_txt = displayed_txt.as_str();
             // 下からのオフセット（最下行が offset = 0）
@@ -557,14 +560,18 @@ impl Graphic {
     }
     /// Scroll Text の描画
     fn scroll_text(&self, draw: Draw, itxt: &InputText, text_visible: TextVisible) {
-        fn get_ratio(cnt: usize, max_lines_in_window: usize) -> f32 {
+        fn get_ratio(cnt: usize, max_lines_in_window: usize, gmode: GraphMode) -> f32 {
             let position = (max_lines_in_window - cnt) as f32;
             let fbase = max_lines_in_window as f32;
             if fbase == 0.0 {
                 1.0
             } else {
                 // 薄くなる比率を計算
-                (fbase + (position * 2.0)) / (fbase * 3.0)
+                if gmode == GraphMode::Light {
+                    (fbase * 4.5) / (fbase + (position * 3.5))
+                } else {
+                    (fbase + (position * 2.0)) / (fbase * 3.0)
+                }
             }
         }
         const LINE_THICKNESS: f32 = 2.0;
@@ -589,7 +596,7 @@ impl Graphic {
             let past_text = past_text_set.2;
             let ltrcnt = past_text.chars().count();
             let center_adjust = ltrcnt as f32 * Graphic::SCRTXT_FONT_WIDTH / 2.0;
-            let dissapiering = get_ratio(max_lines - 1 - i, self.max_lines_in_window);
+            let dissapiering = get_ratio(max_lines - 1 - i, self.max_lines_in_window, self.gmode);
             let alpha = match text_visible {
                 TextVisible::Full => 1,
                 TextVisible::Pale => 2,
@@ -644,10 +651,14 @@ impl Graphic {
     }
     fn get_text_color(&self, magenta: bool) -> Srgb<u8> {
         if magenta {
-            //Srgb::new(Self::ALMOST_WHITE, 0, Self::ALMOST_WHITE)
-            Srgb::new(255, 102, 204)
+            if self.gmode == GraphMode::Dark {
+                //Srgb::new(Self::ALMOST_WHITE, 0, Self::ALMOST_WHITE)
+                Srgb::new(255, 102, 204)
+            } else {
+                Srgb::new(200, 51, 102)
+            }
         } else if self.gmode == GraphMode::Light {
-            Srgb::new(GRAY.red, GRAY.green, GRAY.blue)
+            Srgb::new(Self::ALMOST_BLACK, Self::ALMOST_BLACK, Self::ALMOST_BLACK)
         } else {
             Srgb::new(Self::ALMOST_WHITE, Self::ALMOST_WHITE, Self::ALMOST_WHITE)
         }
