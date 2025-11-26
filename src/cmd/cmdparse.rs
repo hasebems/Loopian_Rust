@@ -341,7 +341,11 @@ impl LoopianCmd {
     fn letter_h(&mut self, input_text: &str) -> String {
         let len = input_text.chars().count();
         if len == 5 && &input_text[0..5] == "hello" {
-            "Hello,World!".to_string()
+            "Hi, hello!".to_string()
+        } else if len == 4 && &input_text[0..4] == "help" {
+            "How can I assist you?".to_string()
+        } else if len == 10 && &input_text[0..10] == "help.graph" {
+            "ripple/voice/lissa/beatlissa()/sinewave/rain/fish/jumping/wavestick".to_string()
         } else {
             "what?".to_string()
         }
@@ -606,24 +610,22 @@ impl LoopianCmd {
         let org_part = self.input_part;
         self.recursive = true;
         self.input_part = part_num;
-        if let Some(ans) = self.put_and_get_responce(input_text) {
+        if let Some(ans) = self.dup_bracket_brace(input_text) {
             rtn_str = ans.0;
         }
         self.input_part = org_part;
         self.recursive = false;
-
-        /*if first_letter == "[" {
-            if self.put_phrase(part_num, 0, rest_text) {
-                rtn_str = "Set Phrase!".to_string();
-            }
-        }
-        else if first_letter == "{" {
-            if self.dtstk.set_raw_composition(part_num, rest_text.to_string()) {
-                self.send_composition_to_elapse(part_num);
-                rtn_str = "Set Composition!".to_string();
-            }
-        }*/
         rtn_str
+    }
+    fn dup_bracket_brace(&mut self, input_text: &str) -> Option<CmndRtn> {
+        let first_letter = &input_text[0..1];
+        if first_letter == "[" {
+            Some(CmndRtn(self.letter_bracket(input_text), GraphicMsg::NoMsg))
+        } else if first_letter == "{" {
+            Some(CmndRtn(self.letter_brace(input_text), GraphicMsg::NoMsg))
+        } else {
+            None
+        }
     }
     fn put_phrase(&mut self, part_num: usize, vari: PhraseAs, input_text: &str) -> Option<bool> {
         if let Some(additional) =
