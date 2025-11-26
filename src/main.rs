@@ -160,7 +160,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     let tm = app.time;
 
     // 画面全体の背景色
-    draw.background().color(model.graph.get_bgcolor());
+    draw.background().color(model.graph.bgcolor());
 
     // as you like
 

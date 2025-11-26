@@ -87,7 +87,7 @@ fn pedal_in_one_msr(
                 push_pedal_event(
                     &mut result,
                     msr,
-                    beat,
+                    if beat > 0 { beat - 1 } else { 0 },
                     false,
                     PedalPos::Off,
                     position_before,
@@ -100,7 +100,7 @@ fn pedal_in_one_msr(
                 push_pedal_event(
                     &mut result,
                     msr,
-                    beat,
+                    if beat > 0 { beat - 1 } else { 0 },
                     false,
                     PedalPos::Half,
                     position_before,
