@@ -38,7 +38,7 @@ pub fn recombine_to_internal_format_pedal(
     tick_for_beat: i32,
 ) -> (i32, bool, Vec<PhrEvt>) {
     let max_beat = (tick_for_onemsr / tick_for_beat) as i16;
-    let mut pedal_on = false;
+    let mut pedal_1st = PedalPos::Off;
     let mut result = Vec::new();
     //do_loop
     let mut do_loop = true;
@@ -54,9 +54,9 @@ pub fn recombine_to_internal_format_pedal(
         if trimmed.is_empty() {
             continue;
         }
-        let (pdl_evt, pdl) = pedal_in_one_msr(trimmed, max_beat, i as i16, pedal_on);
+        let (pdl_evt, pedal_last) = pedal_in_one_msr(trimmed, max_beat, i as i16, pedal_1st);
         result.extend(pdl_evt);
-        pedal_on = pdl;
+        pedal_1st = pedal_last;
     }
     (raw_vec.len() as i32 * tick_for_onemsr, do_loop, result)
 }
@@ -64,16 +64,12 @@ fn pedal_in_one_msr(
     segment: &str,
     max_beat: i16,
     msr: i16,
-    pedal_on: bool, // 前の小節の最後の状態
-) -> (Vec<PhrEvt>, bool) {
+    pedal_position: PedalPos, // 前の小節の最後の状態
+) -> (Vec<PhrEvt>, PedalPos) {
     #[cfg(feature = "verbose")]
     println!("Analyzing pedal segment: {}", segment);
     let mut result = Vec::new();
-    let mut position_before = if pedal_on {
-        PedalPos::Full
-    } else {
-        PedalPos::Off
-    };
+    let mut position_before = pedal_position;
     let mut beat = 0;
 
     // segment を解析して PhrEvt に変換し、result に追加する処理を実装
@@ -122,7 +118,7 @@ fn pedal_in_one_msr(
 
     // 小節の最後の処理
     let pedal_on_return = if segment.ends_with('!') {
-        position_before != PedalPos::Off
+        position_before
     } else {
         if position_before != PedalPos::Off {
             push_pedal_event(
@@ -134,7 +130,7 @@ fn pedal_in_one_msr(
                 position_before,
             );
         }
-        false
+        PedalPos::Off
     };
     (result, pedal_on_return)
 }
