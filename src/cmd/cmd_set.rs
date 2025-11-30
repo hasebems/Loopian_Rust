@@ -9,7 +9,7 @@ use crate::lpnlib::*;
 
 impl LoopianCmd {
     pub fn parse_set_command(&mut self, input_text: &str) -> String {
-        if let Some((cmd, prm)) = separate_cmnd_and_str(&input_text[4..]) {
+        if let Some((cmd, prm)) = separate_cmnd_and_str(input_text) {
             if cmd == "key" {
                 if self.change_key(prm) {
                     "Key has changed!".to_string()
@@ -80,7 +80,7 @@ impl LoopianCmd {
                 }
             } else if cmd == "flowreso" {
                 if self.change_reso(prm) {
-                    "Path has changed!".to_string()
+                    "Flow tick resolution has changed!".to_string()
                 } else {
                     "what?".to_string()
                 }
@@ -93,7 +93,7 @@ impl LoopianCmd {
             } else if cmd == "midi_input_ch" {
                 if let Ok(ch) = prm.parse::<u8>() {
                     if (1..=16).contains(&ch) {
-                        self.sndr.send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_UNPUT_CH, ch as i16]));
+                        self.sndr.send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, ch as i16]));
                         "MIDI Input Ch has changed!".to_string()
                     } else {
                         "Channel number is wrong.".to_string()
@@ -111,7 +111,6 @@ impl LoopianCmd {
     //*************************************************************************
     pub fn change_key(&mut self, key_text: &str) -> bool {
         let mut key = END_OF_DATA;
-        let length = key_text.len();
         match key_text.chars().nth(0) {
             Some('C') => key = 0,
             Some('D') => key = 2,
@@ -125,26 +124,24 @@ impl LoopianCmd {
         }
         if key != END_OF_DATA {
             let mut oct = 0;
-            if length >= 2 {
-                let mut num_txt = "".to_string();
-                if let Some(ltr2) = key_text.chars().nth(1) {
-                    match ltr2 {
-                        '#' => {
-                            key += 1;
-                            num_txt = key_text[2..].to_string();
-                        }
-                        'b' => {
-                            key -= 1;
-                            num_txt = key_text[2..].to_string();
-                        }
-                        _ => {
-                            num_txt = key_text[1..].to_string();
-                        }
+            let mut num_txt = "".to_string();
+            if key_text.len() >= 2 && let Some(ltr2) = key_text.chars().nth(1) {
+                num_txt = match ltr2 {
+                    '#' => {
+                        key += 1;
+                        if key_text.len() >= 3 { key_text[2..].to_string() } else { String::new() }
                     }
-                }
-                if let Ok(oct_num) = num_txt.parse::<i32>() {
-                    oct = oct_num;
-                }
+                    'b' => {
+                        key -= 1;
+                        if key_text.len() >= 3 { key_text[2..].to_string() } else { String::new() }
+                    }
+                    _ => {
+                        key_text[1..].to_string()
+                    }
+                };
+            }
+            if let Ok(oct_num) = num_txt.parse::<i32>() {
+                oct = oct_num;
             }
             if key < 0 {
                 key += 12;
@@ -186,10 +183,10 @@ impl LoopianCmd {
         self.sndr
             .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
     }
-    pub fn change_meter(&mut self, numerator: i16, denomirator: i16) {
-        self.dtstk.change_beat(numerator, denomirator);
+    pub fn change_meter(&mut self, numerator: i16, denominator: i16) {
+        self.dtstk.change_beat(numerator, denominator);
         self.sndr
-            .send_msg_to_elapse(ElpsMsg::SetMeter([numerator, denomirator]));
+            .send_msg_to_elapse(ElpsMsg::SetMeter([numerator, denominator]));
         self.sndr
             .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
     }
@@ -231,6 +228,7 @@ impl LoopianCmd {
     }
     fn change_flow_velocity(&mut self, vel_txt: &str) -> bool {
         if let Ok(vel) = vel_txt.parse::<i16>() {
+            if !(1..=127).contains(&vel) { return false; }
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
             true

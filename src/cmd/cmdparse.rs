@@ -311,7 +311,7 @@ impl LoopianCmd {
             }
         } else if len >= 4 && &input_text[0..4] == "set." {
             // set
-            self.parse_set_command(input_text)
+            self.parse_set_command(&input_text[4..])
         } else if len >= 4 && &input_text[0..4] == "sync" {
             if len == 4 {
                 self.sndr

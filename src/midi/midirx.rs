@@ -205,7 +205,7 @@ impl MidiRxThread {
                     } else if m == MSG_CTRL_MIDI_RECONNECT {
                         let _b = self.set_connect();
                     }
-                } else if let ElpsMsg::Set(arr) = n && arr[0] == MSG_SET_MIDI_UNPUT_CH {
+                } else if let ElpsMsg::Set(arr) = n && arr[0] == MSG_SET_MIDI_INPUT_CH {
                     println!("Set Flow MIDI Input Ch(MIDI Rx): {}", arr[1]);
                     self.midi_input_ch = arr[1] as u8;
                 }
