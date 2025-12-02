@@ -46,6 +46,7 @@
 - [その他の拡張仕様](#その他の拡張仕様)
     - [再生に関する仕様](#再生に関する仕様)
     - [set command のその他の仕様](#set-command-のその他の仕様)
+    - [Damper Pedal のより細かな制御](#damper-pedal-のより細かな制御)
 - [Graphic](#graphic)
 - [setting.tomlの記述](#settingtomlの記述)
 - [Loopian::ORBIT/QUBIT での演奏](#loopianorbitqubit-での演奏)
@@ -101,13 +102,10 @@ cd /path/to/loopian
 
 ### コマンド入力
 
-<img src="./image/v064_exp.png" width="70%">
+<img src="./image/v064.png" width="70%">
 
 - アプリを立ち上げると、画面下の Input Window に下記のような入力用プロンプトが表示される
-    - `NNN: L1>` : 入力用プロンプト
-- NNN: は入力したコマンド履歴の現在の位置を表している
-    - 999:を超えると表示は000:になるが、以前の履歴も覚えている
-- L1> は Left 1 の入力状態であることを示す
+    - `L1>` : 入力用プロンプト。Left 1 の入力状態であることを示す
 - このプロンプトの後のカーソルの位置に、コマンドやフレーズを入力し、Return で確定する
 - 左右矢印キーで、入力中のカーソルを移動できる
 - 上下矢印キーで、過去入力の履歴呼び出しが可能
@@ -122,7 +120,7 @@ cd /path/to/loopian
     - 上下矢印キーで、Scroll Text 上の任意の一行を呼び出すことができる
     - 左右キーで行頭より右にカーソルを移動すると、上記の呼び出しは動作しない
 - 画面上部の Status Indicator には、以下の情報が表示される:
-    - `>M:B:TTT`：再生中を示し、小節数(M)、拍(B)、拍内の tick(TTT)を表示
+    - `>M:B:TTT`：再生情報を示し、小節数(M)、拍(B)、拍内の tick(TTT)を表示
     - `bpm:BBB`：現在のテンポを表示
     - `meter:N/D`：現在の拍子を表示
     - `key:N`：現在の調を表示
@@ -572,8 +570,24 @@ cd /path/to/loopian
     - `common` は、一般的なMIDI音源向けで、note off は note on の数だけ送られる
 - `set.turnnote(5)` : para 指定時、変換後の音程を折り返す位置(0-11, default=5)
 - `set.path(name)` : load の下にある読み込みたいディレクトリ名を指定
-- `set.flowreso(reso)` : 
+- `set.flowreso(reso)` : FLOWパートの tick の分解能を音価で表現
 - `set.flowvel(vel)` : FLOW.dyn(xx) と機能は同じだが、こちらは velocity 値を直接指定する
+- `set.midi_input_ch(ch)` : FLOW の MIDI Input Ch を 12/13ch 以外の ch でも使えるようにする 
+
+### Damper Pedal のより細かな制御
+
+  - `DAMPER.[]` `D.[]` で Damper Pedal 制御を行うことができる
+  - `[]` 内に以下の記号でペダルの状態を記述する。また小節の区切りは `/` である
+    - `_`:踏む
+    - `-`:ハーフ
+    - `*`:離す
+  - `[____/-*-*]`: 小節内には拍数と同じ数の記号を書く
+    - `[__/_*/*____]` 拍数に足りない時は最後の記号が続き、余分にある場合は無視する
+  - `[_/*/_]` 小節線の間に一つしか記号がない場合、1小節間その状態が継続する
+  - 拍間の区切りに `,` があるとき瞬間的に離す。 `;` は、拍間で瞬間的にハーフにする
+  - `!/`: 小節線を跨いで、ペダルを踏みっぱなしにするとき、`/` の前に `!` をつける
+  - Composition にて `X``O` 指定があっても、ペダル制御があればそちらを優先する
+  - 優先順位は `DAMPER.[]` > `.dmp(on/off)` > `{X/O}`
 
 ## Graphic
 
@@ -598,6 +612,7 @@ cd /path/to/loopian
 
 
 ## setting.tomlの記述
+
 - [window_size] では、アプリを立ち上げた時のデフォルトのウィンドウサイズを設定できる
 - [midi] では、Loopian のMIDI環境を設定できる
     - `midi_out =` 以降に、Loopianから出力されるMIDIで発音する音源のdevice名を記載する
@@ -616,6 +631,7 @@ cd /path/to/loopian
     - Phrase は入力できない
 - `FLOW.dyn(mp)` : velocity 値をdyn()と同じ指定方法で変更する
     - `FLOW.dyn()` : 引数に何も書かないと、入力 velocity と同じになる(default)
+- `FLOW.static(...)` : 再生中でないときでも、引数で和音を指定できる
 - FLOWパートで再生されている Composition は、USB MIDI 経由で外部出力され、入力側は UART MIDI で受信する。
     - Composition は、AAh-0rh-cch の形式で送信される。
         - AAh : Poly After Touch を MIDI Ch.11 に送信

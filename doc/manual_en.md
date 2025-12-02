@@ -47,6 +47,7 @@
 - [Addtional Extended Specifications](#addtional-extended-specifications)
     - [Playback Control Specifications](#playback-control-specifications)
     - [Addtional Set Command Specifications](#addtional-set-command-specifications)
+    - [More Detailed Control of Damper Pedal](#more-detailed-control-of-damper-pedal)
 - [Graphic](#graphic)
 - [setting.toml Description](#settingtoml-description)
 - [Performance with Loopian::ORBIT/QUBIT](#performance-with-loopianorbitqubit)
@@ -99,12 +100,10 @@ This document explains all features of Loopian.
 
 ### Command Input
 
-<img src="./image/v064_exp.png" width="70%">
+<img src="./image/v064.png" width="70%">
 
 - When the application is launched, an input prompt like below appears in the Input Window at the bottom of the screen:
-    - `NNN: L1>` : Input prompt
-- NNN: Indicates the current position in the command history. When it exceeds 999, the display resets to 000, but previous history is retained.
-- L1>: Indicates that the input state is Left 1.
+    - `L1>` : Input prompt. It indicates that the input state is Left 1.
 - Enter commands or phrases at the cursor position after the prompt and press Return to confirm.
 - Use the left/right arrow keys to move the cursor during input.
 - Use the up/down arrow keys to recall previous inputs. (To prevent accidental operation, history recall is only available when the cursor is at the far left.)
@@ -117,7 +116,7 @@ This document explains all features of Loopian.
     - You can recall any line in the Scroll Text using the up/down arrow keys.
     - If you move the cursor to the right of the line head with the left/right keys, the recall operation will not work.
 - The Status Indicator at the top of the screen displays the following information:
-    - `>M:B:TTT`: Indicates that playback is in progress, showing the measure number (M), beat (B), and the tick (TTT) within the beat.
+    - `>M:B:TTT`: Indicates playback imformation, showing the measure number (M), beat (B), and the tick (TTT) within the beat.
     - `bpm:BBB`: Displays the current tempo.
     - `meter:N/D`: Displays the current time signature.
     - `key:N`: Displays the current key.
@@ -537,6 +536,21 @@ This document explains all features of Loopian.
 - `set.turnnote(5)`: Position to fold converted pitch in para specification (0-11, default=5)
 - `set.path(name)`: Specify directory name under load to read from
 
+### More Detailed Control of Damper Pedal
+
+- `DAMPER.[]` `D.[]` can control the Damper Pedal.
+- Inside `[]`, describe the pedal state using the symbols below. The measure separator is `/`.
+    - `_`: press (pedal down)
+    - `-`: half (half‑pedal)
+    - `*`: release (pedal up)
+- `[____/-*-*]`: Within a bar, write as many symbols as the number of beats.
+    - `[__/_*/*____]`: If fewer than the number of beats, the last symbol continues; if there are extra symbols, they are ignored.
+- `[_/*/_]`: If there is only one symbol between barlines, that state continues for one bar.
+- A `,` between beats causes a momentary release. `;` makes a momentary half‑pedal between beats.
+- `!/`: To keep the pedal depressed across a barline, put `!` before `/`.
+- Even if `X``O` are specified in Composition, explicit pedal control takes precedence.
+- Priority: `DAMPER.[]` > `.dmp(on/off)` > `{X/O}`
+
 ## Graphic
 
 - `graph.light`: Change to white-based screen
@@ -559,6 +573,7 @@ This document explains all features of Loopian.
     - 4: Only Graphic Pattern, Scroll Text and Input Window hidden. Graphic in front layer.
 
 ## setting.toml Description
+
 - [window_size] sets default window size when launching application
 - [midi] sets Loopian's MIDI environment
     - After `midi_out =`, write device name of sound source to play MIDI output from Loopian
@@ -576,6 +591,7 @@ This document explains all features of Loopian.
     - Cannot input Phrase.
 - `FLOW.dyn(mp)`: Change the velocity value using the same specification method as dyn().
     - `FLOW.dyn()`: When no argument is provided, it uses the input velocity (default).
+- `FLOW.static(...)`: Even when not playing, you can specify a chord via the arguments.
 - Composition playing in FLOW part is output externally via USB MIDI, and input side receives via UART MIDI
     - Composition is transmitted in AAh-0rh-cch format
         - AAh: Send Poly After Touch to MIDI Ch.11
