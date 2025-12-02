@@ -130,13 +130,17 @@ pub struct PedalLoop {
 }
 impl PedalLoop {
     pub fn new(sid: u32, pid: u32, msg: &PhrData) -> Self {
-        let damper_msg = msg.evts.iter().filter_map(|e| {
-            if let PhrEvt::Damper(p) = e {
-                Some(p.clone())
-            } else {
-                None
-            }
-        }).collect();
+        let damper_msg = msg
+            .evts
+            .iter()
+            .filter_map(|e| {
+                if let PhrEvt::Damper(p) = e {
+                    Some(p.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
         Self {
             id: ElapseId {
                 pid,
@@ -201,9 +205,9 @@ impl PedalLoop {
         let evt = &self.damper_msg[self.play_counter];
         let val = Self::convert_pos_to_value(evt.position);
         let dmpr: Rc<RefCell<dyn Elapse>> = Damper::new(
-            self.play_counter as u32,            //  msr&read pointer
-            self.id.sid, //  pedal_loop.sid -> damper.pid
-            val,    //&evt[trace],
+            self.play_counter as u32, //  msr&read pointer
+            self.id.sid,              //  pedal_loop.sid -> damper.pid
+            val,                      //&evt[trace],
             self.next_msr,
             self.real_tick(evt) as i32,
         );
@@ -342,6 +346,7 @@ pub struct PedalPart {
     elapsed_tick: i32,
     loop_whole_tick: i32,
     do_loop: bool,
+    sync: bool,
 
     // for super's member
     next_msr: i32,  //   次に呼ばれる小節番号が保持される
@@ -365,6 +370,7 @@ impl PedalPart {
             elapsed_tick: 0,
             loop_whole_tick: 0,
             do_loop: false,
+            sync: false,
 
             // for super's member
             next_msr: 0,  //   次に呼ばれる小節番号が保持される
@@ -523,9 +529,13 @@ impl PedalPart {
         self.loop_whole_tick = msg.whole_tick as i32;
         self.do_loop = msg.do_loop;
         if self.pedal_msg.is_none() {
-            self.elapsed_tick = 0;  // 次の小節から再生
+            self.elapsed_tick = 0; // 次の小節から再生
         }
         self.elapsed_tick = 0;
+    }
+    /// sync command 発行時にコールされる
+    pub fn set_sync(&mut self) {
+        self.sync = true;
     }
 }
 impl Elapse for PedalPart {
@@ -565,7 +575,7 @@ impl Elapse for PedalPart {
             if self.loop_whole_tick != 0 {
                 self.elapsed_tick += crnt_.tick_for_onemsr;
             }
-            if self.elapsed_tick >= self.loop_whole_tick && crnt_.msr >= 1 {
+            if self.elapsed_tick >= self.loop_whole_tick && crnt_.msr >= 1 || self.sync {
                 // Loop 開始
                 let pmsg_clone = pmsg.clone();
                 self.begin_new_loop(crnt_, estk, &pmsg_clone);
@@ -574,6 +584,7 @@ impl Elapse for PedalPart {
                 } else {
                     self.pedal_msg = None; // 1回限りの再生
                 }
+                self.sync = false;
             }
         }
         // 次の小節の先頭をセット

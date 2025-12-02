@@ -55,7 +55,7 @@ pub struct ElapseStack {
     tg: TickGen,
     flac: u64,
     part_vec: Vec<Rc<RefCell<Part>>>, // Part Instance が繋がれた Vec
-    pedal_part: Rc<RefCell<PedalPart>>,
+    pedal_part: Vec<Rc<RefCell<PedalPart>>>,
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
     limit_for_deb: i32,
@@ -86,6 +86,7 @@ impl ElapseStack {
             println!("{}", err);
         }
         let mut part_vec = Vec::new();
+        let mut pedal_part = Vec::new();
         let mut elapse_vec = Vec::new();
 
         // Keyboard Part
@@ -102,8 +103,11 @@ impl ElapseStack {
         part_vec.push(Rc::clone(&pt));
         elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
         // Pedal Part
-        let pedal_part = PedalPart::new(DAMPER_PART as u32);
-        elapse_vec.push(Rc::clone(&pedal_part) as Rc<RefCell<dyn Elapse>>);
+        for i in DAMPER_PART..=SHIFT_PART {
+            let ppt = PedalPart::new(i as u32);
+            pedal_part.push(Rc::clone(&ppt));
+            elapse_vec.push(ppt as Rc<RefCell<dyn Elapse>>);
+        }
 
         let (rx_hndr, tx_ctrl) = gen_midirx_thread();
         Self {
@@ -121,7 +125,7 @@ impl ElapseStack {
             display_time: Instant::now(),
             tg: TickGen::new(RitType::Sigmoid),
             flac: 0,
-            part_vec: part_vec.clone(),
+            part_vec,
             pedal_part,
             elapse_vec,
             key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
@@ -443,7 +447,9 @@ impl ElapseStack {
         // すべての Part の開始beatを調べる
         let mut first_beat = FULL;
         self.part_vec.iter_mut().for_each(|x| {
-            if let Some(auf) = x.borrow().get_start_beat() && auf < first_beat {
+            if let Some(auf) = x.borrow().get_start_beat()
+                && auf < first_beat
+            {
                 first_beat = auf;
             }
         });
@@ -499,27 +505,29 @@ impl ElapseStack {
             self.fine_stock = true;
         }
     }
-    fn sync(&mut self, part: i16) {
-        let mut sync_part = [false; MAX_KBD_PART];
-        if part < MAX_KBD_PART as i16 {
-            sync_part[part as usize] = true;
-        } else if part == MSG_SYNC_LFT {
-            sync_part[LEFT1] = true;
-            sync_part[LEFT2] = true;
-        } else if part == MSG_SYNC_RGT {
-            sync_part[RIGHT1] = true;
-            sync_part[RIGHT2] = true;
-        } else if part == MSG_SYNC_ALL {
-            for pt in sync_part.iter_mut() {
-                *pt = true;
-            }
+    fn call_sync(&mut self, min: usize, max: usize) {
+        for i in min..=max {
+            let part = self.part_vec[i].clone();
+            let crnt_ = self.last_msr_tick;
+            part.borrow_mut().set_sync(&crnt_, self);
         }
-        for (i, pt) in sync_part.iter().enumerate() {
-            if *pt {
-                let part = self.part_vec[i].clone();
-                let crnt_ = self.last_msr_tick;
-                part.borrow_mut().set_sync(&crnt_, self);
-            }
+    }
+    fn call_pedal_sync(&mut self, min: usize, max: usize) {
+        for i in min..=max {
+            let part = self.pedal_part[i - DAMPER_PART].clone();
+            part.borrow_mut().set_sync();
+        }
+    }
+    fn sync(&mut self, part: i16) {
+        if part < MAX_KBD_PART as i16 {
+            self.call_sync(part as usize, part as usize);
+        } else if part == MSG_SYNC_LFT {
+            self.call_sync(LEFT1, LEFT2);
+        } else if part == MSG_SYNC_RGT {
+            self.call_sync(RIGHT1, RIGHT2);
+        } else if part == MSG_SYNC_ALL {
+            self.call_sync(LEFT1, RIGHT2);
+            self.call_pedal_sync(DAMPER_PART, SHIFT_PART);
         }
     }
     fn rit(&mut self, msg: [i16; 2]) {
@@ -587,7 +595,7 @@ impl ElapseStack {
     }
     fn efct(&mut self, msg: [i16; 2]) {
         if msg[0] == MSG_EFCT_DMP {
-            self.pedal_part.borrow_mut().set_position(msg[1]);
+            self.pedal_part[0].borrow_mut().set_position(msg[1]);
         } else if msg[0] == MSG_EFCT_CC70 {
             let val = if msg[1] > 127 { 127 } else { msg[1] as u8 };
             self.midi_out(0xb0, 70, val);
@@ -609,7 +617,7 @@ impl ElapseStack {
             let pt = self.part_vec[part_num as usize].clone();
             pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
         } else {
-            let pt = self.pedal_part.clone();
+            let pt = self.pedal_part[part_num as usize - DAMPER_PART].clone();
             pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
         }
     }

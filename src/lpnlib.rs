@@ -30,25 +30,7 @@ pub const MAX_PATTERN_NUM: u8 = 16; // Max Pattern Number
 //*******************************************************************
 //          part count
 //*******************************************************************
-// Comp 2(L)+2(R), Phrase 2(L)+2(R), Pedal 1
-pub const LEFT1: usize = 0;
-pub const LEFT2: usize = 1;
-pub const RIGHT1: usize = 2;
-pub const RIGHT2: usize = 3;
-pub const MAX_LEFT_PART: usize = 2;
-pub const MAX_RIGHT_PART: usize = 2;
-pub const MAX_KBD_PART: usize = MAX_LEFT_PART + MAX_RIGHT_PART;
-pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + 1;
-pub const MAX_VARIATION: usize = 10; // normal + vari(1-9) + 1(for measure)
-pub const FLOW_PART: usize = MAX_KBD_PART;
-pub const MAX_ALL_KBD_PART: usize = MAX_KBD_PART + 1; // Flow part included
-pub const DAMPER_PART: usize = MAX_ALL_KBD_PART + 1; // Elapse inside Part
-pub const SOSTENUTO_PART: usize = MAX_ALL_KBD_PART + 2; // Elapse inside Part
-pub const SHIFT_PART: usize = MAX_ALL_KBD_PART + 3; // Elapse inside Part
-pub const MAX_PEDAL_PART: usize = SHIFT_PART - MAX_ALL_KBD_PART; // Damper, Sostenuto, Shift
-pub const NONE_NUM: usize = 255;
-#[allow(dead_code)]
-pub enum Part {
+pub enum PtName {
     Left1 = 0,
     Left2 = 1,
     Right1 = 2,
@@ -58,6 +40,23 @@ pub enum Part {
     Sostenuto = 6,
     Shift = 7,
 }
+// Comp 2(L)+2(R), Phrase 2(L)+2(R), Flow 1, Pedal 3(Damper,Sostenuto,Shift)
+pub const LEFT1: usize = PtName::Left1 as usize;
+pub const LEFT2: usize = PtName::Left2 as usize;
+pub const RIGHT1: usize = PtName::Right1 as usize;
+pub const RIGHT2: usize = PtName::Right2 as usize;
+pub const MAX_LEFT_PART: usize = LEFT2 + 1;
+pub const MAX_RIGHT_PART: usize = RIGHT2 - LEFT2;
+pub const MAX_KBD_PART: usize = MAX_LEFT_PART + MAX_RIGHT_PART;
+pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + 1;
+pub const MAX_VARIATION: usize = 10; // normal + vari(1-9) + 1(for measure)
+pub const FLOW_PART: usize = PtName::Flow as usize; // Flow part
+pub const MAX_ALL_KBD_PART: usize = PtName::Flow as usize + 1; // Flow part included
+pub const DAMPER_PART: usize = PtName::Damper as usize; // Elapse inside Part
+pub const SOSTENUTO_PART: usize = PtName::Sostenuto as usize; // Elapse inside Part
+pub const SHIFT_PART: usize = PtName::Shift as usize; // Elapse inside Part
+pub const MAX_PEDAL_PART: usize = PtName::Shift as usize + 1 - PtName::Damper as usize; // Damper, Sostenuto, Shift
+pub const NONE_NUM: usize = 255;
 
 //*******************************************************************
 //          default value
@@ -177,7 +176,7 @@ pub enum PedalPos {
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PedalEvt {
-    pub msr: i16,           // measure number
+    pub msr: i16, // measure number
     pub beat: i16,
     pub front: bool,        // true: front of beat, false: back of beat
     pub position: PedalPos, // pedal position
