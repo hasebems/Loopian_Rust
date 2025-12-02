@@ -125,7 +125,9 @@ impl History {
                 for line in content.lines() {
                     if line.len() >= 4 && &line[0..4] == "!rd(" {
                         let rd_line = split_by(':', line.to_string());
-                        if rd_line.len() == 2 && extract_number_from_parentheses(&rd_line[0]) == Some(num) {
+                        if rd_line.len() == 2
+                            && extract_number_from_parentheses(&rd_line[0]) == Some(num)
+                        {
                             return Some(rd_line[1].clone());
                         }
                     }
@@ -222,7 +224,9 @@ impl History {
                 let ctxt = crnt.1;
                 if msr_exists(ctxt) {
                     // !msr() の場合
-                    if let Some(msr) = extract_number_from_parentheses(ctxt) && msr >= crnt_msr {
+                    if let Some(msr) = extract_number_from_parentheses(ctxt)
+                        && msr >= crnt_msr
+                    {
                         next_msr_tick = Some(CrntMsrTick {
                             msr: (msr as i32),
                             tick: 0,

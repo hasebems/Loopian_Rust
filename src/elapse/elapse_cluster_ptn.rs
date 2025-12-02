@@ -63,19 +63,15 @@ impl ClusterPattern {
     ) -> Rc<RefCell<Self>> {
         // generate para_note_base
         let mut para = false;
-        ana.iter().for_each(|x| {
-            match x {
-                AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => para = true,
-                _ => {}
-            }
+        ana.iter().for_each(|x| match x {
+            AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => para = true,
+            _ => {}
         });
         // generate staccato rate
         let mut staccato_rate = 90;
-        ana.iter().for_each(|x| {
-            match x {
-                AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => staccato_rate = e.cnt as i32,
-                _ => {}
-            }
+        ana.iter().for_each(|x| match x {
+            AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => staccato_rate = e.cnt as i32,
+            _ => {}
         });
         //   FloatingTick を生成する
         let floating = ptn.arpeggio > 0;

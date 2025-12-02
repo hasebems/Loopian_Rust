@@ -57,14 +57,18 @@ impl BrokenPattern {
         // generate para_note_base
         let mut para = false;
         ana.iter().for_each(|x| {
-            if let AnaEvt::Exp(e) = x && e.atype == ExpType::ParaRoot {
+            if let AnaEvt::Exp(e) = x
+                && e.atype == ExpType::ParaRoot
+            {
                 para = true;
             }
         });
         // generate staccato rate
         let mut staccato_rate = 90;
         ana.iter().for_each(|x| {
-            if let AnaEvt::Exp(e) = x && e.atype == ExpType::ParaRoot {
+            if let AnaEvt::Exp(e) = x
+                && e.atype == ExpType::ParaRoot
+            {
                 staccato_rate = e.cnt as i32;
             }
         });

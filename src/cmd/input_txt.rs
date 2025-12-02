@@ -88,7 +88,11 @@ impl InputText {
     pub fn get_scroll_lines(&self) -> &Vec<(TextAttribute, String, String)> {
         &self.scroll_lines
     }
-    pub fn get_input_text(&self, max_width_px: f32, char_width_px: f32) -> (Vec<String>, f32, usize) {
+    pub fn get_input_text(
+        &self,
+        max_width_px: f32,
+        char_width_px: f32,
+    ) -> (Vec<String>, f32, usize) {
         // 折り返し優先文字
         const PREF_BREAK: &[char] = &[',', '.', ')'];
 
@@ -483,15 +487,8 @@ impl InputText {
             if !playable {
                 // 履歴にのみロードする場合
                 self.clear_loaded_data();
-                let loaded =
-                    self.history.get_from_mt_to_next(CrntMsrTick::default());
-                self.send_loaddata_to_elapse(
-                    graphmsg,
-                    InputTextType::Any,
-                    false,
-                    loaded.0,
-                    None,
-                );
+                let loaded = self.history.get_from_mt_to_next(CrntMsrTick::default());
+                self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, false, loaded.0, None);
                 self.next_msr_tick = loaded.1;
             }
             let answer_word = format!("Loaded from file: {}.lpn", self.file_name_stock);

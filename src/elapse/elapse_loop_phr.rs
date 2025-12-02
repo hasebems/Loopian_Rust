@@ -90,22 +90,18 @@ impl PhraseLoop {
             }
         });
         let mut para_root_base = 0;
-        prm.ana.iter().for_each(|x| {
-            match x {
-                AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => {
-                    para_root_base = e.note;
-                }
-                _ => (),
+        prm.ana.iter().for_each(|x| match x {
+            AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => {
+                para_root_base = e.note;
             }
+            _ => (),
         });
         let mut staccato_rate = 100;
-        prm.ana.iter().for_each(|x| {
-            match x {
-                AnaEvt::Exp(e) if e.atype == ExpType::Artic => {
-                    staccato_rate = e.cnt as i32;
-                }
-                _ => (),
+        prm.ana.iter().for_each(|x| match x {
+            AnaEvt::Exp(e) if e.atype == ExpType::Artic => {
+                staccato_rate = e.cnt as i32;
             }
+            _ => (),
         });
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -332,7 +328,10 @@ impl PhraseLoop {
     }
     fn specify_trans_option(&self, next_tick: i32, note: u8) -> TrnsType {
         for anaone in self.analys.iter() {
-            if let AnaEvt::Beat(b) = anaone && b.tick == next_tick as i16 && b.note == note as i16 {
+            if let AnaEvt::Beat(b) = anaone
+                && b.tick == next_tick as i16
+                && b.note == note as i16
+            {
                 return b.trns;
             }
         }

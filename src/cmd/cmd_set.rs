@@ -93,7 +93,8 @@ impl LoopianCmd {
             } else if cmd == "midi_input_ch" {
                 if let Ok(ch) = prm.parse::<u8>() {
                     if (1..=16).contains(&ch) {
-                        self.sndr.send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, ch as i16]));
+                        self.sndr
+                            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, ch as i16]));
                         "MIDI Input Ch has changed!".to_string()
                     } else {
                         "Channel number is wrong.".to_string()
@@ -125,19 +126,27 @@ impl LoopianCmd {
         if key != END_OF_DATA {
             let mut oct = 0;
             let mut num_txt = "".to_string();
-            if key_text.len() >= 2 && let Some(ltr2) = key_text.chars().nth(1) {
+            if key_text.len() >= 2
+                && let Some(ltr2) = key_text.chars().nth(1)
+            {
                 num_txt = match ltr2 {
                     '#' => {
                         key += 1;
-                        if key_text.len() >= 3 { key_text[2..].to_string() } else { String::new() }
+                        if key_text.len() >= 3 {
+                            key_text[2..].to_string()
+                        } else {
+                            String::new()
+                        }
                     }
                     'b' => {
                         key -= 1;
-                        if key_text.len() >= 3 { key_text[2..].to_string() } else { String::new() }
+                        if key_text.len() >= 3 {
+                            key_text[2..].to_string()
+                        } else {
+                            String::new()
+                        }
                     }
-                    _ => {
-                        key_text[1..].to_string()
-                    }
+                    _ => key_text[1..].to_string(),
                 };
             }
             if let Ok(oct_num) = num_txt.parse::<i32>() {
@@ -228,7 +237,9 @@ impl LoopianCmd {
     }
     fn change_flow_velocity(&mut self, vel_txt: &str) -> bool {
         if let Ok(vel) = vel_txt.parse::<i16>() {
-            if !(1..=127).contains(&vel) { return false; }
+            if !(1..=127).contains(&vel) {
+                return false;
+            }
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
             true

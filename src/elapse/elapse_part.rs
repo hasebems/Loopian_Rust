@@ -523,11 +523,15 @@ impl PhrLoopManager {
         // 上書きをするべきかどうかを確認
         let mut overwrite_a = false; // 置き換えフラグ
         let mut overwrite_b = false; // 置き換えフラグ
-        if let Some(inst_a) = &self.phr_instance_a && inst_a.begin_phr == crnt_msr {
+        if let Some(inst_a) = &self.phr_instance_a
+            && inst_a.begin_phr == crnt_msr
+        {
             overwrite_a = true; // instance_a を置き換える
             inst_a.set_destroy();
         }
-        if let Some(inst_b) = &self.phr_instance_b && inst_b.begin_phr == crnt_msr {
+        if let Some(inst_b) = &self.phr_instance_b
+            && inst_b.begin_phr == crnt_msr
+        {
             overwrite_b = true; // instance_b を置き換える
             inst_b.set_destroy();
         }
