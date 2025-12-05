@@ -416,7 +416,8 @@ impl PhrLoopManager {
             // instance_a を削除するイベント
             self.del_a();
             self.del_a_ev = false;
-        } else if self.del_b_ev {
+        }
+        if self.del_b_ev {
             // instance_b を削除するイベント
             self.del_b();
             self.del_b_ev = false;

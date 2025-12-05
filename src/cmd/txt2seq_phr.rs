@@ -148,6 +148,7 @@ impl PhraseComplemented {
         let phr_len = dt.len();
         if phr_len == 0 {
             self.note_str = "".to_string();
+            return;
         } else if phr_len >= 2 && dt.ends_with("//") {
             dt.pop();
             dt.pop();

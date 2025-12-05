@@ -388,6 +388,27 @@ impl PhraseDataStock {
             }
         );
     }
+    fn check_empty_phrase(&mut self) -> bool {
+        let ret = if let Some(cmpl) = &self.cmpl {
+            if cmpl.note_info == [""] {
+                //  clear
+                self.phr = Vec::new();
+                self.ana = Vec::new();
+                self.whole_tick = 0;
+                true
+            } else {
+                false
+            }
+        } else {
+            //  clear
+            self.phr = Vec::new();
+            self.ana = Vec::new();
+            self.whole_tick = 0;
+            true
+        };
+        println!("Phrase is deleted: {:?}", self.cmpl);
+        ret
+    }
 }
 impl DataStock for PhraseDataStock {
     fn set_raw(&mut self, input_text: String, cluster_word: Option<&str>) -> bool {
@@ -410,11 +431,8 @@ impl DataStock for PhraseDataStock {
         tick_for_beat: i32,
         resend: Option<bool>,
     ) {
-        if self.cmpl.is_none() {
-            //  clear
-            self.phr = Vec::new();
-            self.ana = Vec::new();
-            self.whole_tick = 0;
+        // 2.5. check empty phrase
+        if self.check_empty_phrase() {
             return;
         }
 
