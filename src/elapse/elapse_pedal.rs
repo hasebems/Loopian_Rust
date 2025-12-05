@@ -516,7 +516,11 @@ impl PedalPart {
     }
     /// Pedal Part に PhrData メッセージを受信する
     pub fn rcv_phr_msg(&mut self, msg: PhrData, _crnt_: &CrntMsrTick, _estk: &mut ElapseStack) {
-        self.pedal_msg = Some(msg);
+        if msg.evts.is_empty() {
+            self.pedal_msg = None;
+        } else {
+            self.pedal_msg = Some(msg);
+        }
     }
     fn begin_new_loop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, msg: &PhrData) {
         let ploop = Rc::new(RefCell::new(PedalLoop::new(
