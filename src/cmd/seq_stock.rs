@@ -389,7 +389,7 @@ impl PhraseDataStock {
         );
     }
     fn check_empty_phrase(&mut self) -> bool {
-        let ret = if let Some(cmpl) = &self.cmpl {
+        if let Some(cmpl) = &self.cmpl {
             if cmpl.note_info == [""] {
                 //  clear
                 self.phr = Vec::new();
@@ -405,9 +405,7 @@ impl PhraseDataStock {
             self.ana = Vec::new();
             self.whole_tick = 0;
             true
-        };
-        println!("Phrase is deleted: {:?}", self.cmpl);
-        ret
+        }
     }
 }
 impl DataStock for PhraseDataStock {
