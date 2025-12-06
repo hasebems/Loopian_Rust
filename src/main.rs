@@ -30,11 +30,11 @@ use server::server_loop::cui_loop;
 //*******************************************************************
 //      Main
 //*******************************************************************
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     //  Version
-    const VERSION: &str = env!("CARGO_PKG_VERSION");
     println!("*** Hi, I'm Loopian.");
     println!("*** I'm so glad to see you!");
     println!("*** Loopian Version: {VERSION}");

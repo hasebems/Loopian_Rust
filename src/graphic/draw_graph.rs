@@ -372,14 +372,20 @@ impl Graphic {
             .font_size(28)
             .color(title_color)
             .center_justify()
-            .x_y(-50.0, 56.0 - self.rs.full_size_y / 2.0)
+            .x_y(-70.0, 56.0 - self.rs.full_size_y / 2.0)
             .w_h(self.rs.full_size_x - 200.0, 40.0);
         draw.text("by Kigakudoh")
             .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
             .font_size(18)
             .color(title_color)
             .center_justify()
-            .x_y(70.0, 54.0 - self.rs.full_size_y / 2.0);
+            .x_y(50.0, 50.0 - self.rs.full_size_y / 2.0);
+        draw.text(&format!("Ver.{}", crate::VERSION))
+            .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
+            .font_size(18)
+            .color(Srgb::<u8>::new(130, 130, 130))
+            .center_justify()
+            .x_y(self.rs.full_size_x / 2.0 - 50.0, 24.0 - self.rs.full_size_y / 2.0);
     }
     /// Eight Indicator の描画
     fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {
