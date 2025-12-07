@@ -13,7 +13,7 @@ use crate::elapse::tickgen::CrntMsrTick;
 use crate::file::cnv_file;
 use crate::file::history::*;
 use crate::file::load::*;
-use crate::graphic::generative_view::{CmndRtn, GraphicMsg};
+use crate::graphic::generative_view::GraphicMsg;
 use crate::graphic::guiev::GuiEv;
 use crate::lpnlib::*;
 
@@ -29,6 +29,8 @@ enum AutoLoadState {
     Reached,
     PhraseLoaded,
 }
+// return msg from command receiving job
+pub struct CmndRtn(pub String, pub GraphicMsg);
 
 //*******************************************************************
 //      Input Text
@@ -375,11 +377,7 @@ impl InputText {
             // clear loaded file data
             self.clear_loaded_data();
             self.cmd.send_clear();
-            self.scroll_lines.push((
-                TextAttribute::Answer,
-                "".to_string(),
-                "All data cleared!".to_string(),
-            ));
+            self.set_answer_line("All data cleared!".to_string());
         } else if (len >= 2 && &itxt[0..2] == "!s") || (len >= 5 && &itxt[0..5] == "!save") {
             // Save Command
             self.save_command(itxt);
@@ -392,16 +390,20 @@ impl InputText {
         } else if len >= 5 && &itxt[0..5] == "!blk(" {
             // ブロックの読み込み
             let blk_name = extract_texts_from_parentheses(&itxt[0..]);
-            self.load_buffer
-                .get_loaded_blk(blk_name)
-                .iter()
-                .for_each(|txt| {
+            let loaded_blk = self.load_buffer.get_loaded_blk(blk_name);
+            if !loaded_blk.is_empty() {
+                loaded_blk.iter().for_each(|txt| {
                     self.one_command(txt.clone(), graphmsg, false);
                 });
+            } else {
+                self.set_answer_line("No such block.".to_string());
+            }
         } else if len >= 5 && &itxt[0..5] == "!msr(" {
             // measure の読み込み
             if let Some(msr_num) = extract_number_from_parentheses(&itxt[0..]) {
                 self.load_by_msr_command(msr_num, graphmsg);
+            } else {
+                self.set_answer_line("No such measure.".to_string());
             }
         } else if len >= 7 && &itxt[0..7] == "!cnv2tl" {
             // convert to timeline file
@@ -411,13 +413,22 @@ impl InputText {
                 // ファイルを読み込んでいる場合、そのデータの冒頭から再生するようセッティングする
                 self.auto_load_buffer = (vec![], None);
                 self.auto_load_state = AutoLoadState::BeforeLoading;
-                let loaded = self.load_buffer.get_from_msr_to_next(CrntMsrTick::default());
+                let loaded = self
+                    .load_buffer
+                    .get_from_msr_to_next(CrntMsrTick::default());
                 self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0, Some(1));
                 self.next_msr_tick = loaded.1;
+            } else {
+                self.set_answer_line("No file loaded".to_string());
             }
         } else {
-            println!("Unknown command: {}", itxt);
+            self.set_answer_line("Unknown command".to_string());
         }
+    }
+    /// Answer に出力する文字列をセットする
+    fn set_answer_line(&mut self, answer: String) {
+        self.scroll_lines
+            .push((TextAttribute::Answer, "".to_string(), answer)); // for display answer
     }
     fn clear_loaded_data(&mut self) {
         self.auto_load_buffer = (vec![], None);
@@ -452,10 +463,10 @@ impl InputText {
         } else {
             num = 0;
         }
-        if let Some(cmd) = self.load_buffer.read_line_from_lpn(
-            self.cmd.get_path().as_deref(),
-            num,
-        ) {
+        if let Some(cmd) = self
+            .load_buffer
+            .read_line_from_lpn(self.cmd.get_path().as_deref(), num)
+        {
             self.input_text = cmd;
         }
     }
@@ -475,23 +486,28 @@ impl InputText {
     fn load_file(&mut self, itxt: &str, graphmsg: &mut Vec<GraphicMsg>, playable: bool) {
         let fnx = split_by('.', itxt.to_string());
         if fnx.len() >= 2 {
-            self.load_buffer
-                .set_file_name(fnx[1].clone());
+            self.load_buffer.set_file_name(fnx[1].clone());
         }
 
         // load_lpn() でファイルの中身を読み込む
         if let Some(file_name) = self.load_buffer.get_file_name() {
-            if self
-                .load_buffer
-                .load_lpn(self.cmd.get_path().as_deref()) {
+            if self.load_buffer.load_lpn(self.cmd.get_path().as_deref()) {
                 if !playable {
                     // 履歴にのみロードする場合
                     self.clear_loaded_data();
-                    let loaded = self.load_buffer.get_from_msr_to_next(CrntMsrTick::default());
-                    self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, false, loaded.0, None);
+                    let loaded = self
+                        .load_buffer
+                        .get_from_msr_to_next(CrntMsrTick::default());
+                    self.send_loaddata_to_elapse(
+                        graphmsg,
+                        InputTextType::Any,
+                        false,
+                        loaded.0,
+                        None,
+                    );
                     self.next_msr_tick = loaded.1;
                 }
-                
+
                 let answer_word = format!("Loaded from file: {}.lpn", file_name);
                 self.scroll_lines
                     .push((TextAttribute::Answer, "".to_string(), answer_word));

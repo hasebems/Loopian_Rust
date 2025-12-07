@@ -9,7 +9,8 @@ use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
 use super::txt2seq_cmps::*;
-use crate::graphic::generative_view::{CmndRtn, GRAPHIC_PATTERN_NAME, GraphicMsg};
+use super::input_txt::CmndRtn;
+use crate::graphic::generative_view::{GRAPHIC_PATTERN_NAME, GraphicMsg};
 use crate::lpnlib::*;
 
 //  LoopianCmd の責務

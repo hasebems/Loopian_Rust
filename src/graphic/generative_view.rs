@@ -21,9 +21,6 @@ use crate::cmd::txt_common::*;
 //*******************************************************************
 //      Enum, Table
 //*******************************************************************
-// return msg from command receiving job
-pub struct CmndRtn(pub String, pub GraphicMsg);
-
 // Graphic Message
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum GraphicMsg {
