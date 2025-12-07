@@ -100,14 +100,44 @@ impl LoadBuffer {
         let mut txt_this_time: Vec<String> = Vec::new();
         let mut idx: Option<usize> = None;
         let blk_or = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!blk(";
+
+        let arg_input = selected_blk.trim().split(',').collect::<Vec<&str>>();
+        let selected_blk = arg_input[0];
+        println!("Arg Input: {:?}", arg_input);
+
         // 先頭を探す
+        let mut arguments: Vec<&str> = Vec::new();
         for crnt in self.loaded_text.iter().enumerate() {
             let ctxt = crnt.1;
-            if blk_or(ctxt) && selected_blk == extract_texts_from_parentheses(ctxt) {
+            if blk_or(ctxt) {
+                let argument = extract_texts_from_parentheses(ctxt);
+                arguments = argument.split(',').collect::<Vec<&str>>();
+                if arguments[0] != selected_blk {
+                    continue;
+                }
+                // 見つかった
                 idx = Some(crnt.0 + 1);
                 break;
             }
         }
+
+        let generics_num = arguments.len() - 1;
+        let generics_args = &arguments[1..]
+            .iter()
+            .map(|arg| arg.split('=').collect::<Vec<&str>>())
+            .collect::<Vec<Vec<&str>>>();
+
+        // デバッグ表示
+        println!("Block: {}", selected_blk);
+        println!("Generics: {}", generics_num);
+        for ga in generics_args.iter() {
+            if ga.len() == 2 {
+                println!("  {} = {}", ga[0], ga[1]);
+            } else {
+                println!("  {}", ga[0]);
+            }
+        }
+
         // ここから txt_this_time に記録
         if let Some(start_idx) = idx {
             for n in start_idx..self.loaded_text.len() {
@@ -120,6 +150,24 @@ impl LoadBuffer {
                 }
             }
         }
+
+        // generics 引数の置換
+        for ga in generics_args.iter().enumerate() {
+            for line in txt_this_time.iter_mut() {
+                if line.contains(ga.1[0]) {
+                    // 置換
+                    let to_str = if arg_input.len() - 1 > ga.0 {
+                        arg_input[ga.0 + 1]
+                    } else if ga.1.len() == 2 {
+                        ga.1[1]
+                    } else {
+                        ""
+                    };
+                    *line = line.replace(ga.1[0], to_str);
+                }
+            }
+        }
+
         txt_this_time
     }
     /// ファイル内で !msr() を使ったデータにおいて、
