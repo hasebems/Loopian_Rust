@@ -467,7 +467,7 @@ impl LoopianCmd {
                 match part_str {
                     "L1" => rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text),
                     "L2" => rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text),
-                    "L12" => {
+                    "L" => {
                         self.call_bracket_brace(LEFT1, first_letter, rest_text);
                         rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
                     }
@@ -483,7 +483,7 @@ impl LoopianCmd {
                     }
                     "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
                     "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),
-                    "R12" => {
+                    "R" => {
                         self.call_bracket_brace(RIGHT1, first_letter, rest_text);
                         rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
                     }
