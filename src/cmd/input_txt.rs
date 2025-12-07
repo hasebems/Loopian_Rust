@@ -11,7 +11,8 @@ use super::cmdparse::*;
 use super::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
 use crate::file::cnv_file;
-use crate::file::history::History;
+use crate::file::history::*;
+use crate::file::load::*;
 use crate::graphic::generative_view::{CmndRtn, GraphicMsg};
 use crate::graphic::guiev::GuiEv;
 use crate::lpnlib::*;
@@ -36,13 +37,13 @@ pub struct InputText {
     input_text: String,
     input_locate: usize,
     history_cnt: usize,
-    file_name_stock: String,
     next_msr_tick: Option<CrntMsrTick>,
     auto_load_buffer: (Vec<String>, Option<CrntMsrTick>),
     auto_load_state: AutoLoadState,
     scroll_lines: Vec<(TextAttribute, String, String)>,
     history: History, // 履歴管理モジュール
-    cmd: LoopianCmd,  // コマンド処理モジュール
+    load_buffer: LoadBuffer,
+    cmd: LoopianCmd, // コマンド処理モジュール
     shift_pressed: bool,
     ctrl_pressed: bool,
     just_after_hokan: bool,
@@ -57,12 +58,12 @@ impl InputText {
             input_text: "".to_string(),
             input_locate: 0,
             history_cnt: 0,
-            file_name_stock: String::new(),
             next_msr_tick: None,
             auto_load_buffer: (vec![], None),
             auto_load_state: AutoLoadState::BeforeLoading,
             scroll_lines: vec![],
             history: History::new(),
+            load_buffer: LoadBuffer::new(),
             cmd: LoopianCmd::new(msg_hndr),
             shift_pressed: false,
             ctrl_pressed: false,
@@ -339,18 +340,6 @@ impl InputText {
         self.input_text = "".to_string();
         self.input_locate = 0;
 
-        // cmdparse に行くまでに処理したいコマンド対応
-        let len = itxt.chars().count();
-        if ((len == 4 && &itxt[0..4] == "play") || (len == 1 && &itxt[0..1] == "p"))
-            && !self.file_name_stock.is_empty()
-        {
-            // ファイルを読み込んでいる場合、そのデータの冒頭から再生するようセッティングする
-            self.auto_load_buffer = (vec![], None);
-            self.auto_load_state = AutoLoadState::BeforeLoading;
-            let loaded = self.history.get_from_mt_to_next(CrntMsrTick::default());
-            self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0, Some(1));
-            self.next_msr_tick = loaded.1;
-        }
         self.set_command(itxt, graphmsg);
     }
     pub fn set_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>) {
@@ -403,7 +392,7 @@ impl InputText {
         } else if len >= 5 && &itxt[0..5] == "!blk(" {
             // ブロックの読み込み
             let blk_name = extract_texts_from_parentheses(&itxt[0..]);
-            self.history
+            self.load_buffer
                 .get_loaded_blk(blk_name)
                 .iter()
                 .for_each(|txt| {
@@ -417,12 +406,23 @@ impl InputText {
         } else if len >= 7 && &itxt[0..7] == "!cnv2tl" {
             // convert to timeline file
             self.convert_to_timeline_file(&itxt[0..]);
+        } else if (len == 8 && &itxt[0..8] == "!bufplay") || (len == 3 && &itxt[0..3] == "!bp") {
+            if self.load_buffer.get_file_name().is_some() {
+                // ファイルを読み込んでいる場合、そのデータの冒頭から再生するようセッティングする
+                self.auto_load_buffer = (vec![], None);
+                self.auto_load_state = AutoLoadState::BeforeLoading;
+                let loaded = self.load_buffer.get_from_msr_to_next(CrntMsrTick::default());
+                self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, true, loaded.0, Some(1));
+                self.next_msr_tick = loaded.1;
+            }
+        } else {
+            println!("Unknown command: {}", itxt);
         }
     }
     fn clear_loaded_data(&mut self) {
         self.auto_load_buffer = (vec![], None);
         self.auto_load_state = AutoLoadState::BeforeLoading;
-        self.file_name_stock = String::new();
+        self.load_buffer.clear_file_name();
         self.next_msr_tick = None;
     }
     fn save_command(&mut self, itxt: String) {
@@ -452,8 +452,7 @@ impl InputText {
         } else {
             num = 0;
         }
-        if let Some(cmd) = self.history.read_line_from_lpn(
-            self.file_name_stock.clone(),
+        if let Some(cmd) = self.load_buffer.read_line_from_lpn(
             self.cmd.get_path().as_deref(),
             num,
         ) {
@@ -476,24 +475,27 @@ impl InputText {
     fn load_file(&mut self, itxt: &str, graphmsg: &mut Vec<GraphicMsg>, playable: bool) {
         let fnx = split_by('.', itxt.to_string());
         if fnx.len() >= 2 {
-            self.file_name_stock = fnx[1].clone();
+            self.load_buffer
+                .set_file_name(fnx[1].clone());
         }
 
         // load_lpn() でファイルの中身を読み込む
-        if self
-            .history
-            .load_lpn(self.file_name_stock.clone(), self.cmd.get_path().as_deref())
-        {
-            if !playable {
-                // 履歴にのみロードする場合
-                self.clear_loaded_data();
-                let loaded = self.history.get_from_mt_to_next(CrntMsrTick::default());
-                self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, false, loaded.0, None);
-                self.next_msr_tick = loaded.1;
+        if let Some(file_name) = self.load_buffer.get_file_name() {
+            if self
+                .load_buffer
+                .load_lpn(self.cmd.get_path().as_deref()) {
+                if !playable {
+                    // 履歴にのみロードする場合
+                    self.clear_loaded_data();
+                    let loaded = self.load_buffer.get_from_msr_to_next(CrntMsrTick::default());
+                    self.send_loaddata_to_elapse(graphmsg, InputTextType::Any, false, loaded.0, None);
+                    self.next_msr_tick = loaded.1;
+                }
+                
+                let answer_word = format!("Loaded from file: {}.lpn", file_name);
+                self.scroll_lines
+                    .push((TextAttribute::Answer, "".to_string(), answer_word));
             }
-            let answer_word = format!("Loaded from file: {}.lpn", self.file_name_stock);
-            self.scroll_lines
-                .push((TextAttribute::Answer, "".to_string(), answer_word));
         } else {
             // 適切なファイルや中身がなかった場合
             self.scroll_lines.push((
@@ -510,7 +512,7 @@ impl InputText {
             msr: msr as i32,
             ..Default::default()
         };
-        let loaded = self.history.get_from_0_to_mt(mt);
+        let loaded = self.load_buffer.get_from_0_to_mt(mt);
         if !loaded.0.is_empty() {
             self.send_loaddata_to_elapse(graphmsg, InputTextType::Realtime, true, loaded.0, None);
         } else {
@@ -522,7 +524,7 @@ impl InputText {
             return;
         }
         self.next_msr_tick = loaded.1;
-        let loaded = self.history.get_from_mt(mt);
+        let loaded = self.load_buffer.get_from_msr(mt);
         if !loaded.0.is_empty() {
             self.send_loaddata_to_elapse(
                 graphmsg,
@@ -546,7 +548,7 @@ impl InputText {
             if next_mt.msr != LAST && next_mt.msr > 0 && next_mt.msr - 1 == crnt.msr {
                 // 指定された小節の１小節前まで来た場合
                 if self.auto_load_state == AutoLoadState::BeforeLoading {
-                    self.auto_load_buffer = self.history.get_from_mt_to_next(next_mt);
+                    self.auto_load_buffer = self.load_buffer.get_from_msr_to_next(next_mt);
                     self.auto_load_state = AutoLoadState::Reached;
                 } else if self.auto_load_state == AutoLoadState::Reached
                     && crnt.tick > Self::COMMAND_INPUT_REST_TICK
