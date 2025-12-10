@@ -408,7 +408,7 @@ impl InputText {
         } else if len >= 7 && &itxt[0..7] == "!cnv2tl" {
             // convert to timeline file
             self.convert_to_timeline_file(&itxt[0..]);
-        } else if (len == 8 && &itxt[0..8] == "!bufplay") || (len == 3 && &itxt[0..3] == "!bp") {
+        } else if (len == 5 && &itxt[0..5] == "!play") || (len == 2 && &itxt[0..2] == "!p") {
             if self.load_buffer.get_file_name().is_some() {
                 // ファイルを読み込んでいる場合、そのデータの冒頭から再生するようセッティングする
                 self.auto_load_buffer = (vec![], None);
