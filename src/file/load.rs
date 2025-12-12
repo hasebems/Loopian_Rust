@@ -121,11 +121,19 @@ impl LoadBuffer {
             }
         }
 
+        if arguments.is_empty() {
+            // ブロックが見つからなかった
+            return txt_this_time;
+        }
         let generics_num = arguments.len() - 1;
-        let generics_args = &arguments[1..]
+        let generics_args = if generics_num > 0 {
+            &arguments[1..]
             .iter()
             .map(|arg| arg.split('=').collect::<Vec<&str>>())
-            .collect::<Vec<Vec<&str>>>();
+            .collect::<Vec<Vec<&str>>>()
+        } else {
+            &Vec::new()
+        };
 
         // デバッグ表示
         println!("Block: {}", selected_blk);
