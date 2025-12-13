@@ -33,7 +33,7 @@ enum AutoLoadState {
 pub struct CmndRtn(pub String, pub GraphicMsg);
 
 //*******************************************************************
-//      Input Text
+//      Input Text from Keyboard
 //*******************************************************************
 pub struct InputText {
     input_text: String,
@@ -360,6 +360,7 @@ impl InputText {
             self.non_logged_command(itxt, graphmsg);
         }
     }
+
     //*******************************************************************
     //          File 関連操作
     //*******************************************************************
@@ -628,14 +629,13 @@ impl InputText {
         next_msr: Option<i32>,
     ) {
         let mut answer: bool = false;
-        for (i, onecmd) in loaded.iter().enumerate() {
+        for onecmd in loaded.iter() {
             if Self::is_fitting_command(txt_type, onecmd) {
                 if playable {
                     self.one_command(onecmd.clone(), graphmsg, false);
                     answer = true;
                 } else {
-                    let time = format!(" >History: {:05} ", i);
-                    self.set_history(time, onecmd.clone(), None);
+                    self.set_history(" >History: ".to_string(), onecmd.clone(), None);
                 }
             }
         }
@@ -652,10 +652,10 @@ impl InputText {
     //*******************************************************************
     /// 一行分のコマンド入力（手入力＆ファイル入力）
     fn one_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>, verbose: bool) {
-        let time = get_crnt_date_txt();
+        //let time = get_crnt_date_txt();
         let msg = if let Some(answer) = self.cmd.put_and_get_responce(&itxt) {
             let answer0 = if verbose { Some(&(answer.0)) } else { None };
-            self.set_history(time, itxt, answer0);
+            self.set_history("".to_string(), itxt, answer0);
             answer.1
         } else {
             GraphicMsg::NoMsg
@@ -663,9 +663,9 @@ impl InputText {
         graphmsg.push(msg);
     }
     /// 入力したコマンドを履歴に追加
-    fn set_history(&mut self, time: String, itxt: String, answer: Option<&String>) {
-        self.history_cnt = self.history.set_scroll_text(time.clone(), itxt.clone()); // input history
-        self.scroll_lines.push((TextAttribute::Common, time, itxt)); // for display text
+    fn set_history(&mut self, prefix: String, itxt: String, answer: Option<&String>) {
+        self.history_cnt = self.history.set_scroll_text(prefix.clone(), itxt.clone()); // input history
+        self.scroll_lines.push((TextAttribute::Common, prefix, itxt)); // for display text
         if let Some(a) = answer {
             self.scroll_lines
                 .push((TextAttribute::Answer, "".to_string(), a.to_string())); // for display answer

@@ -597,7 +597,7 @@ impl Graphic {
             }
             let past_text_set = scroll_texts[top_visible_line + i].clone();
             let answer = past_text_set.0 == TextAttribute::Answer;
-            let past_text = past_text_set.2;
+            let past_text = format!("{}{}", past_text_set.1, past_text_set.2);
             let ltrcnt = past_text.chars().count();
             let center_adjust = ltrcnt as f32 * Graphic::SCRTXT_FONT_WIDTH / 2.0;
             let dissapiering = get_ratio(max_lines - 1 - i, self.max_lines_in_window, self.gmode);
