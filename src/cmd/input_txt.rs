@@ -342,7 +342,15 @@ impl InputText {
         self.input_text = "".to_string();
         self.input_locate = 0;
 
-        self.set_command(itxt, graphmsg);
+       // && で区切られた複数コマンドの処理
+        if itxt.contains("&&") {
+            let commands: Vec<&str> = itxt.split("&&").collect();
+            for cmd in commands {
+                self.set_command(cmd.to_string(), graphmsg);
+            }
+        } else {
+            self.set_command(itxt, graphmsg);
+        }
     }
     pub fn set_command(&mut self, itxt: String, graphmsg: &mut Vec<GraphicMsg>) {
         let chr = itxt.chars().nth(0).unwrap_or(' ');
