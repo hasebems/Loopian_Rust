@@ -42,7 +42,6 @@
     - [Saving Log Files](#saving-log-files)
     - [Loading Files](#loading-files)
     - [File Description Rules](#file-description-rules)
-    - [Loading Option Functions](#loading-option-functions)
     - [File Conversion](#file-conversion)
 - [Addtional Extended Specifications](#addtional-extended-specifications)
     - [Playback Control Specifications](#playback-control-specifications)
@@ -417,7 +416,7 @@ This document explains all features of Loopian.
 ### Part Specification Notation
 - For both Phrase and Composition, you can input to parts different from the prompt part by specifying at the beginning
     - `L1.[...]`: left1 part
-    - `L12.[...]`: Set same Phrase to both left1 and left2 parts simultaneously
+    - `L.[...]`: Set same Phrase to both left1 and left2 parts simultaneously
     - `ALL.[...]`: Set same Phrase to all parts
     - `L1!.[...]`: All parts except left1
 
@@ -480,12 +479,10 @@ This document explains all features of Loopian.
     - Actually played when less than 240 ticks remain in measure n-1
     - Even when there is a wait during loading and it is considered automatic loading, user input to the Input Window is still possible
 - When `!rd(n): xxx` is written in a file, after loading the file, inputting `!rd(n)` in the Input Window automatically inputs the string `xxx` following that from the same line in the file (n is any number)
-
-### Loading Option Functions
-
-- Once a file is loaded, the following optional functions can be used
-- `!blk(a)`: Plays from lines in the file starting with `!blk(a)` until the next `!blk`, `!msr`
-    - `!msr()` is ignored if present in the description called by `!blk()`
+- `!blk(a)`: Plays from lines in the file starting with `!blk(a)` until the next blank line, or until another `!blk` or `!msr` appears
+- `!blk(a,b,c..)`: By increasing the arguments to two or more (e.g., b, c), you can substitute arbitrary strings within the block
+    - First, write `!blk(a,T)` in the file (`a` is the block name, `T` is the placeholder variable name), and write `T` at locations in subsequent lines where substitution should occur
+    - When issuing the command, for example `!blk(a,R1)`, the locations of `T` within block `a` in the file are replaced with `R1`
 - `!msr(n)`: After input, typing the `resume` command plays from lines in the file starting with `!msr(n)`
     - Accurate playback from middle measures is not guaranteed under some conditions, such as when the file description assumes Loop
 - `!clear` (or `!c`) clears all contents of the loaded file
@@ -523,6 +520,8 @@ This document explains all features of Loopian.
     - `efct.cc70(nn)`: Send nn(0-127) to cc70
     - `efct.dmp(nn)`: Send nn(0-127) when cc64 Damper turns on
 - When you press Ctrl plus a number key during playback, the tempo is temporarily reduced by (number × 10) percent.
+- By writing `&&` and placing separate commands on both sides, you can specify multiple commands on a single line.
+    - `&&` cannot be used within file descriptions.
 
 ### Addtional Set Command Specifications
 
@@ -566,6 +565,7 @@ This document explains all features of Loopian.
 - `graph.fish` : A pattern that simulates the appearance of fish swimming
 - `graph.jumping`: A pattern where shapes bounce in time with the beat.
 - `graph.wavestick`: A pattern where stick‑like shapes across the screen form a sine‑wave pattern.
+- `graph.circlethreads`: A pattern where random threads appear in a circle at the center of the screen.
 - Pressing shift + space changes Text display status in 4 stages as follows. After 4 returns to 1.
     - 1: Normal display. Graphic displays as layer behind text.
     - 2: Scroll Text becomes slightly transparent. Graphic displays as layer in front of text.
