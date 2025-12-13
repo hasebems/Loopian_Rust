@@ -84,7 +84,6 @@ pub struct Graphic {
     rs: Resize,
     svce: Option<Box<dyn GenerativeView>>, // Generaative View
     gmode: GraphMode,                      // Graph Mode  (Light or Dark)
-    gptn: GraphicPattern,                  // Graph Pattern
     text_visible: TextVisible,
     crnt_time: f32,
     top_visible_line: usize,
@@ -129,7 +128,6 @@ impl Graphic {
             rs: Resize::default(),
             svce: Some(Box::new(WaterRipple::new(GraphMode::Dark))),
             gmode: GraphMode::Dark,
-            gptn: GraphicPattern::Ripple,
             text_visible: TextVisible::Full,
             crnt_time: 0.0,
             top_visible_line: 0,
@@ -240,13 +238,10 @@ impl Graphic {
             }
             _ => {
                 // graphic pattern の変更
-                let (gptn, svce) =
-                    get_view_instance(guiev, crnt_time, msg, self.gmode, self.font_nrm.clone());
-                if let Some(gptn) = gptn {
-                    self.gptn = gptn;
-                    if let Some(svce) = svce {
-                        self.svce = Some(svce);
-                    }
+                if let Some(svce) =
+                    get_view_instance(guiev, crnt_time, msg, self.gmode, self.font_nrm.clone())
+                {
+                    self.svce = Some(svce);
                 }
             }
         }
@@ -385,7 +380,10 @@ impl Graphic {
             .font_size(18)
             .color(Srgb::<u8>::new(130, 130, 130))
             .center_justify()
-            .x_y(self.rs.full_size_x / 2.0 - 50.0, 24.0 - self.rs.full_size_y / 2.0);
+            .x_y(
+                self.rs.full_size_x / 2.0 - 50.0,
+                24.0 - self.rs.full_size_y / 2.0,
+            );
     }
     /// Eight Indicator の描画
     fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {

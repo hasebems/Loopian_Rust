@@ -8,6 +8,7 @@ use nannou::prelude::*;
 use super::draw_graph::*;
 use super::guiev::*;
 use super::view_beatlissa::*;
+use super::view_circlethds::*;
 use super::view_fish::*;
 use super::view_jumping::*;
 use super::view_lissajous::*;
@@ -39,6 +40,7 @@ pub enum GraphicMsg {
     FishPattern,
     JumpingPattern,
     WaveStickPattern,
+    CircleThdsPattern,
 }
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum GraphMode {
@@ -56,51 +58,21 @@ pub enum GraphicPattern {
     SchoolOfFish,
     Jumping,
     WaveStick,
+    CircleThread,
 }
-pub struct GraphicPatternName(pub GraphicPattern, pub GraphicMsg, pub &'static str);
-pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 10] = [
-    GraphicPatternName(GraphicPattern::Ripple, GraphicMsg::RipplePattern, "ripple"),
-    GraphicPatternName(GraphicPattern::Voice4, GraphicMsg::VoicePattern, "voice"),
-    GraphicPatternName(
-        GraphicPattern::Lissajous,
-        GraphicMsg::LissajousPattern,
-        "lissa",
-    ),
-    GraphicPatternName(
-        GraphicPattern::BeatLissa,
-        GraphicMsg::BeatLissaPattern(0),
-        "beatlissa(0)",
-    ),
-    GraphicPatternName(
-        GraphicPattern::BeatLissa,
-        GraphicMsg::BeatLissaPattern(1),
-        "beatlissa(1)",
-    ),
-    GraphicPatternName(
-        GraphicPattern::SineWave,
-        GraphicMsg::SineWavePattern,
-        "sinewave",
-    ),
-    GraphicPatternName(
-        GraphicPattern::RainEffect,
-        GraphicMsg::RainEffectPattern,
-        "rain",
-    ),
-    GraphicPatternName(
-        GraphicPattern::SchoolOfFish,
-        GraphicMsg::FishPattern,
-        "fish",
-    ),
-    GraphicPatternName(
-        GraphicPattern::Jumping,
-        GraphicMsg::JumpingPattern,
-        "jumping",
-    ),
-    GraphicPatternName(
-        GraphicPattern::WaveStick,
-        GraphicMsg::WaveStickPattern,
-        "wavestick",
-    ),
+pub struct GraphicPatternName(pub GraphicMsg, pub &'static str);
+pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 11] = [
+    GraphicPatternName(GraphicMsg::RipplePattern, "ripple"),
+    GraphicPatternName(GraphicMsg::VoicePattern, "voice"),
+    GraphicPatternName(GraphicMsg::LissajousPattern, "lissa"),
+    GraphicPatternName(GraphicMsg::BeatLissaPattern(0), "beatlissa(0)"),
+    GraphicPatternName(GraphicMsg::BeatLissaPattern(1), "beatlissa(1)"),
+    GraphicPatternName(GraphicMsg::SineWavePattern, "sinewave"),
+    GraphicPatternName(GraphicMsg::RainEffectPattern, "rain"),
+    GraphicPatternName(GraphicMsg::FishPattern, "fish"),
+    GraphicPatternName(GraphicMsg::JumpingPattern, "jumping"),
+    GraphicPatternName(GraphicMsg::WaveStickPattern, "wavestick"),
+    GraphicPatternName(GraphicMsg::CircleThdsPattern, "circlethreads"),
 ];
 
 //*******************************************************************
@@ -155,54 +127,24 @@ pub fn get_view_instance(
     gmsg: &GraphicMsg,
     gmode: GraphMode,
     font_nrm: nannou::text::Font,
-) -> (Option<GraphicPattern>, Option<Box<dyn GenerativeView>>) {
-    let gptn;
-    let view: Option<Box<dyn GenerativeView>>;
+) -> Option<Box<dyn GenerativeView>> {
     match gmsg {
         // ◆◆◆ generative_view が追加されたらここに追加
-        GraphicMsg::RipplePattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[0].0); //GraphicPattern::Ripple;
-            view = Some(Box::new(WaterRipple::new(gmode)));
-        }
-        GraphicMsg::VoicePattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[1].0);
-            view = Some(Box::new(Voice4::new(font_nrm.clone())));
-        }
-        GraphicMsg::LissajousPattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[2].0);
-            view = Some(Box::new(Lissajous::new(gmode)));
-        }
+        GraphicMsg::RipplePattern => Some(Box::new(WaterRipple::new(gmode))),
+        GraphicMsg::VoicePattern => Some(Box::new(Voice4::new(font_nrm.clone()))),
+        GraphicMsg::LissajousPattern => Some(Box::new(Lissajous::new(gmode))),
         GraphicMsg::BeatLissaPattern(md) => {
             let mt = guiev.get_indicator(INDC_METER).to_string();
             let num_str = split_by('/', mt);
             let num = num_str[0].parse::<i32>().unwrap_or(0);
-            gptn = Some(GRAPHIC_PATTERN_NAME[3].0);
-            view = Some(Box::new(BeatLissa::new(num, crnt_time, *md, gmode)));
+            Some(Box::new(BeatLissa::new(num, crnt_time, *md, gmode)))
         }
-        GraphicMsg::SineWavePattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[5].0);
-            view = Some(Box::new(SineWave::new(gmode)));
-        }
-        GraphicMsg::RainEffectPattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[6].0);
-            view = Some(Box::new(RainEffect::new(gmode)));
-        }
-        GraphicMsg::FishPattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[7].0);
-            view = Some(Box::new(SchoolOfFish::new()));
-        }
-        GraphicMsg::JumpingPattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[8].0);
-            view = Some(Box::new(Jumping::new()));
-        }
-        GraphicMsg::WaveStickPattern => {
-            gptn = Some(GRAPHIC_PATTERN_NAME[5].0);
-            view = Some(Box::new(WaveStick::new()));
-        }
-        _ => {
-            gptn = None;
-            view = None;
-        }
+        GraphicMsg::SineWavePattern => Some(Box::new(SineWave::new(gmode))),
+        GraphicMsg::RainEffectPattern => Some(Box::new(RainEffect::new(gmode))),
+        GraphicMsg::FishPattern => Some(Box::new(SchoolOfFish::new())),
+        GraphicMsg::JumpingPattern => Some(Box::new(Jumping::new())),
+        GraphicMsg::WaveStickPattern => Some(Box::new(WaveStick::new())),
+        GraphicMsg::CircleThdsPattern => Some(Box::new(CircleThread::new())),
+        _ => None,
     }
-    (gptn, view)
 }

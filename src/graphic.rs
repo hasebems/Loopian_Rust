@@ -10,3 +10,4 @@ pub mod view_sinewave;
 pub mod view_voice4;
 pub mod view_waterripple;
 pub mod view_wavestick;
+pub mod view_circlethds;
