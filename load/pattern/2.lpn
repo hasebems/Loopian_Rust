@@ -10,7 +10,7 @@ L1
 L2
 [3ex.,-mst,x..,mst^,xo/3emst,x...,mst^,xo].stacc(40).dyn(p)
 @1=[x]
-L12.{I/I/IV7/I/V7/IV7/I/V7@1}
+L.{I/I/IV7/I/V7/IV7/I/V7@1}
 FLOW.{I9/I9/IV9/I9/V9/IV9/I9/V7}
 set.oct(1)
 play

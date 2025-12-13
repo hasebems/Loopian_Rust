@@ -4,6 +4,7 @@ set.bpm(56)
 set.turnnote(7)
 set.input(upcloser)
 set.flowreso(160)
+graph.lissa
 
 L1
 [3el^^,d,m,t^,d,-l,s^^.....].dyn(mp)

@@ -1,0 +1,13 @@
+clear
+set.key(C)
+set.bpm(140)
+set.turnnote(7)
+set.input(closer)
+set.flowreso(240)
+graph.jumping
+
+L1.[ed^,+s,+r,-s,+m^,-s,d,s].stacc().para().dyn(mp)
+L2.[+em^,r,d,t,s^,t,d,r].stacc().para().dmp(off).dyn(mp)
+ALL.{Iion/Iion/IVion/IVion/Iion/Iion/IVion/Vion}
+FLOW.{Iion/Iion/IVion/IVion/Iion/Iion/IVion/Vion}
+play
