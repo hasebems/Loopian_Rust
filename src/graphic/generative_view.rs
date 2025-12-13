@@ -47,19 +47,6 @@ pub enum GraphMode {
     Dark,
     Light,
 }
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum GraphicPattern {
-    Ripple,
-    Voice4,
-    Lissajous,
-    BeatLissa,
-    SineWave,
-    RainEffect,
-    SchoolOfFish,
-    Jumping,
-    WaveStick,
-    CircleThread,
-}
 pub struct GraphicPatternName(pub GraphicMsg, pub &'static str);
 pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 11] = [
     GraphicPatternName(GraphicMsg::RipplePattern, "ripple"),

@@ -230,9 +230,9 @@ impl LoopianCmd {
             } else {
                 let mut matched_msg = None;
                 for ptn in GRAPHIC_PATTERN_NAME.iter() {
-                    let ptn_len = ptn.2.len();
-                    if len == ptn_len + 6 && &input_text[6..(ptn_len + 6)] == ptn.2 {
-                        matched_msg = Some(ptn.1.clone());
+                    let ptn_len = ptn.1.len();
+                    if len == ptn_len + 6 && &input_text[6..(ptn_len + 6)] == ptn.1 {
+                        matched_msg = Some(ptn.0.clone());
                         break;
                     }
                 }
