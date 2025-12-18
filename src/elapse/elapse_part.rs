@@ -162,12 +162,12 @@ impl PhrLoopManager {
             // Measure 指定がある場合
             self.phr_idx = idx;
             self.gen_phr_alternately(crnt_, estk, pbp, 0);
-        } else if let Some(vr) = self.vari_reserve {
+        } else if let Some(vr) = self.vari_reserve
+            && let Some(idx) = self.exist_vari_phr(vr)
+        {
             // Variation 指定がある場合
-            if let Some(idx) = self.exist_vari_phr(vr) {
-                self.phr_idx = idx;
-                self.gen_phr_alternately(crnt_, estk, pbp, 0);
-            }
+            self.phr_idx = idx;
+            self.gen_phr_alternately(crnt_, estk, pbp, 0);
             self.vari_reserve = None; // 予約をリセット
         } else if self.begin_phr_ev {
             // この小節が begin_phr になるとき
@@ -208,6 +208,9 @@ impl PhrLoopManager {
     pub fn sync(&mut self, crnt_: &CrntMsrTick, estk_: &mut ElapseStack, pbp: PartBasicPrm) {
         self.phr_idx = 0; // 0: Normal
         self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Alternate
+    }
+    pub fn stop(&mut self) {
+        self.vari_reserve = None;
     }
     pub fn rcv_phrase(
         &mut self,
@@ -735,6 +738,7 @@ impl Elapse for Part {
     /// User による stop 時にコールされる
     fn stop(&mut self, _estk: &mut ElapseStack) {
         self.during_play = false;
+        self.pm.stop();
     }
     /// 再生データを消去
     fn clear(&mut self, _estk: &mut ElapseStack) {
