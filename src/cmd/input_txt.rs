@@ -342,7 +342,7 @@ impl InputText {
         self.input_text = "".to_string();
         self.input_locate = 0;
 
-       // && で区切られた複数コマンドの処理
+        // && で区切られた複数コマンドの処理
         if itxt.contains("&&") {
             let commands: Vec<&str> = itxt.split("&&").collect();
             for cmd in commands {
@@ -665,7 +665,8 @@ impl InputText {
     /// 入力したコマンドを履歴に追加
     fn set_history(&mut self, prefix: String, itxt: String, answer: Option<&String>) {
         self.history_cnt = self.history.set_scroll_text(prefix.clone(), itxt.clone()); // input history
-        self.scroll_lines.push((TextAttribute::Common, prefix, itxt)); // for display text
+        self.scroll_lines
+            .push((TextAttribute::Common, prefix, itxt)); // for display text
         if let Some(a) = answer {
             self.scroll_lines
                 .push((TextAttribute::Answer, "".to_string(), a.to_string())); // for display answer

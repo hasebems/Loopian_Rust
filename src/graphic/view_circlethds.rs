@@ -32,7 +32,7 @@ struct ThreadPoint {
     y: f32,
 }
 impl ThreadPoint {
-    const NORMAL_RADIUS: f32 = 150.0;  // 何も鳴っていない時の半径
+    const NORMAL_RADIUS: f32 = 150.0; // 何も鳴っていない時の半径
 
     pub fn new(start_phase: f32, distance: f32, speed: f32) -> Self {
         Self {
@@ -69,12 +69,12 @@ pub struct CircleThread {
     mode: GraphMode,
 }
 impl CircleThread {
-    const MAX_THREAD_LENGTH: f32 = 120.0;   // 糸を引く最大距離
-    const MAX_POINTS: usize = 50;         // ポイント数
-    const SPEED: f32 = 0.3;                 // ポイントの移動速度
-    const RADIUS_WIDTH: f32 = 50.0;        // ポイントの半径の幅
-    const SPEED_RANGE: f32 = 10.0;       // ポイントの速度の幅
-    const FADE_OUT_COUNT: usize = 10;    // 線がフェードアウトするまでのフレーム数
+    const MAX_THREAD_LENGTH: f32 = 120.0; // 糸を引く最大距離
+    const MAX_POINTS: usize = 50; // ポイント数
+    const SPEED: f32 = 0.3; // ポイントの移動速度
+    const RADIUS_WIDTH: f32 = 50.0; // ポイントの半径の幅
+    const SPEED_RANGE: f32 = 10.0; // ポイントの速度の幅
+    const FADE_OUT_COUNT: usize = 10; // 線がフェードアウトするまでのフレーム数
 
     pub fn new() -> Self {
         let points: [ThreadPoint; Self::MAX_POINTS] = std::array::from_fn(|_| {
@@ -158,13 +158,11 @@ impl GenerativeView for CircleThread {
         self.rs = rs;
 
         // ポイントを移動
-        self.points
-            .iter_mut()
-            .for_each(|p| {
-                p.set_radius(ThreadPoint::NORMAL_RADIUS * (1.0 + self.bigger_radius));
-                p.move_point(crnt_time * Self::SPEED)
-            });
-        
+        self.points.iter_mut().for_each(|p| {
+            p.set_radius(ThreadPoint::NORMAL_RADIUS * (1.0 + self.bigger_radius));
+            p.move_point(crnt_time * Self::SPEED)
+        });
+
         // 既存の線をフェードアウト
         self.fade_out_threads();
 

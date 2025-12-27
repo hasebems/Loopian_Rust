@@ -659,7 +659,7 @@ impl Graphic {
                 //Srgb::new(Self::ALMOST_WHITE, 0, Self::ALMOST_WHITE)
                 Srgb::new(255, 102, 204)
             } else {
-                Srgb::new(200, 51, 102)
+                Srgb::new(192, 71, 153)
             }
         } else if self.gmode == GraphMode::Light {
             Srgb::new(Self::ALMOST_BLACK, Self::ALMOST_BLACK, Self::ALMOST_BLACK)

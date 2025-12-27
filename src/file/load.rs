@@ -128,9 +128,9 @@ impl LoadBuffer {
         let generics_num = arguments.len() - 1;
         let generics_args = if generics_num > 0 {
             &arguments[1..]
-            .iter()
-            .map(|arg| arg.split('=').collect::<Vec<&str>>())
-            .collect::<Vec<Vec<&str>>>()
+                .iter()
+                .map(|arg| arg.split('=').collect::<Vec<&str>>())
+                .collect::<Vec<Vec<&str>>>()
         } else {
             &Vec::new()
         };
