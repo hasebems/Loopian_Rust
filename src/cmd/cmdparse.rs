@@ -5,11 +5,11 @@
 //
 use std::sync::mpsc;
 
+use super::input_txt::CmndRtn;
 use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
 use super::txt2seq_cmps::*;
-use super::input_txt::CmndRtn;
 use crate::graphic::generative_view::{GRAPHIC_PATTERN_NAME, GraphicMsg};
 use crate::lpnlib::*;
 
@@ -81,7 +81,9 @@ impl LoopianCmd {
         }
         println!("Set Text: {input_text}");
         let first_letter = &input_text[0..1];
-        if first_letter == "@" {
+        if first_letter == "/" {
+            Some(CmndRtn(self.letter_slash(input_text), GraphicMsg::NoMsg))
+        } else if first_letter == "@" {
             Some(CmndRtn(self.letter_at(input_text), GraphicMsg::NoMsg))
         } else if first_letter == "[" {
             Some(CmndRtn(self.letter_bracket(input_text), GraphicMsg::NoMsg))
@@ -347,6 +349,14 @@ impl LoopianCmd {
             "How can I assist you?".to_string()
         } else if len == 10 && &input_text[0..10] == "help.graph" {
             "ripple/voice/lissa/beatlissa()/sinewave/rain/fish/jumping/wavestick".to_string()
+        } else {
+            "what?".to_string()
+        }
+    }
+    fn letter_slash(&mut self, input_text: &str) -> String {
+        let len = input_text.chars().count();
+        if len >= 2 && &input_text[0..2] == "//" {
+            "....Gotcha.".to_string()
         } else {
             "what?".to_string()
         }
