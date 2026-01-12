@@ -38,7 +38,7 @@ pub fn recombine_to_internal_format_pedal(
     tick_for_beat: i32,
 ) -> (i32, bool, Vec<PhrEvt>) {
     let max_beat = (tick_for_onemsr / tick_for_beat) as i16;
-    let mut pedal_1st = PedalPos::Off;
+    let mut pedal_1st = PedalPos::NoEvt;
     let mut result = Vec::new();
     //do_loop
     let mut do_loop = true;

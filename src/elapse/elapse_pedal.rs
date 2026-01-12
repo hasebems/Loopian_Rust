@@ -340,6 +340,7 @@ pub struct PedalPart {
     priority: u32,
     during_play: bool,
     start_flag: bool,
+    pedal_type: PedalType,
     position: i16,
     pedal_msg: Option<PhrData>,
     pedal_loop: Option<Rc<RefCell<PedalLoop>>>,
@@ -359,11 +360,18 @@ impl PedalPart {
             sid: num,
             elps_type: ElapseType::TpPedalPart,
         };
+        let pedal_type = match num as usize {
+            DAMPER_PART => PedalType::Damper,
+            SOSTENUTO_PART => PedalType::Sostenuto,
+            SHIFT_PART => PedalType::Shift,
+            _ => PedalType::Damper,
+        };
         Rc::new(RefCell::new(Self {
             id: new_id,
             priority: PRI_DMPR,
             during_play: false,
             start_flag: false,
+            pedal_type,
             position: 127,
             pedal_msg: None,
             pedal_loop: None,
@@ -393,7 +401,7 @@ impl PedalPart {
     }
     /// 1小節分の Damper Event を生成する。小節頭でコールされる
     /// 返り値: (Damper Event List, 次の Tick)
-    fn gen_events_in_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
+    fn gen_damper_events_in_msr(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
         let (tick_for_onemsr, tick_for_onebeat) = estk.tg().get_beat_tick();
         let beat_num: usize = (tick_for_onemsr / tick_for_onebeat) as usize;
 
@@ -572,10 +580,7 @@ impl Elapse for PedalPart {
         self.next_tick = 0;
     }
     fn process(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack) {
-        if self.pedal_msg.is_none() {
-            // Damper Event を生成
-            self.gen_events_in_msr(crnt_, estk);
-        } else if let Some(pmsg) = &self.pedal_msg {
+        if let Some(pmsg) = &self.pedal_msg {
             if self.loop_whole_tick != 0 {
                 self.elapsed_tick += crnt_.tick_for_onemsr;
             }
@@ -590,6 +595,9 @@ impl Elapse for PedalPart {
                 }
                 self.sync = false;
             }
+        } else if self.pedal_type == PedalType::Damper {
+            // Damper Event を生成
+            self.gen_damper_events_in_msr(crnt_, estk);
         }
         // 次の小節の先頭をセット
         self.next_msr = crnt_.msr + 1;

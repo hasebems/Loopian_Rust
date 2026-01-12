@@ -175,6 +175,13 @@ pub enum PedalPos {
     Full,
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub enum PedalType {
+    #[default]
+    Damper,
+    Sostenuto,
+    Shift,
+}
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct PedalEvt {
     pub msr: i16, // measure number
     pub beat: i16,
