@@ -43,12 +43,9 @@ impl History {
             if i < num {
                 continue;
             }
-            if !line.0.is_empty() && line.1 != "quit" {
-                //whole_txt += &line.0.to_string(); // 日付時刻の挿入
-                whole_txt += &line.1.to_string();
-                whole_txt += "\n";
-                txt_exist = true;
-            }
+            whole_txt += &line.1.to_string();
+            whole_txt += "\n";
+            txt_exist = true;
         }
         if txt_exist {
             // ファイル作成
@@ -62,15 +59,15 @@ impl History {
                 Ok(_) => println!("successfully wrote to {}", display),
             }
         } else {
-            println!("No file!");
+            println!("No text!");
         }
     }
     pub fn _get_scroll_text(&self, line: usize) -> (String, String) {
         self.input_lines[line].clone()
     }
     /// history にコマンドを追加する
-    pub fn set_scroll_text(&mut self, time: String, cmd: String) -> usize {
-        self.input_lines.push((time.clone(), cmd));
+    pub fn set_scroll_text(&mut self, prefix: String, cmd: String) -> usize {
+        self.input_lines.push((prefix, cmd));
         self.update_history_ptr()
     }
     /// history の中で、上矢印キーが押されたときの処理
