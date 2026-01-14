@@ -20,7 +20,9 @@ pub struct FloatingTick {
     floating: bool,                    //   FloatingTick が有効かどうか
 }
 impl FloatingTick {
-    const MAX_FRONT_DISPERSE: i32 = 120; // Tick の前への最大散らし幅
+    pub const fn max_front_disperse() -> i32 {
+        120 // Tick の前への最大散らし幅
+    }
 
     pub fn new(floating: bool) -> Self {
         Self {
@@ -66,7 +68,7 @@ impl FloatingTick {
         self.next_notational_tick = *next_;
         self.next_real_tick = *next_;
         if self.floating {
-            let real_tick = self.next_real_tick.tick - Self::MAX_FRONT_DISPERSE;
+            let real_tick = self.next_real_tick.tick - Self::max_front_disperse();
             if real_tick < 0 {
                 self.next_real_tick.tick = self.next_real_tick.tick_for_onemsr + real_tick;
                 self.next_real_tick.msr -= 1;

@@ -78,7 +78,6 @@ pub struct PhraseLoop {
 //          Phrase Loop Implementation
 //*******************************************************************
 impl PhraseLoop {
-    const MAX_FRONT_DISPERSE: i32 = 120; // Tick の前への最大散らし幅
     const EACH_DISPERSE: i32 = 60; // Tick の散らし幅の単位
 
     pub fn new(sid: u32, pid: u32, prm: PhraseLoopParam) -> Rc<RefCell<Self>> {
@@ -206,7 +205,7 @@ impl PhraseLoop {
         //println!("|^^ Note on at the same time: {}, {}, {}", same_time_stuck.len(), ntmsr, nttick);
         for (i, nt) in same_time_stuck.iter().enumerate() {
             let arp = if ev.floating {
-                (i as i32 * Self::EACH_DISPERSE) - Self::MAX_FRONT_DISPERSE
+                (i as i32 * Self::EACH_DISPERSE) - FloatingTick::max_front_disperse()
             } else {
                 0
             };

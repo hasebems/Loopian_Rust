@@ -49,7 +49,6 @@ pub struct ClusterPattern {
     next_tick: i32, //   次に呼ばれるTick数が保持される
 }
 impl ClusterPattern {
-    const MAX_FRONT_DISPERSE: i32 = 120; // Tick の前への最大散らし幅
     const EACH_DISPERSE: i32 = 60; // Tick の散らし幅の単位
 
     pub fn new(
@@ -241,7 +240,7 @@ impl ClusterPattern {
         for (i, nt) in ntlist.iter().enumerate() {
             // 発音リストに従って、NoteOn イベントを生成
             let arp = if self.arpeggio {
-                (i as i32 * Self::EACH_DISPERSE) - Self::MAX_FRONT_DISPERSE
+                (i as i32 * Self::EACH_DISPERSE) - FloatingTick::max_front_disperse()
             } else {
                 0
             };
