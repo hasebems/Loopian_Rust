@@ -215,14 +215,19 @@ impl Flow {
             trns: TrnsType::NoTrns,
             artic: 100,
         };
+        let evt_tick = CrntMsrTick {
+            msr: tk.0,
+            tick: tk.1,
+            tick_for_onemsr: crnt_.tick_for_onemsr,
+            ..Default::default()
+        };
         let nt: Rc<RefCell<Note>> = Note::new(
             (crnt_.msr * crnt_.tick_for_onemsr + crnt_.tick) as u32, //  unique number
             self.id.sid,                                             //  loop.sid -> note.pid
             NoteParam::new(
-                estk,
                 &ev,
                 format!(" Pt:{} Flow:{}", &self.id.pid, &self.id.sid),
-                (self.keynote, tk.0, tk.1, self.id.pid, false, true),
+                (self.keynote, evt_tick, self.id.pid, false, true),
             ),
         );
         self.note_stock

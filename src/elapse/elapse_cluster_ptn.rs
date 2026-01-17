@@ -272,14 +272,20 @@ impl ClusterPattern {
         }
 
         //println!("  >>> NoteOn: {}, vel: {}, dur: {}", crnt_ev.note, crnt_ev.vel, crnt_ev.dur);
+        let mut evt_tick = CrntMsrTick {
+            msr,
+            tick,
+            tick_for_onemsr: self.tick_for_onemsr,
+            ..Default::default()
+        };
+        (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick);
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             self.play_counter as u32, //  read pointer
             self.id.sid,              //  loop.sid -> note.pid
             NoteParam::new(
-                estk,
                 &crnt_ev,
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
-                (self.keynote, msr, tick, self.part, self.arpeggio, false),
+                (self.keynote, evt_tick, self.part, self.arpeggio, false),
             ),
         );
         estk.add_elapse(Rc::clone(&nt));

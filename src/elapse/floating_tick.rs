@@ -3,25 +3,25 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use rand_distr::{Distribution, Normal};
 use super::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 
-/// FloatingTick
-/// 本クラスは、PhraseLoop の next_tick を入力すると、その値を時間方向に散らして
-/// より生演奏に近い Tick を自動生成するクラスである。
-/// 時間方向に散らすことを FloatingTick と呼ぶこととする。
-/// 以下の二つの処理を行う。
-/// 1. 同時発音する和音の Tick をずらす。
-/// 2. 通常発音の Tick にランダム性を持たせる。
+/// 本クラスは、PhraseLoop の next_tick を入力すると、その値を時間方向に散らす。
+/// Arpeggio のとき和音の Tick をずらしたり、Tick をランダムにしたりするために使用する。
 pub struct FloatingTick {
     just_crnt: CrntMsrTick,            //   現在の小節とTickの情報が保持される
     next_real_tick: CrntMsrTick,       //   次に呼ばれる小節とTickの情報が保持される
     next_notational_tick: CrntMsrTick, //   次に呼ばれる譜面上の小節とTickの情報が保持される
     floating: bool,                    //   FloatingTick が有効かどうか
+    normal_dist: Normal<f64>,
 }
 impl FloatingTick {
     pub const fn max_front_disperse() -> i32 {
         120 // Tick の前への最大散らし幅
+    }
+    pub const fn note_time_dispersed() -> f64 {
+        10.0    // Tick の散らし幅の標準偏差
     }
 
     pub fn new(floating: bool) -> Self {
@@ -30,6 +30,7 @@ impl FloatingTick {
             next_real_tick: CrntMsrTick::set(FULL), // 大きな数値にしておく
             next_notational_tick: CrntMsrTick::set(FULL),
             floating,
+            normal_dist: Normal::new(0.0, Self::note_time_dispersed()).unwrap(),
         }
     }
     /// 現在の Tick と、Notational Tick を設定する。new で生成した後に呼び出す。
@@ -83,5 +84,18 @@ impl FloatingTick {
         } else {
             None
         }
+    }
+    pub fn disperse_tick(&mut self, evt_tick: &CrntMsrTick) -> (i32, i32) {
+        //let rnd_tick = Normal::<f64>::new(0.0, Self::NOTE_TIME_DISPERSE).unwrap();
+        let tt = evt_tick.tick + self.normal_dist.sample(&mut rand::rng()) as i32;
+        let (nmsr, ntick) = if tt < 0 {
+            (evt_tick.msr - 1, evt_tick.tick_for_onemsr + tt)
+        } else if tt >= evt_tick.tick_for_onemsr {
+            (evt_tick.msr + 1, tt - evt_tick.tick_for_onemsr)
+        } else {
+            (evt_tick.msr, tt)
+        };
+        //println!("@@@>Note Event at {}/{}", nmsr, ntick);
+        (nmsr, ntick)        
     }
 }

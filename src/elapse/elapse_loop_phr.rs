@@ -47,6 +47,12 @@ impl PhraseLoopParam {
         }
     }
 }
+struct NoteEventPrm {
+    trace: usize,
+    ev: NoteEvt, // ev: ['note', tick, duration, note, velocity
+    trans_note: u8,
+    deb_txt: String,
+}
 //*******************************************************************
 //          Phrase Loop Struct
 //*******************************************************************
@@ -153,23 +159,28 @@ impl PhraseLoop {
             }
             next_tick = phr[trace].tick() as i32;
             if next_tick <= elapsed_tick {
-                let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
                 let evtx = phr[trace].clone();
                 match evtx {
                     PhrEvt::Note(ev) => {
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
                         let (trans_note, deb_txt) = self.translate_note(rt_tbl, ev.note, next_tick);
-                        self.note_event(estk, trace * 10, ev, trans_note, deb_txt, (msr, tick));
+                        let nep = NoteEventPrm {
+                            trace: trace * 10,
+                            ev,
+                            trans_note,
+                            deb_txt,
+                        };
+                        self.note_event(crnt_, estk, nep, None);
                     }
                     PhrEvt::NoteList(ev) => {
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
                         self.note_on_at_the_same_time(crnt_, estk, &ev, rt_tbl, next_tick);
                     }
                     PhrEvt::BrkPtn(ev) => {
-                        self.set_broken(crnt_, ev, estk, (msr, tick));
+                        self.set_broken(crnt_, ev, estk);
                     }
                     PhrEvt::ClsPtn(ev) => {
-                        self.set_cluster(crnt_, ev, estk, (msr, tick));
+                        self.set_cluster(crnt_, ev, estk);
                     }
                     _ => (),
                 }
@@ -221,7 +232,13 @@ impl PhraseLoop {
             let nev_clone = NoteEvt::from_note_list(ev, nt.0);
             let trace = self.play_counter * 10 + i;
             //println!("|__ Note on at the same time: {}, {}, {}", nt.0, msr, tick);
-            self.note_event(estk, trace, nev_clone, nt.0, nt.1.clone(), (msr, tick));
+            let nep = NoteEventPrm {
+                trace,
+                ev: nev_clone,
+                trans_note: nt.0,
+                deb_txt: nt.1.clone(),
+            };
+            self.note_event(crnt_, estk, nep, Some((msr, tick)));
         }
         // 次のイベント処理の準備
         self.flt.turnoff_floating();
@@ -238,15 +255,31 @@ impl PhraseLoop {
     }
     fn note_event(
         &mut self,
+        crnt_: &CrntMsrTick,
         estk: &mut ElapseStack,
-        trace: usize,
-        ev: NoteEvt, // ev: ['note', tick, duration, note, velocity]
-        trans_note: u8,
-        deb_txt: String,
-        tk: (i32, i32), // (next_tick, msr, tick)
+        nep: NoteEventPrm,
+        //  trace: usize,
+        //  ev: NoteEvt, // ev: ['note', tick, duration, note, velocity]
+        //  trans_note: u8,
+        //  deb_txt: String,
+        tk: Option<(i32, i32)>, // (next_tick, msr, tick)
     ) {
-        let mut crnt_ev = ev;
-        crnt_ev.note = trans_note;
+        let mut crnt_ev = nep.ev;
+        crnt_ev.note = nep.trans_note;
+
+        //  Generate Event Tick with Disperse
+        let ntk = if let Some(tkr) = tk {
+            tkr
+        } else {
+            self.gen_msr_tick(crnt_, self.next_tick_in_phrase)
+        };
+        let mut evt_tick = CrntMsrTick {
+            msr: ntk.0,
+            tick: ntk.1,
+            tick_for_onemsr: crnt_.tick_for_onemsr,
+            ..Default::default()
+        };
+        (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick);
 
         //  Calculate Duration
         if crnt_ev.artic != DEFAULT_ARTIC {
@@ -259,16 +292,14 @@ impl PhraseLoop {
 
         //  Generate Note Struct
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
-            trace as u32, //  read pointer
-            self.id.sid,  //  loop.sid -> note.pid
+            nep.trace as u32, //  read pointer
+            self.id.sid,      //  loop.sid -> note.pid
             NoteParam::new(
-                estk,
                 &crnt_ev,
-                deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
+                nep.deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
                 (
                     self.keynote,
-                    tk.0,
-                    tk.1,
+                    evt_tick,
                     self.id.pid,
                     crnt_ev.floating,
                     false,
@@ -336,13 +367,8 @@ impl PhraseLoop {
         }
         TrnsType::Com
     }
-    fn set_broken(
-        &mut self,
-        crnt_: &CrntMsrTick,
-        mut ev: BrkPatternEvt,
-        estk: &mut ElapseStack,
-        tk: (i32, i32),
-    ) {
+    fn set_broken(&mut self, crnt_: &CrntMsrTick, mut ev: BrkPatternEvt, estk: &mut ElapseStack) {
+        let tk = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
         while ev.tick >= crnt_.tick_for_onemsr as i16 {
             // pattern は１小節内で完結
             ev.tick -= crnt_.tick_for_onemsr as i16;
@@ -358,13 +384,8 @@ impl PhraseLoop {
         );
         estk.add_elapse(Rc::clone(&ptn));
     }
-    fn set_cluster(
-        &mut self,
-        crnt_: &CrntMsrTick,
-        mut ev: ClsPatternEvt,
-        estk: &mut ElapseStack,
-        tk: (i32, i32),
-    ) {
+    fn set_cluster(&mut self, crnt_: &CrntMsrTick, mut ev: ClsPatternEvt, estk: &mut ElapseStack) {
+        let tk = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
         while ev.tick >= crnt_.tick_for_onemsr as i16 {
             // pattern は１小節内で完結
             ev.tick -= crnt_.tick_for_onemsr as i16;

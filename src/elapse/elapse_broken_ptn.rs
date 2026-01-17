@@ -10,6 +10,7 @@ use super::elapse_base::*;
 use super::elapse_note::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
+use super::floating_tick::*;
 use crate::cmd::txt2seq_ana;
 use crate::cmd::{txt2seq_cmps, txt2seq_cmps::*};
 use crate::lpnlib::*;
@@ -36,6 +37,7 @@ pub struct BrokenPattern {
     last_note: i16,
     para: bool,
     staccato_rate: i32,
+    flt: FloatingTick,
 
     // for super's member
     whole_tick: i32,
@@ -97,7 +99,7 @@ impl BrokenPattern {
             last_note: NO_NOTE as i16,
             para,
             staccato_rate,
-
+            flt: FloatingTick::new(false),
             // for super's member
             whole_tick: ptn.dur as i32,
             destroy: false,
@@ -249,21 +251,20 @@ impl BrokenPattern {
             crnt_ev.dur = ((old * self.staccato_rate) / 100) as i16;
         }
 
+        let mut evt_tick = CrntMsrTick {
+            msr: self.first_msr_num,
+            tick: self.ptn_tick + self.ptn_each_dur * (self.play_counter as i32),
+            tick_for_onemsr: estk.tg().get_beat_tick().0,
+            ..Default::default()
+        };
+        (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick);
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             self.play_counter as u32, //  read pointer
             self.id.sid,              //  loop.sid -> note.pid
             NoteParam::new(
-                estk,
                 &crnt_ev,
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
-                (
-                    self.keynote,
-                    self.first_msr_num,
-                    self.ptn_tick + self.ptn_each_dur * (self.play_counter as i32),
-                    self.part,
-                    false,
-                    false,
-                ),
+                (self.keynote, evt_tick, self.part, false, false),
             ),
         );
         estk.add_elapse(Rc::clone(&nt));

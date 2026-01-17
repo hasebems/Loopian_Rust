@@ -18,33 +18,28 @@ use crate::lpnlib::*;
 //          Note Event Struct
 //*******************************************************************
 pub struct NoteParam<'a> {
-    _estk: &'a mut ElapseStack,
     ev: &'a NoteEvt,
     keynote: u8,
     _deb_txt: String,
-    msr: i32,
-    tick: i32,
+    evt_tick: CrntMsrTick, // イベントが発生する小節とTick {msr, tick, tick_for_onemsr, None}
     part: u32,
     floating: bool,
     flow: bool,
 }
 impl<'a> NoteParam<'a> {
     pub fn new(
-        _estk: &'a mut ElapseStack,
         ev: &'a NoteEvt,
         _deb_txt: String,
-        prmset: (u8, i32, i32, u32, bool, bool), // (keynote,msr,tick,part,floating,flow)
+        prmset: (u8, CrntMsrTick, u32, bool, bool), // (keynote,evt_tick,part,floating,flow)
     ) -> Self {
         Self {
-            _estk,
             ev,
             keynote: prmset.0,
             _deb_txt,
-            msr: prmset.1,
-            tick: prmset.2,
-            part: prmset.3,
-            floating: prmset.4,
-            flow: prmset.5,
+            evt_tick: prmset.1,
+            part: prmset.2,
+            floating: prmset.3,
+            flow: prmset.4,
         }
     }
 }
@@ -63,6 +58,7 @@ pub struct Note {
     flow: bool,
     next_msr: i32,
     next_tick: i32,
+    tick_for_onemsr: i32,
     part: u32,
     _deb_txt: String,
 }
@@ -71,13 +67,12 @@ impl Note {
         sid: u32,
         pid: u32,
         prm: NoteParam,
-        //_estk: &mut ElapseStack,
-        //ev: &PhrEvt,
-        //keynote: u8,
-        //_deb_txt: String,
-        //msr: i32,
-        //tick: i32,
-        //part: u32,
+            //ev: &PhrEvt,
+            //keynote: u8,
+            //_deb_txt: String,
+            //msr: i32,
+            //tick: i32,
+            //part: u32,
     ) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -95,8 +90,9 @@ impl Note {
             destroy: false,
             floating: prm.floating,
             flow: prm.flow,
-            next_msr: prm.msr,
-            next_tick: prm.tick,
+            next_msr: prm.evt_tick.msr,
+            next_tick: prm.evt_tick.tick,
+            tick_for_onemsr: prm.evt_tick.tick_for_onemsr,
             part: prm.part,
             _deb_txt: prm._deb_txt,
         }))
@@ -106,7 +102,7 @@ impl Note {
         let bpm = estk.tg().get_bpm();
         let meter = estk.tg().get_meter();
         if self.flow {
-            self.duration = meter.0 * (1920 / meter.1); // 1小節分
+            self.duration = meter.0 * (self.tick_for_onemsr / meter.1); // 1小節分
         } else {
             self.duration = Self::auto_duration(bpm, meter, self.duration);
         }
