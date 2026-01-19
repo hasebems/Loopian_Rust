@@ -15,6 +15,7 @@ use super::view_lissajous::*;
 use super::view_raineffect::*;
 use super::view_sinewave::*;
 use super::view_voice4::*;
+use super::view_updown::*;
 use super::view_waterripple::*;
 use super::view_wavestick::*;
 use crate::cmd::txt_common::*;
@@ -41,6 +42,7 @@ pub enum GraphicMsg {
     JumpingPattern,
     WaveStickPattern,
     CircleThdsPattern,
+    UpDownRollPattern,
 }
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum GraphMode {
@@ -48,7 +50,7 @@ pub enum GraphMode {
     Light,
 }
 pub struct GraphicPatternName(pub GraphicMsg, pub &'static str);
-pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 11] = [
+pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 12] = [
     GraphicPatternName(GraphicMsg::RipplePattern, "ripple"),
     GraphicPatternName(GraphicMsg::VoicePattern, "voice"),
     GraphicPatternName(GraphicMsg::LissajousPattern, "lissa"),
@@ -60,6 +62,7 @@ pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 11] = [
     GraphicPatternName(GraphicMsg::JumpingPattern, "jumping"),
     GraphicPatternName(GraphicMsg::WaveStickPattern, "wavestick"),
     GraphicPatternName(GraphicMsg::CircleThdsPattern, "circlethreads"),
+    GraphicPatternName(GraphicMsg::UpDownRollPattern, "updownroll"),
 ];
 
 //*******************************************************************
@@ -132,6 +135,7 @@ pub fn get_view_instance(
         GraphicMsg::JumpingPattern => Some(Box::new(Jumping::new())),
         GraphicMsg::WaveStickPattern => Some(Box::new(WaveStick::new())),
         GraphicMsg::CircleThdsPattern => Some(Box::new(CircleThread::new())),
+        GraphicMsg::UpDownRollPattern => Some(Box::new(UpDownRoll::new(gmode))),
         _ => None,
     }
 }

@@ -8,6 +8,7 @@ pub mod view_jumping;
 pub mod view_lissajous;
 pub mod view_raineffect;
 pub mod view_sinewave;
+pub mod view_updown;
 pub mod view_voice4;
 pub mod view_waterripple;
 pub mod view_wavestick;
