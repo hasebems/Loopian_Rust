@@ -279,7 +279,7 @@ impl PhraseLoop {
             tick_for_onemsr: crnt_.tick_for_onemsr,
             ..Default::default()
         };
-        (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick);
+        (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick, estk.tg().get_bpm());
 
         //  Calculate Duration
         if crnt_ev.artic != DEFAULT_ARTIC {

@@ -257,7 +257,7 @@ impl BrokenPattern {
             tick_for_onemsr: estk.tg().get_beat_tick().0,
             ..Default::default()
         };
-        (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick);
+        (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick, estk.tg().get_bpm());
         let nt: Rc<RefCell<dyn Elapse>> = Note::new(
             self.play_counter as u32, //  read pointer
             self.id.sid,              //  loop.sid -> note.pid

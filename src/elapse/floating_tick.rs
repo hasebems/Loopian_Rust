@@ -21,7 +21,7 @@ impl FloatingTick {
         120 // Tick の前への最大散らし幅
     }
     pub const fn note_time_dispersed() -> f64 {
-        10.0    // Tick の散らし幅の標準偏差
+        0.01 // sec の散らし幅の標準偏差
     }
 
     pub fn new(floating: bool) -> Self {
@@ -85,9 +85,9 @@ impl FloatingTick {
             None
         }
     }
-    pub fn disperse_tick(&mut self, evt_tick: &CrntMsrTick) -> (i32, i32) {
-        //let rnd_tick = Normal::<f64>::new(0.0, Self::NOTE_TIME_DISPERSE).unwrap();
-        let tt = evt_tick.tick + self.normal_dist.sample(&mut rand::rng()) as i32;
+    pub fn disperse_tick(&mut self, evt_tick: &CrntMsrTick, bpm: i16) -> (i32, i32) {
+        let disperse_time = self.normal_dist.sample(&mut rand::rng());
+        let tt = evt_tick.tick + (disperse_time * (bpm as f64) * (1920.0 / (60.0 * 4.0))) as i32; // 4分音符基準
         let (nmsr, ntick) = if tt < 0 {
             (evt_tick.msr - 1, evt_tick.tick_for_onemsr + tt)
         } else if tt >= evt_tick.tick_for_onemsr {
@@ -96,6 +96,6 @@ impl FloatingTick {
             (evt_tick.msr, tt)
         };
         //println!("@@@>Note Event at {}/{}", nmsr, ntick);
-        (nmsr, ntick)        
+        (nmsr, ntick)
     }
 }
