@@ -227,7 +227,7 @@ impl Flow {
             NoteParam::new(
                 &ev,
                 format!(" Pt:{} Flow:{}", &self.id.pid, &self.id.sid),
-                (self.keynote, evt_tick, self.id.pid, false, true),
+                (self.keynote, evt_tick, self.id.pid, true),
             ),
         );
         self.note_stock

@@ -262,7 +262,7 @@ impl PhraseLoop {
         //  ev: NoteEvt, // ev: ['note', tick, duration, note, velocity]
         //  trans_note: u8,
         //  deb_txt: String,
-        tk: Option<(i32, i32)>, // (next_tick, msr, tick)
+        tk: Option<(i32, i32)>, // for Floating Tick
     ) {
         let mut crnt_ev = nep.ev;
         crnt_ev.note = nep.trans_note;
@@ -297,13 +297,7 @@ impl PhraseLoop {
             NoteParam::new(
                 &crnt_ev,
                 nep.deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
-                (
-                    self.keynote,
-                    evt_tick,
-                    self.id.pid,
-                    crnt_ev.floating,
-                    false,
-                ),
+                (self.keynote, evt_tick, self.id.pid, false),
             ),
         );
         estk.add_elapse(Rc::clone(&nt));

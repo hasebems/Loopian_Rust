@@ -23,14 +23,13 @@ pub struct NoteParam<'a> {
     _deb_txt: String,
     evt_tick: CrntMsrTick, // イベントが発生する小節とTick {msr, tick, tick_for_onemsr, None}
     part: u32,
-    floating: bool,
     flow: bool,
 }
 impl<'a> NoteParam<'a> {
     pub fn new(
         ev: &'a NoteEvt,
         _deb_txt: String,
-        prmset: (u8, CrntMsrTick, u32, bool, bool), // (keynote,evt_tick,part,floating,flow)
+        prmset: (u8, CrntMsrTick, u32, bool), // (keynote,evt_tick,part,flow)
     ) -> Self {
         Self {
             ev,
@@ -38,8 +37,7 @@ impl<'a> NoteParam<'a> {
             _deb_txt,
             evt_tick: prmset.1,
             part: prmset.2,
-            floating: prmset.3,
-            flow: prmset.4,
+            flow: prmset.3,
         }
     }
 }
@@ -54,7 +52,6 @@ pub struct Note {
     real_note: u8,
     noteon_started: bool,
     destroy: bool,
-    floating: bool,
     flow: bool,
     next_msr: i32,
     next_tick: i32,
@@ -67,12 +64,12 @@ impl Note {
         sid: u32,
         pid: u32,
         prm: NoteParam,
-            //ev: &PhrEvt,
-            //keynote: u8,
-            //_deb_txt: String,
-            //msr: i32,
-            //tick: i32,
-            //part: u32,
+        //ev: &PhrEvt,
+        //keynote: u8,
+        //_deb_txt: String,
+        //msr: i32,
+        //tick: i32,
+        //part: u32,
     ) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -88,7 +85,6 @@ impl Note {
             real_note: 0,
             noteon_started: false,
             destroy: false,
-            floating: prm.floating,
             flow: prm.flow,
             next_msr: prm.evt_tick.msr,
             next_tick: prm.evt_tick.tick,
@@ -190,7 +186,7 @@ impl Elapse for Note {
     }
     /// 次に呼ばれる小節番号、Tick数を返す
     fn next(&self) -> (i32, i32, bool) {
-        (self.next_msr, self.next_tick, self.floating)
+        (self.next_msr, self.next_tick, true)
     }
     /// User による start/play 時にコールされる
     fn start(&mut self, _msr: i32) {}

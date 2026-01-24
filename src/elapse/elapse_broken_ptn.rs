@@ -8,9 +8,9 @@ use std::rc::Rc;
 
 use super::elapse_base::*;
 use super::elapse_note::*;
+use super::floating_tick::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
-use super::floating_tick::*;
 use crate::cmd::txt2seq_ana;
 use crate::cmd::{txt2seq_cmps, txt2seq_cmps::*};
 use crate::lpnlib::*;
@@ -264,7 +264,7 @@ impl BrokenPattern {
             NoteParam::new(
                 &crnt_ev,
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
-                (self.keynote, evt_tick, self.part, false, false),
+                (self.keynote, evt_tick, self.part, false),
             ),
         );
         estk.add_elapse(Rc::clone(&nt));
