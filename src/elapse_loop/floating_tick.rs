@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use super::tickgen::CrntMsrTick;
+use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 use rand_distr::{Distribution, Normal};
 

@@ -5,10 +5,10 @@
 //
 pub type ChordEvtMap = Vec<Vec<Option<(ChordEvt, bool)>>>;
 pub type PedalEvtMap = Vec<Vec<Option<(PedalEvt, bool)>>>;
-use super::elapse_part::PartBasicPrm;
-use super::stack_elapse::ElapseStack;
-use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_cmps::*;
+use crate::elapse::elapse_part::PartBasicPrm;
+use crate::elapse::stack_elapse::ElapseStack;
+use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 
 //*******************************************************************

@@ -15,10 +15,10 @@ use std::vec::Vec;
 
 use super::elapse_base::*;
 use super::elapse_flow::Flow;
-use super::elapse_loop_phr::PhraseLoop;
 use super::elapse_part::Part;
 use super::elapse_pedal::PedalPart;
 use super::tickgen::{CrntMsrTick, RitType, TickGen};
+use crate::elapse_loop::elapse_loop_phr::PhraseLoop;
 use crate::lpnlib::{ElpsMsg::*, *};
 use crate::midi::midirx::MidiRxThread;
 use crate::midi::miditx::MidiTx;

@@ -7,9 +7,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::elapse_base::*;
-use super::floating_tick::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
+use crate::elapse_loop::floating_tick::*;
 use crate::lpnlib::*;
 
 //*******************************************************************

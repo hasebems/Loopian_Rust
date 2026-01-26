@@ -5,6 +5,7 @@
 //
 mod cmd;
 mod elapse;
+mod elapse_loop;
 mod file;
 mod graphic;
 mod lpnlib;
