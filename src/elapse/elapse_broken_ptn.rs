@@ -24,6 +24,7 @@ pub struct BrokenPattern {
 
     ptn_tick: i32,
     ptn_vel: i32,
+    ptn_amp: Amp,
     ptn_each_dur: i32,
     ptn_arp_type: i32,
     next_index: usize,
@@ -87,6 +88,7 @@ impl BrokenPattern {
             priority: PRI_DYNPTN,
             ptn_tick: ptn.tick as i32,
             ptn_vel: ptn.vel as i32,
+            ptn_amp: ptn.amp,
             ptn_each_dur: ptn.each_dur as i32,
             ptn_arp_type: ptn.figure as i32,
             next_index: 0,
@@ -242,6 +244,7 @@ impl BrokenPattern {
             dur: self.ptn_each_dur as i16,
             note: note as u8,
             vel,
+            amp: self.ptn_amp,
             ..NoteEvt::default()
         };
 

@@ -212,6 +212,7 @@ impl Flow {
             note: real_note,
             floating: false,
             vel: vel as i16,
+            amp: Amp::default(),
             trns: TrnsType::NoTrns,
             artic: 100,
         };

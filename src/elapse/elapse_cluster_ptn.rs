@@ -25,6 +25,7 @@ pub struct ClusterPattern {
     ptn_tick: i32,
     ptn_min_nt: i16,
     ptn_vel: i32,
+    ptn_amp: Amp,
     ptn_each_dur: i32,
     ptn_max_vce: i32,
     analys: Vec<AnaEvt>,
@@ -103,6 +104,7 @@ impl ClusterPattern {
             ptn_tick: ptn.tick as i32,
             ptn_min_nt: ptn.lowest,
             ptn_vel: ptn.vel as i32,
+            ptn_amp: ptn.amp,
             ptn_each_dur: ptn.each_dur as i32,
             ptn_max_vce: ptn.max_count as i32,
             analys: ana,
@@ -262,6 +264,7 @@ impl ClusterPattern {
             dur: self.ptn_each_dur as i16,
             note: note as u8,
             vel,
+            amp: self.ptn_amp,
             ..NoteEvt::default()
         };
 

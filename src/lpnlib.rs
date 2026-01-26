@@ -96,6 +96,13 @@ pub enum ExpType {
 //          UI->ELPS Message
 //              []: meaning, < >: index, (a/b/c): selection
 //*******************************************************************
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Amp {
+    pub note_amp: i16, // note amplitude -16..0..+16
+    // -16: %%%%, -12: %%%, -8: %%, -4: %, 0: --, +4: ^, +8: ^^, +12: ^^^, +16: ^^^^
+    pub phrase_amp: i16, // phrase amplitude -16..0..+16
+    // -16: pppp, -12: ppp, -8: pp, -4: p, 0: mp, +4: mf, +8: f, +12: ff, +16: fff
+}
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct NoteListEvt {
     pub tick: i16,      // tick
@@ -103,6 +110,7 @@ pub struct NoteListEvt {
     pub notes: Vec<u8>, // note number
     pub floating: bool, // true: floating tick, false: not floating
     pub vel: i16,       // velocity
+    pub amp: Amp,       // amplitude
     pub trns: TrnsType, // translation
     pub artic: i16,     // 0..100..200[%] staccato/legato
 }
@@ -113,6 +121,7 @@ pub struct NoteEvt {
     pub note: u8,       // note number
     pub floating: bool, // true: floating tick, false: not floating
     pub vel: i16,       // velocity
+    pub amp: Amp,       // amplitude
     pub trns: TrnsType, // translation
     pub artic: i16,     // 0..100..200[%] staccato/legato
 }
@@ -124,6 +133,7 @@ impl NoteEvt {
             note,
             floating: list.floating,
             vel: list.vel,
+            amp: list.amp,
             trns: list.trns,
             artic: list.artic,
         }
@@ -135,6 +145,7 @@ pub struct BrkPatternEvt {
     pub dur: i16,       // duration
     pub lowest: i16,    // lowest note number -7..0..7
     pub vel: i16,       // velocity
+    pub amp: Amp,       // amplitude
     pub max_count: i16, // max note count: 2-5
     pub figure: i16,    // figure of arpeggio: u/d/xu/xd(0-3)
     pub each_dur: i16,  // each note's duration
@@ -146,6 +157,7 @@ pub struct ClsPatternEvt {
     pub dur: i16,       // duration
     pub lowest: i16,    // lowest note number -7..0..7
     pub vel: i16,       // velocity
+    pub amp: Amp,       // amplitude
     pub max_count: i16, // max note count: 2-5
     pub arpeggio: i16,  // figure of arpeggio: 0,1-3
     pub each_dur: i16,  // each note's duration
