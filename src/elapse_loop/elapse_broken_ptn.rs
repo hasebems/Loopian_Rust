@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::floating_tick::*;
-use crate::cmd::txt2seq_ana;
+use super::note_translation::*;
 use crate::cmd::{txt2seq_cmps, txt2seq_cmps::*};
 use crate::elapse::elapse_base::*;
 use crate::elapse::elapse_note::*;
@@ -154,14 +154,14 @@ impl BrokenPattern {
         let mut vel: i16 = self.ptn_vel as i16;
         if denomi == 8 {
             if (tick_for_onemsr / (DEFAULT_TICK_FOR_QUARTER / 2)) % 3 == 0 {
-                vel = txt2seq_ana::calc_vel_for3_8(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                vel = calc_vel_for3_8(self.ptn_vel as i16, self.next_tick as f32, bpm);
             }
         } else {
             // denomi == 4
             if tick_for_onemsr == TICK_4_4 as i32 {
-                vel = txt2seq_ana::calc_vel_for4(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                vel = calc_vel_for4(self.ptn_vel as i16, self.next_tick as f32, bpm);
             } else if tick_for_onemsr == TICK_3_4 as i32 {
-                vel = txt2seq_ana::calc_vel_for3(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                vel = calc_vel_for3(self.ptn_vel as i16, self.next_tick as f32, bpm);
             }
         }
         vel
