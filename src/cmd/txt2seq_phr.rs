@@ -600,8 +600,14 @@ pub fn recombine_to_internal_format(
             pr.last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else if txt2seq_dp::available_for_dp(&note_text) {
             // Dynamic Pattern
-            let ca_ev =
-                txt2seq_dp::treat_dp(&mut pr, note_text.clone(), base_note, crnt_tick, exp_vel, exp_amp);
+            let ca_ev = txt2seq_dp::treat_dp(
+                &mut pr,
+                note_text.clone(),
+                base_note,
+                crnt_tick,
+                exp_vel,
+                exp_amp,
+            );
             if pr.is_less_than_whole_tick(crnt_tick) {
                 crnt_tick += ca_ev.dur() as i32;
                 pr.rcmb.push(ca_ev);
@@ -610,13 +616,16 @@ pub fn recombine_to_internal_format(
             // Note 処理
             let (notes, note_dur, diff_vel, diff_amp, others) =
                 pr.break_up_nt_dur_vel(note_text, crnt_tick, imd);
-            let amp = Amp { note_amp: diff_amp, phrase_amp: exp_amp };
+            let amp = Amp {
+                note_amp: diff_amp,
+                phrase_amp: exp_amp,
+            };
             if pr.is_less_than_whole_tick(crnt_tick) {
                 // add to recombined data (NO_NOTE 含む(タイの時に使用))
                 let prm = AddNoteParam {
                     mes_top,
                     dur: get_note_dur(note_dur, pr.whole_msr_tick(), crnt_tick),
-                    vel: velo_limits(exp_vel + diff_vel, 1),
+                    vel: (exp_vel + diff_vel).clamp(1, 127) as i16,
                     amp,
                     trns,
                     others,

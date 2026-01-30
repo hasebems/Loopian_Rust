@@ -39,14 +39,16 @@ pub fn treat_dp(
     }
     let (ntext4, diff_vel, diff_amp) = extrude_diff_vel(ntext3);
 
-    let vel = velo_limits(exp_vel + diff_vel, 1);
     let ev = gen_dp_pattern(
         &ntext4,
         case_arp,
         base_note as i16,
         crnt_tick as i16,
-        vel,
-        Amp { note_amp: diff_amp, phrase_amp: exp_amp },
+        (exp_vel + diff_vel).clamp(1, 127) as i16,
+        Amp {
+            note_amp: diff_amp,
+            phrase_amp: exp_amp,
+        },
         duration as i16,
     );
     //let mut ev = NoteEvt::default();

@@ -130,15 +130,3 @@ pub fn separate_cmnd_and_str(cn: &str) -> Option<(&str, &str)> {
 pub fn get_crnt_date_txt() -> String {
     Local::now().format("%Y-%m-%d %H:%M:%S ").to_string()
 }
-//*******************************************************************
-//          Common Function
-//*******************************************************************
-pub fn velo_limits(value: i32, lo_limit: i32) -> i16 {
-    if value > 127 {
-        127
-    } else if value < lo_limit {
-        lo_limit as i16
-    } else {
-        value as i16
-    }
-}
