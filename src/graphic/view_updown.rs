@@ -125,11 +125,23 @@ impl NoteObj for UpDownRollNote {
             let gray_scal = if self.mode == GraphMode::Dark {
                 rgba(1.0, 1.0, 1.0, alpha_level)
             } else {
-                rgba(0.0, 0.0, 0.0, alpha_level)
+                rgba(0.0, 0.0, 0.0, alpha_level*2.0) // 少し濃いめ
             };
 
             let radius_sz = ((i + 1) as f32) * 3.0 - self.elapsed_time * Self::CIRCLE_SIZE;
             if radius_sz > 0.0 {
+                if i == 0 {
+                    // 中心は塗りつぶし
+                    draw.ellipse()
+                        .x_y(x_offset, y_offset)
+                        .color(gray_scal)
+                        .radius(radius_sz + 1.0);
+                    draw.ellipse()
+                        .x_y(x_offset, -y_offset)
+                        .color(gray_scal)
+                        .radius(radius_sz + 1.0);
+                    continue;
+                }
                 draw.ellipse()
                     .x_y(x_offset, y_offset)
                     .no_fill()
