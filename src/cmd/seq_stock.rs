@@ -91,7 +91,6 @@ impl SeqDataStock {
             if self.pdt[part][num].set_raw(input_text, Some(&self.cluster_memory)) {
                 self.pdt[part][num].set_recombined(
                     Some(self.input_mode),
-                    self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
                     Some(false),
@@ -103,7 +102,6 @@ impl SeqDataStock {
             if self.pdldt[part - MAX_ALL_KBD_PART].set_raw(input_text, None) {
                 self.pdldt[part - MAX_ALL_KBD_PART].set_recombined(
                     None,
-                    self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
                     None,
@@ -119,7 +117,6 @@ impl SeqDataStock {
                 if self.pdt[part][i].set_raw("[]".to_string(), Some(&self.cluster_memory)) {
                     self.pdt[part][i].set_recombined(
                         Some(self.input_mode),
-                        self.bpm,
                         self.tick_for_onemsr,
                         self.tick_for_beat,
                         Some(false),
@@ -131,7 +128,6 @@ impl SeqDataStock {
             if self.pdldt[part - MAX_ALL_KBD_PART].set_raw("[]".to_string(), None) {
                 self.pdldt[part - MAX_ALL_KBD_PART].set_recombined(
                     None,
-                    self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
                     None,
@@ -143,7 +139,6 @@ impl SeqDataStock {
         if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw(input_text, None) {
             self.cdt[part].set_recombined(
                 None,
-                self.bpm,
                 self.tick_for_onemsr,
                 self.tick_for_beat,
                 None,
@@ -195,7 +190,6 @@ impl SeqDataStock {
                 epd.base_note = new_bd;
                 epd.set_recombined(
                     Some(self.input_mode),
-                    self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
                     Some(true),
@@ -255,7 +249,6 @@ impl SeqDataStock {
             for epd in pd.iter_mut() {
                 epd.set_recombined(
                     Some(self.input_mode),
-                    self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
                     Some(true),
@@ -265,7 +258,6 @@ impl SeqDataStock {
         for epdl in self.pdldt.iter_mut() {
             epdl.set_recombined(
                 None,
-                self.bpm,
                 self.tick_for_onemsr,
                 self.tick_for_beat,
                 None,
@@ -277,7 +269,6 @@ impl SeqDataStock {
             for epd in pd.iter_mut() {
                 epd.set_recombined(
                     Some(self.input_mode),
-                    self.bpm,
                     self.tick_for_onemsr,
                     self.tick_for_beat,
                     Some(true),
@@ -285,7 +276,6 @@ impl SeqDataStock {
             }
             self.cdt[i].set_recombined(
                 None,
-                self.bpm,
                 self.tick_for_onemsr,
                 self.tick_for_beat,
                 None,
@@ -294,7 +284,6 @@ impl SeqDataStock {
         for epdl in self.pdldt.iter_mut() {
             epdl.set_recombined(
                 None,
-                self.bpm,
                 self.tick_for_onemsr,
                 self.tick_for_beat,
                 None,
@@ -316,7 +305,6 @@ pub trait DataStock {
     fn set_recombined(
         &mut self,
         input_mode: Option<InputMode>,
-        bpm: i16,
         tick_for_onemsr: i32,
         tick_for_beat: i32,
         resend: Option<bool>,
@@ -424,9 +412,8 @@ impl DataStock for PhraseDataStock {
     fn set_recombined(
         &mut self,
         input_mode: Option<InputMode>,
-        bpm: i16,
         tick_for_onemsr: i32,
-        tick_for_beat: i32,
+        _tick_for_beat: i32,
         resend: Option<bool>,
     ) {
         // 2.5. check empty phrase
@@ -454,9 +441,6 @@ impl DataStock for PhraseDataStock {
 
         // 4.analysed data
         self.ana = analyse_data(&self.phr, &self.cmpl.as_ref().unwrap().music_exp);
-
-        // 5.humanized data
-        self.phr = beat_filter(&self.phr, bpm, tick_for_onemsr, tick_for_beat);
         #[cfg(feature = "verbose")]
         {
             println!("final_phrase: {:?}", self.phr);
@@ -542,7 +526,6 @@ impl DataStock for CompositionDataStock {
     fn set_recombined(
         &mut self,
         _input_mode: Option<InputMode>,
-        _bpm: i16,
         tick_for_onemsr: i32,
         tick_for_beat: i32,
         _resend: Option<bool>,
@@ -589,7 +572,6 @@ impl DataStock for PedalDataStock {
     fn set_recombined(
         &mut self,
         _input_mode: Option<InputMode>,
-        _bpm: i16,
         tick_for_onemsr: i32,
         tick_for_beat: i32,
         _resend: Option<bool>,
