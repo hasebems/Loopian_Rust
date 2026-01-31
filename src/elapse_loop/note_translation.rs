@@ -294,11 +294,15 @@ pub fn beat_filter(
         for dt in all_dt.iter_mut() {
             if let PhrEvt::Note(e) = dt {
                 e.vel = calc_vel_for4(e.vel, e.tick as f32, bpm);
+            } else if let PhrEvt::NoteList(e) = dt {
+                e.vel = calc_vel_for4(e.vel, e.tick as f32, bpm);
             }
         }
     } else if tick_for_onemsr == TICK_3_4 as i32 && tick_for_beat == DEFAULT_TICK_FOR_QUARTER {
         for dt in all_dt.iter_mut() {
             if let PhrEvt::Note(e) = dt {
+                e.vel = calc_vel_for3(e.vel, e.tick as f32, bpm);
+            } else if let PhrEvt::NoteList(e) = dt {
                 e.vel = calc_vel_for3(e.vel, e.tick as f32, bpm);
             }
         }
@@ -306,8 +310,10 @@ pub fn beat_filter(
         && tick_for_beat == DEFAULT_TICK_FOR_QUARTER / 2
     {
         for dt in all_dt.iter_mut() {
-            if let PhrEvt::Note(dt) = dt {
-                dt.vel = calc_vel_for3_8(dt.vel, dt.tick as f32, bpm);
+            if let PhrEvt::Note(e) = dt {
+                e.vel = calc_vel_for3_8(e.vel, e.tick as f32, bpm);
+            } else if let PhrEvt::NoteList(e) = dt {
+                e.vel = calc_vel_for3_8(e.vel, e.tick as f32, bpm);
             }
         }
     }
