@@ -9,6 +9,20 @@ use chrono::Local;
 //*******************************************************************
 //          Func
 //*******************************************************************
+pub fn convert_expstr2amp(vel_text: &str) -> i16 {
+    match vel_text {
+        "fff" => 16,
+        "ff" => 12,
+        "f" => 8,
+        "mf" => 4,
+        "mp" => 0,
+        "p" => -4,
+        "pp" => -8,
+        "ppp" => -12,
+        "pppp" => -16,
+        _ => 0,
+    }
+}
 pub fn convert_exp2vel(vel_text: &str) -> i32 {
     match vel_text {
         "ff" => 127,

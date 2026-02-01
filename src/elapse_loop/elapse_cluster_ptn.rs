@@ -24,7 +24,6 @@ pub struct ClusterPattern {
 
     ptn_tick: i32,
     ptn_min_nt: i16,
-    ptn_vel: i32,
     ptn_amp: Amp,
     ptn_each_dur: i32,
     ptn_max_vce: i32,
@@ -103,7 +102,6 @@ impl ClusterPattern {
             priority: PRI_DYNPTN,
             ptn_tick: ptn.tick as i32,
             ptn_min_nt: ptn.lowest,
-            ptn_vel: ptn.vel as i32,
             ptn_amp: ptn.amp,
             ptn_each_dur: ptn.each_dur as i32,
             ptn_max_vce: ptn.max_count as i32,
@@ -141,10 +139,10 @@ impl ClusterPattern {
             }
             #[cfg(feature = "verbose")]
             println!("ClusterPattern: root-{root}, table-{tbl}");
-            let (tblptr_cow, vel) = self.gen_each_note(crnt_, estk, tbl);
+            let tblptr_cow = self.gen_each_note(crnt_, estk, tbl);
             let tblptr: &[i16] = tblptr_cow.as_ref();
             let ntlist = self.gen_cluster_list(root, tblptr);
-            self.play_cluster(estk, &ntlist, vel);
+            self.play_cluster(estk, &ntlist);
 
             self.play_counter += 1;
             self.recalc_next_tick(crnt_)
@@ -157,30 +155,30 @@ impl ClusterPattern {
         crnt_: &CrntMsrTick,
         estk: &mut ElapseStack,
         tbl: i16,
-    ) -> (std::borrow::Cow<'static, [i16]>, i16) {
+    ) -> std::borrow::Cow<'static, [i16]> {
         let (tblptr_cow, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
-        let vel = self.calc_dynamic_vel(
+        self.ptn_amp.auto_amp = self.calc_dynamic_amp(
             crnt_.tick_for_onemsr,
             estk.get_bpm(),
             estk.tg().get_meter().1,
         );
-        (tblptr_cow, vel)
+        tblptr_cow
     }
-    fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
-        let mut vel: i16 = self.ptn_vel as i16;
+    fn calc_dynamic_amp(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
+        let mut amp: i16 = 0;
         if denomi == 8 {
             if (tick_for_onemsr / (DEFAULT_TICK_FOR_QUARTER / 2)) % 3 == 0 {
-                vel = calc_vel_for3_8(self.ptn_vel as i16, self.notational_tick as f32, bpm);
+                amp = calc_vel_for3_8(self.notational_tick as f32, bpm);
             }
         } else {
             // denomi == 4
             if tick_for_onemsr == TICK_4_4 as i32 {
-                vel = calc_vel_for4(self.ptn_vel as i16, self.notational_tick as f32, bpm);
+                amp = calc_vel_for4(self.notational_tick as f32, bpm);
             } else if tick_for_onemsr == TICK_3_4 as i32 {
-                vel = calc_vel_for3(self.ptn_vel as i16, self.notational_tick as f32, bpm);
+                amp = calc_vel_for3(self.notational_tick as f32, bpm);
             }
         }
-        vel
+        amp
     }
     fn gen_cluster_list(&mut self, root: i16, tblptr: &[i16]) -> Vec<i16> {
         // 最低ノートとpara設定から、各ノートのオクターブを算出
@@ -226,7 +224,7 @@ impl ClusterPattern {
         }
         ntlist
     }
-    fn play_cluster(&mut self, estk: &mut ElapseStack, ntlist: &[i16], vel: i16) {
+    fn play_cluster(&mut self, estk: &mut ElapseStack, ntlist: &[i16]) {
         for (i, nt) in ntlist.iter().enumerate() {
             // 発音リストに従って、NoteOn イベントを生成
             let arp = if self.arpeggio {
@@ -243,15 +241,14 @@ impl ClusterPattern {
                 tick -= self.tick_for_onemsr;
                 msr += 1;
             }
-            self.gen_note_ev(estk, *nt, vel, msr, tick);
+            self.gen_note_ev(estk, *nt, msr, tick);
         }
     }
     /// NoteOn イベントを生成
-    fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16, vel: i16, msr: i32, tick: i32) {
+    fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16, msr: i32, tick: i32) {
         let mut crnt_ev = NoteEvt {
             dur: self.ptn_each_dur as i16,
             note: note as u8,
-            vel,
             amp: self.ptn_amp,
             ..NoteEvt::default()
         };

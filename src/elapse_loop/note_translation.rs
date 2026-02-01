@@ -276,7 +276,6 @@ fn search_scale_nt_just_below(root: i16, tbl: &[i16], nt: i16) -> i16 {
 //*******************************************************************
 const EFFECT: i16 = 20; // bigger(1..100), stronger
 const MIN_BPM: i16 = 60;
-const MIN_AVILABLE_VELO: i16 = 30;
 const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
 pub fn beat_filter(
     rcmb: &[PhrEvt],
@@ -293,17 +292,17 @@ pub fn beat_filter(
     if tick_for_onemsr == TICK_4_4 as i32 {
         for dt in all_dt.iter_mut() {
             if let PhrEvt::Note(e) = dt {
-                e.vel = calc_vel_for4(e.vel, e.tick as f32, bpm);
+                e.amp.auto_amp = calc_vel_for4(e.tick as f32, bpm);
             } else if let PhrEvt::NoteList(e) = dt {
-                e.vel = calc_vel_for4(e.vel, e.tick as f32, bpm);
+                e.amp.auto_amp = calc_vel_for4(e.tick as f32, bpm);
             }
         }
     } else if tick_for_onemsr == TICK_3_4 as i32 && tick_for_beat == DEFAULT_TICK_FOR_QUARTER {
         for dt in all_dt.iter_mut() {
             if let PhrEvt::Note(e) = dt {
-                e.vel = calc_vel_for3(e.vel, e.tick as f32, bpm);
+                e.amp.auto_amp = calc_vel_for3(e.tick as f32, bpm);
             } else if let PhrEvt::NoteList(e) = dt {
-                e.vel = calc_vel_for3(e.vel, e.tick as f32, bpm);
+                e.amp.auto_amp = calc_vel_for3(e.tick as f32, bpm);
             }
         }
     } else if (tick_for_onemsr % (DEFAULT_TICK_FOR_QUARTER / 2)) % 3 == 0
@@ -311,42 +310,38 @@ pub fn beat_filter(
     {
         for dt in all_dt.iter_mut() {
             if let PhrEvt::Note(e) = dt {
-                e.vel = calc_vel_for3_8(e.vel, e.tick as f32, bpm);
+                e.amp.auto_amp = calc_vel_for3_8(e.tick as f32, bpm);
             } else if let PhrEvt::NoteList(e) = dt {
-                e.vel = calc_vel_for3_8(e.vel, e.tick as f32, bpm);
+                e.amp.auto_amp = calc_vel_for3_8(e.tick as f32, bpm);
             }
         }
     }
     all_dt
 }
-pub fn calc_vel_for4(input_vel: i16, tick: f32, bpm: i16) -> i16 {
+pub fn calc_vel_for4(tick: f32, bpm: i16) -> i16 {
     let base_bpm = (bpm - MIN_BPM) * EFFECT / 100;
     let tm: f32 = (tick % TICK_4_4) / TICK_1BT;
-    let mut vel = input_vel;
     if tm == 0.0 {
-        vel += base_bpm;
+        base_bpm
     } else if tm == 2.0 {
-        vel += base_bpm / 4;
+        base_bpm / 4
     } else {
-        vel -= base_bpm / 4;
+        -base_bpm / 4
     }
-    vel.clamp(MIN_AVILABLE_VELO, 127)
 }
-pub fn calc_vel_for3(input_vel: i16, tick: f32, bpm: i16) -> i16 {
+pub fn calc_vel_for3(tick: f32, bpm: i16) -> i16 {
     const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32;
     let base_bpm = (bpm - MIN_BPM) * EFFECT / 100;
     let tm: f32 = (tick % TICK_3_4) / TICK_1BT;
-    let mut vel = input_vel;
     if tm == 0.0 {
-        vel += base_bpm;
+        base_bpm
     } else if tm == 1.0 {
-        vel += base_bpm / 4;
+        base_bpm / 4
     } else {
-        vel -= base_bpm / 4;
+        -base_bpm / 4
     }
-    vel.clamp(MIN_AVILABLE_VELO, 127)
 }
-pub fn calc_vel_for3_8(input_vel: i16, tick: f32, bpm: i16) -> i16 {
+pub fn calc_vel_for3_8(tick: f32, bpm: i16) -> i16 {
     const TICK_1BT: f32 = DEFAULT_TICK_FOR_QUARTER as f32 / 2.0;
     let base_bpm = if bpm < MIN_BPM * 2 {
         2
@@ -354,11 +349,9 @@ pub fn calc_vel_for3_8(input_vel: i16, tick: f32, bpm: i16) -> i16 {
         (bpm - MIN_BPM * 2) * EFFECT / 200
     };
     let tm: f32 = (tick % (TICK_1BT * 3.0)) / TICK_1BT;
-    let mut vel = input_vel;
     if tm == 0.0 {
-        vel += base_bpm;
+        base_bpm
     } else {
-        vel -= base_bpm / 4;
+        -base_bpm / 4
     }
-    vel.clamp(MIN_AVILABLE_VELO, 127)
 }

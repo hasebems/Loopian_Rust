@@ -267,19 +267,19 @@ NoteObj <|-- Voice4Note
 |2|complement|補填|生データに補填、追加したデータ|入力時||
 |3|recombined|再構成|SMF的な、tick/note/velocity をセットにしたデータ|入力時|composition/bpm/beat/key/oct|
 |4|analysed|分析|コード変換時に自然な変換をするための分析データ|入力時||
-|5|humanized|生演奏|velocity/duration を生演奏に近づけたデータ|入力時||
 ||||◆ここまでのデータが次のLoop先頭でロード◆|||
+|5|humanized|生演奏|velocity/duration を生演奏に近づけたデータ|再生時(dynamic)||
 |6|randomized|分散|変化量を分散したデータ|再生時(dynamic)||
 |7|translated|変換|コードの反映|再生時(dynamic)||
 
 
-- 上記のうち最初の５つは、ユーザーによるphrase入力時に処理される(static)
-- 再生中、リアルタイムに最後の二つの処理が行われる(dynamic)
+- 上記のうち最初の4つは、ユーザーによるphrase入力時に処理される(static)
+- 再生中、リアルタイムに最後の3つの処理が行われる(dynamic)
 - 上記の各データが、他の要因で変更されるタイミングは以下
     - phrase が入力されたら、最初からやり直し(set_raw())
     - composition が入力されたら、「再構成」からやり直し(set_recombined())
     - bpm/beat/key/oct が変わったら、「再構成」からやり直し
-    - 再生中に Loop がひとまわりするたびに「分散」処理を行う(get_final())
+    - 再生中に Loop がひとまわりするたびに「生演奏、分散」処理を行う(get_final())
 
 - Pedalデータは各パートの Loop 冒頭に以下の処理を行う
     - コード情報があれば、ペダルを踏む

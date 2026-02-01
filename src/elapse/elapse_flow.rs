@@ -206,13 +206,14 @@ impl Flow {
             self.note_stock[last - 1].2 = locate;
             return; // 同じノートが連続している場合は、locate だけ更新
         }
+        let mut amp = Amp::default();
+        amp.note_amp = vel as i16;
         let ev = NoteEvt {
             tick: crnt_.tick as i16,
             dur: 0, // 必要ない
             note: real_note,
             floating: false,
-            vel: vel as i16,
-            amp: Amp::default(),
+            amp,
             trns: TrnsType::NoTrns,
             artic: 100,
         };

@@ -42,16 +42,19 @@ impl<'a> NoteParam<'a> {
     }
 }
 
-const _EXP_TABLE: [i32; 33] = [
-    12, 15, 18, 21, // -16(pppp)
-    24, 30, 36, 42,
-    48, 52, 56, 60,
-    64, 69, 74, 79,
-    84, 88, 92, 96, // 0(mp)
-    100, 103, 107, 110,
-    113, 116, 119, 122,
-    124, 125, 126, 127,
-    127, 
+const MAX_EXP_INDEX: usize = 33;
+const CENTER_EXP_INDEX: i16 = 16; // mp
+#[rustfmt::skip]
+const EXP_TABLE: [i32; MAX_EXP_INDEX] = [
+    12, 15, 18, 22, // -16(pppp)
+    26, 30, 35, 40, 
+    45, 50, 55, 60, 
+    64, 68, 72, 76, 
+    80, 
+    84, 88, 92, 96, 
+    100, 103, 106, 109, 
+    112, 115, 118, 121, 
+    123, 125, 126, 127,
 ];
 
 //*******************************************************************
@@ -76,6 +79,7 @@ pub struct Note {
     _deb_txt: String,
 }
 impl Note {
+    const MIN_AVILABLE_VELO: i32 = 30;
     pub fn new(
         sid: u32,
         pid: u32,
@@ -87,15 +91,20 @@ impl Note {
         //tick: i32,
         //part: u32,
     ) -> Rc<RefCell<Self>> {
-// >Not Yet<
-//        let amp = prm.ev.amp;
-//        let mut velocity = EXP_TABLE[(amp.phrase_amp+16).min(32) as usize];
-//        velocity += if amp.note_amp > 0 {
-//            (amp.note_amp * 2) as i32
-//       } else {
-//            (amp.note_amp * 5) as i32
-//        };
-//        velocity = velocity.clamp(1, 127);
+        //  Amp から velocity を計算
+        let amp = prm.ev.amp;
+        let mut velocity =
+            EXP_TABLE[(amp.phrase_amp + CENTER_EXP_INDEX).min(MAX_EXP_INDEX as i16 - 1) as usize];
+        velocity += if amp.note_amp > 0 {
+            (amp.note_amp * 2) as i32
+        } else {
+            (amp.note_amp * 5) as i32
+        };
+        if amp.auto_amp != 0 {
+            velocity += amp.auto_amp as i32;
+        }
+        velocity = velocity.clamp(Self::MIN_AVILABLE_VELO, 127);
+
         Rc::new(RefCell::new(Self {
             id: ElapseId {
                 pid,
@@ -104,7 +113,7 @@ impl Note {
             },
             priority: PRI_NOTE,
             note_num: prm.ev.note,
-            velocity: prm.ev.vel as u8,//velocity as u8,
+            velocity: velocity as u8,
             duration: prm.ev.dur as i32,
             keynote: prm.keynote,
             real_note: 0,

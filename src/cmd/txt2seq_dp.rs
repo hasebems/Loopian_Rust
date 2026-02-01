@@ -19,7 +19,6 @@ pub fn treat_dp(
     text: String,   // Dynamic Pattern のテキスト
     base_note: i32, // octave などのセッティング
     crnt_tick: i32, // 小節内の現在 tick
-    exp_vel: i32,   // dynなどを反映した velocity
     exp_amp: i16,   // dynなどを反映した amplitude
 ) -> PhrEvt {
     // Cluster or Arpeggio?
@@ -37,17 +36,17 @@ pub fn treat_dp(
     if text == ntext3 {
         duration = pr.rest_tick(crnt_tick); // dur情報がない場合、小節残り全体とする
     }
-    let (ntext4, diff_vel, diff_amp) = extrude_diff_vel(ntext3);
+    let (ntext4, diff_amp) = extrude_diff_vel(ntext3);
 
     let ev = gen_dp_pattern(
         &ntext4,
         case_arp,
         base_note as i16,
         crnt_tick as i16,
-        (exp_vel + diff_vel).clamp(1, 127) as i16,
         Amp {
             note_amp: diff_amp,
             phrase_amp: exp_amp,
+            ..Default::default()
         },
         duration as i16,
     );
@@ -71,7 +70,6 @@ fn gen_dp_pattern(
     case_arp: bool,
     base_note: i16,
     tick: i16,
-    vel: i16,
     amp: Amp,
     dur: i16,
 ) -> PhrEvt {
@@ -105,7 +103,6 @@ fn gen_dp_pattern(
         }
         PhrEvt::BrkPtn(BrkPatternEvt {
             tick,
-            vel,
             amp,
             dur,
             lowest,
@@ -121,7 +118,6 @@ fn gen_dp_pattern(
         };
         PhrEvt::ClsPtn(ClsPatternEvt {
             tick,
-            vel,
             dur,
             amp,
             lowest,

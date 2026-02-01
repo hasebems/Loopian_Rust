@@ -37,7 +37,6 @@ fn pedal() {
                             dur: 440,
                             note: 60,
                             floating: false,
-                            vel: 72,
                             amp: Amp::default(),
                             trns: TrnsType::Com,
                             artic: 100,

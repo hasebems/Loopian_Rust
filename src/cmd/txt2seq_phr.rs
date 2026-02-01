@@ -314,7 +314,6 @@ pub fn complement_phrase(input_text: String, cluster_word: &str) -> Box<PhraseCo
 struct AddNoteParam {
     mes_top: bool,
     dur: i32,
-    vel: i16,
     amp: Amp,
     trns: TrnsType,
     others: (i16, bool), // (artic, arppeggio)
@@ -324,7 +323,6 @@ impl Default for AddNoteParam {
         AddNoteParam {
             mes_top: false,
             dur: 0,
-            vel: 0,
             amp: Amp::default(),
             trns: TrnsType::Com,
             others: (DEFAULT_ARTIC, false),
@@ -394,10 +392,9 @@ impl PhraseRecombined {
         note_text: String, // 分析対象のテキスト
         crnt_tick: i32,    // 現在の tick
         imd: InputMode,    // input mode
-    ) -> (Vec<u8>, i32, i32, i16, (i16, bool)) /*
+    ) -> (Vec<u8>, i32, i16, (i16, bool)) /*
     (   notes,      // 発音ノート
         dur_tick,   // 音符のtick数
-        diff_vel,   // 音量情報
         diff_amp,   // 音量情報
         artic       // アーティキュレーション情報
     )*/ {
@@ -408,7 +405,7 @@ impl PhraseRecombined {
 
         //  duration 情報、 Velocity 情報の抽出
         let (ntext3, base_dur, dur_tick, artic) = gen_dur_info(ntext1, self.base_dur, rest_tick);
-        let (mut ntext4, diff_vel, diff_amp) = extrude_diff_vel(ntext3);
+        let (mut ntext4, diff_amp) = extrude_diff_vel(ntext3);
 
         // 複数音がアルペジオか判断、各音を分離してベクトル化
         let arp = if ntext4.starts_with("$") {
@@ -465,11 +462,10 @@ impl PhraseRecombined {
         }
         self.last_nt = next_last_nt; // 次回の音程の上下判断のため
         self.base_dur = base_dur; // 次回の音符のために保存しておく
-        (notes, dur_tick, diff_vel, diff_amp, (artic, arp))
+        (notes, dur_tick, diff_amp, (artic, arp))
     }
     /// 音符を指定して、Recombine に追加する
     fn add_note(&mut self, tick: i32, notes: Vec<u8>, prm: AddNoteParam, accia: Option<String>) {
-        //let mut return_rcmb = rcmb.clone();
         match notes.len() {
             0 => (),
             1 => {
@@ -486,7 +482,6 @@ impl PhraseRecombined {
                             dur: prm.dur as i16,
                             note: notes[0],
                             floating: prm.others.1,
-                            vel: prm.vel,
                             amp: prm.amp,
                             trns: prm.trns,
                             artic: prm.others.0,
@@ -505,7 +500,6 @@ impl PhraseRecombined {
                     dur: prm.dur as i16,
                     notes: notes.clone(),
                     floating: prm.others.1,
-                    vel: prm.vel,
                     amp: prm.amp,
                     trns: prm.trns,
                     artic: prm.others.0,
@@ -516,7 +510,6 @@ impl PhraseRecombined {
                 self.rcmb.push(note_data);
             }
         }
-        //return_rcmb
     }
     fn modify_last_note(&mut self, prm: &AddNoteParam) {
         let l = self.rcmb.len();
@@ -567,7 +560,7 @@ pub fn recombine_to_internal_format(
     tick_for_onemsr: i32,
 ) -> (i32, bool, Vec<PhrEvt>) {
     let mut pr = PhraseRecombined::new(tick_for_onemsr, base_note);
-    let (exp_vel, exp_amp, _exp_others) = get_dyn_info(pc.music_exp.clone());
+    let exp_amp = get_dyn_info(pc.music_exp.clone());
     let mut crnt_tick: i32 = 0;
     let mut mes_top: bool = false;
     let mut do_loop = true;
@@ -605,7 +598,6 @@ pub fn recombine_to_internal_format(
                 note_text.clone(),
                 base_note,
                 crnt_tick,
-                exp_vel,
                 exp_amp,
             );
             if pr.is_less_than_whole_tick(crnt_tick) {
@@ -614,18 +606,18 @@ pub fn recombine_to_internal_format(
             }
         } else {
             // Note 処理
-            let (notes, note_dur, diff_vel, diff_amp, others) =
+            let (notes, note_dur, diff_amp, others) =
                 pr.break_up_nt_dur_vel(note_text, crnt_tick, imd);
             let amp = Amp {
                 note_amp: diff_amp,
                 phrase_amp: exp_amp,
+                ..Default::default()
             };
             if pr.is_less_than_whole_tick(crnt_tick) {
                 // add to recombined data (NO_NOTE 含む(タイの時に使用))
                 let prm = AddNoteParam {
                     mes_top,
                     dur: get_note_dur(note_dur, pr.whole_msr_tick(), crnt_tick),
-                    vel: (exp_vel + diff_vel).clamp(1, 127) as i16,
                     amp,
                     trns,
                     others,
@@ -639,25 +631,15 @@ pub fn recombine_to_internal_format(
 
     (pr.adjust_crnt_tick(crnt_tick), do_loop, pr.rcmb)
 }
-fn get_dyn_info(expvec: Vec<String>) -> (i32, i16, Vec<String>) {
-    let mut vel = END_OF_DATA;
+fn get_dyn_info(expvec: Vec<String>) -> i16 {
     let mut amp = 0;
-    let mut retvec = expvec.clone();
-    for (i, txt) in expvec.iter().enumerate() {
+    for txt in expvec.iter() {
         if txt.len() >= 3 && &txt[0..3] == "dyn" {
             let dyntxt = extract_texts_from_parentheses(txt);
-            vel = convert_exp2vel(dyntxt);
             amp = convert_expstr2amp(dyntxt);
-            if vel != END_OF_DATA {
-                retvec.remove(i);
-                break;
-            }
         }
     }
-    if vel == END_OF_DATA {
-        vel = convert_exp2vel("p");
-    }
-    (vel, amp, retvec)
+    amp
 }
 fn extract_trans_info(origin: String) -> (String, TrnsType) {
     if origin.len() > 2 && &origin[0..2] == ">>" {
@@ -863,9 +845,10 @@ pub fn decide_dur(ntext: String, mut base_dur: i32) -> (String, i32) {
     let nt = ntext[idx..].to_string();
     (nt, base_dur)
 }
-pub fn extrude_diff_vel(nt: String) -> (String, i32, i16) {
+pub fn extrude_diff_vel(nt: String) -> (String, i16) {
+    const AMP_UP: i16 = 4;
+    const AMP_DOWN: i16 = -4;
     let mut ntext = nt;
-    let mut diff_vel = 0;
     let mut diff_amp = 0;
     let mut last_ltr = if !ntext.is_empty() {
         ntext.chars().nth(ntext.len() - 1).unwrap_or(' ')
@@ -873,8 +856,7 @@ pub fn extrude_diff_vel(nt: String) -> (String, i32, i16) {
         ' '
     };
     while last_ltr == '^' {
-        diff_vel += VEL_UP;
-        diff_amp += 4;
+        diff_amp += AMP_UP;
         ntext.pop();
         last_ltr = if ntext.is_empty() {
             ' '
@@ -883,8 +865,7 @@ pub fn extrude_diff_vel(nt: String) -> (String, i32, i16) {
         };
     }
     while last_ltr == '%' {
-        diff_vel += VEL_DOWN;
-        diff_amp -= 4;
+        diff_amp += AMP_DOWN;
         ntext.pop();
         last_ltr = if ntext.is_empty() {
             ' '
@@ -892,7 +873,7 @@ pub fn extrude_diff_vel(nt: String) -> (String, i32, i16) {
             ntext.chars().last().unwrap_or(' ')
         };
     }
-    (ntext, diff_vel, diff_amp)
+    (ntext, diff_amp)
 }
 fn get_note_dur(ndur: i32, whole_msr_tick: i32, crnt_tick: i32) -> i32 {
     let mut note_dur = ndur;

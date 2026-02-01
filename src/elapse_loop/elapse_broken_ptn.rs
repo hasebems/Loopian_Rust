@@ -23,7 +23,6 @@ pub struct BrokenPattern {
     priority: u32,
 
     ptn_tick: i32,
-    ptn_vel: i32,
     ptn_amp: Amp,
     ptn_each_dur: i32,
     ptn_arp_type: i32,
@@ -87,7 +86,6 @@ impl BrokenPattern {
             },
             priority: PRI_DYNPTN,
             ptn_tick: ptn.tick as i32,
-            ptn_vel: ptn.vel as i32,
             ptn_amp: ptn.amp,
             ptn_each_dur: ptn.each_dur as i32,
             ptn_arp_type: ptn.figure as i32,
@@ -142,32 +140,32 @@ impl BrokenPattern {
     fn gen_each_note(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, root: i16, tbl: i16) {
         let (tblptr_cow, _take_upper) = txt2seq_cmps::get_table(tbl as usize);
         let tblptr: &[i16] = tblptr_cow.as_ref();
-        let vel = self.calc_dynamic_vel(
+        self.ptn_amp.auto_amp = self.calc_dynamic_amp(
             crnt_.tick_for_onemsr,
             estk.get_bpm(),
             estk.tg().get_meter().1,
         );
-        self.play_arpeggio(estk, root, tblptr, vel);
+        self.play_arpeggio(estk, root, tblptr);
         self.play_counter += 1;
     }
-    fn calc_dynamic_vel(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
-        let mut vel: i16 = self.ptn_vel as i16;
+    fn calc_dynamic_amp(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
+        let mut amp = 0;
         if denomi == 8 {
             if (tick_for_onemsr / (DEFAULT_TICK_FOR_QUARTER / 2)) % 3 == 0 {
-                vel = calc_vel_for3_8(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                amp = calc_vel_for3_8(self.next_tick as f32, bpm);
             }
         } else {
             // denomi == 4
             if tick_for_onemsr == TICK_4_4 as i32 {
-                vel = calc_vel_for4(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                amp = calc_vel_for4(self.next_tick as f32, bpm);
             } else if tick_for_onemsr == TICK_3_4 as i32 {
-                vel = calc_vel_for3(self.ptn_vel as i16, self.next_tick as f32, bpm);
+                amp = calc_vel_for3(self.next_tick as f32, bpm);
             }
         }
-        vel
+        amp
     }
     /// アルペジオを再生する
-    fn play_arpeggio(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16], vel: i16) {
+    fn play_arpeggio(&mut self, estk: &mut ElapseStack, root: i16, tblptr: &[i16]) {
         let max_tbl_num = tblptr.len();
         let incdec_idx = |inc: bool, mut x, mut oct| -> (usize, i16) {
             if inc {
@@ -237,13 +235,12 @@ impl BrokenPattern {
             note = tbl_val + pre_add_nt + self.oct_up * 12;
             note += post_add_nt;
         }
-        self.gen_note_ev(estk, note, vel);
+        self.gen_note_ev(estk, note);
     }
-    fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16, vel: i16) {
+    fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16) {
         let mut crnt_ev = NoteEvt {
             dur: self.ptn_each_dur as i16,
             note: note as u8,
-            vel,
             amp: self.ptn_amp,
             ..NoteEvt::default()
         };

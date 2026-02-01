@@ -71,8 +71,6 @@ pub const REST: u8 = 254;
 pub const RPT_HEAD: u8 = 253; // Head of Repeat
 pub const NO_MIDI_VALUE: u8 = 128;
 pub const DEFAULT_TURNNOTE: i16 = 5;
-pub const VEL_UP: i32 = 10;
-pub const VEL_DOWN: i32 = -20;
 pub const DEFAULT_ARTIC: i16 = 100;
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
@@ -102,6 +100,16 @@ pub struct Amp {
     // -16: %%%%, -12: %%%, -8: %%, -4: %, 0: --, +4: ^, +8: ^^, +12: ^^^, +16: ^^^^
     pub phrase_amp: i16, // phrase amplitude -16..0..+16
     // -16: pppp, -12: ppp, -8: pp, -4: p, 0: mp, +4: mf, +8: f, +12: ff, +16: fff
+    pub auto_amp: i16, // auto amplitude -16..0..+16
+}
+impl Amp {
+    pub fn default() -> Self {
+        Self {
+            note_amp: 0,
+            phrase_amp: 0,
+            auto_amp: 0,
+        }
+    }
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct NoteListEvt {
@@ -109,7 +117,6 @@ pub struct NoteListEvt {
     pub dur: i16,       // duration
     pub notes: Vec<u8>, // note number
     pub floating: bool, // true: floating tick, false: not floating
-    pub vel: i16,       // velocity
     pub amp: Amp,       // amplitude
     pub trns: TrnsType, // translation
     pub artic: i16,     // 0..100..200[%] staccato/legato
@@ -120,7 +127,6 @@ pub struct NoteEvt {
     pub dur: i16,       // duration
     pub note: u8,       // note number
     pub floating: bool, // true: floating tick, false: not floating
-    pub vel: i16,       // velocity
     pub amp: Amp,       // amplitude
     pub trns: TrnsType, // translation
     pub artic: i16,     // 0..100..200[%] staccato/legato
@@ -132,7 +138,6 @@ impl NoteEvt {
             dur: list.dur,
             note,
             floating: list.floating,
-            vel: list.vel,
             amp: list.amp,
             trns: list.trns,
             artic: list.artic,
@@ -144,7 +149,6 @@ pub struct BrkPatternEvt {
     pub tick: i16,      // tick
     pub dur: i16,       // duration
     pub lowest: i16,    // lowest note number -7..0..7
-    pub vel: i16,       // velocity
     pub amp: Amp,       // amplitude
     pub max_count: i16, // max note count: 2-5
     pub figure: i16,    // figure of arpeggio: u/d/xu/xd(0-3)
@@ -156,7 +160,6 @@ pub struct ClsPatternEvt {
     pub tick: i16,      // tick
     pub dur: i16,       // duration
     pub lowest: i16,    // lowest note number -7..0..7
-    pub vel: i16,       // velocity
     pub amp: Amp,       // amplitude
     pub max_count: i16, // max note count: 2-5
     pub arpeggio: i16,  // figure of arpeggio: 0,1-3
