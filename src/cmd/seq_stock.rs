@@ -354,23 +354,23 @@ impl PhraseDataStock {
     fn debug_print(&self) {
         println!(
             "complement_phrase: {:?} exp: {:?} atrb: {:?} accia: {:?}",
-            if self.cmpl.is_some() {
-                self.cmpl.as_ref().unwrap().note_info.clone()
+            if let Some(cmpl) = &self.cmpl {
+                cmpl.note_info.clone()
             } else {
                 ["-".to_string()].to_vec()
             },
-            if self.cmpl.is_some() {
-                self.cmpl.as_ref().unwrap().music_exp.clone()
+            if let Some(cmpl) = &self.cmpl {
+                cmpl.music_exp.clone()
             } else {
                 ["-".to_string()].to_vec()
             },
-            if self.cmpl.is_some() {
-                self.cmpl.as_ref().unwrap().note_attribute.clone()
+            if let Some(cmpl) = &self.cmpl {
+                cmpl.note_attribute.clone()
             } else {
                 [None].to_vec()
             },
-            if self.cmpl.is_some() {
-                self.cmpl.as_ref().unwrap().accia_info.clone()
+            if let Some(cmpl) = &self.cmpl {
+                cmpl.accia_info.clone()
             } else {
                 [None].to_vec()
             }
@@ -464,11 +464,10 @@ impl DataStock for PhraseDataStock {
                     Some(v) => v,
                     None => PhraseAs::Normal,
                 },
-                auftakt: if self.cmpl.is_some() {
-                    self.cmpl.as_ref().unwrap().note_attribute[0].unwrap_or(0)
-                } else {
-                    0
-                },
+                auftakt: self.cmpl
+                    .as_ref()
+                    .and_then(|c| c.note_attribute[0])
+                    .unwrap_or(0),
             },
         )
     }

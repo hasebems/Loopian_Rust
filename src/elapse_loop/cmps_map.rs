@@ -101,10 +101,7 @@ impl CompositionMap {
             }
         }
         #[cfg(feature = "verbose")]
-        {
-            println!("cmps_map={:?}", cmps_map);
-            println!("Unfolded Composition!");
-        }
+        println!("Unfolded Composition!");
         (chord_map, pedal_map, vari_map)
     }
     pub fn reunfold(&mut self, new_beat: i32, whole_tick: i32) {
