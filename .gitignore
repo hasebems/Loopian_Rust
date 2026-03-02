@@ -1,4 +1,4 @@
 /target/*
 /log
-.ignore
+.gitignore
 .DS_Store
