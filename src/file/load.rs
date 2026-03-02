@@ -52,10 +52,6 @@ impl LoadBuffer {
                             // コメントでないか、過去の 2023.. が書かれてないか、loadではないか
                             continue;
                         }
-                        if line.len() >= 4 && &line[0..4] == "!rd(" {
-                            // 読み飛ばす
-                            continue;
-                        }
                     }
                     // ここまで来たら、読み込む行
                     if !line.is_empty() {
@@ -69,28 +65,21 @@ impl LoadBuffer {
         !self.loaded_text.is_empty()
     }
     /// .lpn ファイルから !rd(num): data 形式の行を読み込み、data 部分を返す
-    pub fn read_line_from_lpn(&self, path: Option<&str>, num: usize) -> Option<String> {
-        let mut real_path = LOAD_FOLDER.to_string();
-        let fname = self.file_name.clone();
-        if let Some(lp) = path {
-            real_path = real_path + "/" + lp;
+    pub fn read_line_from_lpn(&self, _path: Option<&str>, num: usize) -> Option<String> {
+        if self.loaded_text.is_empty() {
+            println!("No file loaded");
+            return None;
         }
-        match fs::read_to_string(real_path + "/" + &fname + ".lpn") {
-            Ok(content) => {
-                for line in content.lines() {
-                    if line.len() >= 4 && &line[0..4] == "!rd(" {
-                        let rd_line = split_by(':', line.to_string());
-                        if rd_line.len() == 2
-                            && extract_number_from_parentheses(&rd_line[0]) == Some(num)
-                        {
-                            return Some(rd_line[1].clone());
-                        }
-                    }
-                }
-                println!("No rd!({}) in {}", num, fname);
+
+        for line in self.loaded_text.iter() {
+            if line.starts_with("!rd(")
+                && let Some((key, value)) = line.split_once(':')
+                && extract_number_from_parentheses(key) == Some(num)
+            {
+                return Some(value.to_string());
             }
-            Err(_err) => println!("Can't open a file"),
-        };
+        }
+        println!("No !rd({}) in {}", num, self.file_name);
         None
     }
     /// ファイル内で !blk() を使ったデータにおいて、
@@ -199,7 +188,7 @@ impl LoadBuffer {
 
         // ここから txt_this_time に記録
         let blk_starts = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!blk(";
-        let rd_exists = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!rd(";
+        let rd_exists = |ctxt: &str| ctxt.len() > 4 && ctxt[0..4] == *"!rd(";
         let mut blk_keeps = false;
         for n in idx..self.loaded_text.len() {
             let ctxt = &self.loaded_text[n];
