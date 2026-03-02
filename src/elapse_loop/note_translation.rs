@@ -349,9 +349,5 @@ pub fn calc_vel_for3_8(tick: f32, bpm: i16) -> i16 {
         (bpm - MIN_BPM * 2) * EFFECT / 200
     };
     let tm: f32 = (tick % (TICK_1BT * 3.0)) / TICK_1BT;
-    if tm == 0.0 {
-        base_bpm
-    } else {
-        -base_bpm / 4
-    }
+    if tm == 0.0 { base_bpm } else { -base_bpm / 4 }
 }

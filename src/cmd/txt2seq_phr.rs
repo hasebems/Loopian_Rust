@@ -593,13 +593,8 @@ pub fn recombine_to_internal_format(
             pr.last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else if txt2seq_dp::available_for_dp(&note_text) {
             // Dynamic Pattern
-            let ca_ev = txt2seq_dp::treat_dp(
-                &mut pr,
-                note_text.clone(),
-                base_note,
-                crnt_tick,
-                exp_amp,
-            );
+            let ca_ev =
+                txt2seq_dp::treat_dp(&mut pr, note_text.clone(), base_note, crnt_tick, exp_amp);
             if pr.is_less_than_whole_tick(crnt_tick) {
                 crnt_tick += ca_ev.dur() as i32;
                 pr.rcmb.push(ca_ev);

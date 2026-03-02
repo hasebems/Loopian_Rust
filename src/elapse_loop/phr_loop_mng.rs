@@ -6,8 +6,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::note_translation::*;
 use super::elapse_loop_phr::*;
+use super::note_translation::*;
 use crate::elapse::elapse_base::*;
 use crate::elapse::elapse_part::*;
 use crate::elapse::stack_elapse::ElapseStack;
@@ -536,12 +536,7 @@ impl PhrLoopManager {
         // 現在の Phrase Data を取得
         let mut phr_stock = self.phr_stock[self.phr_idx].clone();
         let beat_tick = estk.tg().get_beat_tick();
-        phr_stock.evts = beat_filter(
-            &phr_stock.evts,
-            estk.get_bpm(),
-            beat_tick.0,
-            beat_tick.1,
-        ); // Beat Filter 処理
+        phr_stock.evts = beat_filter(&phr_stock.evts, estk.get_bpm(), beat_tick.0, beat_tick.1); // Beat Filter 処理
 
         // Phrase Loop Wrapper を生成
         let pinst = PhrLoopWrapper::new(

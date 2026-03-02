@@ -3,9 +3,9 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use nannou::prelude::*;
-use super::generative_view::*;
 use super::draw_graph::*;
+use super::generative_view::*;
+use nannou::prelude::*;
 
 //*******************************************************************
 //     メモ： View 作成のテンプレート
@@ -49,8 +49,7 @@ impl GenerativeView for UpDownRoll {
         }
     }
     /// Beat Event
-    fn on_beat(&mut self, _bt: i32, _tm: f32, _dt: f32) {
-    }
+    fn on_beat(&mut self, _bt: i32, _tm: f32, _dt: f32) {}
     /// Note Event
     fn note_on(&mut self, nt: i32, vel: i32, _pt: i32, tm: f32) {
         self.nobj.push(Box::new(UpDownRollNote::new(
@@ -107,7 +106,7 @@ impl NoteObj for UpDownRollNote {
         &self,
         draw: Draw,
         _crnt_time: f32, //  const FPS(50msec) のカウンター
-        rs: Resize,     //  ウィンドウサイズ
+        rs: Resize,      //  ウィンドウサイズ
     ) {
         //let disappear_time_inv = 1.0 / Self::DISAPPEAR_TIME;
         let half_size_x = rs.get_full_size_x() / 2.0;
@@ -116,16 +115,15 @@ impl NoteObj for UpDownRollNote {
         let y_offset = 0.0 + self.elapsed_time * half_size_y;
 
         for i in 0..Self::CIRCLE_USIZE {
-            let alpha_level = (1.0 - ((i as f32) / Self::CIRCLE_SIZE))
-                * self.vel
-                * (1.0 - self.elapsed_time);            
+            let alpha_level =
+                (1.0 - ((i as f32) / Self::CIRCLE_SIZE)) * self.vel * (1.0 - self.elapsed_time);
             if alpha_level <= 0.0 {
                 return;
             }
             let gray_scal = if self.mode == GraphMode::Dark {
                 rgba(1.0, 1.0, 1.0, alpha_level)
             } else {
-                rgba(0.0, 0.0, 0.0, alpha_level*2.0) // 少し濃いめ
+                rgba(0.0, 0.0, 0.0, alpha_level * 2.0) // 少し濃いめ
             };
 
             let radius_sz = ((i + 1) as f32) * 3.0 - self.elapsed_time * Self::CIRCLE_SIZE;

@@ -137,12 +137,7 @@ impl SeqDataStock {
     }
     pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
         if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw(input_text, None) {
-            self.cdt[part].set_recombined(
-                None,
-                self.tick_for_onemsr,
-                self.tick_for_beat,
-                None,
-            );
+            self.cdt[part].set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
             return true;
         }
         false
@@ -256,12 +251,7 @@ impl SeqDataStock {
             }
         }
         for epdl in self.pdldt.iter_mut() {
-            epdl.set_recombined(
-                None,
-                self.tick_for_onemsr,
-                self.tick_for_beat,
-                None,
-            );
+            epdl.set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
         }
     }
     fn recombine_all(&mut self) {
@@ -274,20 +264,10 @@ impl SeqDataStock {
                     Some(true),
                 );
             }
-            self.cdt[i].set_recombined(
-                None,
-                self.tick_for_onemsr,
-                self.tick_for_beat,
-                None,
-            );
+            self.cdt[i].set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
         }
         for epdl in self.pdldt.iter_mut() {
-            epdl.set_recombined(
-                None,
-                self.tick_for_onemsr,
-                self.tick_for_beat,
-                None,
-            );
+            epdl.set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
         }
     }
     fn default_base_note(part_num: usize) -> i32 {
@@ -464,7 +444,8 @@ impl DataStock for PhraseDataStock {
                     Some(v) => v,
                     None => PhraseAs::Normal,
                 },
-                auftakt: self.cmpl
+                auftakt: self
+                    .cmpl
                     .as_ref()
                     .and_then(|c| c.note_attribute[0])
                     .unwrap_or(0),
