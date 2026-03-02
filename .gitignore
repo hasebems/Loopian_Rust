@@ -1,13 +1,4 @@
-/target/debug
-/target/doc
-/target/release/*/
 /target/*
 /log
-/log_good
-/doc/old
-/load/exp
-/load/2502
-/load/mine
-/src/sample
-/src/graphic/view_templete.rs
+.ignore
 .DS_Store
