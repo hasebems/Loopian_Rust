@@ -395,7 +395,12 @@ impl InputText {
             || (len >= 5 && &itxt[0..5] == "!read")
         {
             // 一行のコマンドを読み込む
-            self.read_oneline_command(&itxt[0..]);
+            let num = if itxt.contains("(") {
+                extract_number_from_parentheses(&itxt[0..]).unwrap_or(0)
+            } else {
+                itxt[2..].parse::<usize>().unwrap_or(0)
+            };
+            self.read_oneline_command(num);
         } else if len >= 5 && &itxt[0..5] == "!blk(" {
             // ブロックの読み込み
             let blk_name = extract_texts_from_parentheses(&itxt[0..]);
@@ -452,12 +457,7 @@ impl InputText {
         } else {
             "".to_string()
         };
-        let num;
-        if let Some(n) = extract_number_from_parentheses(&itxts[0]) {
-            num = n;
-        } else {
-            num = 0;
-        }
+        let num = extract_number_from_parentheses(&itxts[0]).unwrap_or(0);
         self.gen_log(num, fname);
         self.scroll_lines.push((
             TextAttribute::Answer,
@@ -465,13 +465,8 @@ impl InputText {
             "log saved!".to_string(),
         ));
     }
-    fn read_oneline_command(&mut self, itxt: &str) {
-        let num;
-        if let Some(n) = extract_number_from_parentheses(itxt) {
-            num = n;
-        } else {
-            num = 0;
-        }
+    fn read_oneline_command(&mut self, num: usize) {
+        //let num = extract_number_from_parentheses(itxt).unwrap_or(0);
         if let Some(cmd) = self
             .load_buffer
             .read_line_from_lpn(self.cmd.get_path().as_deref(), num)
