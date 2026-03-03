@@ -201,7 +201,21 @@ impl LoopianCmd {
         let len = input_text.chars().count();
         if len >= 4 && &input_text[0..4] == "fine" {
             // fine
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE));
+            if len == 4 {
+                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE));
+            } else if len == 9 && &input_text[4..] == ".next" {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_2BAR));
+            } else if len == 12 && &input_text[4..] == ".beat(2)" {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_2BEAT));
+            } else if len == 12 && &input_text[4..] == ".beat(3)" {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_3BEAT));
+            } else if len == 12 && &input_text[4..] == ".beat(4)" {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_4BEAT));
+            }
             self.during_play = false;
             "Fine.".to_string()
         } else if len == 7 && &input_text[0..7] == "fermata" {

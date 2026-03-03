@@ -47,7 +47,7 @@ pub struct ElapseStack {
     last_msr_tick: CrntMsrTick,
     bpm_stock: i16,
     beat_stock: Meter,
-    fine_stock: bool,
+    fine_stock: Option<FineType>,
     current_key: u8,
 
     during_play: bool,
@@ -119,7 +119,7 @@ impl ElapseStack {
             last_msr_tick: CrntMsrTick::new(),
             bpm_stock: DEFAULT_BPM,
             beat_stock: Meter(4, 4),
-            fine_stock: false,
+            fine_stock: None,
             current_key: 0,
             during_play: false,
             display_time: Instant::now(),
@@ -227,15 +227,20 @@ impl ElapseStack {
             self.last_msr_tick = crnt_;
             // 小節先頭、Beat 先頭の処理
             if msrtop {
-                if self.fine_stock {
-                    self.stop();
-                    self.fine_stock = false;
+                if let Some(fine_type) = self.fine_stock {
+                    self.analyze_fine_msrtop(fine_type, &mut crnt_);
                 } else {
                     self.measure_top(&mut crnt_);
                 }
             }
             if beattop {
                 self.send_msg_to_ui(UiMsg::NewBeat(beatnum));
+                if let Some(FineType::WaitForBeat(beat)) = self.fine_stock
+                    && beatnum == beat
+                {
+                    self.stop();
+                    self.fine_stock = None;
+                }
             }
         };
 
@@ -260,6 +265,25 @@ impl ElapseStack {
 
         // play 中でなければ return
         false
+    }
+    fn analyze_fine_msrtop(&mut self, fine_type: FineType, crnt_: &mut CrntMsrTick) {
+        match fine_type {
+            FineType::NextBar | FineType::WaitFor2Bar => {
+                self.stop();
+                self.fine_stock = None;
+            }
+            FineType::Next2Bar => {
+                self.fine_stock = Some(FineType::WaitFor2Bar);
+                self.measure_top(crnt_);
+            }
+            FineType::NextBeat(beat) => {
+                self.fine_stock = Some(FineType::WaitForBeat(beat));
+                self.measure_top(crnt_);
+            }
+            _ => {
+                self.measure_top(crnt_);
+            }
+        }
     }
     fn measure_top(&mut self, crnt_: &mut CrntMsrTick) {
         // デバッグ用表示
@@ -361,7 +385,12 @@ impl ElapseStack {
             self.start(false);
         } else if msg == MSG_CTRL_STOP {
             self.stop();
-        } else if msg == MSG_CTRL_FINE {
+        } else if msg == MSG_CTRL_FINE
+            || msg == MSG_CTRL_FINE_NEXT_2BAR
+            || msg == MSG_CTRL_FINE_NEXT_2BEAT
+            || msg == MSG_CTRL_FINE_NEXT_3BEAT
+            || msg == MSG_CTRL_FINE_NEXT_4BEAT
+        {
             self.fine(msg);
         } else if msg == MSG_CTRL_PANIC {
             self.panic();
@@ -498,11 +527,21 @@ impl ElapseStack {
             self.send_msg_to_rx(Ctrl(MSG_CTRL_MIDI_RECONNECT));
         }
     }
-    fn fine(&mut self, _msg: i16) {
-        if self.tg().get_bpm() == 0 {
-            self.stop();
-        } else {
-            self.fine_stock = true;
+    fn fine(&mut self, msg: i16) {
+        if msg == MSG_CTRL_FINE {
+            if self.tg().get_bpm() == 0 {
+                self.stop(); // fermata ならば即停止
+            } else {
+                self.fine_stock = Some(FineType::NextBar);
+            }
+        } else if msg == MSG_CTRL_FINE_NEXT_2BAR {
+            self.fine_stock = Some(FineType::Next2Bar);
+        } else if msg == MSG_CTRL_FINE_NEXT_2BEAT {
+            self.fine_stock = Some(FineType::NextBeat(1));
+        } else if msg == MSG_CTRL_FINE_NEXT_3BEAT {
+            self.fine_stock = Some(FineType::NextBeat(2));
+        } else if msg == MSG_CTRL_FINE_NEXT_4BEAT {
+            self.fine_stock = Some(FineType::NextBeat(3));
         }
     }
     fn call_sync(&mut self, min: usize, max: usize) {

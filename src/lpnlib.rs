@@ -73,6 +73,9 @@ pub const NO_MIDI_VALUE: u8 = 128;
 pub const DEFAULT_TURNNOTE: i16 = 5;
 pub const DEFAULT_ARTIC: i16 = 100;
 
+//*******************************************************************
+//          Parameter Type
+//*******************************************************************
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TrnsType {
     #[default]
@@ -81,13 +84,21 @@ pub enum TrnsType {
     Arp(i16), // ARP: Arpeggio 変換, -n .. +n  : Note 差分
     NoTrns,   // 変換しない
 }
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExpType {
     // TYPE_EXP のときの atype
     #[default]
     Noped, // TYPE_BEAT の Note情報より先に置く
     ParaRoot, // note に並行移動の基本rootの値を書く(0-11)
     Artic,    // cnt に Staccato/legato の長さを書く(1-200%)
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FineType {
+    NextBar,       // 次の小節の頭で終了
+    NextBeat(i32), // 次の小節の頭からN拍目で終了
+    Next2Bar,      // 次の次の小節の頭で終了
+    WaitForBeat(i32),
+    WaitFor2Bar,
 }
 
 //*******************************************************************
@@ -434,7 +445,11 @@ pub enum ElpsMsg {
 pub const MSG_CTRL_QUIT: i16 = -1;
 pub const MSG_CTRL_START: i16 = -16; //  1byte msg
 pub const MSG_CTRL_STOP: i16 = -15;
-pub const MSG_CTRL_FINE: i16 = -14;
+pub const MSG_CTRL_FINE: i16 = -14; // 次の小節の頭で終了
+pub const MSG_CTRL_FINE_NEXT_2BAR: i16 = -21; // 次の小節の頭の次の小節の頭で終了
+pub const MSG_CTRL_FINE_NEXT_2BEAT: i16 = -22; // 次の小節の頭から２拍目で終了
+pub const MSG_CTRL_FINE_NEXT_3BEAT: i16 = -23; // 次の小節の頭から３拍目で終了
+pub const MSG_CTRL_FINE_NEXT_4BEAT: i16 = -24; // 次の小節の頭から４拍目で終了
 pub const MSG_CTRL_PANIC: i16 = -13;
 pub const MSG_CTRL_RESUME: i16 = -12;
 pub const MSG_CTRL_CLEAR: i16 = -11; // Elapse Objectの内容をクリア
