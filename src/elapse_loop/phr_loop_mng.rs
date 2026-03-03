@@ -114,6 +114,11 @@ impl PhrLoopWrapper {
 //*******************************************************************
 //          Phrase Loop Manager Struct
 //*******************************************************************
+#[derive(PartialEq, Copy, Clone)]
+enum NewPhraseEvent {
+    WithChasing,    // 追いかけ再生を行う新しい Phrase の生成
+    WithoutChasing, // 追いかけ再生を行わない新しい Phrase の生成
+}
 pub struct PhrLoopManager {
     loop_id: u32,            // loop sid
     phr_stock: Vec<PhrData>, // 0: Normal
@@ -123,10 +128,9 @@ pub struct PhrLoopManager {
     vari_reserve: Option<usize>, // 1-9: rsv, None: Normal
     a_is_gened_last: bool,       // true: instance_a, false: instance_b
     begin_phr_ev: bool,
-    new_phrase: bool,   // 新しい Phrase の生成フラグ
-    chasing_play: bool, // 追いかけ再生フラグ
-    del_a_ev: bool,     // instance_a を削除するイベント
-    del_b_ev: bool,     // instance_b を削除するイベント
+    new_phrase: Option<NewPhraseEvent>, // 新しい Phrase の生成イベント
+    del_a_ev: bool,                     // instance_a を削除するイベント
+    del_b_ev: bool,                     // instance_b を削除するイベント
     turnnote: i16,
     keynote_stock: Option<u8>, // 0-11
 }
@@ -141,8 +145,7 @@ impl PhrLoopManager {
             vari_reserve: None,
             a_is_gened_last: false,
             begin_phr_ev: false,
-            new_phrase: false,   // 新しい Phrase の生成フラグ
-            chasing_play: false, // 追いかけ再生フラグ
+            new_phrase: None, // 新しい Phrase の生成イベント
             del_a_ev: false,
             del_b_ev: false,
             turnnote: DEFAULT_TURNNOTE,
@@ -155,32 +158,48 @@ impl PhrLoopManager {
         if let Some(idx) = self.exist_msr_phr(crnt_) {
             // Measure 指定がある場合
             self.phr_idx = idx;
-            self.gen_phr_alternately(crnt_, estk, pbp, 0);
+            self.gen_phr_alternately(crnt_, estk, pbp, None);
         } else if let Some(vr) = self.vari_reserve
             && let Some(idx) = self.exist_vari_phr(vr)
         {
             // Variation 指定がある場合
             self.phr_idx = idx;
-            self.gen_phr_alternately(crnt_, estk, pbp, 0);
+            self.gen_phr_alternately(crnt_, estk, pbp, None);
             self.vari_reserve = None; // 予約をリセット
         } else if self.begin_phr_ev {
             // この小節が begin_phr になるとき
-            self.gen_phr_alternately(crnt_, estk, pbp, 0); // Alternate
+            self.gen_phr_alternately(crnt_, estk, pbp, None); // Alternate
             self.begin_phr_ev = false;
         } else if self.if_end_prpr(crnt_) {
-            // この小節が end_prpr になるとき（追いかけより優先）
-            if self.phr_idx != 0 || self.do_loop() || self.new_phrase {
-                // Variation の最後の小節の場合、Loop 指定の場合、new_phrase の場合
-                self.new_phrase = false; // 新しい Phrase の生成フラグをリセット
+            // この小節が end_prpr になるとき
+            if self.phr_idx != 0 {
+                // Variation の最後の小節の場合
                 self.phr_idx = 0; // 0: Normal
-                self.gen_phr_alternately(crnt_, estk, pbp, 0); // Alternate
+                self.gen_phr_alternately(crnt_, estk, pbp, None); // Alternate
+            } else if let Some(event) = self.new_phrase {
+                // new_phrase の場合
+                self.new_phrase = None; // 新しい Phrase の生成イベントをリセット
+                match event {
+                    NewPhraseEvent::WithChasing => {
+                        // prpr が始まる追いかけ再生は alternate 再生を同時に二つ行う
+                        self.chasing_play(crnt_, estk, pbp);
+                        self.gen_phr_alternately(crnt_, estk, pbp, None); // Alternate
+                    }
+                    NewPhraseEvent::WithoutChasing => {
+                        self.gen_phr_alternately(crnt_, estk, pbp, None); // Alternate
+                    }
+                }
+            } else if self.do_loop() {
+                // Loop 指定の場合
+                self.gen_phr_alternately(crnt_, estk, pbp, None); // Alternate
             }
-            self.chasing_play = false; // 追いかけ再生フラグをリセット
-        } else if self.chasing_play {
+        } else if let Some(event) = self.new_phrase
+            && event == NewPhraseEvent::WithChasing
+        {
             // 追いかけ再生フラグが立っているとき
             self.chasing_play(crnt_, estk, pbp);
-            self.chasing_play = false; // 追いかけ再生フラグをリセット
             self.delete_by_del_ev(); // 削除イベントのあるインスタンスを削除
+            self.new_phrase = None; // 新しい Phrase の生成イベントをリセット
         }
 
         // key が変更されている場合
@@ -201,7 +220,7 @@ impl PhrLoopManager {
     }
     pub fn sync(&mut self, crnt_: &CrntMsrTick, estk_: &mut ElapseStack, pbp: PartBasicPrm) {
         self.phr_idx = 0; // 0: Normal
-        self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Alternate
+        self.gen_phr_alternately(crnt_, estk_, pbp, None); // Alternate
     }
     pub fn stop(&mut self) {
         self.vari_reserve = None;
@@ -370,24 +389,25 @@ impl PhrLoopManager {
                     match phase {
                         LoopPhase::BeforeBeginPhr | LoopPhase::DuringBeginPhr => {
                             // Phrase Loop の開始時
-                            self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Replace
+                            self.gen_phr_alternately(crnt_, estk_, pbp, None); // Replace
                         }
                         LoopPhase::AfterBeginCnct => {
                             // Phrase Loop の begin_cnct 後の小節
                             if self.whole_tick() <= self.phr_stock[0].whole_tick as i32 {
                                 // 新しい Phrase の方が長い場合
-                                self.chasing_play = true;
+                                self.new_phrase = Some(NewPhraseEvent::WithChasing);
+                            } else {
+                                self.new_phrase = Some(NewPhraseEvent::WithoutChasing);
                             }
-                            self.new_phrase = true; // 新しい Phrase の生成フラグ
                         }
                         LoopPhase::OneBarBeforeEndCnct => {
                             // Phrase Loop の end_cnct 前の小節
-                            self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Alternate
+                            self.gen_phr_alternately(crnt_, estk_, pbp, None); // Alternate
                         }
                         //LoopPhase::BeforeEndPtr => {
                         _ => {
                             // Phrase Loop の end_cnct 以降の小節
-                            self.gen_phr_alternately(crnt_, estk_, pbp, 0); // Alternate
+                            self.gen_phr_alternately(crnt_, estk_, pbp, None); // Alternate
                         }
                     }
                 }
@@ -471,7 +491,7 @@ impl PhrLoopManager {
         // Phrase Loop の begin_cnct から追いかけ再生
         if let Some(phr_now) = self.crnt_phr() {
             let elapsed_msr = crnt_.msr - phr_now.begin_phr;
-            self.gen_phr_alternately(crnt_, estk, pbp, phr_now.begin_phr);
+            self.gen_phr_alternately(crnt_, estk, pbp, Some(phr_now.begin_phr));
             // 新しい Phrase を早送りする
             if let Some(phr_nxt) = self.crnt_phr() {
                 phr_nxt.phrase.borrow_mut().set_forward(crnt_, elapsed_msr);
@@ -509,13 +529,9 @@ impl PhrLoopManager {
         crnt_: &CrntMsrTick,
         estk: &mut ElapseStack,
         pbp: PartBasicPrm,
-        replace_msr: i32, // 0以外なら置き換える小節番号
+        replace_msr: Option<i32>, // 置き換える小節番号
     ) {
-        let crnt_msr = if replace_msr != 0 {
-            replace_msr
-        } else {
-            crnt_.msr
-        };
+        let crnt_msr = replace_msr.unwrap_or(crnt_.msr);
 
         // 上書きをするべきかどうかを確認
         let mut overwrite_a = false; // 置き換えフラグ
