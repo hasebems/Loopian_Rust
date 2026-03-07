@@ -456,36 +456,38 @@ This document explains all features of Loopian.
 
 ### Loading Files
 
-- `!load.`*filename* (or `!l.`*filename*): Load the specified file
-    - The loaded file extension is only `lpn`, and no extension is required when specifying the file
-        - `*.lpn` files are in the same format as log files
-    - Once a file is loaded, subsequent `!load` input alone will load the same file as before
-- Files to be loaded must be placed in the `/load` folder or its subdirectories
-    - A `/load` folder is automatically created in the application folder when the first load command is entered
-- Subfolders can be created under the `/load` folder to place files in subdirectories
-    - When specifying files in subfolders, specify the subfolder name `xxx` with `set.path(xxx)` before loading
-- Loaded content is stored in history and can be recalled line by line using cursor (up/down) keys
-- `!history.`*filename* (or `!h.`*filename*): Load the specified file to history only
-    - Commands loaded to history only are not played
-    - Commands displayed Scroll Text can be selected using up/down keys
+- `!load.`*filename* (or `!l.`*filename*): Loads the specified file
+    - Only `lpn` files can be loaded, and you should omit the extension when specifying the filename
+        - `*.lpn` files use the same format as log files
+    - After loading a file once, entering `!load` by itself reloads the previously loaded file
+- Files you want to load must be placed under the `/load` folder
+    - The `/load` folder is created automatically in the application folder when you enter a load command for the first time
+- You can also create subfolders under `/load` and place files there
+    - To load a file from a subfolder, specify the subfolder name `xxx` with `set.path(xxx)` before loading
+- `!play` (or `!p`): Transfers content loaded from a file
+    - Valid lines after `!blk(..)` and `!msr(n)` (described later) are not played
+    - Lines using `!rd(..)` (described later) are not played
+- `!history.`*filename* (or `!h.`*filename*): Loads the specified file into history only
+    - Commands loaded into history only are not played
+    - They are shown in Scroll Text and can be selected with the up/down keys
 
 ### File Description Rules
 
-- Each line in the file represents one Command that can be specified in the Input Window
-- Lines starting with `//`, `20`, or `!rd(` are not loaded
-    - `20` derives from years like 2024, meaning lines with dates like 2024-05-19 will not be played
-- When there is a blank line, the effects of notations using `!` described below end there
-- Lines following `!msr(n)` written in the file are played in time for the first beat of measure n
-    - Actually played when less than 240 ticks remain in measure n-1
-    - Even when there is a wait during loading and it is considered automatic loading, user input to the Input Window is still possible
-- When `!rd(n): xxx` is written in a file, after loading the file, inputting `!rd(n)` in the Input Window automatically inputs the string `xxx` following that from the same line in the file (n is any number)
-- `!blk(a)`: Plays from lines in the file starting with `!blk(a)` until the next blank line, or until another `!blk` or `!msr` appears
-- `!blk(a,b,c..)`: By increasing the arguments to two or more (e.g., b, c), you can substitute arbitrary strings within the block
-    - First, write `!blk(a,T)` in the file (`a` is the block name, `T` is the placeholder variable name), and write `T` at locations in subsequent lines where substitution should occur
-    - When issuing the command, for example `!blk(a,R1)`, the locations of `T` within block `a` in the file are replaced with `R1`
-- `!msr(n)`: After input, typing the `resume` command plays from lines in the file starting with `!msr(n)`
-    - Accurate playback from middle measures is not guaranteed under some conditions, such as when the file description assumes Loop
-- `!clear` (or `!c`) clears all contents of the loaded file
+- Each line in a file represents a single command that can be entered in the Input Window
+- Lines beginning with `//` are treated as comments and are not loaded
+- A blank line marks the end of the effect of `!`-based notations described below
+- Lines after `!msr(n)` are transferred so they arrive in time for beat 1 of measure n
+    - In practice, transfer starts when fewer than 240 ticks remain in measure n-1
+    - Even if there is a wait during loading and it is treated as automatic loading, users can still enter input in the Input Window
+- If a line is written as `!rd(n): xxx` in a file, then after loading the file, entering `!rd(n)` in the Input Window automatically inputs the string `xxx` from that line (n can be any number)
+- `!blk(a)`: Transfers lines starting from the line that begins with `!blk(a)` until the next blank line, or until another `!blk` or `!msr` appears
+- `!blk(a,T,S..)`: You can substitute arbitrary strings within a block by increasing the number of arguments to two or more (e.g., T, S)
+    - First, write `!blk(a,T)` in the file (`a` is the block name and `T` is the substitution variable), then write `T` in later lines where replacement should occur
+    - For example, when you issue `!blk(a,R1)`, `T` in block `a` is replaced with `R1`
+- `!msr(n)`: After entering this, running the `resume` command starts playback from the line that begins with `!msr(n)`
+    - Empty playback starts one measure earlier
+    - Under some conditions, such as files written assuming Loop playback, accurate playback from a middle measure is not guaranteed
+- `!clear` (or `!c`) clears all content loaded from the file
 
 ### File Conversion
 
@@ -512,6 +514,9 @@ This document explains all features of Loopian.
     - `sync.right`: Right hand parts (right1/2)
     - `sync.left`: Left hand parts (left1/2)
     - `sync.all`: All parts
+- `fine`: End sequence after current measure finishes
+    - `fine.next`: End after next measure finishes
+    - `fine.beat(2)`: End at 2nd beat of next measure (2,3,4)
 - `clear`: Clear data content
     - Without arguments, clears all parts and stops playback
     - `clear.L1`: Clear L1 part content. Similarly for L2,R1,R2
@@ -606,6 +611,7 @@ This document explains all features of Loopian.
     1. Launch loopian
     1. Specify folder name(xxx) containing song data with `set.path(xxx)`
     1. Specify song data with `!l.yyy` (to play yyy.lpn, specify only yyy)
+    1. Transfer loaded data from a file with `!play` or `!p`
     1. Play with `play` or `p`
     1. After playback, stop with `stop` or `.`
 - To play from middle of measure:
