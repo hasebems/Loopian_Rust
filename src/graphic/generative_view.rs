@@ -12,9 +12,9 @@ use super::view_circlethds::*;
 use super::view_fish::*;
 use super::view_jumping::*;
 use super::view_lissajous::*;
+use super::view_noteroll::*;
 use super::view_raineffect::*;
 use super::view_sinewave::*;
-use super::view_noteroll::*;
 use super::view_voice4::*;
 use super::view_waterripple::*;
 use super::view_wavestick::*;
@@ -73,11 +73,17 @@ pub fn generate_graphic_msg(input_text: &str) -> (String, GraphicMsg) {
     } else if input_text.contains("beatlissa") {
         let prm = extract_texts_from_parentheses(input_text);
         let num = prm.parse::<i32>().unwrap_or(0);
-        ("Changed Graphic!".to_string(), GraphicMsg::BeatLissaPattern(num))
+        (
+            "Changed Graphic!".to_string(),
+            GraphicMsg::BeatLissaPattern(num),
+        )
     } else if input_text.contains("sinewave") {
         ("Changed Graphic!".to_string(), GraphicMsg::SineWavePattern)
     } else if input_text.contains("rain") {
-        ("Changed Graphic!".to_string(), GraphicMsg::RainEffectPattern)
+        (
+            "Changed Graphic!".to_string(),
+            GraphicMsg::RainEffectPattern,
+        )
     } else if input_text.contains("fish") {
         ("Changed Graphic!".to_string(), GraphicMsg::FishPattern)
     } else if input_text.contains("jumping") {
@@ -85,15 +91,20 @@ pub fn generate_graphic_msg(input_text: &str) -> (String, GraphicMsg) {
     } else if input_text.contains("wavestick") {
         ("Changed Graphic!".to_string(), GraphicMsg::WaveStickPattern)
     } else if input_text.contains("circlethreads") {
-        ("Changed Graphic!".to_string(), GraphicMsg::CircleThdsPattern)
+        (
+            "Changed Graphic!".to_string(),
+            GraphicMsg::CircleThdsPattern,
+        )
     } else if input_text.contains("noteroll") {
         let prm = extract_texts_from_parentheses(input_text);
-        ("Changed Graphic!".to_string(), GraphicMsg::NoteRollPattern(prm.to_string()))
+        (
+            "Changed Graphic!".to_string(),
+            GraphicMsg::NoteRollPattern(prm.to_string()),
+        )
     } else {
         ("what?".to_string(), GraphicMsg::What)
     }
 }
-
 
 //*******************************************************************
 //      struct GenerativeView
@@ -165,9 +176,7 @@ pub fn get_view_instance(
         GraphicMsg::JumpingPattern => Some(Box::new(Jumping::new())),
         GraphicMsg::WaveStickPattern => Some(Box::new(WaveStick::new())),
         GraphicMsg::CircleThdsPattern => Some(Box::new(CircleThread::new())),
-        GraphicMsg::NoteRollPattern(tp) => {
-            Some(Box::new(NoteRoll::new(tp, gmode)))
-        }
+        GraphicMsg::NoteRollPattern(tp) => Some(Box::new(NoteRoll::new(tp, gmode))),
         _ => None,
     }
 }

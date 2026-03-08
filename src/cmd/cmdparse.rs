@@ -10,7 +10,7 @@ use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
 use super::txt2seq_cmps::*;
-use crate::graphic::generative_view::{generate_graphic_msg, GraphicMsg};
+use crate::graphic::generative_view::{GraphicMsg, generate_graphic_msg};
 use crate::lpnlib::*;
 
 pub fn reply_to_cmd(reply: String) -> Option<CmndRtn> {
