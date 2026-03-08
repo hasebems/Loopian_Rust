@@ -10,8 +10,12 @@ use super::send_msg::*;
 use super::seq_stock::*;
 use super::txt_common::*;
 use super::txt2seq_cmps::*;
-use crate::graphic::generative_view::{GRAPHIC_PATTERN_NAME, GraphicMsg};
+use crate::graphic::generative_view::{generate_graphic_msg, GraphicMsg};
 use crate::lpnlib::*;
+
+pub fn reply_to_cmd(reply: String) -> Option<CmndRtn> {
+    Some(CmndRtn(reply, GraphicMsg::NoMsg))
+}
 
 //  LoopianCmd の責務
 //  1. Command を受信し中身を調査
@@ -82,31 +86,32 @@ impl LoopianCmd {
         println!("Set Text: {input_text}");
         let first_letter = &input_text[0..1];
         if first_letter == "/" {
-            Some(CmndRtn(self.letter_slash(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_slash(input_text))
         } else if first_letter == "@" {
-            Some(CmndRtn(self.letter_at(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_at(input_text))
         } else if first_letter == "[" {
-            Some(CmndRtn(self.letter_bracket(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_bracket(input_text))
         } else if first_letter == "{" {
-            Some(CmndRtn(self.letter_brace(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_brace(input_text))
         } else if first_letter == "." {
-            Some(CmndRtn(self.letter_dot(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_dot(input_text))
         } else if first_letter == "c" {
-            Some(CmndRtn(self.letter_c(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_c(input_text))
         } else if first_letter == "e" {
-            Some(CmndRtn(self.letter_e(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_e(input_text))
         } else if first_letter == "f" {
-            Some(CmndRtn(self.letter_f(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_f(input_text))
         } else if first_letter == "g" {
-            Some(self.letter_g(input_text))
+            let rtn = self.letter_g(input_text);
+            Some(CmndRtn(rtn.0, rtn.1))
         } else if first_letter == "l" {
-            Some(CmndRtn(self.letter_l(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_l(input_text))
         } else if first_letter == "p" {
-            Some(CmndRtn(self.letter_p(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_p(input_text))
         } else if first_letter == "r" {
-            Some(CmndRtn(self.letter_r(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_r(input_text))
         } else if first_letter == "s" {
-            Some(CmndRtn(self.letter_s(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_s(input_text))
         } else if first_letter == "L"
             || first_letter == "R"
             || first_letter == "F"
@@ -114,11 +119,11 @@ impl LoopianCmd {
             || first_letter == "D"
             || first_letter == "S"
         {
-            Some(CmndRtn(self.letter_part(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_part(input_text))
         } else if first_letter == "h" {
-            Some(CmndRtn(self.letter_h(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_h(input_text))
         } else {
-            Some(CmndRtn("what?".to_string(), GraphicMsg::NoMsg))
+            reply_to_cmd("what?".to_string())
         }
     }
     fn letter_c(&mut self, input_text: &str) -> String {
@@ -227,39 +232,12 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn letter_g(&mut self, input_text: &str) -> CmndRtn {
+    fn letter_g(&mut self, input_text: &str) -> (String, GraphicMsg) {
         let len = input_text.chars().count();
         if len >= 6 && &input_text[0..5] == "graph" {
-            if len == 11 && &input_text[6..11] == "light" {
-                CmndRtn("Changed Graphic!".to_string(), GraphicMsg::LightMode)
-            } else if len == 10 && &input_text[6..10] == "dark" {
-                CmndRtn("Changed Graphic!".to_string(), GraphicMsg::DarkMode)
-            } else if len > 11 && &input_text[6..11] == "title" {
-                let txt = extract_texts_from_parentheses(input_text);
-                let txts = txt.split(',').collect::<Vec<&str>>();
-                let title_txt = txts.first().unwrap_or(&"");
-                let subtitle_txt = txts.get(1).unwrap_or(&"");
-                CmndRtn(
-                    format!("Set Title: {}", title_txt),
-                    GraphicMsg::Title(title_txt.to_string(), subtitle_txt.to_string()),
-                )
-            } else {
-                let mut matched_msg = None;
-                for ptn in GRAPHIC_PATTERN_NAME.iter() {
-                    let ptn_len = ptn.1.len();
-                    if len == ptn_len + 6 && &input_text[6..(ptn_len + 6)] == ptn.1 {
-                        matched_msg = Some(ptn.0.clone());
-                        break;
-                    }
-                }
-                if let Some(msg) = matched_msg {
-                    CmndRtn("Changed Graphic!".to_string(), msg)
-                } else {
-                    CmndRtn("what?".to_string(), GraphicMsg::What)
-                }
-            }
+            generate_graphic_msg(input_text[6..].trim())
         } else {
-            CmndRtn("what?".to_string(), GraphicMsg::What)
+            ("what?".to_string(), GraphicMsg::What)
         }
     }
     fn letter_l(&mut self, input_text: &str) -> String {
@@ -645,9 +623,9 @@ impl LoopianCmd {
     fn dup_bracket_brace(&mut self, input_text: &str) -> Option<CmndRtn> {
         let first_letter = &input_text[0..1];
         if first_letter == "[" {
-            Some(CmndRtn(self.letter_bracket(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_bracket(input_text))
         } else if first_letter == "{" {
-            Some(CmndRtn(self.letter_brace(input_text), GraphicMsg::NoMsg))
+            reply_to_cmd(self.letter_brace(input_text))
         } else {
             None
         }

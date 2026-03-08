@@ -14,7 +14,7 @@ use super::view_jumping::*;
 use super::view_lissajous::*;
 use super::view_raineffect::*;
 use super::view_sinewave::*;
-use super::view_updown::*;
+use super::view_noteroll::*;
 use super::view_voice4::*;
 use super::view_waterripple::*;
 use super::view_wavestick::*;
@@ -42,28 +42,58 @@ pub enum GraphicMsg {
     JumpingPattern,
     WaveStickPattern,
     CircleThdsPattern,
-    UpDownRollPattern,
+    NoteRollPattern(String),
 }
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum GraphMode {
     Dark,
     Light,
 }
-pub struct GraphicPatternName(pub GraphicMsg, pub &'static str);
-pub const GRAPHIC_PATTERN_NAME: [GraphicPatternName; 12] = [
-    GraphicPatternName(GraphicMsg::RipplePattern, "ripple"),
-    GraphicPatternName(GraphicMsg::VoicePattern, "voice"),
-    GraphicPatternName(GraphicMsg::LissajousPattern, "lissa"),
-    GraphicPatternName(GraphicMsg::BeatLissaPattern(0), "beatlissa(0)"),
-    GraphicPatternName(GraphicMsg::BeatLissaPattern(1), "beatlissa(1)"),
-    GraphicPatternName(GraphicMsg::SineWavePattern, "sinewave"),
-    GraphicPatternName(GraphicMsg::RainEffectPattern, "rain"),
-    GraphicPatternName(GraphicMsg::FishPattern, "fish"),
-    GraphicPatternName(GraphicMsg::JumpingPattern, "jumping"),
-    GraphicPatternName(GraphicMsg::WaveStickPattern, "wavestick"),
-    GraphicPatternName(GraphicMsg::CircleThdsPattern, "circlethreads"),
-    GraphicPatternName(GraphicMsg::UpDownRollPattern, "updownroll"),
-];
+pub fn generate_graphic_msg(input_text: &str) -> (String, GraphicMsg) {
+    let len = input_text.chars().count();
+    if len == 5 && input_text == "light" {
+        ("Changed Graphic!".to_string(), GraphicMsg::LightMode)
+    } else if len == 10 && &input_text[6..10] == "dark" {
+        ("Changed Graphic!".to_string(), GraphicMsg::DarkMode)
+    } else if len > 11 && &input_text[6..11] == "title" {
+        let txt = extract_texts_from_parentheses(input_text);
+        let txts = txt.split(',').collect::<Vec<&str>>();
+        let title_txt = txts.first().unwrap_or(&"");
+        let subtitle_txt = txts.get(1).unwrap_or(&"");
+        (
+            format!("Set Title: {}", title_txt),
+            GraphicMsg::Title(title_txt.to_string(), subtitle_txt.to_string()),
+        )
+    } else if input_text.contains("ripple") {
+        ("Changed Graphic!".to_string(), GraphicMsg::RipplePattern)
+    } else if input_text.contains("voice") {
+        ("Changed Graphic!".to_string(), GraphicMsg::VoicePattern)
+    } else if input_text.contains("lissa") {
+        ("Changed Graphic!".to_string(), GraphicMsg::LissajousPattern)
+    } else if input_text.contains("beatlissa") {
+        let prm = extract_texts_from_parentheses(input_text);
+        let num = prm.parse::<i32>().unwrap_or(0);
+        ("Changed Graphic!".to_string(), GraphicMsg::BeatLissaPattern(num))
+    } else if input_text.contains("sinewave") {
+        ("Changed Graphic!".to_string(), GraphicMsg::SineWavePattern)
+    } else if input_text.contains("rain") {
+        ("Changed Graphic!".to_string(), GraphicMsg::RainEffectPattern)
+    } else if input_text.contains("fish") {
+        ("Changed Graphic!".to_string(), GraphicMsg::FishPattern)
+    } else if input_text.contains("jumping") {
+        ("Changed Graphic!".to_string(), GraphicMsg::JumpingPattern)
+    } else if input_text.contains("wavestick") {
+        ("Changed Graphic!".to_string(), GraphicMsg::WaveStickPattern)
+    } else if input_text.contains("circlethreads") {
+        ("Changed Graphic!".to_string(), GraphicMsg::CircleThdsPattern)
+    } else if input_text.contains("noteroll") {
+        let prm = extract_texts_from_parentheses(input_text);
+        ("Changed Graphic!".to_string(), GraphicMsg::NoteRollPattern(prm.to_string()))
+    } else {
+        ("what?".to_string(), GraphicMsg::What)
+    }
+}
+
 
 //*******************************************************************
 //      struct GenerativeView
@@ -135,7 +165,9 @@ pub fn get_view_instance(
         GraphicMsg::JumpingPattern => Some(Box::new(Jumping::new())),
         GraphicMsg::WaveStickPattern => Some(Box::new(WaveStick::new())),
         GraphicMsg::CircleThdsPattern => Some(Box::new(CircleThread::new())),
-        GraphicMsg::UpDownRollPattern => Some(Box::new(UpDownRoll::new(gmode))),
+        GraphicMsg::NoteRollPattern(tp) => {
+            Some(Box::new(NoteRoll::new(tp, gmode)))
+        }
         _ => None,
     }
 }

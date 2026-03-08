@@ -8,33 +8,33 @@ use super::generative_view::*;
 use nannou::prelude::*;
 
 //*******************************************************************
-//     メモ： View 作成のテンプレート
-// 必ず GenerativeView を実装すること
-// 常に動作を伴う表示を行う場合： GenerativeView の disp() を実装する
-// ノートに同期した表示を行う場合：
-//  - GenerativeView note_on() で、NoteObj を生成し Vec<NoteObj>に追加
-//  - GenerativeView disp() 内で NoteObj の disp() を呼び出す
-//  - NoteObj を実装する
-// ビートに同期した表示を行う場合：
-//  - GenerativeView on_beat() で、BeatObj を生成し Vec<BeatObj>に追加
-//  - GenerativeView disp() 内で BeatObj の disp() を呼び出す
-//  - BeatObj を実装する
-//*******************************************************************
 //      Screen Graphic
 //*******************************************************************
-pub struct UpDownRoll {
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum RollMode {
+    Vertical,
+    Horizontal,
+}
+pub struct NoteRoll {
     mode: GraphMode,
+    roll_mode: RollMode,
     nobj: Vec<Box<dyn NoteObj>>, // Note Object
 }
-impl UpDownRoll {
-    pub fn new(mode: GraphMode) -> Self {
+impl NoteRoll {
+    pub fn new(roll_mode: &str, mode: GraphMode) -> Self {
+        let roll_mode = if roll_mode == "h" {
+            RollMode::Horizontal
+        } else {
+            RollMode::Vertical
+        };
         Self {
             mode,
+            roll_mode,
             nobj: Vec::new(),
         }
     }
 }
-impl GenerativeView for UpDownRoll {
+impl GenerativeView for NoteRoll {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) {
         // Note Object の更新と削除
         let mut retain: Vec<bool> = Vec::new();
@@ -52,8 +52,12 @@ impl GenerativeView for UpDownRoll {
     fn on_beat(&mut self, _bt: i32, _tm: f32, _dt: f32) {}
     /// Note Event
     fn note_on(&mut self, nt: i32, vel: i32, _pt: i32, tm: f32) {
-        self.nobj.push(Box::new(UpDownRollNote::new(
-            nt as f32, vel as f32, tm, self.mode,
+        self.nobj.push(Box::new(NoteRollNote::new(
+            nt as f32,
+            vel as f32,
+            tm,
+            self.roll_mode,
+            self.mode,
         )));
     }
     fn set_mode(&mut self, mode: GraphMode) {
@@ -75,29 +79,31 @@ impl GenerativeView for UpDownRoll {
 //*******************************************************************
 //      Note Graphic
 //*******************************************************************
-pub struct UpDownRollNote {
+pub struct NoteRollNote {
     nt: f32,
     vel: f32,
     start_time: f32,
     elapsed_time: f32,
+    roll_mode: RollMode,
     mode: GraphMode,
 }
-impl UpDownRollNote {
+impl NoteRollNote {
     const CIRCLE_SIZE: f32 = 16.0;
     const CIRCLE_USIZE: usize = Self::CIRCLE_SIZE as usize;
 
-    pub fn new(midi_nt: f32, vel: f32, time: f32, mode: GraphMode) -> Self {
+    pub fn new(midi_nt: f32, vel: f32, time: f32, roll_mode: RollMode, mode: GraphMode) -> Self {
         let nt = ((midi_nt - 60.0) / 30.0).clamp(-1.0, 1.0);
         Self {
             nt,
             vel: vel / 127.0,
             start_time: time,
             elapsed_time: 0.0,
+            roll_mode,
             mode,
         }
     }
 }
-impl NoteObj for UpDownRollNote {
+impl NoteObj for NoteRollNote {
     fn update_model(&mut self, crnt_time: f32, _rs: Resize) -> bool {
         self.elapsed_time = (crnt_time - self.start_time) / 2.0;
         self.elapsed_time < 1.0
@@ -111,8 +117,26 @@ impl NoteObj for UpDownRollNote {
         //let disappear_time_inv = 1.0 / Self::DISAPPEAR_TIME;
         let half_size_x = rs.get_full_size_x() / 2.0;
         let half_size_y = rs.get_full_size_y() / 2.0;
-        let x_offset = 0.0 + self.nt * half_size_x;
-        let y_offset = 0.0 + self.elapsed_time * half_size_y;
+        let x_offset = if self.roll_mode == RollMode::Vertical {
+            0.0 + self.nt * half_size_x
+        } else {
+            0.0 + self.elapsed_time * half_size_x
+        };
+        let y_offset = if self.roll_mode == RollMode::Vertical {
+            0.0 + self.elapsed_time * half_size_y
+        } else {
+            0.0 + self.nt * half_size_y
+        };
+        let x_offset_mirror = if self.roll_mode == RollMode::Vertical {
+            0.0 + self.nt * half_size_x
+        } else {
+            0.0 - self.elapsed_time * half_size_x
+        };
+        let y_offset_mirror = if self.roll_mode == RollMode::Vertical {
+            0.0 - self.elapsed_time * half_size_y
+        } else {
+            0.0 + self.nt * half_size_y
+        };
 
         for i in 0..Self::CIRCLE_USIZE {
             let alpha_level =
@@ -135,7 +159,7 @@ impl NoteObj for UpDownRollNote {
                         .color(gray_scal)
                         .radius(radius_sz + 1.0);
                     draw.ellipse()
-                        .x_y(x_offset, -y_offset)
+                        .x_y(x_offset_mirror, y_offset_mirror)
                         .color(gray_scal)
                         .radius(radius_sz + 1.0);
                     continue;
@@ -147,7 +171,7 @@ impl NoteObj for UpDownRollNote {
                     .stroke(gray_scal)
                     .radius(radius_sz);
                 draw.ellipse()
-                    .x_y(x_offset, -y_offset)
+                    .x_y(x_offset_mirror, y_offset_mirror)
                     .no_fill()
                     .stroke_weight(3.0)
                     .stroke(gray_scal)
