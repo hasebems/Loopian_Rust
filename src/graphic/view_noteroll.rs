@@ -92,7 +92,7 @@ impl NoteRollNote {
     const CIRCLE_USIZE: usize = Self::CIRCLE_SIZE as usize;
 
     pub fn new(midi_nt: f32, vel: f32, time: f32, roll_mode: RollMode, mode: GraphMode) -> Self {
-        let nt = ((midi_nt - 60.0) / 30.0).clamp(-1.0, 1.0);
+        let nt = ((midi_nt - 60.0) / 40.0).clamp(-1.0, 1.0);
         Self {
             nt,
             vel: vel / 127.0,
