@@ -83,53 +83,142 @@ impl LoopianCmd {
             // option + space などの無効な文字列
             return None;
         }
-        println!("Set Text: {input_text}");
-        let first_letter = &input_text[0..1];
-        if first_letter == "/" {
-            reply_to_cmd(self.letter_slash(input_text))
-        } else if first_letter == "@" {
-            reply_to_cmd(self.letter_at(input_text))
-        } else if first_letter == "[" {
-            reply_to_cmd(self.letter_bracket(input_text))
-        } else if first_letter == "{" {
-            reply_to_cmd(self.letter_brace(input_text))
-        } else if first_letter == "." {
+
+        let msg_vec = self.analyze_and_divide_to_msg(input_text);
+        println!("Analyze Text: {:?}", msg_vec);
+        let first_letter = input_text.chars().next().unwrap();
+        if input_text.len() == 1 && first_letter == '.' {
             reply_to_cmd(self.letter_dot(input_text))
-        } else if first_letter == "c" {
-            reply_to_cmd(self.letter_c(input_text))
-        } else if first_letter == "e" {
-            reply_to_cmd(self.letter_e(input_text))
-        } else if first_letter == "f" {
-            reply_to_cmd(self.letter_f(input_text))
-        } else if first_letter == "g" {
-            let rtn = self.letter_g(input_text);
-            Some(CmndRtn(rtn.0, rtn.1))
-        } else if first_letter == "l" {
-            reply_to_cmd(self.letter_l(input_text))
-        } else if first_letter == "p" {
-            reply_to_cmd(self.letter_p(input_text))
-        } else if first_letter == "r" {
-            reply_to_cmd(self.letter_r(input_text))
-        } else if first_letter == "s" {
-            reply_to_cmd(self.letter_s(input_text))
-        } else if first_letter == "L"
-            || first_letter == "R"
-            || first_letter == "F"
-            || first_letter == "A"
-            || first_letter == "D"
-            || first_letter == "S"
+        } else if first_letter == '/' {
+            reply_to_cmd(self.letter_slash(input_text))
+        } else if first_letter == '@' {
+            reply_to_cmd(self.letter_at(input_text))
+        } else if first_letter == '[' {
+            reply_to_cmd(self.letter_bracket(input_text))
+        } else if first_letter == '{' {
+            reply_to_cmd(self.letter_brace(input_text))
+        } else if first_letter == 'L'
+            || first_letter == 'R'
+            || first_letter == 'F'
+            || first_letter == 'A'
+            || first_letter == 'D'
+            || first_letter == 'S'
         {
             reply_to_cmd(self.letter_part(input_text))
-        } else if first_letter == "h" {
-            reply_to_cmd(self.letter_h(input_text))
+        } else if msg_vec.len() == 1 {
+            // one word command
+            reply_to_cmd(self.one_word_command(&msg_vec[0]))
         } else {
-            reply_to_cmd("what?".to_string())
+            match msg_vec[0].as_str() {
+                "set" => reply_to_cmd(self.parse_set_command(&msg_vec[1])),
+                "sync" => reply_to_cmd(self.cmd_sync(&msg_vec[1])),
+                "clear" => reply_to_cmd(self.cmd_clear(&msg_vec[1])),
+                "fine" => reply_to_cmd(self.cmd_fine(&msg_vec[1])),
+                "help" => reply_to_cmd(self.cmd_help(&msg_vec[1])),
+                "graph" => {
+                    let rtn = generate_graphic_msg(msg_vec);
+                    Some(CmndRtn(rtn.0, rtn.1))
+                }
+                "effect" => reply_to_cmd(self.cmd_effect(&msg_vec[1])),
+                _ => reply_to_cmd("what?".to_string()),
+            }
         }
     }
-    fn letter_c(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len >= 5 && &input_text[0..5] == "clear" {
-            if !self.recursive && len == 5 {
+    fn analyze_and_divide_to_msg(&self, input_text: &str) -> Vec<String> {
+        // コマンドを解析して、Elapse に送るべきメッセージのベクタを返す
+        // 例えば、"set.key(C)" なら、["set", "key(C)"] を返す
+        // "L1.{CDE}" なら、["L1", "{CDE}"] を返す
+        // (),{},[] を考慮して、ピリオドで分割する
+        let mut msg_vec: Vec<String> = Vec::new();
+        let mut current = String::new();
+        let mut paren_depth = 0i32;
+        let mut brace_depth = 0i32;
+        let mut bracket_depth = 0i32;
+
+        for ch in input_text.chars() {
+            match ch {
+                '(' => {
+                    paren_depth += 1;
+                    current.push(ch);
+                }
+                ')' => {
+                    if paren_depth > 0 {
+                        paren_depth -= 1;
+                    }
+                    current.push(ch);
+                }
+                '{' => {
+                    brace_depth += 1;
+                    current.push(ch);
+                }
+                '}' => {
+                    if brace_depth > 0 {
+                        brace_depth -= 1;
+                    }
+                    current.push(ch);
+                }
+                '[' => {
+                    bracket_depth += 1;
+                    current.push(ch);
+                }
+                ']' => {
+                    if bracket_depth > 0 {
+                        bracket_depth -= 1;
+                    }
+                    current.push(ch);
+                }
+                '.' if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0 => {
+                    if !current.is_empty() {
+                        msg_vec.push(current.clone());
+                        current.clear();
+                    }
+                }
+                _ => current.push(ch),
+            }
+        }
+
+        if !current.is_empty() {
+            msg_vec.push(current);
+        }
+
+        msg_vec
+    }
+    fn one_word_command(&mut self, input_text: &str) -> String {
+        match input_text {
+            "hello" => self.cmd_hello(),
+            "play" | "p" => self.cmd_play(),
+            "panic" => self.cmd_panic(),
+            "stop" | "end" => self.cmd_stop(),
+            "sync" => self.cmd_sync(""),
+            "clear" => self.cmd_clear(""),
+            "fermata" => self.cmd_fermata(),
+            "fine" => self.cmd_fine(""),
+            "resume" => self.cmd_resume(),
+            "reconnect" => self.cmd_reconnect(),
+            "help" => self.cmd_help(""),
+            "right1" => {
+                self.input_part = RIGHT1;
+                "Changed current part to right1.".to_string()
+            }
+            "right2" => {
+                self.input_part = RIGHT2;
+                "Changed current part to right2.".to_string()
+            }
+            "left1" => {
+                self.input_part = LEFT1;
+                "Changed current part to left1.".to_string()
+            }
+            "left2" => {
+                self.input_part = LEFT2;
+                "Changed current part to left2.".to_string()
+            }
+            "rit" => self.cmd_rit(""),
+            _ => "what?".to_string(),
+        }
+    }
+    fn cmd_clear(&mut self, input_part: &str) -> String {
+        if input_part.is_empty() {
+            if !self.recursive {
                 // stop
                 self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
                 self.during_play = false;
@@ -143,203 +232,143 @@ impl LoopianCmd {
                 self.clear_part(self.input_part);
                 "designated part data erased!".to_string()
             } else {
-                let remaining_letter = &input_text[6..];
-                if let Some(pnum) = Self::detect_part(remaining_letter) {
-                    println!("clear>>{remaining_letter}");
-                    self.clear_part(pnum);
-                    match pnum {
-                        LEFT1 => "part L1 data erased!".to_string(),
-                        LEFT2 => "part L2 data erased!".to_string(),
-                        RIGHT1 => "part R1 data erased!".to_string(),
-                        RIGHT2 => "part R2 data erased!".to_string(),
-                        _ => "some part data erased!".to_string(),
-                    }
-                } else if remaining_letter == "env" {
-                    self.change_key("C");
-                    self.change_bpm(100);
-                    self.change_meter(4, 4);
-                    for i in 0..MAX_KBD_PART {
-                        self.change_oct("0", i);
-                    }
-                    "Environment data erased!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            }
-        } else {
-            "what?".to_string()
-        }
-    }
-    fn letter_e(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len == 3 && &input_text[0..3] == "end" {
-            // stop
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
-            self.during_play = false;
-            "Fine.".to_string()
-        } else if len >= 5 && &input_text[0..5] == "efct." {
-            let efct = &input_text[5..];
-            if efct.contains("dmp(") {
-                if let Some(dmp) = extract_number_from_parentheses(efct) {
-                    self.sndr
-                        .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_DMP, dmp as i16]));
-                    format!("Set Damper Value: {}", dmp)
-                } else {
-                    "No Value!".to_string()
-                }
-            } else if efct.contains("cc70(") {
-                if let Some(cc70) = extract_number_from_parentheses(efct) {
-                    self.sndr
-                        .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_CC70, cc70 as i16]));
-                    format!("Set CC70 Value: {}", cc70)
-                } else {
-                    "No Value!".to_string()
-                }
-            } else {
                 "what?".to_string()
             }
-        } else {
-            "what?".to_string()
-        }
-    }
-    fn letter_f(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len >= 4 && &input_text[0..4] == "fine" {
-            // fine
-            if len == 4 {
-                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE));
-            } else if len == 9 && &input_text[4..] == ".next" {
-                self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_2BAR));
-            } else if len == 12 && &input_text[4..] == ".beat(2)" {
-                self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_2BEAT));
-            } else if len == 12 && &input_text[4..] == ".beat(3)" {
-                self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_3BEAT));
-            } else if len == 12 && &input_text[4..] == ".beat(4)" {
-                self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_4BEAT));
+        } else if let Some(pnum) = Self::detect_part(input_part) {
+            println!("clear>>{input_part}");
+            self.clear_part(pnum);
+            match pnum {
+                LEFT1 => "part L1 data erased!".to_string(),
+                LEFT2 => "part L2 data erased!".to_string(),
+                RIGHT1 => "part R1 data erased!".to_string(),
+                RIGHT2 => "part R2 data erased!".to_string(),
+                _ => "some part data erased!".to_string(),
             }
-            self.during_play = false;
-            "Fine.".to_string()
-        } else if len == 7 && &input_text[0..7] == "fermata" {
-            // fermata
-            self.sndr
-                .send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_NRM, MSG2_RIT_FERMATA]));
-            "Will stop!".to_string()
+        } else if input_part == "env" {
+            self.change_key("C");
+            self.change_bpm(100);
+            self.change_meter(4, 4);
+            for i in 0..MAX_KBD_PART {
+                self.change_oct("0", i);
+            }
+            "Environment data erased!".to_string()
         } else {
             "what?".to_string()
         }
     }
-    fn letter_g(&mut self, input_text: &str) -> (String, GraphicMsg) {
-        let len = input_text.chars().count();
-        if len >= 6 && &input_text[0..5] == "graph" {
-            generate_graphic_msg(input_text[6..].trim())
-        } else {
-            ("what?".to_string(), GraphicMsg::What)
-        }
-    }
-    fn letter_l(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len == 5 && &input_text[0..5] == "left1" {
-            self.input_part = LEFT1;
-            "Changed current part to left1.".to_string()
-        } else if len == 5 && &input_text[0..5] == "left2" {
-            self.input_part = LEFT2;
-            "Changed current part to left2.".to_string()
-        } else {
-            "what?".to_string()
-        }
-    }
-    fn letter_p(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if (len == 4 && &input_text[0..4] == "play") || (len == 1 && &input_text[0..1] == "p") {
-            if !self.during_play {
-                // play
-                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
-                self.during_play = true;
-                "Phrase has started!".to_string()
+    fn cmd_effect(&mut self, parameter: &str) -> String {
+        if parameter.contains("dmp(") {
+            if let Some(dmp) = extract_number_from_parentheses(parameter) {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_DMP, dmp as i16]));
+                format!("Set Damper Value: {}", dmp)
             } else {
-                "Playing now!".to_string()
+                "No Value!".to_string()
             }
-        } else if len == 5 && &input_text[0..5] == "panic" {
-            // panic
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_PANIC));
-            "All Sound Off!".to_string()
+        } else if parameter.contains("cc70(") {
+            if let Some(cc70) = extract_number_from_parentheses(parameter) {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_CC70, cc70 as i16]));
+                format!("Set CC70 Value: {}", cc70)
+            } else {
+                "No Value!".to_string()
+            }
         } else {
             "what?".to_string()
         }
     }
-    fn letter_r(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len >= 6 && &input_text[0..6] == "resume" {
+    fn cmd_fermata(&mut self) -> String {
+        self.sndr
+            .send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_NRM, MSG2_RIT_FERMATA]));
+        "Will stop!".to_string()
+    }
+    fn cmd_fine(&mut self, input_next: &str) -> String {
+        if input_next.is_empty() {
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE));
+        } else if input_next == "next" {
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_2BAR));
+        } else if input_next == "beat(2)" {
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_2BEAT));
+        } else if input_next == "beat(3)" {
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_3BEAT));
+        } else if input_next == "beat(4)" {
+            self.sndr
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_4BEAT));
+        }
+        self.during_play = false;
+        "Fine.".to_string()
+    }
+    fn cmd_play(&mut self) -> String {
+        if !self.during_play {
+            // play
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
+            self.during_play = true;
+            "Phrase has started!".to_string()
+        } else {
+            "Playing now!".to_string()
+        }
+    }
+    fn cmd_panic(&mut self) -> String {
+        // panic
+        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_PANIC));
+        "All Sound Off!".to_string()
+    }
+    fn cmd_resume(&mut self) -> String {
+        if !self.during_play {
+            // resume
             self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_RESUME));
             self.during_play = true;
             "Resume.".to_string()
-        } else if len >= 6 && &input_text[0..6] == "right1" {
-            self.input_part = RIGHT1;
-            "Changed current part to right1.".to_string()
-        } else if len >= 6 && &input_text[0..6] == "right2" {
-            self.input_part = RIGHT2;
-            "Changed current part to right2.".to_string()
-        } else if len >= 4 && &input_text[0..4] == "rit." {
-            self.apply_rit(input_text)
-        } else if len >= 9 && &input_text[0..9] == "reconnect" {
+        } else {
+            "Playing now!".to_string()
+        }
+    }
+    fn cmd_rit(&mut self, input_text: &str) -> String {
+        self.apply_rit(input_text)
+    }
+    fn cmd_reconnect(&mut self) -> String {
+        self.sndr
+            .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
+        "Send reconnect".to_string()
+    }
+    fn cmd_stop(&mut self) -> String {
+        if self.during_play {
+            // stop
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            self.during_play = false;
+            "Stopped!".to_string()
+        } else {
+            "Settle down!".to_string()
+        }
+    }
+    fn cmd_sync(&mut self, part_text: &str) -> String {
+        if part_text.is_empty() {
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
-            "Send reconnect".to_string()
+                .send_msg_to_elapse(ElpsMsg::Sync(self.input_part as i16));
+            "Synchronized!".to_string()
+        } else if part_text == "right" {
+            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_RGT));
+            "Right Part Synchronized!".to_string()
+        } else if part_text == "left" {
+            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_LFT));
+            "Left Part Synchronized!".to_string()
+        } else if part_text == "all" {
+            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_ALL));
+            "All Part Synchronized!".to_string()
         } else {
             "what?".to_string()
         }
     }
-    fn letter_s(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len >= 4 && &input_text[0..4] == "stop" {
-            if self.during_play {
-                // stop
-                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
-                self.during_play = false;
-                "Stopped!".to_string()
-            } else {
-                "Settle down!".to_string()
-            }
-        } else if len >= 4 && &input_text[0..4] == "set." {
-            // set
-            self.parse_set_command(&input_text[4..])
-        } else if len >= 4 && &input_text[0..4] == "sync" {
-            if len == 4 {
-                self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Sync(self.input_part as i16));
-                "Synchronized!".to_string()
-            } else if len >= 6 {
-                let prttxt = &input_text[5..];
-                if prttxt == "right" {
-                    self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_RGT));
-                    "Right Part Synchronized!".to_string()
-                } else if prttxt == "left" {
-                    self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_LFT));
-                    "Left Part Synchronized!".to_string()
-                } else if prttxt == "all" {
-                    self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_ALL));
-                    "All Part Synchronized!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else {
-                "what?".to_string()
-            }
-        } else {
-            "what?".to_string()
-        }
+    fn cmd_hello(&mut self) -> String {
+        "Hi, hello!".to_string()
     }
-    fn letter_h(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len == 5 && &input_text[0..5] == "hello" {
-            "Hi, hello!".to_string()
-        } else if len == 4 && &input_text[0..4] == "help" {
+    fn cmd_help(&mut self, input_text: &str) -> String {
+        if input_text.is_empty() {
             "How can I assist you?".to_string()
-        } else if len == 10 && &input_text[0..10] == "help.graph" {
+        } else if input_text == "graph" {
             "ripple/voice/lissa/beatlissa()/sinewave/rain/fish/jumping/wavestick".to_string()
         } else {
             "what?".to_string()

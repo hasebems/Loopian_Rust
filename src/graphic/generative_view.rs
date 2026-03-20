@@ -49,14 +49,13 @@ pub enum GraphMode {
     Dark,
     Light,
 }
-pub fn generate_graphic_msg(input_text: &str) -> (String, GraphicMsg) {
-    let len = input_text.chars().count();
-    if len == 5 && input_text == "light" {
+pub fn generate_graphic_msg(input_msgs: Vec<String>) -> (String, GraphicMsg) {
+    if input_msgs[1] == "light" {
         ("Changed Graphic!".to_string(), GraphicMsg::LightMode)
-    } else if len == 10 && &input_text[6..10] == "dark" {
+    } else if input_msgs[1] == "dark" {
         ("Changed Graphic!".to_string(), GraphicMsg::DarkMode)
-    } else if len > 11 && &input_text[6..11] == "title" {
-        let txt = extract_texts_from_parentheses(input_text);
+    } else if input_msgs[1] == "title" {
+        let txt = extract_texts_from_parentheses(&input_msgs[1]);
         let txts = txt.split(',').collect::<Vec<&str>>();
         let title_txt = txts.first().unwrap_or(&"");
         let subtitle_txt = txts.get(1).unwrap_or(&"");
@@ -64,39 +63,39 @@ pub fn generate_graphic_msg(input_text: &str) -> (String, GraphicMsg) {
             format!("Set Title: {}", title_txt),
             GraphicMsg::Title(title_txt.to_string(), subtitle_txt.to_string()),
         )
-    } else if input_text.contains("ripple") {
+    } else if input_msgs[1].contains("ripple") {
         ("Changed Graphic!".to_string(), GraphicMsg::RipplePattern)
-    } else if input_text.contains("voice") {
+    } else if input_msgs[1].contains("voice") {
         ("Changed Graphic!".to_string(), GraphicMsg::VoicePattern)
-    } else if input_text.contains("lissa") {
+    } else if input_msgs[1].contains("lissa") {
         ("Changed Graphic!".to_string(), GraphicMsg::LissajousPattern)
-    } else if input_text.contains("beatlissa") {
-        let prm = extract_texts_from_parentheses(input_text);
+    } else if input_msgs[1].contains("beatlissa") {
+        let prm = extract_texts_from_parentheses(&input_msgs[1]);
         let num = prm.parse::<i32>().unwrap_or(0);
         (
             "Changed Graphic!".to_string(),
             GraphicMsg::BeatLissaPattern(num),
         )
-    } else if input_text.contains("sinewave") {
+    } else if input_msgs[1].contains("sinewave") {
         ("Changed Graphic!".to_string(), GraphicMsg::SineWavePattern)
-    } else if input_text.contains("rain") {
+    } else if input_msgs[1].contains("rain") {
         (
             "Changed Graphic!".to_string(),
             GraphicMsg::RainEffectPattern,
         )
-    } else if input_text.contains("fish") {
+    } else if input_msgs[1].contains("fish") {
         ("Changed Graphic!".to_string(), GraphicMsg::FishPattern)
-    } else if input_text.contains("jumping") {
+    } else if input_msgs[1].contains("jumping") {
         ("Changed Graphic!".to_string(), GraphicMsg::JumpingPattern)
-    } else if input_text.contains("wavestick") {
+    } else if input_msgs[1].contains("wavestick") {
         ("Changed Graphic!".to_string(), GraphicMsg::WaveStickPattern)
-    } else if input_text.contains("circlethreads") {
+    } else if input_msgs[1].contains("circlethreads") {
         (
             "Changed Graphic!".to_string(),
             GraphicMsg::CircleThdsPattern,
         )
-    } else if input_text.contains("noteroll") {
-        let prm = extract_texts_from_parentheses(input_text);
+    } else if input_msgs[1].contains("noteroll") {
+        let prm = extract_texts_from_parentheses(&input_msgs[1]);
         (
             "Changed Graphic!".to_string(),
             GraphicMsg::NoteRollPattern(prm.to_string()),
