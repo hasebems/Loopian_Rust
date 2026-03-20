@@ -33,16 +33,34 @@ impl PhraseComplemented {
             accia_info: Vec::new(),
         }
     }
-    pub fn divide_brackets(&mut self, input_text: String) {
-        // 中身と、その後の文字列を note_str/exp_str に入れる
-        let mut isx: &str = &input_text;
-        if let Some(n2) = isx.find(']') {
-            self.note_str = isx[1..n2].to_string();
-            isx = &isx[n2 + 1..];
-            if !isx.is_empty() {
-                self.exp_str = isx.to_string();
+    fn set_note_and_exp_from_msg(&mut self, msg_vec: &[String]) {
+        if msg_vec.is_empty() {
+            self.divide_notemod_and_musicex(Vec::new());
+            return;
+        }
+
+        let top = &msg_vec[0];
+        if let Some(n2) = top.find(']') {
+            if top.starts_with('[') {
+                self.note_str = top[1..n2].to_string();
+            }
+            let remain = &top[(n2 + 1)..];
+            if !remain.is_empty() {
+                self.exp_str = remain.to_string();
             }
         }
+
+        let mut exp_vec: Vec<String> = if msg_vec.len() >= 2 {
+            msg_vec[1..].to_vec()
+        } else {
+            Vec::new()
+        };
+        if !self.exp_str.is_empty() {
+            exp_vec.insert(0, self.exp_str.clone());
+        }
+        exp_vec.retain(|nt| !nt.is_empty());
+        self.exp_str.clear();
+        self.divide_notemod_and_musicex(exp_vec);
     }
     fn divide_atrb(&mut self, mut ntdiv: Vec<String>) {
         let dnum = ntdiv.len();
@@ -268,31 +286,25 @@ impl PhraseComplemented {
     }
 }
 //*******************************************************************
-pub fn complement_phrase(input_text: String, cluster_word: &str) -> Box<PhraseComplemented> {
+pub fn complement_phrase(input_text: Vec<String>, cluster_word: &str) -> Box<PhraseComplemented> {
     let mut pc = Box::new(PhraseComplemented::new());
 
-    // 1. space 削除し、[] を検出して、音符情報と、その他の情報を分ける
-    let phr = input_text.trim().to_string();
-    pc.divide_brackets(phr);
+    // 1. 分割済みメッセージから [] 内と関数チェーンを抽出
+    pc.set_note_and_exp_from_msg(&input_text);
 
     // 2. 音符情報はさらに : で分割、auftaktの展開、装飾音符の分離
     let ntdiv = split_by(':', pc.note_str.clone());
     pc.divide_atrb(ntdiv.clone());
 
-    // 3. 関数を . で分割し、音符変調と音楽表現に分ける
-    let mut nev = split_by('.', pc.exp_str.clone());
-    nev.retain(|nt| !nt.is_empty());
-    pc.divide_notemod_and_musicex(nev);
-
-    // 4. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
+    // 3. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
     pc.divide_arrow_bracket();
     pc.note_str = pc.note_str.replace('c', cluster_word);
 
-    // 5. ,| 重複による休符指示の補填、()内の ',' を '_' に変換。音符のVector化
+    // 4. ,| 重複による休符指示の補填、()内の ',' を '_' に変換。音符のVector化
     pc.fill_omitted_note_data();
     pc.note_info = split_by(',', pc.note_str.clone());
 
-    // 6. 同音繰り返しの展開、同フレーズの繰り返し展開
+    // 5. 同音繰り返しの展開、同フレーズの繰り返し展開
     pc.note_repeat();
     let note_mod = pc.note_mod.clone();
     for ne in note_mod.iter() {
@@ -301,7 +313,7 @@ pub fn complement_phrase(input_text: String, cluster_word: &str) -> Box<PhraseCo
         }
     }
 
-    // 7. 装飾音符を分離する
+    // 6. 装飾音符を分離する
     pc.divide_acciaccatura();
 
     pc

@@ -75,10 +75,11 @@ impl SeqDataStock {
         &mut self,
         part: usize,
         vari: PhraseAs,
-        mut input_text: String,
+        input_text: Vec<String>,
     ) -> Option<bool> {
-        if let Some(rs) = self.check_if_additional_phrase(input_text.clone()) {
-            input_text = rs;
+        let normalized_vec;
+        if let Some(rs) = self.check_if_additional_phrase(input_text) {
+            normalized_vec = rs;
         } else {
             return Some(true); // additional なら true
         }
@@ -88,7 +89,7 @@ impl SeqDataStock {
                 PhraseAs::Variation(v) => v,
                 PhraseAs::Measure(_m) => MAX_VARIATION,
             };
-            if self.pdt[part][num].set_raw(input_text, Some(&self.cluster_memory)) {
+            if self.pdt[part][num].set_raw_vec(normalized_vec, Some(&self.cluster_memory)) {
                 self.pdt[part][num].set_recombined(
                     Some(self.input_mode),
                     self.tick_for_onemsr,
@@ -99,7 +100,7 @@ impl SeqDataStock {
             }
         } else if (DAMPER_PART..=SHIFT_PART).contains(&part) {
             // Damper/Sostenuto/Shift part の場合
-            if self.pdldt[part - MAX_ALL_KBD_PART].set_raw(input_text, None) {
+            if self.pdldt[part - MAX_ALL_KBD_PART].set_raw(normalized_vec.join("."), None) {
                 self.pdldt[part - MAX_ALL_KBD_PART].set_recombined(
                     None,
                     self.tick_for_onemsr,
@@ -196,47 +197,58 @@ impl SeqDataStock {
     pub fn change_input_mode(&mut self, input_mode: InputMode) {
         self.input_mode = input_mode;
     }
-    pub fn check_if_additional_phrase(&mut self, raw: String) -> Option<String> {
-        let strlen = raw.len();
-        if strlen >= 9 && raw.contains("].rpt(") && &raw[(strlen - 2)..] == ")+" {
-            let input_txt = split_by('.', raw);
+    pub fn check_if_additional_phrase(&mut self, input_vec: Vec<String>) -> Option<Vec<String>> {
+        if input_vec.is_empty() {
+            return Some(input_vec);
+        }
+
+        let first = input_vec[0].clone();
+        let first_len = first.len();
+        if input_vec.len() >= 2
+            && first.ends_with(']')
+            && input_vec[1].starts_with("rpt(")
+            && input_vec[1].ends_with(")+")
+        {
             let rpt_cnt;
-            if let Some(r) = extract_number_from_parentheses(&input_txt[1]) {
+            if let Some(r) = extract_number_from_parentheses(&input_vec[1]) {
                 rpt_cnt = r;
             } else {
                 rpt_cnt = 1;
             }
-            let plen = input_txt[0].len();
             for i in 0..(rpt_cnt + 1) {
                 if i == 0 && self.raw_additional.is_empty() {
                     // 1st time
-                    self.raw_additional = input_txt[0][0..(plen - 1)].to_string();
+                    self.raw_additional = first[0..(first_len - 1)].to_string();
                 } else {
                     // 2nd and more time
-                    self.raw_additional += &input_txt[0][1..(plen - 1)];
+                    self.raw_additional += &first[1..(first_len - 1)];
                 }
             }
             None
-        } else if strlen >= 2 && &raw[(strlen - 2)..] == "]+" {
+        } else if first_len >= 2 && first.ends_with("]+") {
             if self.raw_additional.is_empty() {
                 // 1st time
-                self.raw_additional = raw[0..(strlen - 2)].to_string();
+                self.raw_additional = first[0..(first_len - 2)].to_string();
             } else {
                 // 2nd and more time
-                self.raw_additional += &raw[1..(strlen - 2)];
+                self.raw_additional += &first[1..(first_len - 2)];
             }
             // additional (..]+) なら None を返す
             None
         } else {
-            let mut newraw = raw.clone();
+            let mut new_vec = input_vec.clone();
             if !self.raw_additional.is_empty() {
                 // last time
-                newraw = self.raw_additional.clone() + &raw[1..];
+                if let Some(head) = new_vec.get_mut(0)
+                    && !head.is_empty()
+                {
+                    *head = self.raw_additional.clone() + &head[1..];
+                }
                 #[cfg(feature = "verbose")]
-                println!("Additional Phrase: {newraw:?}");
+                println!("Additional Phrase: {new_vec:?}");
                 self.raw_additional = String::from("");
             }
-            Some(newraw)
+            Some(new_vec)
         }
     }
     fn recombine_phr_all(&mut self) {
@@ -299,7 +311,7 @@ pub trait DataStock {
 #[derive(Debug)]
 pub struct PhraseDataStock {
     base_note: i32,
-    raw: String,
+    raw: Vec<String>,
     cmpl: Option<Box<PhraseComplemented>>,
     phr: Vec<PhrEvt>,
     ana: Vec<AnaEvt>,
@@ -311,7 +323,7 @@ impl PhraseDataStock {
     fn new(base_note: i32) -> Self {
         Self {
             base_note,
-            raw: "".to_string(),
+            raw: Vec::new(),
             cmpl: None,
             phr: Vec::new(),
             ana: Vec::new(),
@@ -319,6 +331,16 @@ impl PhraseDataStock {
             whole_tick: 0,
             send_enable: true,
         }
+    }
+    fn set_raw_vec(&mut self, input_text: Vec<String>, cluster_word: Option<&str>) -> bool {
+        self.send_enable = true;
+        self.raw = input_text.clone();
+
+        self.cmpl = Some(complement_phrase(input_text, cluster_word.unwrap_or("")));
+        if cfg!(feature = "verbose") {
+            self.debug_print();
+        }
+        true
     }
     pub fn _get_cmpl_nt(&self) -> Vec<String> {
         // for test
@@ -378,16 +400,7 @@ impl PhraseDataStock {
 }
 impl DataStock for PhraseDataStock {
     fn set_raw(&mut self, input_text: String, cluster_word: Option<&str>) -> bool {
-        // 1.raw
-        self.send_enable = true;
-        self.raw = input_text.clone();
-
-        // 2.complement data
-        self.cmpl = Some(complement_phrase(input_text, cluster_word.unwrap_or("")));
-        if cfg!(feature = "verbose") {
-            self.debug_print();
-        }
-        true
+        self.set_raw_vec(vec![input_text], cluster_word)
     }
     fn set_recombined(
         &mut self,

@@ -50,3 +50,49 @@ fn pedal() {
         }
     }
 }
+
+#[test]
+fn shortcut_phrase_chain() {
+    use crate::lpnlib::{ElpsMsg::*, *};
+
+    let (txmsg, rxmsg) = std::sync::mpsc::channel();
+    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
+
+    assert_eq!(
+        cmd.put_and_get_responce("L1.[d].dmp(off)").unwrap().0,
+        "Set Phrase!".to_string()
+    );
+
+    let mut found = false;
+    while let Ok(msg) = rxmsg.try_recv() {
+        if let Phr(part, dt) = msg
+            && part == LEFT1 as i16
+        {
+            found = true;
+            assert_eq!(dt.evts.len(), 1);
+        }
+    }
+    assert!(found);
+}
+
+#[test]
+fn flow_composition_shortcut() {
+    use crate::lpnlib::ElpsMsg::*;
+
+    let (txmsg, rxmsg) = std::sync::mpsc::channel();
+    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
+
+    assert_eq!(
+        cmd.put_and_get_responce("FLOW.{I,IV,V,I}").unwrap().0,
+        "Set Composition!".to_string()
+    );
+
+    let mut found = false;
+    while let Ok(msg) = rxmsg.try_recv() {
+        if let Cmp(_part, dt) = msg {
+            found = true;
+            assert!(!dt.evts.is_empty());
+        }
+    }
+    assert!(found);
+}

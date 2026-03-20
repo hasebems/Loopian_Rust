@@ -94,9 +94,9 @@ impl LoopianCmd {
         } else if first_letter == '@' {
             reply_to_cmd(self.letter_at(input_text))
         } else if first_letter == '[' {
-            reply_to_cmd(self.letter_bracket(input_text))
+            reply_to_cmd(self.letter_bracket(msg_vec.clone()))
         } else if first_letter == '{' {
-            reply_to_cmd(self.letter_brace(input_text))
+            reply_to_cmd(self.letter_brace(msg_vec.clone()))
         } else if first_letter == 'L'
             || first_letter == 'R'
             || first_letter == 'F'
@@ -104,7 +104,7 @@ impl LoopianCmd {
             || first_letter == 'D'
             || first_letter == 'S'
         {
-            reply_to_cmd(self.letter_part(input_text))
+            reply_to_cmd(self.letter_part(input_text, msg_vec.clone()))
         } else if msg_vec.len() == 1 {
             // one word command
             reply_to_cmd(self.one_word_command(&msg_vec[0]))
@@ -168,8 +168,9 @@ impl LoopianCmd {
                     current.push(ch);
                 }
                 '.' if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0 => {
-                    if !current.is_empty() {
-                        msg_vec.push(current.clone());
+                    let token = current.trim().to_string();
+                    if !token.is_empty() {
+                        msg_vec.push(token);
                         current.clear();
                     }
                 }
@@ -177,8 +178,9 @@ impl LoopianCmd {
             }
         }
 
-        if !current.is_empty() {
-            msg_vec.push(current);
+        let token = current.trim().to_string();
+        if !token.is_empty() {
+            msg_vec.push(token);
         }
 
         msg_vec
@@ -394,7 +396,11 @@ impl LoopianCmd {
                     msr = 1;
                 }
                 if let Some(additional) =
-                    self.put_phrase(self.input_part, PhraseAs::Measure(msr), &split_txt[1])
+                    self.put_phrase(
+                        self.input_part,
+                        PhraseAs::Measure(msr),
+                        self.analyze_and_divide_to_msg(&split_txt[1]),
+                    )
                 {
                     if additional {
                         "Keep Phrase as being unified phrase!".to_string()
@@ -414,7 +420,7 @@ impl LoopianCmd {
                     if let Some(additional) = self.put_phrase(
                         self.input_part,
                         PhraseAs::Variation(vari as usize),
-                        &split_txt[1],
+                        self.analyze_and_divide_to_msg(&split_txt[1]),
                     ) {
                         if additional {
                             "Keep Phrase as being unified phrase!".to_string()
@@ -434,8 +440,8 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn letter_bracket(&mut self, input_text: &str) -> String {
-        if let Some(addtional) = self.put_phrase(self.input_part, PhraseAs::Normal, input_text) {
+    fn letter_bracket(&mut self, msg_vec: Vec<String>) -> String {
+        if let Some(addtional) = self.put_phrase(self.input_part, PhraseAs::Normal, msg_vec) {
             if addtional {
                 "Keep Phrase as being unified phrase!".to_string()
             } else {
@@ -445,7 +451,8 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn letter_brace(&mut self, input_text: &str) -> String {
+    fn letter_brace(&mut self, msg_vec: Vec<String>) -> String {
+        let input_text = msg_vec.join(".");
         if self
             .dtstk
             .set_raw_composition(self.input_part, input_text.to_string())
@@ -473,7 +480,7 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn letter_part(&mut self, input_text: &str) -> String {
+    fn letter_part(&mut self, input_text: &str, msg_vec: Vec<String>) -> String {
         if let Some(pnum) = Self::detect_part(input_text) {
             self.input_part = pnum;
             match pnum {
@@ -484,85 +491,91 @@ impl LoopianCmd {
                 _ => "what?".to_string(),
             }
         } else {
-            self.shortcut_input(input_text)
+            self.shortcut_input(input_text, msg_vec)
         }
     }
-    fn shortcut_input(&mut self, input_text: &str) -> String {
+    fn shortcut_input(&mut self, input_text: &str, msg_vec: Vec<String>) -> String {
         // shortcut input
+        if msg_vec.len() < 2 {
+            return "what?".to_string();
+        }
+
+        let part_str = msg_vec[0].as_str();
+        let rest_vec = msg_vec[1..].to_vec();
+        let first_letter = rest_vec[0].chars().next().unwrap_or('~').to_string();
         let mut rtn_str = "what?".to_string();
-        for (i, ltr) in input_text.char_indices() {
-            if ltr == '.' {
-                let first_letter = &input_text[i + 1..i + 2]; // '{' '['
-                let part_str = &input_text[0..i];
-                let rest_text = &input_text[i + 1..];
-                match part_str {
-                    "L1" => rtn_str = self.call_bracket_brace(LEFT1, first_letter, rest_text),
-                    "L2" => rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text),
-                    "L" => {
-                        self.call_bracket_brace(LEFT1, first_letter, rest_text);
-                        rtn_str = self.call_bracket_brace(LEFT2, first_letter, rest_text);
-                    }
-                    "L1!" => {
-                        self.call_bracket_brace(LEFT2, first_letter, rest_text);
-                        self.call_bracket_brace(RIGHT1, first_letter, rest_text);
-                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
-                    }
-                    "L2!" => {
-                        self.call_bracket_brace(LEFT1, first_letter, rest_text);
-                        self.call_bracket_brace(RIGHT1, first_letter, rest_text);
-                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
-                    }
-                    "R1" => rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text),
-                    "R2" => rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text),
-                    "R" => {
-                        self.call_bracket_brace(RIGHT1, first_letter, rest_text);
-                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
-                    }
-                    "R1!" => {
-                        self.call_bracket_brace(LEFT1, first_letter, rest_text);
-                        self.call_bracket_brace(LEFT2, first_letter, rest_text);
-                        rtn_str = self.call_bracket_brace(RIGHT2, first_letter, rest_text);
-                    }
-                    "R2!" => {
-                        self.call_bracket_brace(LEFT1, first_letter, rest_text);
-                        self.call_bracket_brace(LEFT2, first_letter, rest_text);
-                        rtn_str = self.call_bracket_brace(RIGHT1, first_letter, rest_text);
-                    }
-                    "FLOW" => {
-                        rtn_str = self.flow_part_command(first_letter, rest_text);
-                    }
-                    "D" | "DAMPER" => {
-                        if first_letter == "[" {
-                            rtn_str = self.call_bracket_brace(DAMPER_PART, first_letter, rest_text);
-                        }
-                    }
-                    "SO" | "SOSTENUTO" => {
-                        if first_letter == "[" {
-                            rtn_str =
-                                self.call_bracket_brace(SOSTENUTO_PART, first_letter, rest_text);
-                        }
-                    }
-                    "SH" | "SHIFT" => {
-                        if first_letter == "[" {
-                            rtn_str = self.call_bracket_brace(SHIFT_PART, first_letter, rest_text);
-                        }
-                    }
-                    "ALL" => {
-                        for i in 0..MAX_KBD_PART {
-                            rtn_str = self.call_bracket_brace(i, first_letter, rest_text);
-                        }
-                    }
-                    _ => println!("No Part!"),
-                }
-                break;
+        match part_str {
+            "L1" => rtn_str = self.call_bracket_brace(LEFT1, &first_letter, rest_vec),
+            "L2" => rtn_str = self.call_bracket_brace(LEFT2, &first_letter, rest_vec),
+            "L" => {
+                self.call_bracket_brace(LEFT1, &first_letter, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(LEFT2, &first_letter, rest_vec);
             }
+            "L1!" => {
+                self.call_bracket_brace(LEFT2, &first_letter, rest_vec.clone());
+                self.call_bracket_brace(RIGHT1, &first_letter, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec);
+            }
+            "L2!" => {
+                self.call_bracket_brace(LEFT1, &first_letter, rest_vec.clone());
+                self.call_bracket_brace(RIGHT1, &first_letter, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec);
+            }
+            "R1" => rtn_str = self.call_bracket_brace(RIGHT1, &first_letter, rest_vec),
+            "R2" => rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec),
+            "R" => {
+                self.call_bracket_brace(RIGHT1, &first_letter, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec);
+            }
+            "R1!" => {
+                self.call_bracket_brace(LEFT1, &first_letter, rest_vec.clone());
+                self.call_bracket_brace(LEFT2, &first_letter, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec);
+            }
+            "R2!" => {
+                self.call_bracket_brace(LEFT1, &first_letter, rest_vec.clone());
+                self.call_bracket_brace(LEFT2, &first_letter, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT1, &first_letter, rest_vec);
+            }
+            "FLOW" => {
+                rtn_str = self.flow_part_command(&first_letter, &input_text[input_text
+                    .find('.')
+                    .map(|i| i + 1)
+                    .unwrap_or(input_text.len())..], msg_vec[1..].to_vec());
+            }
+            "D" | "DAMPER" => {
+                if first_letter == "[" {
+                    rtn_str = self.call_bracket_brace(DAMPER_PART, &first_letter, rest_vec);
+                }
+            }
+            "SO" | "SOSTENUTO" => {
+                if first_letter == "[" {
+                    rtn_str = self.call_bracket_brace(SOSTENUTO_PART, &first_letter, rest_vec);
+                }
+            }
+            "SH" | "SHIFT" => {
+                if first_letter == "[" {
+                    rtn_str = self.call_bracket_brace(SHIFT_PART, &first_letter, rest_vec);
+                }
+            }
+            "ALL" => {
+                for i in 0..MAX_KBD_PART {
+                    rtn_str = self.call_bracket_brace(i, &first_letter, rest_vec.clone());
+                }
+            }
+            _ => println!("No Part!"),
         }
         rtn_str
     }
-    fn flow_part_command(&mut self, first_letter: &str, input_text: &str) -> String {
+    fn flow_part_command(
+        &mut self,
+        first_letter: &str,
+        input_text: &str,
+        msg_vec: Vec<String>,
+    ) -> String {
         let len = input_text.chars().count();
         if first_letter == "{" {
-            self.call_bracket_brace(FLOW_PART, first_letter, input_text)
+            self.call_bracket_brace(FLOW_PART, first_letter, msg_vec)
         } else if len >= 3 && &input_text[0..3] == "dyn" {
             let dyntxt = extract_texts_from_parentheses(input_text);
             let vel = if dyntxt.is_empty() {
@@ -624,45 +637,36 @@ impl LoopianCmd {
         &mut self,
         part_num: usize,
         _first_letter: &str,
-        rest_text: &str,
+        rest_vec: Vec<String>,
     ) -> String {
-        let mut input_text = rest_text;
-        let itx: String;
-        if let Some(rs) = self
-            .dtstk
-            .check_if_additional_phrase(input_text.to_string())
-        {
-            itx = rs;
-            input_text = &itx;
-        } else {
-            return "Invalid Syntax!".to_string();
-        }
-
         let mut rtn_str = "what?".to_string();
         let org_part = self.input_part;
         self.recursive = true;
         self.input_part = part_num;
-        if let Some(ans) = self.dup_bracket_brace(input_text) {
+        if let Some(ans) = self.dup_bracket_brace(rest_vec) {
             rtn_str = ans.0;
         }
         self.input_part = org_part;
         self.recursive = false;
         rtn_str
     }
-    fn dup_bracket_brace(&mut self, input_text: &str) -> Option<CmndRtn> {
-        let first_letter = &input_text[0..1];
+    fn dup_bracket_brace(&mut self, msg_vec: Vec<String>) -> Option<CmndRtn> {
+        if msg_vec.is_empty() {
+            return None;
+        }
+        let first_letter = &msg_vec[0][0..1];
         if first_letter == "[" {
-            reply_to_cmd(self.letter_bracket(input_text))
+            reply_to_cmd(self.letter_bracket(msg_vec))
         } else if first_letter == "{" {
-            reply_to_cmd(self.letter_brace(input_text))
+            reply_to_cmd(self.letter_brace(msg_vec))
         } else {
             None
         }
     }
-    fn put_phrase(&mut self, part_num: usize, vari: PhraseAs, input_text: &str) -> Option<bool> {
+    fn put_phrase(&mut self, part_num: usize, vari: PhraseAs, msg_vec: Vec<String>) -> Option<bool> {
         if let Some(additional) =
             self.dtstk
-                .set_raw_phrase(part_num, vari.clone(), input_text.to_string())
+                .set_raw_phrase(part_num, vari.clone(), msg_vec)
         {
             if additional {
                 // additional なので、elapse にはまだ送らない
