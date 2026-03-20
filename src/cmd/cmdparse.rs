@@ -104,7 +104,7 @@ impl LoopianCmd {
             || first_letter == 'D'
             || first_letter == 'S'
         {
-            reply_to_cmd(self.letter_part(input_text, msg_vec.clone()))
+            reply_to_cmd(self.letter_part(msg_vec.clone()))
         } else if msg_vec.len() == 1 {
             // one word command
             reply_to_cmd(self.one_word_command(&msg_vec[0]))
@@ -480,8 +480,8 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn letter_part(&mut self, input_text: &str, msg_vec: Vec<String>) -> String {
-        if let Some(pnum) = Self::detect_part(input_text) {
+    fn letter_part(&mut self, msg_vec: Vec<String>) -> String {
+        if let Some(pnum) = Self::detect_part(&msg_vec[0]) {
             self.input_part = pnum;
             match pnum {
                 LEFT1 => "Changed current part to left1.".to_string(),
@@ -491,10 +491,10 @@ impl LoopianCmd {
                 _ => "what?".to_string(),
             }
         } else {
-            self.shortcut_input(input_text, msg_vec)
+            self.shortcut_input(msg_vec)
         }
     }
-    fn shortcut_input(&mut self, input_text: &str, msg_vec: Vec<String>) -> String {
+    fn shortcut_input(&mut self, msg_vec: Vec<String>) -> String {
         // shortcut input
         if msg_vec.len() < 2 {
             return "what?".to_string();
@@ -505,62 +505,59 @@ impl LoopianCmd {
         let first_letter = rest_vec[0].chars().next().unwrap_or('~').to_string();
         let mut rtn_str = "what?".to_string();
         match part_str {
-            "L1" => rtn_str = self.call_bracket_brace(LEFT1, &first_letter, rest_vec),
-            "L2" => rtn_str = self.call_bracket_brace(LEFT2, &first_letter, rest_vec),
+            "L1" => rtn_str = self.call_bracket_brace(LEFT1, rest_vec),
+            "L2" => rtn_str = self.call_bracket_brace(LEFT2, rest_vec),
             "L" => {
-                self.call_bracket_brace(LEFT1, &first_letter, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(LEFT2, &first_letter, rest_vec);
+                self.call_bracket_brace(LEFT1, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(LEFT2, rest_vec);
             }
             "L1!" => {
-                self.call_bracket_brace(LEFT2, &first_letter, rest_vec.clone());
-                self.call_bracket_brace(RIGHT1, &first_letter, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec);
+                self.call_bracket_brace(LEFT2, rest_vec.clone());
+                self.call_bracket_brace(RIGHT1, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT2, rest_vec);
             }
             "L2!" => {
-                self.call_bracket_brace(LEFT1, &first_letter, rest_vec.clone());
-                self.call_bracket_brace(RIGHT1, &first_letter, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec);
+                self.call_bracket_brace(LEFT1, rest_vec.clone());
+                self.call_bracket_brace(RIGHT1, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT2, rest_vec);
             }
-            "R1" => rtn_str = self.call_bracket_brace(RIGHT1, &first_letter, rest_vec),
-            "R2" => rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec),
+            "R1" => rtn_str = self.call_bracket_brace(RIGHT1, rest_vec),
+            "R2" => rtn_str = self.call_bracket_brace(RIGHT2, rest_vec),
             "R" => {
-                self.call_bracket_brace(RIGHT1, &first_letter, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec);
+                self.call_bracket_brace(RIGHT1, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT2, rest_vec);
             }
             "R1!" => {
-                self.call_bracket_brace(LEFT1, &first_letter, rest_vec.clone());
-                self.call_bracket_brace(LEFT2, &first_letter, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT2, &first_letter, rest_vec);
+                self.call_bracket_brace(LEFT1, rest_vec.clone());
+                self.call_bracket_brace(LEFT2, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT2, rest_vec);
             }
             "R2!" => {
-                self.call_bracket_brace(LEFT1, &first_letter, rest_vec.clone());
-                self.call_bracket_brace(LEFT2, &first_letter, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT1, &first_letter, rest_vec);
+                self.call_bracket_brace(LEFT1, rest_vec.clone());
+                self.call_bracket_brace(LEFT2, rest_vec.clone());
+                rtn_str = self.call_bracket_brace(RIGHT1, rest_vec);
             }
             "FLOW" => {
-                rtn_str = self.flow_part_command(&first_letter, &input_text[input_text
-                    .find('.')
-                    .map(|i| i + 1)
-                    .unwrap_or(input_text.len())..], msg_vec[1..].to_vec());
+                rtn_str = self.flow_part_command(msg_vec);
             }
             "D" | "DAMPER" => {
                 if first_letter == "[" {
-                    rtn_str = self.call_bracket_brace(DAMPER_PART, &first_letter, rest_vec);
+                    rtn_str = self.call_bracket_brace(DAMPER_PART, rest_vec);
                 }
             }
             "SO" | "SOSTENUTO" => {
                 if first_letter == "[" {
-                    rtn_str = self.call_bracket_brace(SOSTENUTO_PART, &first_letter, rest_vec);
+                    rtn_str = self.call_bracket_brace(SOSTENUTO_PART, rest_vec);
                 }
             }
             "SH" | "SHIFT" => {
                 if first_letter == "[" {
-                    rtn_str = self.call_bracket_brace(SHIFT_PART, &first_letter, rest_vec);
+                    rtn_str = self.call_bracket_brace(SHIFT_PART, rest_vec);
                 }
             }
             "ALL" => {
                 for i in 0..MAX_KBD_PART {
-                    rtn_str = self.call_bracket_brace(i, &first_letter, rest_vec.clone());
+                    rtn_str = self.call_bracket_brace(i, rest_vec.clone());
                 }
             }
             _ => println!("No Part!"),
@@ -569,15 +566,14 @@ impl LoopianCmd {
     }
     fn flow_part_command(
         &mut self,
-        first_letter: &str,
-        input_text: &str,
+        //first_letter: &str,
+        //input_text: &str,
         msg_vec: Vec<String>,
     ) -> String {
-        let len = input_text.chars().count();
-        if first_letter == "{" {
-            self.call_bracket_brace(FLOW_PART, first_letter, msg_vec)
-        } else if len >= 3 && &input_text[0..3] == "dyn" {
-            let dyntxt = extract_texts_from_parentheses(input_text);
+        if &msg_vec[1][0..1] == "{" {
+            self.call_bracket_brace(FLOW_PART, msg_vec)
+        } else if msg_vec[1] == "dyn" {
+            let dyntxt = extract_texts_from_parentheses(&msg_vec[1]);
             let vel = if dyntxt.is_empty() {
                 0
             } else {
@@ -586,8 +582,8 @@ impl LoopianCmd {
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
             "Flow Velocity Changed!".to_string()
-        } else if len >= 6 && &input_text[0..6] == "static" {
-            let chord_txt = extract_texts_from_parentheses(input_text);
+        } else if msg_vec[1] == "static" {
+            let chord_txt = extract_texts_from_parentheses(&msg_vec[1]);
             let (_root, table) = convert_chord_to_num(chord_txt.to_string());
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_STATIC_SCALE, table]));
@@ -597,38 +593,22 @@ impl LoopianCmd {
         }
     }
     fn detect_part(part_str: &str) -> Option<usize> {
-        let len = part_str.chars().count();
-        if len == 5 {
-            let pt = &part_str[0..5];
-            if pt == "left1" {
-                Some(LEFT1)
-            } else if pt == "left2" {
-                Some(LEFT2)
-            } else {
-                None
-            }
-        } else if len == 6 {
-            let pt = &part_str[0..6];
-            if pt == "right1" {
-                Some(RIGHT1)
-            } else if pt == "right2" {
-                Some(RIGHT2)
-            } else {
-                None
-            }
-        } else if len == 2 {
-            let pt = &part_str[0..2];
-            if pt == "L1" {
-                Some(LEFT1)
-            } else if pt == "L2" {
-                Some(LEFT2)
-            } else if pt == "R1" {
-                Some(RIGHT1)
-            } else if pt == "R2" {
-                Some(RIGHT2)
-            } else {
-                None
-            }
+        if part_str == "left1" {
+            Some(LEFT1)
+        } else if part_str == "left2" {
+            Some(LEFT2)
+        } else if part_str == "right1" {
+            Some(RIGHT1)
+        } else if part_str == "right2" {
+            Some(RIGHT2)
+        } else if part_str == "L1" {
+            Some(LEFT1)
+        } else if part_str == "L2" {
+            Some(LEFT2)
+        } else if part_str == "R1" {
+            Some(RIGHT1)
+        } else if part_str == "R2" {
+            Some(RIGHT2)
         } else {
             None
         }
@@ -636,7 +616,6 @@ impl LoopianCmd {
     fn call_bracket_brace(
         &mut self,
         part_num: usize,
-        _first_letter: &str,
         rest_vec: Vec<String>,
     ) -> String {
         let mut rtn_str = "what?".to_string();
