@@ -597,9 +597,8 @@ impl LoopianCmd {
         part_num: usize,
         msg_vec: Vec<String>,
     ) -> Result<String, CmdError> {
-        let input_text = msg_vec.join(".");
         self.dtstk
-            .set_raw_composition(part_num, input_text)
+            .set_raw_composition(part_num, msg_vec)
             .map_err(CmdError::Composition)?;
         self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
         Ok("Set Composition!".to_string())
@@ -634,7 +633,7 @@ impl LoopianCmd {
 
         if self
             .dtstk
-            .set_raw_composition(part_num, "{}".to_string())
+            .set_raw_composition(part_num, vec!["{}".to_string()])
             .is_ok()
         {
             self.sndr.send_composition_to_elapse(part_num, &self.dtstk);

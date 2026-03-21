@@ -227,9 +227,9 @@ pub fn is_movable_scale(mut idx_num: i16, root: i16) -> (bool, i16) {
 //*******************************************************************
 //          complement_composition
 //*******************************************************************
-pub fn complement_composition(input_text: String) -> Option<Vec<String>> {
+pub fn complement_composition(input_text: Vec<String>) -> Option<Vec<String>> {
     // 1. {} を抜き出し、２つ分の brackets を Vec に入れて戻す
-    if let Some(cd) = divide_brace(input_text) {
+    if let Some(cd) = divide_brace(&input_text) {
         // 2. 重複補填と ',' で分割
         let cmps_vec = fill_omitted_chord_data(cd);
 
@@ -238,9 +238,12 @@ pub fn complement_composition(input_text: String) -> Option<Vec<String>> {
         None
     }
 }
-pub fn divide_brace(input_text: String) -> Option<String> {
-    let isx: &str = &input_text;
-    isx.find('}').map(|n2| isx[1..n2].to_string())
+pub fn divide_brace(input_text: &[String]) -> Option<String> {
+    let top = input_text.first()?;
+    if !top.starts_with('{') {
+        return None;
+    }
+    top.find('}').map(|n2| top[1..n2].to_string())
 }
 fn fill_omitted_chord_data(mut cmps: String) -> Vec<String> {
     let cmp_len = cmps.len();

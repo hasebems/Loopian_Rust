@@ -159,9 +159,9 @@ impl SeqDataStock {
     pub fn set_raw_composition(
         &mut self,
         part: usize,
-        input_text: String,
+        input_text: Vec<String>,
     ) -> Result<(), CompositionCmdError> {
-        if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw(input_text, None) {
+        if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw_vec(input_text) {
             self.cdt[part].set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
             return Ok(());
         }
@@ -500,7 +500,7 @@ impl DataStock for PhraseDataStock {
 //*******************************************************************
 #[derive(Debug)]
 pub struct CompositionDataStock {
-    raw: String,
+    raw: Vec<String>,
     cmpl_cd: Vec<String>,
     chord: Vec<CmpEvt>,
     do_loop: bool,
@@ -509,11 +509,26 @@ pub struct CompositionDataStock {
 impl Default for CompositionDataStock {
     fn default() -> Self {
         Self {
-            raw: "".to_string(),
+            raw: Vec::new(),
             cmpl_cd: vec!["".to_string()],
             chord: Vec::new(),
             do_loop: true,
             whole_tick: 0,
+        }
+    }
+}
+impl CompositionDataStock {
+    fn set_raw_vec(&mut self, input_text: Vec<String>) -> bool {
+        self.raw = input_text.clone();
+
+        if let Some(cmpl) = complement_composition(input_text) {
+            self.cmpl_cd = cmpl.clone();
+            #[cfg(feature = "verbose")]
+            println!("complement_composition: {cmpl:?}");
+            true
+        } else {
+            println!("Composition input failed!");
+            false
         }
     }
 }
@@ -530,19 +545,7 @@ impl DataStock for CompositionDataStock {
         )
     }
     fn set_raw(&mut self, input_text: String, _additional_word: Option<&str>) -> bool {
-        // 1.raw
-        self.raw = input_text.clone();
-
-        // 2.complement data
-        if let Some(cmpl) = complement_composition(input_text) {
-            self.cmpl_cd = cmpl.clone();
-            #[cfg(feature = "verbose")]
-            println!("complement_composition: {cmpl:?}");
-            true
-        } else {
-            println!("Composition input failed!");
-            false
-        }
+        self.set_raw_vec(vec![input_text])
     }
     fn set_recombined(
         &mut self,
