@@ -87,78 +87,77 @@ impl SetCommand {
 }
 
 impl LoopianCmd {
-    /// setコマンドのエントリ: パース → 実行 の2段構成
-    pub fn parse_set_command(&mut self, input_text: &str) -> String {
-        match SetCommand::parse(input_text) {
-            Ok(cmd) => self.execute_set_command(cmd),
-            Err(SetCmdError::UnknownCommand) => "what?".to_string(),
-            Err(SetCmdError::BadNumber) => "Number is wrong.".to_string(),
-            Err(SetCmdError::BadChannel) => "Channel number is wrong.".to_string(),
-        }
+    pub(crate) fn parse_set_command_result(&mut self, input_text: &str) -> Result<String, CmdError> {
+        let cmd = SetCommand::parse(input_text).map_err(|error| match error {
+            SetCmdError::UnknownCommand => CmdError::UnknownCommand,
+            SetCmdError::BadNumber => CmdError::BadNumber,
+            SetCmdError::BadChannel => CmdError::BadChannel,
+        })?;
+        self.execute_set_command_result(cmd)
     }
-    fn execute_set_command(&mut self, cmd: SetCommand) -> String {
+    fn execute_set_command_result(&mut self, cmd: SetCommand) -> Result<String, CmdError> {
         match cmd {
             SetCommand::Key(prm) => {
                 if self.change_key(&prm) {
-                    "Key has changed!".to_string()
+                    Ok("Key has changed!".to_string())
                 } else {
-                    "what?".to_string()
+                    Err(CmdError::UnknownCommand)
                 }
             }
             SetCommand::Oct(prm) => {
                 let part_num = self.get_input_part();
                 if self.change_oct(&prm, part_num) {
-                    "Octave has changed!".to_string()
+                    Ok("Octave has changed!".to_string())
                 } else {
-                    "what?".to_string()
+                    Err(CmdError::UnknownCommand)
                 }
             }
             SetCommand::Bpm(bpm) => {
                 self.change_bpm(bpm);
-                "BPM has changed!".to_string()
+                Ok("BPM has changed!".to_string())
             }
             SetCommand::Meter(n, d) => {
                 self.change_meter(n, d);
-                "Meter has changed!".to_string()
+                Ok("Meter has changed!".to_string())
             }
             SetCommand::Msr(msr) => {
                 self.set_measure(msr - 1); // 1小節前にセット
-                "Measure has changed!".to_string()
+                Ok("Measure has changed!".to_string())
             }
             SetCommand::Input(prm) => {
                 if self.change_input_mode(&prm) {
-                    "Input mode has changed!".to_string()
+                    Ok("Input mode has changed!".to_string())
                 } else {
-                    "what?".to_string()
+                    Err(CmdError::UnknownCommand)
                 }
             }
-            SetCommand::SameNote => "what?".to_string(),
+            SetCommand::SameNote => Err(CmdError::UnknownCommand),
             SetCommand::TurnNote(turn_note) => {
                 self.sndr
                     .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_TURN, turn_note]));
-                "Turn note has changed!".to_string()
+                Ok("Turn note has changed!".to_string())
             }
             SetCommand::Path(prm) => {
                 self.change_path(&prm);
-                "Path has changed!".to_string()
+                Ok("Path has changed!".to_string())
             }
             SetCommand::FlowReso(reso) => {
                 self.sndr
                     .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_TICK_RESOLUTION, reso]));
-                "Flow tick resolution has changed!".to_string()
+                Ok("Flow tick resolution has changed!".to_string())
             }
             SetCommand::FlowVel(vel) => {
                 if !(1..=127).contains(&vel) {
-                    return "what?".to_string();
+                    return Err(CmdError::UnknownCommand);
                 }
                 self.sndr
                     .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
-                "Flow velocity has changed!".to_string()
+                Ok("Flow velocity has changed!".to_string())
             }
             SetCommand::MidiInputCh(ch) => {
                 self.sndr
                     .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, ch as i16]));
-                "MIDI Input Ch has changed!".to_string()
+                Ok("MIDI Input Ch has changed!".to_string())
             }
         }
     }

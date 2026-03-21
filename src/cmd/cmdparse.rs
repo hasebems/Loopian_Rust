@@ -13,8 +13,44 @@ use super::txt2seq_cmps::*;
 use crate::graphic::generative_view::{GraphicMsg, generate_graphic_msg};
 use crate::lpnlib::*;
 
-pub fn reply_to_cmd(reply: String) -> Option<CmndRtn> {
-    Some(CmndRtn(reply, GraphicMsg::NoMsg))
+#[derive(Debug, Clone)]
+pub struct CmdReply {
+    pub text: String,
+    pub graphic: GraphicMsg,
+}
+
+impl CmdReply {
+    fn text(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            graphic: GraphicMsg::NoMsg,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CmdError {
+    InvalidInput,
+    UnknownCommand,
+    BadNumber,
+    BadChannel,
+    InvalidPart,
+    Phrase(PhraseCmdError),
+    Composition(CompositionCmdError),
+}
+
+pub type CmdResult = Result<CmdReply, CmdError>;
+
+pub fn cmd_error_to_text(error: &CmdError) -> String {
+    match error {
+        CmdError::InvalidInput => "Invalid input.".to_string(),
+        CmdError::UnknownCommand => "what?".to_string(),
+        CmdError::BadNumber => "Number is wrong.".to_string(),
+        CmdError::BadChannel => "Channel number is wrong.".to_string(),
+        CmdError::InvalidPart => "what?".to_string(),
+        CmdError::Phrase(_) => "what?".to_string(),
+        CmdError::Composition(_) => "what?".to_string(),
+    }
 }
 
 //*******************************************************************
@@ -122,32 +158,46 @@ impl LoopianCmd {
     }
     //*************************************************************************
     pub fn put_and_get_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
+        match self.execute_command(input_text) {
+            Ok(reply) => Some(CmndRtn(reply.text, reply.graphic)),
+            Err(CmdError::InvalidInput) => None,
+            Err(error) => Some(CmndRtn(cmd_error_to_text(&error), GraphicMsg::NoMsg)),
+        }
+    }
+    pub fn execute_command(&mut self, input_text: &str) -> CmdResult {
         if input_text.is_empty() || !input_text.is_ascii() {
-            return None;
+            return Err(CmdError::InvalidInput);
         }
         let tokens = tokenize_cmd(input_text);
         println!("Analyze Text: {:?}", tokens);
         match classify_cmd(input_text, &tokens) {
-            CmdKind::TogglePlay => reply_to_cmd(self.letter_dot(input_text)),
-            CmdKind::Slash     => reply_to_cmd(self.letter_slash(input_text)),
-            CmdKind::At        => reply_to_cmd(self.letter_at(input_text)),
-            CmdKind::Bracket   => reply_to_cmd(self.apply_phrase_to_part(self.input_part, tokens)),
-            CmdKind::Brace     => reply_to_cmd(self.apply_composition_to_part(self.input_part, tokens)),
-            CmdKind::PartSelect   => reply_to_cmd(self.change_current_part(&tokens[0])),
-            CmdKind::PartShortcut => reply_to_cmd(self.shortcut_input(tokens)),
-            CmdKind::OneWord   => reply_to_cmd(self.one_word_command(&tokens[0].clone())),
+            CmdKind::TogglePlay => Ok(CmdReply::text(self.letter_dot(input_text))),
+            CmdKind::Slash => Ok(CmdReply::text(self.letter_slash(input_text))),
+            CmdKind::At => Ok(CmdReply::text(self.letter_at(input_text))),
+            CmdKind::Bracket => self
+                .apply_phrase_to_part(self.input_part, tokens)
+                .map(CmdReply::text),
+            CmdKind::Brace => self
+                .apply_composition_to_part(self.input_part, tokens)
+                .map(CmdReply::text),
+            CmdKind::PartSelect => self.change_current_part(&tokens[0]).map(CmdReply::text),
+            CmdKind::PartShortcut => self.shortcut_input(tokens).map(CmdReply::text),
+            CmdKind::OneWord => Ok(CmdReply::text(self.one_word_command(&tokens[0].clone()))),
             CmdKind::MultiWord => match tokens[0].as_str() {
-                "set"    => reply_to_cmd(self.parse_set_command(&tokens[1])),
-                "sync"   => reply_to_cmd(self.cmd_sync(&tokens[1])),
-                "clear"  => reply_to_cmd(self.cmd_clear(&tokens[1])),
-                "fine"   => reply_to_cmd(self.cmd_fine(&tokens[1])),
-                "help"   => reply_to_cmd(self.cmd_help(&tokens[1])),
+                "set" => self.parse_set_command_result(&tokens[1]).map(CmdReply::text),
+                "sync" => Ok(CmdReply::text(self.cmd_sync(&tokens[1]))),
+                "clear" => Ok(CmdReply::text(self.cmd_clear(&tokens[1]))),
+                "fine" => Ok(CmdReply::text(self.cmd_fine(&tokens[1]))),
+                "help" => Ok(CmdReply::text(self.cmd_help(&tokens[1]))),
                 "graph"  => {
                     let rtn = generate_graphic_msg(tokens);
-                    Some(CmndRtn(rtn.0, rtn.1))
+                    Ok(CmdReply {
+                        text: rtn.0,
+                        graphic: rtn.1,
+                    })
                 }
-                "effect" => reply_to_cmd(self.cmd_effect(&tokens[1])),
-                _        => reply_to_cmd("what?".to_string()),
+                "effect" => Ok(CmdReply::text(self.cmd_effect(&tokens[1]))),
+                _ => Err(CmdError::UnknownCommand),
             },
         }
     }
@@ -354,18 +404,16 @@ impl LoopianCmd {
                 } else {
                     msr = 1;
                 }
-                if let Some(additional) = self.put_phrase(
+                match self.put_phrase(
                     self.input_part,
                     PhraseAs::Measure(msr),
                     tokenize_cmd(&split_txt[1]),
                 ) {
-                    if additional {
+                    Ok(SetPhraseResult::BufferedAdditional) => {
                         "Keep Phrase as being unified phrase!".to_string()
-                    } else {
-                        "Set Phrase!".to_string()
                     }
-                } else {
-                    "what?".to_string()
+                    Ok(SetPhraseResult::Applied) => "Set Phrase!".to_string(),
+                    Err(error) => cmd_error_to_text(&CmdError::Phrase(error)),
                 }
             } else if len == 2 {
                 let ltr = split_txt[0].chars().nth(1).unwrap_or('x');
@@ -374,18 +422,16 @@ impl LoopianCmd {
                     self.dtstk.set_cluster_memory(split_txt[1].to_string());
                     "Set a cluster memory!".to_string()
                 } else if vari > 0 {
-                    if let Some(additional) = self.put_phrase(
+                    match self.put_phrase(
                         self.input_part,
                         PhraseAs::Variation(vari as usize),
                         tokenize_cmd(&split_txt[1]),
                     ) {
-                        if additional {
+                        Ok(SetPhraseResult::BufferedAdditional) => {
                             "Keep Phrase as being unified phrase!".to_string()
-                        } else {
-                            "Set Phrase!".to_string()
                         }
-                    } else {
-                        "what?".to_string()
+                        Ok(SetPhraseResult::Applied) => "Set Phrase!".to_string(),
+                        Err(error) => cmd_error_to_text(&CmdError::Phrase(error)),
                     }
                 } else {
                     "what?".to_string()
@@ -413,84 +459,84 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn change_current_part(&mut self, part_str: &str) -> String {
+    fn change_current_part(&mut self, part_str: &str) -> Result<String, CmdError> {
         if let Some(pnum) = detect_part(part_str) {
             self.input_part = pnum;
-            match pnum {
+            Ok(match pnum {
                 LEFT1 => "Changed current part to left1.".to_string(),
                 LEFT2 => "Changed current part to left2.".to_string(),
                 RIGHT1 => "Changed current part to right1.".to_string(),
                 RIGHT2 => "Changed current part to right2.".to_string(),
-                _ => "what?".to_string(),
-            }
+                _ => return Err(CmdError::InvalidPart),
+            })
         } else {
-            "what?".to_string()
+            Err(CmdError::InvalidPart)
         }
     }
-    fn shortcut_input(&mut self, msg_vec: Vec<String>) -> String {
+    fn shortcut_input(&mut self, msg_vec: Vec<String>) -> Result<String, CmdError> {
         let part_str = msg_vec[0].as_str();
         let rest_vec = msg_vec[1..].to_vec();
         let first_letter = rest_vec[0].chars().next().unwrap_or('~');
-        let mut rtn_str = "what?".to_string();
+        let mut rtn = Err(CmdError::UnknownCommand);
         match part_str {
-            "L1" => rtn_str = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec),
-            "L2" => rtn_str = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec),
+            "L1" => rtn = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec),
+            "L2" => rtn = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec),
             "L" => {
-                self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
-                rtn_str = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec);
+                let _ = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
+                rtn = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec);
             }
             "L1!" => {
-                self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
-                self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
-                rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
+                let _ = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
+                let _ = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
+                rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
             }
             "L2!" => {
-                self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
-                self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
-                rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
+                let _ = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
+                let _ = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
+                rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
             }
-            "R1" => rtn_str = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec),
-            "R2" => rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec),
+            "R1" => rtn = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec),
+            "R2" => rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec),
             "R" => {
-                self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
-                rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
+                let _ = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
+                rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
             }
             "R1!" => {
-                self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
-                self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
-                rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
+                let _ = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
+                let _ = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
+                rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
             }
             "R2!" => {
-                self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
-                self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
-                rtn_str = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec);
+                let _ = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
+                let _ = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
+                rtn = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec);
             }
             "FLOW" => {
-                rtn_str = self.flow_part_command(msg_vec);
+                rtn = Ok(self.flow_part_command(msg_vec));
             }
             "D" | "DAMPER" => {
                 if first_letter == '[' {
-                    rtn_str = self.apply_phrase_to_part(DAMPER_PART, rest_vec);
+                    rtn = self.apply_phrase_to_part(DAMPER_PART, rest_vec);
                 }
             }
             "SO" | "SOSTENUTO" => {
                 if first_letter == '[' {
-                    rtn_str = self.apply_phrase_to_part(SOSTENUTO_PART, rest_vec);
+                    rtn = self.apply_phrase_to_part(SOSTENUTO_PART, rest_vec);
                 }
             }
             "SH" | "SHIFT" => {
                 if first_letter == '[' {
-                    rtn_str = self.apply_phrase_to_part(SHIFT_PART, rest_vec);
+                    rtn = self.apply_phrase_to_part(SHIFT_PART, rest_vec);
                 }
             }
             "ALL" => {
                 for i in 0..MAX_KBD_PART {
-                    rtn_str = self.apply_shortcut_to_part(i, first_letter, rest_vec.clone());
+                    rtn = self.apply_shortcut_to_part(i, first_letter, rest_vec.clone());
                 }
             }
             _ => println!("No Part!"),
         }
-        rtn_str
+        rtn
     }
     fn flow_part_command(
         &mut self,
@@ -500,6 +546,7 @@ impl LoopianCmd {
     ) -> String {
         if &msg_vec[1][0..1] == "{" {
             self.apply_composition_to_part(FLOW_PART, msg_vec[1..].to_vec())
+                .unwrap_or_else(|error| cmd_error_to_text(&error))
         } else if msg_vec[1] == "dyn" {
             let dyntxt = extract_texts_from_parentheses(&msg_vec[1]);
             let vel = if dyntxt.is_empty() {
@@ -520,53 +567,62 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn apply_shortcut_to_part(&mut self, part_num: usize, first_letter: char, msg_vec: Vec<String>) -> String {
+    fn apply_shortcut_to_part(
+        &mut self,
+        part_num: usize,
+        first_letter: char,
+        msg_vec: Vec<String>,
+    ) -> Result<String, CmdError> {
         match first_letter {
             '[' => self.apply_phrase_to_part(part_num, msg_vec),
             '{' => self.apply_composition_to_part(part_num, msg_vec),
-            _ => "what?".to_string(),
+            _ => Err(CmdError::UnknownCommand),
         }
     }
-    fn apply_phrase_to_part(&mut self, part_num: usize, msg_vec: Vec<String>) -> String {
-        if let Some(additional) = self.put_phrase(part_num, PhraseAs::Normal, msg_vec) {
-            if additional {
-                "Keep Phrase as being unified phrase!".to_string()
-            } else {
-                "Set Phrase!".to_string()
+    fn apply_phrase_to_part(
+        &mut self,
+        part_num: usize,
+        msg_vec: Vec<String>,
+    ) -> Result<String, CmdError> {
+        match self.put_phrase(part_num, PhraseAs::Normal, msg_vec) {
+            Ok(SetPhraseResult::BufferedAdditional) => {
+                Ok("Keep Phrase as being unified phrase!".to_string())
             }
-        } else {
-            "what?".to_string()
+            Ok(SetPhraseResult::Applied) => Ok("Set Phrase!".to_string()),
+            Err(error) => Err(CmdError::Phrase(error)),
         }
     }
-    fn apply_composition_to_part(&mut self, part_num: usize, msg_vec: Vec<String>) -> String {
+    fn apply_composition_to_part(
+        &mut self,
+        part_num: usize,
+        msg_vec: Vec<String>,
+    ) -> Result<String, CmdError> {
         let input_text = msg_vec.join(".");
-        if self.dtstk.set_raw_composition(part_num, input_text) {
-            self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
-            "Set Composition!".to_string()
-        } else {
-            "what?".to_string()
-        }
+        self.dtstk
+            .set_raw_composition(part_num, input_text)
+            .map_err(CmdError::Composition)?;
+        self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
+        Ok("Set Composition!".to_string())
     }
     fn put_phrase(
         &mut self,
         part_num: usize,
         vari: PhraseAs,
         msg_vec: Vec<String>,
-    ) -> Option<bool> {
-        if let Some(additional) = self.dtstk.set_raw_phrase(part_num, vari.clone(), msg_vec) {
-            if additional {
+    ) -> Result<SetPhraseResult, PhraseCmdError> {
+        match self.dtstk.set_raw_phrase(part_num, vari.clone(), msg_vec)? {
+            SetPhraseResult::BufferedAdditional => {
                 // additional なので、elapse にはまだ送らない
-                Some(true)
-            } else {
+                Ok(SetPhraseResult::BufferedAdditional)
+            }
+            SetPhraseResult::Applied => {
                 if part_num < MAX_KBD_PART {
                     self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
                 } else if (DAMPER_PART..=SHIFT_PART).contains(&part_num) {
                     self.sndr.send_pedal_to_elapse(part_num, &self.dtstk);
                 }
-                Some(false)
+                Ok(SetPhraseResult::Applied)
             }
-        } else {
-            None
         }
     }
     fn clear_part(&mut self, part_num: usize) {
@@ -576,7 +632,11 @@ impl LoopianCmd {
         // Phrase を消去する message を送る
         self.sndr.clear_phrase_to_elapse(part_num);
 
-        if self.dtstk.set_raw_composition(part_num, "{}".to_string()) {
+        if self
+            .dtstk
+            .set_raw_composition(part_num, "{}".to_string())
+            .is_ok()
+        {
             self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
         }
         self.dtstk.change_oct(0, true, part_num);

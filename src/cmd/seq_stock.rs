@@ -13,6 +13,24 @@ use crate::lpnlib::*;
 //*******************************************************************
 //          Seq Data Stock Struct
 //*******************************************************************
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SetPhraseResult {
+    BufferedAdditional,
+    Applied,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhraseCmdError {
+    InvalidPart,
+    InvalidPhrase,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CompositionCmdError {
+    InvalidPart,
+    InvalidComposition,
+}
+
 // SeqDataStock の責務
 //  入力された Phrase/Composition Data の変換と保持
 #[derive(Debug)]
@@ -76,12 +94,12 @@ impl SeqDataStock {
         part: usize,
         vari: PhraseAs,
         input_text: Vec<String>,
-    ) -> Option<bool> {
+    ) -> Result<SetPhraseResult, PhraseCmdError> {
         let normalized_vec;
         if let Some(rs) = self.check_if_additional_phrase(input_text) {
             normalized_vec = rs;
         } else {
-            return Some(true); // additional なら true
+            return Ok(SetPhraseResult::BufferedAdditional);
         }
         if part < MAX_KBD_PART {
             let num = match vari {
@@ -96,8 +114,9 @@ impl SeqDataStock {
                     self.tick_for_beat,
                     Some(false),
                 );
-                return Some(false);
+                return Ok(SetPhraseResult::Applied);
             }
+            return Err(PhraseCmdError::InvalidPhrase);
         } else if (DAMPER_PART..=SHIFT_PART).contains(&part) {
             // Damper/Sostenuto/Shift part の場合
             if self.pdldt[part - MAX_ALL_KBD_PART].set_raw(normalized_vec.join("."), None) {
@@ -107,10 +126,11 @@ impl SeqDataStock {
                     self.tick_for_beat,
                     None,
                 );
-                return Some(false);
+                return Ok(SetPhraseResult::Applied);
             }
+            return Err(PhraseCmdError::InvalidPhrase);
         }
-        None
+        Err(PhraseCmdError::InvalidPart)
     }
     pub fn del_raw_phrase(&mut self, part: usize) {
         if part < MAX_KBD_PART {
@@ -136,12 +156,20 @@ impl SeqDataStock {
             }
         }
     }
-    pub fn set_raw_composition(&mut self, part: usize, input_text: String) -> bool {
+    pub fn set_raw_composition(
+        &mut self,
+        part: usize,
+        input_text: String,
+    ) -> Result<(), CompositionCmdError> {
         if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw(input_text, None) {
             self.cdt[part].set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
-            return true;
+            return Ok(());
         }
-        false
+        if part < MAX_COMPOSITION_PART {
+            Err(CompositionCmdError::InvalidComposition)
+        } else {
+            Err(CompositionCmdError::InvalidPart)
+        }
     }
     pub fn change_beat(&mut self, numerator: i16, denomirator: i16) {
         #[cfg(feature = "verbose")]
