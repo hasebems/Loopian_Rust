@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::cmdparse::*;
-use super::txt_common::*;
+use crate::common::txt_common::*;
 use crate::lpnlib::*;
 
 impl LoopianCmd {

@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::lpn_file::*;
-use crate::cmd::txt_common::*;
+use crate::common::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
 use crate::lpnlib::*;
 use std::fs;

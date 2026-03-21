@@ -8,7 +8,7 @@ use std::sync::mpsc;
 use super::input_txt::CmndRtn;
 use super::send_msg::*;
 use super::seq_stock::*;
-use super::txt_common::*;
+use crate::common::txt_common::*;
 use super::txt2seq_cmps::*;
 use crate::graphic::generative_view::{GraphicMsg, generate_graphic_msg};
 use crate::lpnlib::*;
@@ -395,13 +395,11 @@ impl LoopianCmd {
                 } else {
                     msr = 1;
                 }
-                if let Some(additional) =
-                    self.put_phrase(
-                        self.input_part,
-                        PhraseAs::Measure(msr),
-                        self.analyze_and_divide_to_msg(&split_txt[1]),
-                    )
-                {
+                if let Some(additional) = self.put_phrase(
+                    self.input_part,
+                    PhraseAs::Measure(msr),
+                    self.analyze_and_divide_to_msg(&split_txt[1]),
+                ) {
                     if additional {
                         "Keep Phrase as being unified phrase!".to_string()
                     } else {
@@ -613,11 +611,7 @@ impl LoopianCmd {
             None
         }
     }
-    fn call_bracket_brace(
-        &mut self,
-        part_num: usize,
-        rest_vec: Vec<String>,
-    ) -> String {
+    fn call_bracket_brace(&mut self, part_num: usize, rest_vec: Vec<String>) -> String {
         let mut rtn_str = "what?".to_string();
         let org_part = self.input_part;
         self.recursive = true;
@@ -642,11 +636,13 @@ impl LoopianCmd {
             None
         }
     }
-    fn put_phrase(&mut self, part_num: usize, vari: PhraseAs, msg_vec: Vec<String>) -> Option<bool> {
-        if let Some(additional) =
-            self.dtstk
-                .set_raw_phrase(part_num, vari.clone(), msg_vec)
-        {
+    fn put_phrase(
+        &mut self,
+        part_num: usize,
+        vari: PhraseAs,
+        msg_vec: Vec<String>,
+    ) -> Option<bool> {
+        if let Some(additional) = self.dtstk.set_raw_phrase(part_num, vari.clone(), msg_vec) {
             if additional {
                 // additional なので、elapse にはまだ送らない
                 Some(true)

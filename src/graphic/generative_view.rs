@@ -18,7 +18,7 @@ use super::view_sinewave::*;
 use super::view_voice4::*;
 use super::view_waterripple::*;
 use super::view_wavestick::*;
-use crate::cmd::txt_common::*;
+use crate::common::txt_common::*;
 
 //*******************************************************************
 //      Enum, Table

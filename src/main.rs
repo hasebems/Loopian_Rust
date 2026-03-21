@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 mod cmd;
+mod common;
 mod elapse;
 mod elapse_loop;
 mod file;

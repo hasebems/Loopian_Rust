@@ -11,7 +11,7 @@ use super::generative_view::*;
 use super::guiev::*;
 use super::view_waterripple::WaterRipple;
 use crate::cmd::input_txt::InputText;
-use crate::cmd::txt_common;
+use crate::common::txt_common;
 use crate::lpnlib::*;
 
 //*******************************************************************
