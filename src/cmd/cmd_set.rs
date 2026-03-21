@@ -7,106 +7,159 @@ use super::cmdparse::*;
 use crate::common::txt_common::*;
 use crate::lpnlib::*;
 
+//*******************************************************************
+//      Set Command: Enum と純粋パース
+//*******************************************************************
+pub enum SetCommand {
+    Key(String),
+    Oct(String),
+    Bpm(i16),
+    Meter(i16, i16),
+    Msr(i16),
+    Input(String),
+    SameNote,
+    TurnNote(i16),
+    Path(String),
+    FlowReso(i16),
+    FlowVel(i16),
+    MidiInputCh(u8),
+}
+
+pub enum SetCmdError {
+    UnknownCommand,   // "what?"
+    BadNumber,        // "Number is wrong."
+    BadChannel,       // "Channel number is wrong."
+}
+
+impl SetCommand {
+    /// 入力文字列を型付きコマンドに変換する純粋関数（副作用なし）
+    pub fn parse(input_text: &str) -> Result<Self, SetCmdError> {
+        let (cmd, prm) = separate_cmnd_and_str(input_text)
+            .ok_or(SetCmdError::UnknownCommand)?;
+        match cmd {
+            "key" => Ok(Self::Key(prm.to_string())),
+            "oct" => Ok(Self::Oct(prm.to_string())),
+            "bpm" => prm
+                .parse::<i16>()
+                .map(Self::Bpm)
+                .map_err(|_| SetCmdError::BadNumber),
+            "beat" | "meter" => {
+                let parts = split_by('/', prm.to_string());
+                if parts.len() < 2 {
+                    return Err(SetCmdError::BadNumber);
+                }
+                let n = parts[0].parse::<i16>().map_err(|_| SetCmdError::BadNumber)?;
+                let d = parts[1].parse::<i16>().map_err(|_| SetCmdError::BadNumber)?;
+                Ok(Self::Meter(n, d))
+            }
+            "msr" => {
+                let msr = prm.parse::<i16>().map_err(|_| SetCmdError::BadNumber)?;
+                if msr < 1 {
+                    return Err(SetCmdError::BadNumber);
+                }
+                Ok(Self::Msr(msr))
+            }
+            "input" => Ok(Self::Input(prm.to_string())),
+            "samenote" => Ok(Self::SameNote),
+            "turnnote" => prm
+                .parse::<i16>()
+                .map(Self::TurnNote)
+                .map_err(|_| SetCmdError::UnknownCommand),
+            "path" => Ok(Self::Path(prm.to_string())),
+            "flowreso" => prm
+                .parse::<i16>()
+                .map(Self::FlowReso)
+                .map_err(|_| SetCmdError::UnknownCommand),
+            "flowvel" => prm
+                .parse::<i16>()
+                .map(Self::FlowVel)
+                .map_err(|_| SetCmdError::UnknownCommand),
+            "midi_input_ch" => {
+                let ch = prm.parse::<u8>().map_err(|_| SetCmdError::BadChannel)?;
+                if !(1..=16).contains(&ch) {
+                    return Err(SetCmdError::BadChannel);
+                }
+                Ok(Self::MidiInputCh(ch))
+            }
+            _ => Err(SetCmdError::UnknownCommand),
+        }
+    }
+}
+
 impl LoopianCmd {
+    /// setコマンドのエントリ: パース → 実行 の2段構成
     pub fn parse_set_command(&mut self, input_text: &str) -> String {
-        if let Some((cmd, prm)) = separate_cmnd_and_str(input_text) {
-            if cmd == "key" {
-                if self.change_key(prm) {
+        match SetCommand::parse(input_text) {
+            Ok(cmd) => self.execute_set_command(cmd),
+            Err(SetCmdError::UnknownCommand) => "what?".to_string(),
+            Err(SetCmdError::BadNumber) => "Number is wrong.".to_string(),
+            Err(SetCmdError::BadChannel) => "Channel number is wrong.".to_string(),
+        }
+    }
+    fn execute_set_command(&mut self, cmd: SetCommand) -> String {
+        match cmd {
+            SetCommand::Key(prm) => {
+                if self.change_key(&prm) {
                     "Key has changed!".to_string()
                 } else {
                     "what?".to_string()
                 }
-            } else if cmd == "oct" {
+            }
+            SetCommand::Oct(prm) => {
                 let part_num = self.get_input_part();
-                if self.change_oct(prm, part_num) {
+                if self.change_oct(&prm, part_num) {
                     "Octave has changed!".to_string()
                 } else {
                     "what?".to_string()
                 }
-            } else if cmd == "bpm" {
-                match prm.parse::<i16>() {
-                    Ok(msg) => {
-                        self.change_bpm(msg);
-                        "BPM has changed!".to_string()
-                    }
-                    Err(e) => {
-                        println!("{e:?}");
-                        "Number is wrong.".to_string()
-                    }
-                }
-            } else if cmd == "beat" || cmd == "meter" {
-                let numvec = split_by('/', prm.to_string());
-                if numvec.len() < 2 {
-                    "Number is wrong.".to_string()
-                } else {
-                    match (numvec[0].parse::<i16>(), numvec[1].parse::<i16>()) {
-                        (Ok(numerator), Ok(denomirator)) => {
-                            self.change_meter(numerator, denomirator);
-                            "Meter has changed!".to_string()
-                        }
-                        _ => "Number is wrong.".to_string(),
-                    }
-                }
-            } else if cmd == "msr" {
-                match prm.parse::<i16>() {
-                    Ok(msr) => {
-                        if msr < 1 {
-                            return "Number is wrong.".to_string();
-                        }
-                        self.set_measure(msr - 1); // 1小節前にセット
-                        "Measure has changed!".to_string()
-                    }
-                    Err(_) => "Number is wrong.".to_string(),
-                }
-            } else if cmd == "input" {
-                if self.change_input_mode(prm) {
+            }
+            SetCommand::Bpm(bpm) => {
+                self.change_bpm(bpm);
+                "BPM has changed!".to_string()
+            }
+            SetCommand::Meter(n, d) => {
+                self.change_meter(n, d);
+                "Meter has changed!".to_string()
+            }
+            SetCommand::Msr(msr) => {
+                self.set_measure(msr - 1); // 1小節前にセット
+                "Measure has changed!".to_string()
+            }
+            SetCommand::Input(prm) => {
+                if self.change_input_mode(&prm) {
                     "Input mode has changed!".to_string()
                 } else {
                     "what?".to_string()
                 }
-            } else if cmd == "samenote" {
-                "what?".to_string()
-            } else if cmd == "turnnote" {
-                if self.change_turnnote(prm) {
-                    "Turn note has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else if cmd == "path" {
-                if self.change_path(prm) {
-                    "Path has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else if cmd == "flowreso" {
-                if self.change_reso(prm) {
-                    "Flow tick resolution has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else if cmd == "flowvel" {
-                if self.change_flow_velocity(prm) {
-                    "Flow velocity has changed!".to_string()
-                } else {
-                    "what?".to_string()
-                }
-            } else if cmd == "midi_input_ch" {
-                if let Ok(ch) = prm.parse::<u8>() {
-                    if (1..=16).contains(&ch) {
-                        self.sndr
-                            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, ch as i16]));
-                        "MIDI Input Ch has changed!".to_string()
-                    } else {
-                        "Channel number is wrong.".to_string()
-                    }
-                } else {
-                    "Channel number is wrong.".to_string()
-                }
-            } else {
-                "what?".to_string()
             }
-        } else {
-            "what?".to_string()
+            SetCommand::SameNote => "what?".to_string(),
+            SetCommand::TurnNote(turn_note) => {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_TURN, turn_note]));
+                "Turn note has changed!".to_string()
+            }
+            SetCommand::Path(prm) => {
+                self.change_path(&prm);
+                "Path has changed!".to_string()
+            }
+            SetCommand::FlowReso(reso) => {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_TICK_RESOLUTION, reso]));
+                "Flow tick resolution has changed!".to_string()
+            }
+            SetCommand::FlowVel(vel) => {
+                if !(1..=127).contains(&vel) {
+                    return "what?".to_string();
+                }
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
+                "Flow velocity has changed!".to_string()
+            }
+            SetCommand::MidiInputCh(ch) => {
+                self.sndr
+                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, ch as i16]));
+                "MIDI Input Ch has changed!".to_string()
+            }
         }
     }
     //*************************************************************************
@@ -213,38 +266,7 @@ impl LoopianCmd {
             false
         }
     }
-    fn change_turnnote(&mut self, ntnum: &str) -> bool {
-        if let Ok(turn_note) = ntnum.parse::<i16>() {
-            self.sndr
-                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_TURN, turn_note]));
-            true
-        } else {
-            false
-        }
-    }
-    fn change_path(&mut self, path: &str) -> bool {
+    fn change_path(&mut self, path: &str) {
         self.path(path.to_string());
-        true
-    }
-    fn change_reso(&mut self, ntnum: &str) -> bool {
-        if let Ok(turn_note) = ntnum.parse::<i16>() {
-            self.sndr
-                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_TICK_RESOLUTION, turn_note]));
-            true
-        } else {
-            false
-        }
-    }
-    fn change_flow_velocity(&mut self, vel_txt: &str) -> bool {
-        if let Ok(vel) = vel_txt.parse::<i16>() {
-            if !(1..=127).contains(&vel) {
-                return false;
-            }
-            self.sndr
-                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
-            true
-        } else {
-            false
-        }
     }
 }
