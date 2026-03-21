@@ -8,10 +8,10 @@ use std::sync::mpsc;
 use super::input_txt::CmndRtn;
 use super::send_msg::*;
 use super::seq_stock::*;
-use crate::common::txt_common::*;
 use super::txt2seq_cmps::*;
-use crate::graphic::generative_view::{GraphicMsg, generate_graphic_msg};
 use crate::common::lpnlib::*;
+use crate::common::txt_common::*;
+use crate::graphic::generative_view::{GraphicMsg, generate_graphic_msg};
 
 #[derive(Debug, Clone)]
 pub struct CmdReply {
@@ -71,7 +71,10 @@ pub enum CmdKind {
 
 /// 入力テキストと token 列からコマンド種別を判定する純関数
 pub fn classify_cmd(tokens: &[String]) -> CmdKind {
-    let first = tokens.first().and_then(|token| token.chars().next()).unwrap_or(' ');
+    let first = tokens
+        .first()
+        .and_then(|token| token.chars().next())
+        .unwrap_or(' ');
     let token_count = tokens.len();
     let first_token = tokens.first().map(|token| token.as_str()).unwrap_or("");
     match first {
@@ -182,12 +185,14 @@ impl LoopianCmd {
             CmdKind::PartShortcut => self.shortcut_input(tokens).map(CmdReply::text),
             CmdKind::OneWord => Ok(CmdReply::text(self.one_word_command(&tokens[0].clone()))),
             CmdKind::MultiWord => match tokens[0].as_str() {
-                "set" => self.parse_set_command_result(&tokens[1]).map(CmdReply::text),
+                "set" => self
+                    .parse_set_command_result(&tokens[1])
+                    .map(CmdReply::text),
                 "sync" => Ok(CmdReply::text(self.cmd_sync(&tokens[1]))),
                 "clear" => Ok(CmdReply::text(self.cmd_clear(&tokens[1]))),
                 "fine" => Ok(CmdReply::text(self.cmd_fine(&tokens[1]))),
                 "help" => Ok(CmdReply::text(self.cmd_help(&tokens[1]))),
-                "graph"  => {
+                "graph" => {
                     let rtn = generate_graphic_msg(tokens);
                     Ok(CmdReply {
                         text: rtn.0,

@@ -9,11 +9,11 @@ use std::rc::Rc;
 use super::floating_tick::*;
 use super::note_translation::*;
 use crate::cmd::{txt2seq_cmps, txt2seq_cmps::*};
+use crate::common::lpnlib::*;
 use crate::elapse::elapse_base::*;
 use crate::elapse::elapse_note::*;
 use crate::elapse::stack_elapse::ElapseStack;
 use crate::elapse::tickgen::CrntMsrTick;
-use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          Dynamic Pattern Struct

@@ -10,10 +10,10 @@ use super::elapse_base::*;
 use super::elapse_flow::Flow;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
+use crate::common::lpnlib::*;
 use crate::elapse_loop::cmps_map::*;
 use crate::elapse_loop::elapse_loop_phr::*;
 use crate::elapse_loop::phr_loop_mng::PhrLoopManager;
-use crate::common::lpnlib::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct PartBasicPrm {

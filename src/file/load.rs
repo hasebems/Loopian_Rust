@@ -4,9 +4,9 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::lpn_file::*;
+use crate::common::lpnlib::*;
 use crate::common::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
-use crate::common::lpnlib::*;
 use std::fs;
 //*******************************************************************
 //      LoadBuffer Struct

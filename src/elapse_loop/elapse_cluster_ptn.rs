@@ -8,12 +8,12 @@ use std::rc::Rc;
 
 use super::note_translation::*;
 use crate::cmd::{txt2seq_cmps, txt2seq_cmps::*};
+use crate::common::lpnlib::*;
 use crate::elapse::elapse_base::*;
 use crate::elapse::elapse_note::*;
 use crate::elapse::stack_elapse::ElapseStack;
 use crate::elapse::tickgen::CrntMsrTick;
 use crate::elapse_loop::floating_tick::FloatingTick;
-use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          Dynamic Pattern Struct

@@ -4,9 +4,9 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::load::*;
+use crate::common::lpnlib::*;
 use crate::common::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
-use crate::common::lpnlib::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SessionCmdType {
@@ -121,7 +121,9 @@ impl LoadSession {
                     }
                 } else {
                     self.clear();
-                    let loaded = self.load_buffer.get_from_msr_to_next(CrntMsrTick::default());
+                    let loaded = self
+                        .load_buffer
+                        .get_from_msr_to_next(CrntMsrTick::default());
                     self.next_msr_tick = loaded.1;
                     LoadFileResult::Loaded {
                         file_name,
@@ -142,7 +144,9 @@ impl LoadSession {
     pub fn prepare_play_from_top(&mut self) -> Option<SessionDispatch> {
         if self.has_file_name() {
             self.reset_runtime_state();
-            let loaded = self.load_buffer.get_from_msr_to_next(CrntMsrTick::default());
+            let loaded = self
+                .load_buffer
+                .get_from_msr_to_next(CrntMsrTick::default());
             self.next_msr_tick = loaded.1;
             Some(SessionDispatch {
                 cmd_type: SessionCmdType::Any,
@@ -231,7 +235,9 @@ impl LoadSession {
                 self.set_file_name(fnx[1].clone());
             }
             let notice = match self.load_file(path, true) {
-                LoadFileResult::Loaded { file_name, .. } => Some(FileNotice::LoadedFromFile(file_name)),
+                LoadFileResult::Loaded { file_name, .. } => {
+                    Some(FileNotice::LoadedFromFile(file_name))
+                }
                 LoadFileResult::NoFile => Some(FileNotice::NoFile),
                 LoadFileResult::LoadFailed => Some(FileNotice::LoadFailed),
             };

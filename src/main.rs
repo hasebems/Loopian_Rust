@@ -21,11 +21,11 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 
 use cmd::input_txt::InputText;
+use common::lpnlib::*;
 use elapse::stack_elapse::ElapseStack;
 use file::settings::Settings;
 use graphic::draw_graph::{Graphic, Resize};
 use graphic::guiev::GuiEv;
-use common::lpnlib::*;
 use server::server_loop::cui_loop;
 
 //*******************************************************************

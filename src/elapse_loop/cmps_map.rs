@@ -6,10 +6,10 @@
 pub type ChordEvtMap = Vec<Vec<Option<(ChordEvt, bool)>>>;
 pub type PedalEvtMap = Vec<Vec<Option<(PedalEvt, bool)>>>;
 use crate::cmd::txt2seq_cmps::*;
+use crate::common::lpnlib::*;
 use crate::elapse::elapse_part::PartBasicPrm;
 use crate::elapse::stack_elapse::ElapseStack;
 use crate::elapse::tickgen::CrntMsrTick;
-use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          Composition Loop Struct

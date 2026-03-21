@@ -3,8 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::elapse::tickgen::CrntMsrTick;
 use crate::common::lpnlib::*;
+use crate::elapse::tickgen::CrntMsrTick;
 use rand_distr::{Distribution, Normal};
 
 /// 本クラスは、PhraseLoop の next_tick を入力すると、その値を時間方向に散らす。

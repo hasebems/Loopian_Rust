@@ -160,12 +160,36 @@ pub fn tokenize_cmd(input_text: &str) -> Vec<String> {
     }
     for ch in input_text.chars() {
         match ch {
-            '(' => { paren_depth += 1; current.push(ch); }
-            ')' => { if paren_depth > 0 { paren_depth -= 1; } current.push(ch); }
-            '{' => { brace_depth += 1; current.push(ch); }
-            '}' => { if brace_depth > 0 { brace_depth -= 1; } current.push(ch); }
-            '[' => { bracket_depth += 1; current.push(ch); }
-            ']' => { if bracket_depth > 0 { bracket_depth -= 1; } current.push(ch); }
+            '(' => {
+                paren_depth += 1;
+                current.push(ch);
+            }
+            ')' => {
+                if paren_depth > 0 {
+                    paren_depth -= 1;
+                }
+                current.push(ch);
+            }
+            '{' => {
+                brace_depth += 1;
+                current.push(ch);
+            }
+            '}' => {
+                if brace_depth > 0 {
+                    brace_depth -= 1;
+                }
+                current.push(ch);
+            }
+            '[' => {
+                bracket_depth += 1;
+                current.push(ch);
+            }
+            ']' => {
+                if bracket_depth > 0 {
+                    bracket_depth -= 1;
+                }
+                current.push(ch);
+            }
             '.' if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0 => {
                 let token = current.trim().to_string();
                 if !token.is_empty() {

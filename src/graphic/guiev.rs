@@ -3,8 +3,8 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::elapse::tickgen::CrntMsrTick;
 use crate::common::lpnlib::*;
+use crate::elapse::tickgen::CrntMsrTick;
 
 pub const INDC_KEY: usize = 0;
 pub const INDC_BPM: usize = 1;

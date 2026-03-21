@@ -3,12 +3,12 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::common::txt_common::*;
 use super::txt2seq_ana::*;
 use super::txt2seq_cmps::*;
 use super::txt2seq_pdl::*;
 use super::txt2seq_phr::*;
 use crate::common::lpnlib::*;
+use crate::common::txt_common::*;
 
 //*******************************************************************
 //          Seq Data Stock Struct

@@ -11,8 +11,8 @@ use super::elapse_note::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_cmps::*;
-use crate::elapse_loop::note_translation::*;
 use crate::common::lpnlib::*;
+use crate::elapse_loop::note_translation::*;
 
 //*******************************************************************
 //          Flow Struct

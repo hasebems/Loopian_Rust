@@ -4,8 +4,8 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::cmdparse::*;
-use crate::common::txt_common::*;
 use crate::common::lpnlib::*;
+use crate::common::txt_common::*;
 
 //*******************************************************************
 //      Set Command: Enum と純粋パース
@@ -26,16 +26,15 @@ pub enum SetCommand {
 }
 
 pub enum SetCmdError {
-    UnknownCommand,   // "what?"
-    BadNumber,        // "Number is wrong."
-    BadChannel,       // "Channel number is wrong."
+    UnknownCommand, // "what?"
+    BadNumber,      // "Number is wrong."
+    BadChannel,     // "Channel number is wrong."
 }
 
 impl SetCommand {
     /// 入力文字列を型付きコマンドに変換する純粋関数（副作用なし）
     pub fn parse(input_text: &str) -> Result<Self, SetCmdError> {
-        let (cmd, prm) = separate_cmnd_and_str(input_text)
-            .ok_or(SetCmdError::UnknownCommand)?;
+        let (cmd, prm) = separate_cmnd_and_str(input_text).ok_or(SetCmdError::UnknownCommand)?;
         match cmd {
             "key" => Ok(Self::Key(prm.to_string())),
             "oct" => Ok(Self::Oct(prm.to_string())),
@@ -48,8 +47,12 @@ impl SetCommand {
                 if parts.len() < 2 {
                     return Err(SetCmdError::BadNumber);
                 }
-                let n = parts[0].parse::<i16>().map_err(|_| SetCmdError::BadNumber)?;
-                let d = parts[1].parse::<i16>().map_err(|_| SetCmdError::BadNumber)?;
+                let n = parts[0]
+                    .parse::<i16>()
+                    .map_err(|_| SetCmdError::BadNumber)?;
+                let d = parts[1]
+                    .parse::<i16>()
+                    .map_err(|_| SetCmdError::BadNumber)?;
                 Ok(Self::Meter(n, d))
             }
             "msr" => {
@@ -87,7 +90,10 @@ impl SetCommand {
 }
 
 impl LoopianCmd {
-    pub(crate) fn parse_set_command_result(&mut self, input_text: &str) -> Result<String, CmdError> {
+    pub(crate) fn parse_set_command_result(
+        &mut self,
+        input_text: &str,
+    ) -> Result<String, CmdError> {
         let cmd = SetCommand::parse(input_text).map_err(|error| match error {
             SetCmdError::UnknownCommand => CmdError::UnknownCommand,
             SetCmdError::BadNumber => CmdError::BadNumber,
