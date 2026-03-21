@@ -17,13 +17,57 @@ pub fn reply_to_cmd(reply: String) -> Option<CmndRtn> {
     Some(CmndRtn(reply, GraphicMsg::NoMsg))
 }
 
-//  LoopianCmd の責務
-//  1. Command を受信し中身を調査
-//  2. 解析に送る/elapseに送る
-//  3. guiに返事を返す
+//*******************************************************************
+//      Tokenizer / Classifier (pure, no state)
+//*******************************************************************
+/// 入力テキストの先頭文字によるコマンド種別分類
+pub enum CmdKind {
+    TogglePlay,   // 単体の "."
+    Slash,        // "/" で始まる
+    At,           // "@" で始まる
+    Bracket,      // "[" で始まる
+    Brace,        // "{" で始まる
+    PartSelect,   // part 名単体による current part 切替
+    PartShortcut, // part 指定 + payload の shortcut 形式
+    OneWord,      // トークン数 1
+    MultiWord,    // トークン数 2 以上
+}
+
+/// 入力テキストと token 列からコマンド種別を判定する純関数
+pub fn classify_cmd(input_text: &str, tokens: &[String]) -> CmdKind {
+    let first = input_text.chars().next().unwrap_or(' ');
+    if input_text.len() == 1 && first == '.' {
+        return CmdKind::TogglePlay;
+    }
+    let token_count = tokens.len();
+    let first_token = tokens.first().map(|token| token.as_str()).unwrap_or("");
+    match first {
+        '/' => CmdKind::Slash,
+        '@' => CmdKind::At,
+        '[' => CmdKind::Bracket,
+        '{' => CmdKind::Brace,
+        _ if token_count >= 2 && matches!(first, 'L' | 'R' | 'F' | 'A' | 'D' | 'S') => {
+            CmdKind::PartShortcut
+        }
+        _ if detect_part(first_token).is_some() => CmdKind::PartSelect,
+        _ if token_count == 1 => CmdKind::OneWord,
+        _ => CmdKind::MultiWord,
+    }
+}
+
+/// パート文字列を部番号に変換する純関数
+pub fn detect_part(part_str: &str) -> Option<usize> {
+    match part_str {
+        "left1" | "L1" => Some(LEFT1),
+        "left2" | "L2" => Some(LEFT2),
+        "right1" | "R1" => Some(RIGHT1),
+        "right2" | "R2" => Some(RIGHT2),
+        _ => None,
+    }
+}
+
 pub struct LoopianCmd {
     during_play: bool,
-    recursive: bool,
     indicator_key_stock: String,
     input_part: usize,
     path: Option<String>,
@@ -34,7 +78,6 @@ impl LoopianCmd {
     pub fn new(msg_hndr: mpsc::Sender<ElpsMsg>) -> Self {
         Self {
             during_play: false,
-            recursive: false,
             indicator_key_stock: "C".to_string(),
             input_part: RIGHT1,
             path: None,
@@ -80,110 +123,33 @@ impl LoopianCmd {
     //*************************************************************************
     pub fn put_and_get_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
         if input_text.is_empty() || !input_text.is_ascii() {
-            // option + space などの無効な文字列
             return None;
         }
-
-        let msg_vec = self.analyze_and_divide_to_msg(input_text);
-        println!("Analyze Text: {:?}", msg_vec);
-        let first_letter = input_text.chars().next().unwrap();
-        if input_text.len() == 1 && first_letter == '.' {
-            reply_to_cmd(self.letter_dot(input_text))
-        } else if first_letter == '/' {
-            reply_to_cmd(self.letter_slash(input_text))
-        } else if first_letter == '@' {
-            reply_to_cmd(self.letter_at(input_text))
-        } else if first_letter == '[' {
-            reply_to_cmd(self.letter_bracket(msg_vec.clone()))
-        } else if first_letter == '{' {
-            reply_to_cmd(self.letter_brace(msg_vec.clone()))
-        } else if first_letter == 'L'
-            || first_letter == 'R'
-            || first_letter == 'F'
-            || first_letter == 'A'
-            || first_letter == 'D'
-            || first_letter == 'S'
-        {
-            reply_to_cmd(self.letter_part(msg_vec.clone()))
-        } else if msg_vec.len() == 1 {
-            // one word command
-            reply_to_cmd(self.one_word_command(&msg_vec[0]))
-        } else {
-            match msg_vec[0].as_str() {
-                "set" => reply_to_cmd(self.parse_set_command(&msg_vec[1])),
-                "sync" => reply_to_cmd(self.cmd_sync(&msg_vec[1])),
-                "clear" => reply_to_cmd(self.cmd_clear(&msg_vec[1])),
-                "fine" => reply_to_cmd(self.cmd_fine(&msg_vec[1])),
-                "help" => reply_to_cmd(self.cmd_help(&msg_vec[1])),
-                "graph" => {
-                    let rtn = generate_graphic_msg(msg_vec);
+        let tokens = tokenize_cmd(input_text);
+        println!("Analyze Text: {:?}", tokens);
+        match classify_cmd(input_text, &tokens) {
+            CmdKind::TogglePlay => reply_to_cmd(self.letter_dot(input_text)),
+            CmdKind::Slash     => reply_to_cmd(self.letter_slash(input_text)),
+            CmdKind::At        => reply_to_cmd(self.letter_at(input_text)),
+            CmdKind::Bracket   => reply_to_cmd(self.apply_phrase_to_part(self.input_part, tokens)),
+            CmdKind::Brace     => reply_to_cmd(self.apply_composition_to_part(self.input_part, tokens)),
+            CmdKind::PartSelect   => reply_to_cmd(self.change_current_part(&tokens[0])),
+            CmdKind::PartShortcut => reply_to_cmd(self.shortcut_input(tokens)),
+            CmdKind::OneWord   => reply_to_cmd(self.one_word_command(&tokens[0].clone())),
+            CmdKind::MultiWord => match tokens[0].as_str() {
+                "set"    => reply_to_cmd(self.parse_set_command(&tokens[1])),
+                "sync"   => reply_to_cmd(self.cmd_sync(&tokens[1])),
+                "clear"  => reply_to_cmd(self.cmd_clear(&tokens[1])),
+                "fine"   => reply_to_cmd(self.cmd_fine(&tokens[1])),
+                "help"   => reply_to_cmd(self.cmd_help(&tokens[1])),
+                "graph"  => {
+                    let rtn = generate_graphic_msg(tokens);
                     Some(CmndRtn(rtn.0, rtn.1))
                 }
-                "effect" => reply_to_cmd(self.cmd_effect(&msg_vec[1])),
-                _ => reply_to_cmd("what?".to_string()),
-            }
+                "effect" => reply_to_cmd(self.cmd_effect(&tokens[1])),
+                _        => reply_to_cmd("what?".to_string()),
+            },
         }
-    }
-    fn analyze_and_divide_to_msg(&self, input_text: &str) -> Vec<String> {
-        // コマンドを解析して、Elapse に送るべきメッセージのベクタを返す
-        // 例えば、"set.key(C)" なら、["set", "key(C)"] を返す
-        // "L1.{CDE}" なら、["L1", "{CDE}"] を返す
-        // (),{},[] を考慮して、ピリオドで分割する
-        let mut msg_vec: Vec<String> = Vec::new();
-        let mut current = String::new();
-        let mut paren_depth = 0i32;
-        let mut brace_depth = 0i32;
-        let mut bracket_depth = 0i32;
-
-        for ch in input_text.chars() {
-            match ch {
-                '(' => {
-                    paren_depth += 1;
-                    current.push(ch);
-                }
-                ')' => {
-                    if paren_depth > 0 {
-                        paren_depth -= 1;
-                    }
-                    current.push(ch);
-                }
-                '{' => {
-                    brace_depth += 1;
-                    current.push(ch);
-                }
-                '}' => {
-                    if brace_depth > 0 {
-                        brace_depth -= 1;
-                    }
-                    current.push(ch);
-                }
-                '[' => {
-                    bracket_depth += 1;
-                    current.push(ch);
-                }
-                ']' => {
-                    if bracket_depth > 0 {
-                        bracket_depth -= 1;
-                    }
-                    current.push(ch);
-                }
-                '.' if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0 => {
-                    let token = current.trim().to_string();
-                    if !token.is_empty() {
-                        msg_vec.push(token);
-                        current.clear();
-                    }
-                }
-                _ => current.push(ch),
-            }
-        }
-
-        let token = current.trim().to_string();
-        if !token.is_empty() {
-            msg_vec.push(token);
-        }
-
-        msg_vec
     }
     fn one_word_command(&mut self, input_text: &str) -> String {
         match input_text {
@@ -220,23 +186,16 @@ impl LoopianCmd {
     }
     fn cmd_clear(&mut self, input_part: &str) -> String {
         if input_part.is_empty() {
-            if !self.recursive {
-                // stop
-                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
-                self.during_play = false;
-                // clear
-                for i in 0..MAX_KBD_PART {
-                    self.clear_part(i);
-                }
-                self.send_clear();
-                "all data erased!".to_string()
-            } else if self.recursive {
-                self.clear_part(self.input_part);
-                "designated part data erased!".to_string()
-            } else {
-                "what?".to_string()
+            // stop
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            self.during_play = false;
+            // clear
+            for i in 0..MAX_KBD_PART {
+                self.clear_part(i);
             }
-        } else if let Some(pnum) = Self::detect_part(input_part) {
+            self.send_clear();
+            "all data erased!".to_string()
+        } else if let Some(pnum) = detect_part(input_part) {
             println!("clear>>{input_part}");
             self.clear_part(pnum);
             match pnum {
@@ -398,7 +357,7 @@ impl LoopianCmd {
                 if let Some(additional) = self.put_phrase(
                     self.input_part,
                     PhraseAs::Measure(msr),
-                    self.analyze_and_divide_to_msg(&split_txt[1]),
+                    tokenize_cmd(&split_txt[1]),
                 ) {
                     if additional {
                         "Keep Phrase as being unified phrase!".to_string()
@@ -418,7 +377,7 @@ impl LoopianCmd {
                     if let Some(additional) = self.put_phrase(
                         self.input_part,
                         PhraseAs::Variation(vari as usize),
-                        self.analyze_and_divide_to_msg(&split_txt[1]),
+                        tokenize_cmd(&split_txt[1]),
                     ) {
                         if additional {
                             "Keep Phrase as being unified phrase!".to_string()
@@ -434,30 +393,6 @@ impl LoopianCmd {
             } else {
                 "what?".to_string()
             }
-        } else {
-            "what?".to_string()
-        }
-    }
-    fn letter_bracket(&mut self, msg_vec: Vec<String>) -> String {
-        if let Some(addtional) = self.put_phrase(self.input_part, PhraseAs::Normal, msg_vec) {
-            if addtional {
-                "Keep Phrase as being unified phrase!".to_string()
-            } else {
-                "Set Phrase!".to_string()
-            }
-        } else {
-            "what?".to_string()
-        }
-    }
-    fn letter_brace(&mut self, msg_vec: Vec<String>) -> String {
-        let input_text = msg_vec.join(".");
-        if self
-            .dtstk
-            .set_raw_composition(self.input_part, input_text.to_string())
-        {
-            self.sndr
-                .send_composition_to_elapse(self.input_part, &self.dtstk);
-            "Set Composition!".to_string()
         } else {
             "what?".to_string()
         }
@@ -478,8 +413,8 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn letter_part(&mut self, msg_vec: Vec<String>) -> String {
-        if let Some(pnum) = Self::detect_part(&msg_vec[0]) {
+    fn change_current_part(&mut self, part_str: &str) -> String {
+        if let Some(pnum) = detect_part(part_str) {
             self.input_part = pnum;
             match pnum {
                 LEFT1 => "Changed current part to left1.".to_string(),
@@ -489,73 +424,68 @@ impl LoopianCmd {
                 _ => "what?".to_string(),
             }
         } else {
-            self.shortcut_input(msg_vec)
+            "what?".to_string()
         }
     }
     fn shortcut_input(&mut self, msg_vec: Vec<String>) -> String {
-        // shortcut input
-        if msg_vec.len() < 2 {
-            return "what?".to_string();
-        }
-
         let part_str = msg_vec[0].as_str();
         let rest_vec = msg_vec[1..].to_vec();
-        let first_letter = rest_vec[0].chars().next().unwrap_or('~').to_string();
+        let first_letter = rest_vec[0].chars().next().unwrap_or('~');
         let mut rtn_str = "what?".to_string();
         match part_str {
-            "L1" => rtn_str = self.call_bracket_brace(LEFT1, rest_vec),
-            "L2" => rtn_str = self.call_bracket_brace(LEFT2, rest_vec),
+            "L1" => rtn_str = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec),
+            "L2" => rtn_str = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec),
             "L" => {
-                self.call_bracket_brace(LEFT1, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(LEFT2, rest_vec);
+                self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
+                rtn_str = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec);
             }
             "L1!" => {
-                self.call_bracket_brace(LEFT2, rest_vec.clone());
-                self.call_bracket_brace(RIGHT1, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT2, rest_vec);
+                self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
+                self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
+                rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
             }
             "L2!" => {
-                self.call_bracket_brace(LEFT1, rest_vec.clone());
-                self.call_bracket_brace(RIGHT1, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT2, rest_vec);
+                self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
+                self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
+                rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
             }
-            "R1" => rtn_str = self.call_bracket_brace(RIGHT1, rest_vec),
-            "R2" => rtn_str = self.call_bracket_brace(RIGHT2, rest_vec),
+            "R1" => rtn_str = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec),
+            "R2" => rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec),
             "R" => {
-                self.call_bracket_brace(RIGHT1, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT2, rest_vec);
+                self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
+                rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
             }
             "R1!" => {
-                self.call_bracket_brace(LEFT1, rest_vec.clone());
-                self.call_bracket_brace(LEFT2, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT2, rest_vec);
+                self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
+                self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
+                rtn_str = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
             }
             "R2!" => {
-                self.call_bracket_brace(LEFT1, rest_vec.clone());
-                self.call_bracket_brace(LEFT2, rest_vec.clone());
-                rtn_str = self.call_bracket_brace(RIGHT1, rest_vec);
+                self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
+                self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
+                rtn_str = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec);
             }
             "FLOW" => {
                 rtn_str = self.flow_part_command(msg_vec);
             }
             "D" | "DAMPER" => {
-                if first_letter == "[" {
-                    rtn_str = self.call_bracket_brace(DAMPER_PART, rest_vec);
+                if first_letter == '[' {
+                    rtn_str = self.apply_phrase_to_part(DAMPER_PART, rest_vec);
                 }
             }
             "SO" | "SOSTENUTO" => {
-                if first_letter == "[" {
-                    rtn_str = self.call_bracket_brace(SOSTENUTO_PART, rest_vec);
+                if first_letter == '[' {
+                    rtn_str = self.apply_phrase_to_part(SOSTENUTO_PART, rest_vec);
                 }
             }
             "SH" | "SHIFT" => {
-                if first_letter == "[" {
-                    rtn_str = self.call_bracket_brace(SHIFT_PART, rest_vec);
+                if first_letter == '[' {
+                    rtn_str = self.apply_phrase_to_part(SHIFT_PART, rest_vec);
                 }
             }
             "ALL" => {
                 for i in 0..MAX_KBD_PART {
-                    rtn_str = self.call_bracket_brace(i, rest_vec.clone());
+                    rtn_str = self.apply_shortcut_to_part(i, first_letter, rest_vec.clone());
                 }
             }
             _ => println!("No Part!"),
@@ -569,7 +499,7 @@ impl LoopianCmd {
         msg_vec: Vec<String>,
     ) -> String {
         if &msg_vec[1][0..1] == "{" {
-            self.call_bracket_brace(FLOW_PART, msg_vec)
+            self.apply_composition_to_part(FLOW_PART, msg_vec[1..].to_vec())
         } else if msg_vec[1] == "dyn" {
             let dyntxt = extract_texts_from_parentheses(&msg_vec[1]);
             let vel = if dyntxt.is_empty() {
@@ -590,50 +520,31 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn detect_part(part_str: &str) -> Option<usize> {
-        if part_str == "left1" {
-            Some(LEFT1)
-        } else if part_str == "left2" {
-            Some(LEFT2)
-        } else if part_str == "right1" {
-            Some(RIGHT1)
-        } else if part_str == "right2" {
-            Some(RIGHT2)
-        } else if part_str == "L1" {
-            Some(LEFT1)
-        } else if part_str == "L2" {
-            Some(LEFT2)
-        } else if part_str == "R1" {
-            Some(RIGHT1)
-        } else if part_str == "R2" {
-            Some(RIGHT2)
-        } else {
-            None
+    fn apply_shortcut_to_part(&mut self, part_num: usize, first_letter: char, msg_vec: Vec<String>) -> String {
+        match first_letter {
+            '[' => self.apply_phrase_to_part(part_num, msg_vec),
+            '{' => self.apply_composition_to_part(part_num, msg_vec),
+            _ => "what?".to_string(),
         }
     }
-    fn call_bracket_brace(&mut self, part_num: usize, rest_vec: Vec<String>) -> String {
-        let mut rtn_str = "what?".to_string();
-        let org_part = self.input_part;
-        self.recursive = true;
-        self.input_part = part_num;
-        if let Some(ans) = self.dup_bracket_brace(rest_vec) {
-            rtn_str = ans.0;
-        }
-        self.input_part = org_part;
-        self.recursive = false;
-        rtn_str
-    }
-    fn dup_bracket_brace(&mut self, msg_vec: Vec<String>) -> Option<CmndRtn> {
-        if msg_vec.is_empty() {
-            return None;
-        }
-        let first_letter = &msg_vec[0][0..1];
-        if first_letter == "[" {
-            reply_to_cmd(self.letter_bracket(msg_vec))
-        } else if first_letter == "{" {
-            reply_to_cmd(self.letter_brace(msg_vec))
+    fn apply_phrase_to_part(&mut self, part_num: usize, msg_vec: Vec<String>) -> String {
+        if let Some(additional) = self.put_phrase(part_num, PhraseAs::Normal, msg_vec) {
+            if additional {
+                "Keep Phrase as being unified phrase!".to_string()
+            } else {
+                "Set Phrase!".to_string()
+            }
         } else {
-            None
+            "what?".to_string()
+        }
+    }
+    fn apply_composition_to_part(&mut self, part_num: usize, msg_vec: Vec<String>) -> String {
+        let input_text = msg_vec.join(".");
+        if self.dtstk.set_raw_composition(part_num, input_text) {
+            self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
+            "Set Composition!".to_string()
+        } else {
+            "what?".to_string()
         }
     }
     fn put_phrase(

@@ -144,3 +144,38 @@ pub fn separate_cmnd_and_str(cn: &str) -> Option<(&str, &str)> {
 pub fn get_crnt_date_txt() -> String {
     Local::now().format("%Y-%m-%d %H:%M:%S ").to_string()
 }
+//*******************************************************************
+//          Command Tokenizer
+//*******************************************************************
+/// Loopian コマンドテキストを `.` で分割してトークンリストに変換する純関数。
+/// `()`, `{}`, `[]` の中にある `.` は分割しない。
+pub fn tokenize_cmd(input_text: &str) -> Vec<String> {
+    let mut tokens: Vec<String> = Vec::new();
+    let mut current = String::new();
+    let mut paren_depth = 0i32;
+    let mut brace_depth = 0i32;
+    let mut bracket_depth = 0i32;
+    for ch in input_text.chars() {
+        match ch {
+            '(' => { paren_depth += 1; current.push(ch); }
+            ')' => { if paren_depth > 0 { paren_depth -= 1; } current.push(ch); }
+            '{' => { brace_depth += 1; current.push(ch); }
+            '}' => { if brace_depth > 0 { brace_depth -= 1; } current.push(ch); }
+            '[' => { bracket_depth += 1; current.push(ch); }
+            ']' => { if bracket_depth > 0 { bracket_depth -= 1; } current.push(ch); }
+            '.' if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0 => {
+                let token = current.trim().to_string();
+                if !token.is_empty() {
+                    tokens.push(token);
+                    current.clear();
+                }
+            }
+            _ => current.push(ch),
+        }
+    }
+    let token = current.trim().to_string();
+    if !token.is_empty() {
+        tokens.push(token);
+    }
+    tokens
+}
