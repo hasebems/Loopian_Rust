@@ -12,7 +12,7 @@ use super::guiev::*;
 use super::view_waterripple::WaterRipple;
 use crate::cmd::input_txt::InputText;
 use crate::common::txt_common;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //*******************************************************************
 //      struct Resize

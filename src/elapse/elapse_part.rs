@@ -13,7 +13,7 @@ use super::tickgen::CrntMsrTick;
 use crate::elapse_loop::cmps_map::*;
 use crate::elapse_loop::elapse_loop_phr::*;
 use crate::elapse_loop::phr_loop_mng::PhrLoopManager;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct PartBasicPrm {

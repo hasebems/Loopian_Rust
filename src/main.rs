@@ -9,7 +9,6 @@ mod elapse;
 mod elapse_loop;
 mod file;
 mod graphic;
-mod lpnlib;
 mod midi;
 mod server;
 mod test;
@@ -26,7 +25,7 @@ use elapse::stack_elapse::ElapseStack;
 use file::settings::Settings;
 use graphic::draw_graph::{Graphic, Resize};
 use graphic::guiev::GuiEv;
-use lpnlib::*;
+use common::lpnlib::*;
 use server::server_loop::cui_loop;
 
 //*******************************************************************

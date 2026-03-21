@@ -11,7 +11,7 @@ fn general1() {
 }
 #[test]
 fn pedal() {
-    use crate::lpnlib::{ElpsMsg::*, *};
+    use crate::common::lpnlib::{ElpsMsg::*, *};
     use std::sync::mpsc::TryRecvError;
 
     let (txmsg, rxmsg) = std::sync::mpsc::channel();
@@ -53,7 +53,7 @@ fn pedal() {
 
 #[test]
 fn shortcut_phrase_chain() {
-    use crate::lpnlib::{ElpsMsg::*, *};
+    use crate::common::lpnlib::{ElpsMsg::*, *};
 
     let (txmsg, rxmsg) = std::sync::mpsc::channel();
     let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
@@ -77,7 +77,7 @@ fn shortcut_phrase_chain() {
 
 #[test]
 fn flow_composition_shortcut() {
-    use crate::lpnlib::ElpsMsg::*;
+    use crate::common::lpnlib::ElpsMsg::*;
 
     let (txmsg, rxmsg) = std::sync::mpsc::channel();
     let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);

@@ -8,7 +8,7 @@ use std::f32::consts::PI;
 
 use super::draw_graph::Resize;
 use super::generative_view::{GenerativeView, GraphMode};
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 pub struct Lissajous {
     crnt_time: f32,

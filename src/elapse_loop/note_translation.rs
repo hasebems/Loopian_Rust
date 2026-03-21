@@ -6,7 +6,7 @@
 use std::cmp::Ordering;
 
 use crate::cmd::txt2seq_cmps;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          Translate Note Number

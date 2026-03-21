@@ -8,7 +8,7 @@ use super::txt2seq_ana::*;
 use super::txt2seq_cmps::*;
 use super::txt2seq_pdl::*;
 use super::txt2seq_phr::*;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          Seq Data Stock Struct

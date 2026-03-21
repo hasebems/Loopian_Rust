@@ -3,7 +3,7 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
-use crate::lpnlib::{DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, Meter, NO_DATA};
+use crate::common::lpnlib::{DEFAULT_BPM, DEFAULT_TICK_FOR_ONE_MEASURE, Meter, NO_DATA};
 use std::time::{Duration, Instant};
 
 //*******************************************************************

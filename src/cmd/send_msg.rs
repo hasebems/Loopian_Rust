@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::seq_stock::*;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 use std::sync::mpsc;
 
 pub struct MessageSender {

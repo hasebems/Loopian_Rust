@@ -12,7 +12,7 @@ use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_cmps::*;
 use crate::elapse_loop::note_translation::*;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          Flow Struct

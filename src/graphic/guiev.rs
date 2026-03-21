@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use crate::elapse::tickgen::CrntMsrTick;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 pub const INDC_KEY: usize = 0;
 pub const INDC_BPM: usize = 1;

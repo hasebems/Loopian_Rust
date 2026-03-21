@@ -12,7 +12,7 @@ use crate::elapse::elapse_base::*;
 use crate::elapse::elapse_part::*;
 use crate::elapse::stack_elapse::ElapseStack;
 use crate::elapse::tickgen::CrntMsrTick;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum LoopPhase {

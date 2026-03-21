@@ -5,7 +5,7 @@
 //
 use crate::common::txt_common::*;
 use super::txt2seq_phr::*;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 pub fn available_for_dp(text: &str) -> bool {
     !(!text.contains("C(")

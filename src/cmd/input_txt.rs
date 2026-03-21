@@ -14,7 +14,7 @@ use crate::file::history::*;
 use crate::file::load_session::*;
 use crate::graphic::generative_view::GraphicMsg;
 use crate::graphic::guiev::GuiEv;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 // return msg from command receiving job
 pub struct CmndRtn(pub String, pub GraphicMsg);
 

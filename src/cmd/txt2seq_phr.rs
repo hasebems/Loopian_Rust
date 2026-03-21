@@ -5,7 +5,7 @@
 //
 use crate::common::txt_common::*;
 use super::txt2seq_dp;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          complement_phrase

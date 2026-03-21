@@ -6,7 +6,7 @@
 
 use super::lpn_file::*;
 use crate::common::txt_common::*;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 use std::fs;
 
 /// Convert a file to a timeline file

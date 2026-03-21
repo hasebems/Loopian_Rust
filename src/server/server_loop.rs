@@ -15,7 +15,7 @@ use std::sync::{mpsc, mpsc::*};
 use crate::gen_elapse_thread;
 //use crate::graphic::guiev::GuiEv;
 use crate::cmd::input_txt::InputText;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //Raspberry Pi5 pin
 #[cfg(feature = "raspi")]

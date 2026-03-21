@@ -13,7 +13,7 @@ use crate::elapse::elapse_note::*;
 use crate::elapse::stack_elapse::ElapseStack;
 use crate::elapse::tickgen::CrntMsrTick;
 use crate::elapse_loop::floating_tick::FloatingTick;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          Dynamic Pattern Struct

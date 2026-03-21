@@ -6,7 +6,7 @@
 use super::load::*;
 use crate::common::txt_common::*;
 use crate::elapse::tickgen::CrntMsrTick;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SessionCmdType {

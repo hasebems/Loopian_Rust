@@ -6,7 +6,7 @@
 extern crate midir;
 
 use crate::file::settings::Settings;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use std::sync::mpsc;
 use std::sync::mpsc::TryRecvError;

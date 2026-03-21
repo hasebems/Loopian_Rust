@@ -4,7 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 pub fn complement_pedal(input_text: String) -> Vec<String> {
     if let Some(n2) = input_text.find(']')

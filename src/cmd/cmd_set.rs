@@ -5,7 +5,7 @@
 //
 use super::cmdparse::*;
 use crate::common::txt_common::*;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //*******************************************************************
 //      Set Command: Enum と純粋パース

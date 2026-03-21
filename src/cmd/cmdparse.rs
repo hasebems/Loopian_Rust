@@ -11,7 +11,7 @@ use super::seq_stock::*;
 use crate::common::txt_common::*;
 use super::txt2seq_cmps::*;
 use crate::graphic::generative_view::{GraphicMsg, generate_graphic_msg};
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 #[derive(Debug, Clone)]
 pub struct CmdReply {

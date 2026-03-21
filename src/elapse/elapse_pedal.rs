@@ -10,7 +10,7 @@ use super::elapse_base::*;
 use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::elapse_loop::floating_tick::*;
-use crate::lpnlib::*;
+use crate::common::lpnlib::*;
 
 //*******************************************************************
 //          Damper Event Struct
