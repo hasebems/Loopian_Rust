@@ -58,15 +58,48 @@ pub fn cmd_error_to_text(error: &CmdError) -> String {
 //*******************************************************************
 /// 入力テキストの先頭文字によるコマンド種別分類
 pub enum CmdKind {
-    TogglePlay,   // 単体の "."
-    Slash,        // "/" で始まる
-    At,           // "@" で始まる
-    Bracket,      // "[" で始まる
-    Brace,        // "{" で始まる
-    PartSelect,   // part 名単体による current part 切替
-    PartShortcut, // part 指定 + payload の shortcut 形式
-    OneWord,      // トークン数 1
-    MultiWord,    // トークン数 2 以上
+    TogglePlay,                 // 単体の "."
+    Slash,                      // "/" で始まる
+    At,                         // "@" で始まる
+    Bracket,                    // "[" で始まる
+    Brace,                      // "{" で始まる
+    PartSelect,                 // part 名単体による current part 切替
+    PartWithPayload(Vec<usize>),// part 指定 + payload の形式
+    OneWord,                    // トークン数 1
+    MultiWord,                  // トークン数 2 以上
+    Unknown,                    // 不明な形式
+}
+
+/// パート文字列を部番号に変換する純関数
+pub fn detect_part(part_str: &str) -> Option<usize> {
+    match part_str {
+        "left1" | "L1" => Some(LEFT1),
+        "left2" | "L2" => Some(LEFT2),
+        "right1" | "R1" => Some(RIGHT1),
+        "right2" | "R2" => Some(RIGHT2),
+        _ => None,
+    }
+}
+fn get_part_num(part_str: &str) -> Result<Vec<usize>, CmdError> {
+    let part_num: Vec<usize> = match part_str {
+        "L1" => vec![LEFT1],
+        "L2" => vec![LEFT2],
+        "L" => vec![LEFT1, LEFT2],
+        "L1!" => vec![LEFT2, RIGHT1, RIGHT2],
+        "L2!" => vec![LEFT1, RIGHT1, RIGHT2],
+        "R1" => vec![RIGHT1],
+        "R2" => vec![RIGHT2],
+        "R" => vec![RIGHT1, RIGHT2],
+        "R1!" => vec![LEFT1, LEFT2, RIGHT2],
+        "R2!" => vec![LEFT1, LEFT2, RIGHT1],
+        "FLOW" => vec![FLOW_PART],
+        "D" | "DAMPER" => vec![DAMPER_PART],
+        "SO" | "SOSTENUTO" => vec![SOSTENUTO_PART],
+        "SH" | "SHIFT" => vec![SHIFT_PART],
+        "ALL" => (0..MAX_KBD_PART).collect(),
+        _ => return Err(CmdError::UnknownCommand),
+    };
+    Ok(part_num)
 }
 
 /// 入力テキストと token 列からコマンド種別を判定する純関数
@@ -84,22 +117,15 @@ pub fn classify_cmd(tokens: &[String]) -> CmdKind {
         '[' => CmdKind::Bracket,
         '{' => CmdKind::Brace,
         _ if token_count >= 2 && matches!(first, 'L' | 'R' | 'F' | 'A' | 'D' | 'S') => {
-            CmdKind::PartShortcut
+            if let Ok(part_num) = get_part_num(first_token) {
+                CmdKind::PartWithPayload(part_num)
+            } else {
+                CmdKind::Unknown // 仮の値、実際の値は後で決定
+            }
         }
         _ if detect_part(first_token).is_some() => CmdKind::PartSelect,
         _ if token_count == 1 => CmdKind::OneWord,
         _ => CmdKind::MultiWord,
-    }
-}
-
-/// パート文字列を部番号に変換する純関数
-pub fn detect_part(part_str: &str) -> Option<usize> {
-    match part_str {
-        "left1" | "L1" => Some(LEFT1),
-        "left2" | "L2" => Some(LEFT2),
-        "right1" | "R1" => Some(RIGHT1),
-        "right2" | "R2" => Some(RIGHT2),
-        _ => None,
     }
 }
 
@@ -165,7 +191,7 @@ impl LoopianCmd {
             Err(error) => Some(CmndRtn(cmd_error_to_text(&error), GraphicMsg::NoMsg)),
         }
     }
-    pub fn execute_command(&mut self, input_text: &str) -> CmdResult {
+    fn execute_command(&mut self, input_text: &str) -> CmdResult {
         if input_text.is_empty() || !input_text.is_ascii() {
             return Err(CmdError::InvalidInput);
         }
@@ -182,7 +208,7 @@ impl LoopianCmd {
                 .apply_composition_to_part(self.input_part, tokens)
                 .map(CmdReply::text),
             CmdKind::PartSelect => self.change_current_part(&tokens[0]).map(CmdReply::text),
-            CmdKind::PartShortcut => self.shortcut_input(tokens).map(CmdReply::text),
+            CmdKind::PartWithPayload(pn) => self.com_with_part(pn, tokens).map(CmdReply::text),
             CmdKind::OneWord => Ok(CmdReply::text(self.one_word_command(&tokens[0].clone()))),
             CmdKind::MultiWord => match tokens[0].as_str() {
                 "set" => self
@@ -202,6 +228,7 @@ impl LoopianCmd {
                 "effect" => Ok(CmdReply::text(self.cmd_effect(&tokens[1]))),
                 _ => Err(CmdError::UnknownCommand),
             },
+            CmdKind::Unknown => Err(CmdError::UnknownCommand),
         }
     }
     fn one_word_command(&mut self, input_text: &str) -> String {
@@ -471,82 +498,45 @@ impl LoopianCmd {
             Err(CmdError::InvalidPart)
         }
     }
-    fn shortcut_input(&mut self, msg_vec: Vec<String>) -> Result<String, CmdError> {
-        let part_str = msg_vec[0].as_str();
+
+    fn com_with_part(
+        &mut self,
+        part_num: Vec<usize>,
+        msg_vec: Vec<String>,
+    ) -> Result<String, CmdError> {
         let rest_vec = msg_vec[1..].to_vec();
         let first_letter = rest_vec[0].chars().next().unwrap_or('~');
+
+        // FLOW パートは、ショートカットではなく、専用のコマンド形式で処理する
+        if part_num.len() == 1 && part_num[0] == FLOW_PART {
+            return Ok(self.flow_part_command(rest_vec));
+        }
+
         let mut rtn = Err(CmdError::UnknownCommand);
-        match part_str {
-            "L1" => rtn = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec),
-            "L2" => rtn = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec),
-            "L" => {
-                let _ = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
-                rtn = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec);
-            }
-            "L1!" => {
-                let _ = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
-                let _ = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
-                rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
-            }
-            "L2!" => {
-                let _ = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
-                let _ = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
-                rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
-            }
-            "R1" => rtn = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec),
-            "R2" => rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec),
-            "R" => {
-                let _ = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec.clone());
-                rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
-            }
-            "R1!" => {
-                let _ = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
-                let _ = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
-                rtn = self.apply_shortcut_to_part(RIGHT2, first_letter, rest_vec);
-            }
-            "R2!" => {
-                let _ = self.apply_shortcut_to_part(LEFT1, first_letter, rest_vec.clone());
-                let _ = self.apply_shortcut_to_part(LEFT2, first_letter, rest_vec.clone());
-                rtn = self.apply_shortcut_to_part(RIGHT1, first_letter, rest_vec);
-            }
-            "FLOW" => {
-                rtn = Ok(self.flow_part_command(msg_vec));
-            }
-            "D" | "DAMPER" => {
-                if first_letter == '[' {
-                    rtn = self.apply_phrase_to_part(DAMPER_PART, rest_vec);
+        match first_letter {
+            '[' => {
+                for &pnum in &part_num {
+                    rtn = self.apply_phrase_to_part(pnum, rest_vec.clone());
                 }
             }
-            "SO" | "SOSTENUTO" => {
-                if first_letter == '[' {
-                    rtn = self.apply_phrase_to_part(SOSTENUTO_PART, rest_vec);
+            '{' => {
+                for &pnum in &part_num {
+                    rtn = self.apply_composition_to_part(pnum, rest_vec.clone());
                 }
             }
-            "SH" | "SHIFT" => {
-                if first_letter == '[' {
-                    rtn = self.apply_phrase_to_part(SHIFT_PART, rest_vec);
-                }
-            }
-            "ALL" => {
-                for i in 0..MAX_KBD_PART {
-                    rtn = self.apply_shortcut_to_part(i, first_letter, rest_vec.clone());
-                }
-            }
-            _ => println!("No Part!"),
+            _ => rtn = Err(CmdError::UnknownCommand),
         }
         rtn
     }
     fn flow_part_command(
         &mut self,
-        //first_letter: &str,
-        //input_text: &str,
         msg_vec: Vec<String>,
     ) -> String {
-        if &msg_vec[1][0..1] == "{" {
+        if &msg_vec[0][0..1] == "{" {
             self.apply_composition_to_part(FLOW_PART, msg_vec[1..].to_vec())
                 .unwrap_or_else(|error| cmd_error_to_text(&error))
-        } else if msg_vec[1] == "dyn" {
-            let dyntxt = extract_texts_from_parentheses(&msg_vec[1]);
+        } else if msg_vec[0].contains("dyn") {
+            let dyntxt = extract_texts_from_parentheses(&msg_vec[0]);
             let vel = if dyntxt.is_empty() {
                 0
             } else {
@@ -555,26 +545,14 @@ impl LoopianCmd {
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
             "Flow Velocity Changed!".to_string()
-        } else if msg_vec[1] == "static" {
-            let chord_txt = extract_texts_from_parentheses(&msg_vec[1]);
+        } else if msg_vec[0].contains("static") {
+            let chord_txt = extract_texts_from_parentheses(&msg_vec[0]);
             let (_root, table) = convert_chord_to_num(chord_txt.to_string());
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_STATIC_SCALE, table]));
             "Flow Static Scale Changed!".to_string()
         } else {
             "what?".to_string()
-        }
-    }
-    fn apply_shortcut_to_part(
-        &mut self,
-        part_num: usize,
-        first_letter: char,
-        msg_vec: Vec<String>,
-    ) -> Result<String, CmdError> {
-        match first_letter {
-            '[' => self.apply_phrase_to_part(part_num, msg_vec),
-            '{' => self.apply_composition_to_part(part_num, msg_vec),
-            _ => Err(CmdError::UnknownCommand),
         }
     }
     fn apply_phrase_to_part(
