@@ -70,14 +70,12 @@ pub enum CmdKind {
 }
 
 /// 入力テキストと token 列からコマンド種別を判定する純関数
-pub fn classify_cmd(input_text: &str, tokens: &[String]) -> CmdKind {
-    let first = input_text.chars().next().unwrap_or(' ');
-    if input_text.len() == 1 && first == '.' {
-        return CmdKind::TogglePlay;
-    }
+pub fn classify_cmd(tokens: &[String]) -> CmdKind {
+    let first = tokens.first().and_then(|token| token.chars().next()).unwrap_or(' ');
     let token_count = tokens.len();
     let first_token = tokens.first().map(|token| token.as_str()).unwrap_or("");
     match first {
+        '.' => CmdKind::TogglePlay,
         '/' => CmdKind::Slash,
         '@' => CmdKind::At,
         '[' => CmdKind::Bracket,
@@ -169,9 +167,9 @@ impl LoopianCmd {
             return Err(CmdError::InvalidInput);
         }
         let tokens = tokenize_cmd(input_text);
-        println!("Analyze Text: {:?}", tokens);
-        match classify_cmd(input_text, &tokens) {
-            CmdKind::TogglePlay => Ok(CmdReply::text(self.letter_dot(input_text))),
+        println!("Analyzed Commands: {:?}", tokens);
+        match classify_cmd(&tokens) {
+            CmdKind::TogglePlay => Ok(CmdReply::text(self.cmd_dot())),
             CmdKind::Slash => Ok(CmdReply::text(self.letter_slash(input_text))),
             CmdKind::At => Ok(CmdReply::text(self.letter_at(input_text))),
             CmdKind::Bracket => self
@@ -443,20 +441,15 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn letter_dot(&mut self, input_text: &str) -> String {
-        let len = input_text.chars().count();
-        if len == 1 {
-            if self.during_play {
-                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
-                self.during_play = false;
-                "Stopped!".to_string()
-            } else {
-                self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
-                self.during_play = true;
-                "Phrase has started!".to_string()
-            }
+    fn cmd_dot(&mut self) -> String {
+        if self.during_play {
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            self.during_play = false;
+            "Stopped!".to_string()
         } else {
-            "what?".to_string()
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
+            self.during_play = true;
+            "Phrase has started!".to_string()
         }
     }
     fn change_current_part(&mut self, part_str: &str) -> Result<String, CmdError> {
