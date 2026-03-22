@@ -193,14 +193,29 @@ pub fn get_table_name(idx_num: i16) -> Cow<'static, str> {
     };
     Cow::Borrowed(CHORD_TABLE[idx].name)
 }
-pub fn get_table_num(kind: &str) -> i16 {
+const fn const_str_eq(a: &str, b: &str) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    let mut i = 0;
+    while i < a.len() {
+        if a[i] != b[i] {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+pub const fn get_table_num(kind: &str) -> i16 {
     let mut table: i16 = (MAX_CHORD_TABLE - 2) as i16;
-
-    for (i, tp) in CHORD_TABLE.iter().enumerate() {
-        if tp.name == kind {
+    let mut i = 0;
+    while i < CHORD_TABLE.len() {
+        if const_str_eq(CHORD_TABLE[i].name, kind) {
             table = i as i16;
             break;
         }
+        i += 1;
     }
     table
 }
@@ -209,11 +224,11 @@ pub fn is_movable_scale(mut idx_num: i16, root: i16) -> (bool, i16) {
         idx_num -= UPPER;
     }
     const CHURCH_SCALE_BASE_NOTE: [i16; 6] = [0, 0, 2, 5, 7, 9]; //parasc()使用table分
-    let lo_num = get_table_num("_chr");
-    let hi_num = get_table_num("_aeo");
+    const LO_NUM: i16 = get_table_num("_chr");
+    const HI_NUM: i16 = get_table_num("_aeo");
     let mut rt: i16 = 0;
-    if idx_num >= lo_num && idx_num <= hi_num {
-        let idx = (idx_num - lo_num) as usize;
+    if (LO_NUM..=HI_NUM).contains(&idx_num) {
+        let idx = (idx_num - LO_NUM) as usize;
         if idx < CHURCH_SCALE_BASE_NOTE.len() {
             rt = CHURCH_SCALE_BASE_NOTE[idx];
         }

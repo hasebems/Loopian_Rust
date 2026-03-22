@@ -19,10 +19,6 @@ pub fn translate_note_parascl(para_note: i16, ctbl: i16, ev_note: u8) -> u8 {
     let mut former_nt = 0;
     let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     let tbl: &[i16] = tbl_cow.as_ref();
-    if tbl == txt2seq_cmps::THRU {
-        // THRU の場合はそのまま返す
-        return ev_note;
-    }
     for ntx in tbl.iter() {
         match ntx.cmp(&input_doremi) {
             Ordering::Equal => {
@@ -59,7 +55,7 @@ pub fn translate_note_com(root: i16, ctbl: i16, tgt_nt: u8) -> u8 {
     let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     let tbl: &[i16] = tbl_cow.as_ref();
     if tbl == txt2seq_cmps::THRU {
-        // THRU の場合はそのまま返す
+        // THRU の場合はそのまま返す(O,Xの場合)
         return tgt_nt as u8;
     }
     let real_root = root + DEFAULT_NOTE_NUMBER as i16;
@@ -162,7 +158,7 @@ pub fn translate_note_arp2(root: i16, ctbl: i16, tgt_nt: u8, nt_diff: i16, last_
     let (tbl_cow, take_upper) = txt2seq_cmps::get_table(ctbl as usize);
     let tbl: &[i16] = tbl_cow.as_ref();
     if tbl == txt2seq_cmps::THRU {
-        // THRU の場合はそのまま返す
+        // THRU の場合はそのまま返す(O,Xの場合)
         return tgt_nt as u8;
     }
     let real_root = root + DEFAULT_NOTE_NUMBER as i16;
