@@ -25,19 +25,10 @@ pub fn analyse_data(generated: &[PhrEvt], exps: &[String]) -> Vec<AnaEvt> {
 //*******************************************************************
 fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
     let noped = exps.iter().any(|exp| exp == "dmp(off)");
-    let asmin = exps.iter().any(|exp| exp == "asMin()" || exp == "as(VI)");
     let mut exp = Vec::new();
     if noped {
         let anev = AnaEvt::Exp(AnaExpEvt {
             atype: ExpType::Noped,
-            ..Default::default()
-        });
-        exp.push(anev);
-    }
-    if asmin {
-        let anev = AnaEvt::Exp(AnaExpEvt {
-            note: -3, // VI
-            atype: ExpType::ParaRoot,
             ..Default::default()
         });
         exp.push(anev);
@@ -144,6 +135,7 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
     let para = exps
         .iter()
         .any(|exp| exp == "para()" || exp == "trns(para)");
+    let asmin = exps.iter().any(|exp| exp == "asMin()" || exp == "as(VI)");
     let mut last_note = REST;
     let mut last_cnt = 0;
     let mut crnt_note;
@@ -182,7 +174,7 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
         // RPT_HEAD のとき、TRNS_COM になるので対象外
         #[cfg(feature = "verbose")]
         println!("ana_dbg: {crnt_cnt},{crnt_note},{last_cnt},{last_note}");
-        if para {
+        if para || asmin {
             // 強制的に para
             ana.trns = TrnsType::Para;
         } else if ana.trns == TrnsType::NoTrns {
@@ -203,10 +195,11 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
         last_cnt = crnt_cnt;
         last_note = crnt_note;
     }
-    if para {
-        // Note情報がない場合、Dynamic Pattern 用にpara指定メッセージを作成
+    if para || asmin {
+        let note = if asmin { -3 } else { 0 };
         let ae = AnaEvt::Exp(AnaExpEvt {
-            atype: ExpType::ParaRoot, //TRNS_PARA
+            note,
+            atype: ExpType::ParaRoot,
             ..Default::default()
         });
         all_dt.push(ae);
