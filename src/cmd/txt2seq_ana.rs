@@ -24,8 +24,9 @@ pub fn analyse_data(generated: &[PhrEvt], exps: &[String]) -> Vec<AnaEvt> {
 //                          PARA_ROOT(noteに値を入れる)
 //*******************************************************************
 fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
-    let noped = exps.iter().any(|exp| exp == "dmp(off)");
     let mut exp = Vec::new();
+
+    let noped = exps.iter().any(|exp| exp == "dmp(off)");
     if noped {
         let anev = AnaEvt::Exp(AnaExpEvt {
             atype: ExpType::Noped,
@@ -33,8 +34,22 @@ fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
         });
         exp.push(anev);
     }
+
+    let ampevt = exps.iter().find(|exp| exp.contains("dyn"));
+    if let Some(txt) = ampevt {
+        let dyntxt = extract_texts_from_parentheses(txt);
+        let amp = convert_expstr2amp(dyntxt);
+        let anev = AnaEvt::Exp(AnaExpEvt {
+            atype: ExpType::Amp,
+            value: amp,
+            ..Default::default()
+        });
+        exp.push(anev);
+    }
+
     exp //.copy_to()
 }
+
 //*******************************************************************
 /// Beat 分析
 ///     - TYPE_BEAT 情報を追加
@@ -225,7 +240,7 @@ pub fn crispy_tick(exp_others: &[String]) -> Vec<AnaEvt> {
                 rate = 100;
             }
             let anev = AnaEvt::Exp(AnaExpEvt {
-                cnt: rate as i16,
+                value: rate as i16,
                 atype: ExpType::Artic,
                 ..Default::default()
             });
@@ -242,7 +257,7 @@ pub fn crispy_tick(exp_others: &[String]) -> Vec<AnaEvt> {
             }
             rate = rate.clamp(100, 200);
             let anev = AnaEvt::Exp(AnaExpEvt {
-                cnt: rate as i16,
+                value: rate as i16,
                 atype: ExpType::Artic,
                 ..Default::default()
             });

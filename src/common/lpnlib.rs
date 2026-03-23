@@ -90,7 +90,8 @@ pub enum ExpType {
     #[default]
     Noped, // TYPE_BEAT の Note情報より先に置く
     ParaRoot, // note に並行移動の基本rootの値を書く(0-11)
-    Artic,    // cnt に Staccato/legato の長さを書く(1-200%)
+    Artic,    // value に Staccato/legato の長さを書く(1-200%)
+    Amp,      // value に Auto Amp の値を書く(-16..0..+16)
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FineType {
@@ -109,15 +110,12 @@ pub enum FineType {
 pub struct Amp {
     pub note_amp: i16, // note amplitude -16..0..+16
     // -16: %%%%, -12: %%%, -8: %%, -4: %, 0: --, +4: ^, +8: ^^, +12: ^^^, +16: ^^^^
-    pub phrase_amp: i16, // phrase amplitude -16..0..+16
-    // -16: pppp, -12: ppp, -8: pp, -4: p, 0: mp, +4: mf, +8: f, +12: ff, +16: fff
     pub auto_amp: i16, // auto amplitude -16..0..+16
 }
 impl Amp {
     pub fn default() -> Self {
         Self {
             note_amp: 0,
-            phrase_amp: 0,
             auto_amp: 0,
         }
     }
@@ -322,11 +320,13 @@ pub struct AnaExpEvt {
     pub tick: i16,
     pub dur: i16,  // duration
     pub note: i16, // note
-    pub cnt: i16,  // value
+    pub value: i16,
     pub atype: ExpType,
-    // NOPED: TYPE_BEAT の Note情報より先に置く
-    // PARA_ROOT: note に並行移動の基本rootの値を書く(0-11)
-    // ARTIC: cnt に Staccato/legato の長さを書く(1-200%)
+    // Noped: TYPE_BEAT の Note情報より先に置く
+    // ParaRoot: note に並行移動の基本rootの値を書く(0-11)
+    // Artic: value に Staccato/legato の長さを書く(1-200%)
+    // Amp: value に Auto Amp の値を書く(-16..0..+16)
+    // -16: pppp, -12: ppp, -8: pp, -4: p, 0: mp, +4: mf, +8: f, +12: ff, +16: fff
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AnaEvt {
@@ -347,8 +347,58 @@ impl AnaEvt {
         }
     }
 }
+pub fn get_noped(ana: &[AnaEvt]) -> bool {
+    ana.iter().any(|x| {
+        if let AnaEvt::Exp(e) = x {
+            e.atype == ExpType::Noped
+        } else {
+            false
+        }
+    })
+}
+pub fn get_para(ana: &[AnaEvt]) -> bool {
+    ana.iter().any(|x| {
+        if let AnaEvt::Exp(e) = x {
+            e.atype == ExpType::ParaRoot
+        } else {
+            false
+        }
+    })
+}
+pub fn get_para_root_base(ana: &[AnaEvt]) -> i16 {
+    let mut para_root_base = 0;
+    ana.iter().for_each(|x| match x {
+        AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => {
+            para_root_base = e.note;
+        }
+        _ => (),
+    });
+    para_root_base
+}
+pub fn get_staccato_rate(ana: &[AnaEvt], shorter: bool) -> i32 {
+    let mut staccato_rate = if shorter { 90 } else { 100 };
+    ana.iter().for_each(|x| match x {
+        AnaEvt::Exp(e) if e.atype == ExpType::Artic => {
+            staccato_rate = e.value as i32;
+        }
+        _ => (),
+    });
+    staccato_rate
+}
+pub fn get_amp(ana: &[AnaEvt]) -> i16 {
+    let mut phrase_amp = 0;
+    ana.iter().for_each(|x| match x {
+        AnaEvt::Exp(e) if e.atype == ExpType::Amp => {
+            phrase_amp = e.value;
+        }
+        _ => (),
+    });
+    phrase_amp
+}
+
 //-------------------------------------------------------------------
-// Phrase DATA
+//      Phrase DATA
+//-------------------------------------------------------------------
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum PhraseAs {
     #[default]

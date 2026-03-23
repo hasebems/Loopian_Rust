@@ -37,6 +37,7 @@ pub struct BrokenPattern {
     last_note: i16,
     para: bool,
     staccato_rate: i32,
+    phrase_amp: i16,
     flt: FloatingTick,
 
     // for super's member
@@ -56,24 +57,9 @@ impl BrokenPattern {
         ptn: BrkPatternEvt,
         ana: Vec<AnaEvt>,
     ) -> Rc<RefCell<Self>> {
-        // generate para_note_base
-        let mut para = false;
-        ana.iter().for_each(|x| {
-            if let AnaEvt::Exp(e) = x
-                && e.atype == ExpType::ParaRoot
-            {
-                para = true;
-            }
-        });
-        // generate staccato rate
-        let mut staccato_rate = 90;
-        ana.iter().for_each(|x| {
-            if let AnaEvt::Exp(e) = x
-                && e.atype == ExpType::ParaRoot
-            {
-                staccato_rate = e.cnt as i32;
-            }
-        });
+        let para = get_para(&ana);
+        let staccato_rate = get_staccato_rate(&ana, true);
+        let phrase_amp = get_amp(&ana);
         #[cfg(feature = "verbose")]
         println!("New BrkPtn: para:{para}");
 
@@ -99,6 +85,7 @@ impl BrokenPattern {
             last_note: NO_NOTE as i16,
             para,
             staccato_rate,
+            phrase_amp,
             flt: FloatingTick::new(false),
             // for super's member
             whole_tick: ptn.dur as i32,
@@ -266,6 +253,7 @@ impl BrokenPattern {
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
                 (self.keynote, evt_tick, self.part, false),
             ),
+            self.phrase_amp,
         );
         estk.add_elapse(Rc::clone(&nt));
     }

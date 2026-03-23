@@ -36,6 +36,7 @@ pub struct ClusterPattern {
     last_note: i16,
     para: bool,
     staccato_rate: i32,
+    phrase_amp: i16,
     flt: FloatingTick,    //   FloatingTick を保持する
     notational_msr: i32,  //   記譜上の小節番号
     notational_tick: i32, //   記譜上の Tick 数
@@ -60,18 +61,10 @@ impl ClusterPattern {
         ptn: ClsPatternEvt,
         ana: Vec<AnaEvt>,
     ) -> Rc<RefCell<Self>> {
-        // generate para_note_base
-        let mut para = false;
-        ana.iter().for_each(|x| match x {
-            AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => para = true,
-            _ => {}
-        });
-        // generate staccato rate
-        let mut staccato_rate = 90;
-        ana.iter().for_each(|x| match x {
-            AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => staccato_rate = e.cnt as i32,
-            _ => {}
-        });
+        let para = get_para(&ana);
+        let staccato_rate = get_staccato_rate(&ana, true);
+        let phrase_amp = get_amp(&ana);
+
         //   FloatingTick を生成する
         let floating = ptn.arpeggio > 0;
         let mut flt = FloatingTick::new(floating);
@@ -113,6 +106,7 @@ impl ClusterPattern {
             last_note: NO_NOTE as i16,
             para,
             staccato_rate,
+            phrase_amp,
             flt,
             notational_msr: mst.0,  //   記譜上の小節番号
             notational_tick: 0,     //   記譜上の Tick 数
@@ -275,6 +269,7 @@ impl ClusterPattern {
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
                 (self.keynote, evt_tick, self.part, false),
             ),
+            self.phrase_amp,
         );
         estk.add_elapse(Rc::clone(&nt));
     }

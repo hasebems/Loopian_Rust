@@ -572,7 +572,6 @@ pub fn recombine_to_internal_format(
     tick_for_onemsr: i32,
 ) -> (i32, bool, Vec<PhrEvt>) {
     let mut pr = PhraseRecombined::new(tick_for_onemsr, base_note);
-    let exp_amp = get_dyn_info(pc.music_exp.clone());
     let mut crnt_tick: i32 = 0;
     let mut mes_top: bool = false;
     let mut do_loop = true;
@@ -605,8 +604,7 @@ pub fn recombine_to_internal_format(
             pr.last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
         } else if txt2seq_dp::available_for_dp(&note_text) {
             // Dynamic Pattern
-            let ca_ev =
-                txt2seq_dp::treat_dp(&mut pr, note_text.clone(), base_note, crnt_tick, exp_amp);
+            let ca_ev = txt2seq_dp::treat_dyn_ptn(&mut pr, note_text.clone(), base_note, crnt_tick);
             if pr.is_less_than_whole_tick(crnt_tick) {
                 crnt_tick += ca_ev.dur() as i32;
                 pr.rcmb.push(ca_ev);
@@ -617,7 +615,6 @@ pub fn recombine_to_internal_format(
                 pr.break_up_nt_dur_vel(note_text, crnt_tick, imd);
             let amp = Amp {
                 note_amp: diff_amp,
-                phrase_amp: exp_amp,
                 ..Default::default()
             };
             if pr.is_less_than_whole_tick(crnt_tick) {
@@ -637,16 +634,6 @@ pub fn recombine_to_internal_format(
     }
 
     (pr.adjust_crnt_tick(crnt_tick), do_loop, pr.rcmb)
-}
-fn get_dyn_info(expvec: Vec<String>) -> i16 {
-    let mut amp = 0;
-    for txt in expvec.iter() {
-        if txt.len() >= 3 && &txt[0..3] == "dyn" {
-            let dyntxt = extract_texts_from_parentheses(txt);
-            amp = convert_expstr2amp(dyntxt);
-        }
-    }
-    amp
 }
 fn extract_trans_info(origin: String) -> (String, TrnsType) {
     if origin.len() > 2 && &origin[0..2] == ">>" {

@@ -231,6 +231,7 @@ impl Flow {
                 format!(" Pt:{} Flow:{}", &self.id.pid, &self.id.sid),
                 (self.keynote, evt_tick, self.id.pid, true),
             ),
+            0,
         );
         self.note_stock
             .push(NoteStock(Some(Rc::clone(&nt)), real_note, locate));

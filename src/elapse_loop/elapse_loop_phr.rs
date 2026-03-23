@@ -71,6 +71,7 @@ pub struct PhraseLoop {
     para_root_base: i16,
     same_time_stuck: Vec<(u8, String)>,
     staccato_rate: i32,
+    phrase_amp: i16,
     flt: FloatingTick, //  FloatingTick を保持する
 
     // for super's member
@@ -87,27 +88,11 @@ impl PhraseLoop {
     const EACH_DISPERSE: i32 = 60; // Tick の散らし幅の単位
 
     pub fn new(sid: u32, pid: u32, prm: PhraseLoopParam) -> Rc<RefCell<Self>> {
-        let noped = prm.ana.clone().iter().any(|x| {
-            if let AnaEvt::Exp(e) = x {
-                e.atype == ExpType::Noped
-            } else {
-                false
-            }
-        });
-        let mut para_root_base = 0;
-        prm.ana.iter().for_each(|x| match x {
-            AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => {
-                para_root_base = e.note;
-            }
-            _ => (),
-        });
-        let mut staccato_rate = 100;
-        prm.ana.iter().for_each(|x| match x {
-            AnaEvt::Exp(e) if e.atype == ExpType::Artic => {
-                staccato_rate = e.cnt as i32;
-            }
-            _ => (),
-        });
+        let noped = get_noped(&prm.ana);
+        let para_root_base = get_para_root_base(&prm.ana);
+        let staccato_rate = get_staccato_rate(&prm.ana, false);
+        let phrase_amp = get_amp(&prm.ana);
+
         Rc::new(RefCell::new(Self {
             id: ElapseId {
                 pid,
@@ -126,6 +111,7 @@ impl PhraseLoop {
             para_root_base,
             same_time_stuck: Vec::new(),
             staccato_rate,
+            phrase_amp,
             flt: FloatingTick::new(false),
             // for super's member
             whole_tick: prm.whole_tick,
@@ -299,6 +285,7 @@ impl PhraseLoop {
                 nep.deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
                 (self.keynote, evt_tick, self.id.pid, false),
             ),
+            self.phrase_amp,
         );
         estk.add_elapse(Rc::clone(&nt));
     }

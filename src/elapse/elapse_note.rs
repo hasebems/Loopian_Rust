@@ -90,11 +90,12 @@ impl Note {
         //msr: i32,
         //tick: i32,
         //part: u32,
+        phrase_amp: i16, // phrase amplitude -16..0..+16
     ) -> Rc<RefCell<Self>> {
         //  Amp から velocity を計算
         let amp = prm.ev.amp;
         let mut velocity =
-            EXP_TABLE[(amp.phrase_amp + CENTER_EXP_INDEX).min(MAX_EXP_INDEX as i16 - 1) as usize];
+            EXP_TABLE[(phrase_amp + CENTER_EXP_INDEX).min(MAX_EXP_INDEX as i16 - 1) as usize];
         velocity += if amp.note_amp > 0 {
             (amp.note_amp * 2) as i32
         } else {

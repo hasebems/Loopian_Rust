@@ -14,12 +14,11 @@ pub fn available_for_dp(text: &str) -> bool {
         && !text.contains("Arp("))
 }
 /// Note のときの fn break_up_nt_dur_vel() と同様の処理
-pub fn treat_dp(
+pub fn treat_dyn_ptn(
     pr: &mut PhraseRecombined,
     text: String,   // Dynamic Pattern のテキスト
     base_note: i32, // octave などのセッティング
     crnt_tick: i32, // 小節内の現在 tick
-    exp_amp: i16,   // dynなどを反映した amplitude
 ) -> PhrEvt {
     // Cluster or Arpeggio?
     let mut case_arp = true;
@@ -45,7 +44,6 @@ pub fn treat_dp(
         crnt_tick as i16,
         Amp {
             note_amp: diff_amp,
-            phrase_amp: exp_amp,
             ..Default::default()
         },
         duration as i16,
