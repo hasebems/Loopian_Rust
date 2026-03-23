@@ -58,16 +58,16 @@ pub fn cmd_error_to_text(error: &CmdError) -> String {
 //*******************************************************************
 /// 入力テキストの先頭文字によるコマンド種別分類
 pub enum CmdKind {
-    TogglePlay,                 // 単体の "."
-    Slash,                      // "/" で始まる
-    At,                         // "@" で始まる
-    Bracket,                    // "[" で始まる
-    Brace,                      // "{" で始まる
-    PartSelect,                 // part 名単体による current part 切替
-    PartWithPayload(Vec<usize>),// part 指定 + payload の形式
-    OneWord,                    // トークン数 1
-    MultiWord,                  // トークン数 2 以上
-    Unknown,                    // 不明な形式
+    TogglePlay,                  // 単体の "."
+    Slash,                       // "/" で始まる
+    At,                          // "@" で始まる
+    Bracket,                     // "[" で始まる
+    Brace,                       // "{" で始まる
+    PartSelect,                  // part 名単体による current part 切替
+    PartWithPayload(Vec<usize>), // part 指定 + payload の形式
+    OneWord,                     // トークン数 1
+    MultiWord,                   // トークン数 2 以上
+    Unknown,                     // 不明な形式
 }
 
 /// パート文字列を部番号に変換する純関数
@@ -528,10 +528,7 @@ impl LoopianCmd {
         }
         rtn
     }
-    fn flow_part_command(
-        &mut self,
-        msg_vec: Vec<String>,
-    ) -> String {
+    fn flow_part_command(&mut self, msg_vec: Vec<String>) -> String {
         if &msg_vec[0][0..1] == "{" {
             self.apply_composition_to_part(FLOW_PART, msg_vec[1..].to_vec())
                 .unwrap_or_else(|error| cmd_error_to_text(&error))

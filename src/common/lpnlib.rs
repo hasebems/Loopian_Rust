@@ -155,6 +155,7 @@ impl NoteEvt {
         }
     }
 }
+//-------------------------------------------------------------------
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct BrkPatternEvt {
     pub tick: i16,      // tick
@@ -177,6 +178,7 @@ pub struct ClsPatternEvt {
     pub each_dur: i16,  // each note's duration
     pub artic: i16,     // 0..100..200[%] staccato/legato
 }
+//-------------------------------------------------------------------
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct InfoEvt {
     pub tick: i16, // tick
@@ -192,6 +194,7 @@ impl InfoEvt {
         }
     }
 }
+//-------------------------------------------------------------------
 #[derive(Default, Clone, Debug, PartialEq, Eq, Copy)]
 pub enum PedalPos {
     #[default]
@@ -214,6 +217,10 @@ pub struct PedalEvt {
     pub front: bool,        // true: front of beat, false: back of beat
     pub position: PedalPos, // pedal position
 }
+
+//-------------------------------------------------------------------
+//      Phrase Event
+//-------------------------------------------------------------------
 #[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PhrEvt {
@@ -296,8 +303,10 @@ impl PhrEvt {
         }
     }
 }
+
 //-------------------------------------------------------------------
-// MSG_ANA
+//      MSG_ANA
+//-------------------------------------------------------------------
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct AnaBeatEvt {
     pub tick: i16,
@@ -369,7 +378,8 @@ impl PhrData {
     }
 }
 //-------------------------------------------------------------------
-// MSG_CHORD
+//      MSG_CHORD
+//-------------------------------------------------------------------
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ChordEvt {
     pub tick: i16,
@@ -423,8 +433,8 @@ impl CmpData {
 //*******************************************************************
 //          Elapse Message Definition
 //*******************************************************************
-//  ElpsMsg <- Phr <- PhrData <- PhrEvt <- NoteEvt / PedalEvt / ...
-//          <- Cmp <- CmpData <- CmpEvt <- Chord / Vari / Control
+//  ElpsMsg <- Phr *- PhrData *- PhrEvt <- NoteEvt / PedalEvt / ...
+//          <- Cmp *- CmpData *- CmpEvt <- Chord / Vari / Control
 #[derive(Clone, Debug)]
 pub enum ElpsMsg {
     Ctrl(i16),
