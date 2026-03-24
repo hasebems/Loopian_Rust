@@ -36,7 +36,7 @@ pub struct BrokenPattern {
     play_counter: usize,
     last_note: i16,
     para: bool,
-    staccato_rate: i32,
+    artic_rate: i32,
     phrase_amp: i16,
     flt: FloatingTick,
 
@@ -54,12 +54,15 @@ impl BrokenPattern {
         part: u32, // loop pid
         keynote: u8,
         msr: i32, // crnt_msr
-        ptn: BrkPatternEvt,
-        ana: Vec<AnaEvt>,
+        (ptn, ana, artic_rate, phrase_amp): (BrkPatternEvt, Vec<AnaEvt>, i32, i16),
+        //        ptn: BrkPatternEvt,
+        //        ana: Vec<AnaEvt>,
+        //        artic_rate: i32,
+        //        phrase_amp: i16,
     ) -> Rc<RefCell<Self>> {
         let para = get_para(&ana);
-        let staccato_rate = get_staccato_rate(&ana, true);
-        let phrase_amp = get_amp(&ana);
+        //let artic_rate = get_artic_rate(&ana, true);
+        //let phrase_amp = get_amp(&ana);
         #[cfg(feature = "verbose")]
         println!("New BrkPtn: para:{para}");
 
@@ -84,7 +87,7 @@ impl BrokenPattern {
             play_counter: 0,
             last_note: NO_NOTE as i16,
             para,
-            staccato_rate,
+            artic_rate,
             phrase_amp,
             flt: FloatingTick::new(false),
             // for super's member
@@ -233,9 +236,9 @@ impl BrokenPattern {
         };
 
         //  Generate Note Struct
-        if self.staccato_rate != 100 {
+        if self.artic_rate != 100 {
             let old = crnt_ev.dur as i32;
-            crnt_ev.dur = ((old * self.staccato_rate) / 100) as i16;
+            crnt_ev.dur = ((old * self.artic_rate) / 100) as i16;
         }
 
         let mut evt_tick = CrntMsrTick {

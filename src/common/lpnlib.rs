@@ -375,15 +375,15 @@ pub fn get_para_root_base(ana: &[AnaEvt]) -> i16 {
     });
     para_root_base
 }
-pub fn get_staccato_rate(ana: &[AnaEvt], shorter: bool) -> i32 {
-    let mut staccato_rate = if shorter { 90 } else { 100 };
+pub fn get_artic_rate(ana: &[AnaEvt], shorter: bool) -> i32 {
+    let mut artic_rate = if shorter { 90 } else { 100 };
     ana.iter().for_each(|x| match x {
         AnaEvt::Exp(e) if e.atype == ExpType::Artic => {
-            staccato_rate = e.value as i32;
+            artic_rate = e.value as i32;
         }
         _ => (),
     });
-    staccato_rate
+    artic_rate
 }
 pub fn get_amp(ana: &[AnaEvt]) -> i16 {
     let mut phrase_amp = 0;
@@ -428,7 +428,7 @@ impl PhrData {
     }
 }
 //-------------------------------------------------------------------
-//      MSG_CHORD
+//      Composition DATA
 //-------------------------------------------------------------------
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ChordEvt {

@@ -70,7 +70,7 @@ pub struct PhraseLoop {
     turnnote: i16,
     para_root_base: i16,
     same_time_stuck: Vec<(u8, String)>,
-    staccato_rate: i32,
+    artic_rate: i32,
     phrase_amp: i16,
     flt: FloatingTick, //  FloatingTick を保持する
 
@@ -90,7 +90,7 @@ impl PhraseLoop {
     pub fn new(sid: u32, pid: u32, prm: PhraseLoopParam) -> Rc<RefCell<Self>> {
         let noped = get_noped(&prm.ana);
         let para_root_base = get_para_root_base(&prm.ana);
-        let staccato_rate = get_staccato_rate(&prm.ana, false);
+        let artic_rate = get_artic_rate(&prm.ana, false);
         let phrase_amp = get_amp(&prm.ana);
 
         Rc::new(RefCell::new(Self {
@@ -110,7 +110,7 @@ impl PhraseLoop {
             turnnote: prm.turnnote,
             para_root_base,
             same_time_stuck: Vec::new(),
-            staccato_rate,
+            artic_rate,
             phrase_amp,
             flt: FloatingTick::new(false),
             // for super's member
@@ -127,6 +127,18 @@ impl PhraseLoop {
     pub fn set_keynote(&mut self, knt: u8) {
         // Phrase Loop の keynote を変更する
         self.keynote = knt;
+    }
+    pub fn set_artic_rate(&mut self, rate: i32) {
+        self.artic_rate = rate;
+    }
+    pub fn set_phrase_amp(&mut self, amp: i16) {
+        self.phrase_amp = amp;
+    }
+    pub fn artic_rate(&self) -> i32 {
+        self.artic_rate
+    }
+    pub fn phrase_amp(&self) -> i16 {
+        self.phrase_amp
     }
     fn generate_event(
         &mut self,
@@ -167,6 +179,8 @@ impl PhraseLoop {
                     }
                     PhrEvt::ClsPtn(ev) => {
                         self.set_cluster(crnt_, ev, estk);
+                        self.set_artic_rate(self.artic_rate);
+                        self.set_phrase_amp(self.phrase_amp);
                     }
                     _ => (),
                 }
@@ -271,8 +285,8 @@ impl PhraseLoop {
         if crnt_ev.artic != DEFAULT_ARTIC {
             let calc = (crnt_ev.dur as i32) * (crnt_ev.artic as i32);
             crnt_ev.dur = (calc / DEFAULT_ARTIC as i32) as i16;
-        } else if (self.staccato_rate as i16) != DEFAULT_ARTIC {
-            let calc = (crnt_ev.dur as i32) * self.staccato_rate;
+        } else if (self.artic_rate as i16) != DEFAULT_ARTIC {
+            let calc = (crnt_ev.dur as i32) * self.artic_rate;
             crnt_ev.dur = (calc / DEFAULT_ARTIC as i32) as i16;
         }
 
@@ -360,8 +374,7 @@ impl PhraseLoop {
             self.id.pid,      //  part
             self.keynote,
             tk.0,
-            ev,
-            self.analys.to_vec(),
+            (ev, self.analys.to_vec(), self.artic_rate, self.phrase_amp),
         );
         estk.add_elapse(Rc::clone(&ptn));
     }
@@ -382,8 +395,7 @@ impl PhraseLoop {
                 self.flt.just_crnt().tick,
                 self.flt.just_crnt().tick_for_onemsr,
             ),
-            ev,
-            self.analys.to_vec(),
+            (ev, self.analys.to_vec(), self.artic_rate, self.phrase_amp),
         );
         estk.add_elapse(Rc::clone(&ptn));
     }

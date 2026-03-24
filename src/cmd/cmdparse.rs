@@ -8,6 +8,7 @@ use std::sync::mpsc;
 use super::input_txt::CmndRtn;
 use super::send_msg::*;
 use super::seq_stock::*;
+use super::txt2seq_ana::*;
 use super::txt2seq_cmps::*;
 use crate::common::lpnlib::*;
 use crate::common::txt_common::*;
@@ -524,7 +525,27 @@ impl LoopianCmd {
                     rtn = self.apply_composition_to_part(pnum, rest_vec.clone());
                 }
             }
-            _ => rtn = Err(CmdError::UnknownCommand),
+            _ => {
+                if rest_vec[0].contains("dyn") {
+                    for &pnum in &part_num {
+                        let mut dt = PhrData::empty();
+                        dt.ana = put_amp_data(&rest_vec);
+                        let msg = ElpsMsg::Phr(pnum as i16, dt);
+                        self.sndr.send_msg_to_elapse(msg);
+                    }
+                    return Ok("Set Amp Analysis!".to_string());
+                } else if rest_vec[0].contains("stacc") || rest_vec[0].contains("legato") {
+                    for &pnum in &part_num {
+                        let mut dt = PhrData::empty();
+                        dt.ana = crispy_tick(&rest_vec);
+                        let msg = ElpsMsg::Phr(pnum as i16, dt);
+                        self.sndr.send_msg_to_elapse(msg);
+                    }
+                    return Ok("Set Articulation Analysis!".to_string());
+                } else {
+                    return Err(CmdError::UnknownCommand);
+                }
+            }
         }
         rtn
     }

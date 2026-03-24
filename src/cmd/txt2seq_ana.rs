@@ -10,7 +10,9 @@ use crate::common::txt_common::*;
 //          analyse_data
 //*******************************************************************
 pub fn analyse_data(generated: &[PhrEvt], exps: &[String]) -> Vec<AnaEvt> {
-    let mut exp_analysis = put_exp_data(exps);
+    let mut exp_analysis = put_dmp_data(exps);
+    let amp_analysis = put_amp_data(exps);
+    exp_analysis.append(&mut amp_analysis.clone());
     let mut beat_analysis = analyse_beat(generated);
     exp_analysis.append(&mut beat_analysis);
     let mut crispy_analysis = crispy_tick(exps);
@@ -23,7 +25,7 @@ pub fn analyse_data(generated: &[PhrEvt], exps: &[String]) -> Vec<AnaEvt> {
 //      2nd     EXP:        NOPED
 //                          PARA_ROOT(noteに値を入れる)
 //*******************************************************************
-fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
+fn put_dmp_data(exps: &[String]) -> Vec<AnaEvt> {
     let mut exp = Vec::new();
 
     let noped = exps.iter().any(|exp| exp == "dmp(off)");
@@ -34,6 +36,10 @@ fn put_exp_data(exps: &[String]) -> Vec<AnaEvt> {
         });
         exp.push(anev);
     }
+    exp
+}
+pub fn put_amp_data(exps: &[String]) -> Vec<AnaEvt> {
+    let mut exp = Vec::new();
 
     let ampevt = exps.iter().find(|exp| exp.contains("dyn"));
     if let Some(txt) = ampevt {

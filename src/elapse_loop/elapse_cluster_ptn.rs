@@ -35,7 +35,7 @@ pub struct ClusterPattern {
     play_counter: usize,
     last_note: i16,
     para: bool,
-    staccato_rate: i32,
+    artic_rate: i32,
     phrase_amp: i16,
     flt: FloatingTick,    //   FloatingTick を保持する
     notational_msr: i32,  //   記譜上の小節番号
@@ -58,12 +58,15 @@ impl ClusterPattern {
         part: u32, // loop pid
         keynote: u8,
         mst: (i32, i32, i32, i32), // (notational_msr, real_msr, real_tick, tick_for_onemsr)
-        ptn: ClsPatternEvt,
-        ana: Vec<AnaEvt>,
+        (ptn, ana, artic_rate, phrase_amp): (ClsPatternEvt, Vec<AnaEvt>, i32, i16),
+        //        ptn: ClsPatternEvt,
+        //        ana: Vec<AnaEvt>,
+        //        artic_rate: i32,
+        //        phrase_amp: i16,
     ) -> Rc<RefCell<Self>> {
         let para = get_para(&ana);
-        let staccato_rate = get_staccato_rate(&ana, true);
-        let phrase_amp = get_amp(&ana);
+        //let artic_rate = get_artic_rate(&ana, true);
+        //let phrase_amp = get_amp(&ana);
 
         //   FloatingTick を生成する
         let floating = ptn.arpeggio > 0;
@@ -105,7 +108,7 @@ impl ClusterPattern {
             play_counter: 0,
             last_note: NO_NOTE as i16,
             para,
-            staccato_rate,
+            artic_rate,
             phrase_amp,
             flt,
             notational_msr: mst.0,  //   記譜上の小節番号
@@ -248,9 +251,9 @@ impl ClusterPattern {
         };
 
         //  Generate Note Struct
-        if self.staccato_rate != 100 {
+        if self.artic_rate != 100 {
             let old = crnt_ev.dur as i32;
-            crnt_ev.dur = ((old * self.staccato_rate) / 100) as i16;
+            crnt_ev.dur = ((old * self.artic_rate) / 100) as i16;
         }
 
         //println!("  >>> NoteOn: {}, vel: {}, dur: {}", crnt_ev.note, crnt_ev.vel, crnt_ev.dur);
