@@ -134,12 +134,6 @@ impl PhraseLoop {
     pub fn set_phrase_amp(&mut self, amp: i16) {
         self.phrase_amp = amp;
     }
-    pub fn artic_rate(&self) -> i32 {
-        self.artic_rate
-    }
-    pub fn phrase_amp(&self) -> i16 {
-        self.phrase_amp
-    }
     fn generate_event(
         &mut self,
         crnt_: &CrntMsrTick,

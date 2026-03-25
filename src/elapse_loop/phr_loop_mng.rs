@@ -155,12 +155,12 @@ impl PhrLoopManager {
     pub fn msrtop(&mut self, crnt_: &CrntMsrTick, estk: &mut ElapseStack, pbp: PartBasicPrm) {
         self.delete_by_del_ev();
         // Phrase Loop の状態を確認し、新 Phrase の再生開始処理などを行う
-        if let Some(idx) = self.exist_msr_phr(crnt_) {
+        if let Some(idx) = self.exists_msr_phr(crnt_) {
             // Measure 指定がある場合
             self.phr_idx = idx;
             self.gen_phr_alternately(crnt_, estk, pbp, None);
         } else if let Some(vr) = self.vari_reserve
-            && let Some(idx) = self.exist_vari_phr(vr)
+            && let Some(idx) = self.exists_vari_phr(vr)
         {
             // Variation 指定がある場合
             self.phr_idx = idx;
@@ -234,8 +234,12 @@ impl PhrLoopManager {
         during_play: bool,
     ) {
         if msg.evts.is_empty() && msg.whole_tick == 0 {
-            // phrase = [] の時の処理
-            self.empty_phrase(msg);
+            if msg.ana.is_empty() {
+                // phrase = [] かつ ana = [] のときは、Phrase Loop を削除する
+                self.empty_phrase(msg);
+            } else {
+                self.rcv_ana(msg.ana);
+            }
         } else {
             // Phrase 入力イベントがあった場合
             self.append_phrase(msg, crnt_, estk_, pbp, during_play);
@@ -365,6 +369,74 @@ impl PhrLoopManager {
         }
         None
     }
+    /// ana のみのイベントを受信した場合の処理
+    fn rcv_ana(&mut self, ana: Vec<AnaEvt>) {
+        for evt in ana {
+            if let AnaEvt::Exp(ae) = evt {
+                match ae.atype {
+                    ExpType::Amp => {
+                        // 二つの Phrase Loop インスタンスの両方に amp をセット
+                        if let Some(inst_a) = &self.phr_instance_a {
+                            inst_a.phrase.borrow_mut().set_phrase_amp(ae.value);
+                        }
+                        if let Some(inst_b) = &self.phr_instance_b {
+                            inst_b.phrase.borrow_mut().set_phrase_amp(ae.value);
+                        }
+                        self.replace_amp(ae.value);
+                    }
+                    ExpType::Artic => {
+                        // 二つの Phrase Loop インスタンスの両方に artic をセット
+                        if let Some(inst_a) = &self.phr_instance_a {
+                            inst_a.phrase.borrow_mut().set_artic_rate(ae.value as i32);
+                        }
+                        if let Some(inst_b) = &self.phr_instance_b {
+                            inst_b.phrase.borrow_mut().set_artic_rate(ae.value as i32);
+                        }
+                        self.replace_artic(ae.value);
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    fn replace_amp(&mut self, amp: i16) {
+        self.phr_stock.iter_mut().for_each(|phr| {
+            if let Some(AnaEvt::Exp(ae)) = phr
+                .ana
+                .iter_mut()
+                .find(|ana| matches!(ana, AnaEvt::Exp(ae) if ae.atype == ExpType::Amp))
+            {
+                // 既に Amp の Exp イベントがある場合は、値を更新
+                ae.value = amp;
+            } else {
+                // Amp の Exp イベントがない場合は、新たに追加
+                phr.ana.push(AnaEvt::Exp(AnaExpEvt {
+                    atype: ExpType::Amp,
+                    value: amp,
+                    ..Default::default()
+                }));
+            }
+        });
+    }
+    fn replace_artic(&mut self, artic: i16) {
+        self.phr_stock.iter_mut().for_each(|phr| {
+            if let Some(AnaEvt::Exp(ae)) = phr
+                .ana
+                .iter_mut()
+                .find(|ana| matches!(ana, AnaEvt::Exp(ae) if ae.atype == ExpType::Artic))
+            {
+                // 既に Artic の Exp イベントがある場合は、値を更新
+                ae.value = artic;
+            } else {
+                // Artic の Exp イベントがない場合は、新たに追加
+                phr.ana.push(AnaEvt::Exp(AnaExpEvt {
+                    atype: ExpType::Artic,
+                    value: artic,
+                    ..Default::default()
+                }));
+            }
+        });
+    }
     /// Phrase Loop 追加メッセージ受信時、現在の状況に応じて、Phrase を生成する
     fn append_phrase(
         &mut self,
@@ -462,7 +534,7 @@ impl PhrLoopManager {
             },
         )
     }
-    fn exist_msr_phr(&self, crnt_: &CrntMsrTick) -> Option<usize> {
+    fn exists_msr_phr(&self, crnt_: &CrntMsrTick) -> Option<usize> {
         for (i, phr) in self.phr_stock.iter().enumerate() {
             if phr.vari == PhraseAs::Measure((crnt_.msr as usize) + 1) {
                 return Some(i);
@@ -470,7 +542,7 @@ impl PhrLoopManager {
         }
         None
     }
-    fn exist_vari_phr(&self, vari_num: usize) -> Option<usize> {
+    fn exists_vari_phr(&self, vari_num: usize) -> Option<usize> {
         for (i, phr) in self.phr_stock.iter().enumerate() {
             if phr.vari == PhraseAs::Variation(vari_num) {
                 return Some(i);
