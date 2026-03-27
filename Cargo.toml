@@ -20,3 +20,6 @@ serde = { version = "1.0.228", features = ["derive"] }
 [features]
 raspi = ["dep:rppal"]
 verbose = []
+
+[patch.crates-io]
+noise = { path = "vendor/noise-0.7.0" }
