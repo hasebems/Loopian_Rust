@@ -227,6 +227,7 @@ impl LoopianCmd {
                     })
                 }
                 "effect" => Ok(CmdReply::text(self.cmd_effect(&tokens[1]))),
+                "rit" => Ok(CmdReply::text(self.cmd_rit(tokens[1..].to_vec()))),
                 _ => Err(CmdError::UnknownCommand),
             },
             CmdKind::Unknown => Err(CmdError::UnknownCommand),
@@ -261,7 +262,7 @@ impl LoopianCmd {
                 self.input_part = LEFT2;
                 "Changed current part to left2.".to_string()
             }
-            "rit" => self.cmd_rit(""),
+            "rit" | "rit." => self.cmd_rit(vec![]),
             _ => "what?".to_string(),
         }
     }
@@ -367,9 +368,6 @@ impl LoopianCmd {
         } else {
             "Playing now!".to_string()
         }
-    }
-    fn cmd_rit(&mut self, input_text: &str) -> String {
-        self.apply_rit(input_text)
     }
     fn cmd_reconnect(&mut self) -> String {
         self.sndr
@@ -634,15 +632,14 @@ impl LoopianCmd {
         }
         self.dtstk.change_oct(0, true, part_num);
     }
-    fn apply_rit(&self, input_text: &str) -> String {
+    fn cmd_rit(&self, mut input_text: Vec<String>) -> String {
         let mut aft_rit: i16 = MSG2_RIT_ATMP;
         let mut strength_value: i16 = MSG_RIT_NRM;
         let mut bar_num: i16 = 0;
-        let mut rit_txt = split_by('.', input_text[4..].to_string());
 
-        while !rit_txt.is_empty() {
-            if rit_txt[0].chars().any(|x| x == '(') {
-                if let Some((cmd, prm)) = separate_cmnd_and_str(&rit_txt[0]) {
+        while !input_text.is_empty() {
+            if input_text[0].chars().any(|x| x == '(') {
+                if let Some((cmd, prm)) = separate_cmnd_and_str(&input_text[0]) {
                     if cmd == "bar" {
                         bar_num = prm.parse::<i16>().unwrap_or(0);
                         if bar_num >= 1 {
@@ -657,14 +654,14 @@ impl LoopianCmd {
                         }
                     }
                 }
-            } else if rit_txt[0] == "molto" {
+            } else if input_text[0] == "molto" {
                 strength_value = MSG_RIT_MLT;
-            } else if rit_txt[0] == "poco" {
+            } else if input_text[0] == "poco" {
                 strength_value = MSG_RIT_POCO;
-            } else if rit_txt[0] == "fermata" {
+            } else if input_text[0] == "fermata" {
                 aft_rit = MSG2_RIT_FERMATA;
             }
-            rit_txt.remove(0);
+            input_text.remove(0);
         }
 
         println!("Rit,strength:{strength_value}, bar:{bar_num}, after:{aft_rit}",);
