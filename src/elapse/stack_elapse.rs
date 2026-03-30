@@ -373,6 +373,7 @@ impl ElapseStack {
             Set(m) => self.setting_cmnd(m),
             Efct(m) => self.efct(m),
             SetMeter(m) => self.set_meter(m),
+            SetElasticity(m) => self.set_elasticity(m),
             Phr(m0, mv) => self.phrase(m0, mv),
             Cmp(m0, mv) => self.composition(m0, mv),
             PhrX(m) => self.del_phrase(m),
@@ -648,6 +649,9 @@ impl ElapseStack {
             self.last_msr_tick.tick_for_onemsr = tick_for_onemsr;
             self.tg.change_beat_event(tick_for_onemsr, self.beat_stock);
         }
+    }
+    fn set_elasticity(&mut self, prm: [f64; 3]) {
+        self.tg.change_elastic_param(prm[0], prm[1], prm[2] as i32);
     }
     fn phrase(&mut self, part_num: i16, evts: PhrData) {
         println!("Received Phrase Message! Part: {}", part_num);

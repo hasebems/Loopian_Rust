@@ -65,6 +65,13 @@ impl CrntMsrTick {
 //*******************************************************************
 //          Tick Generator Struct
 //*******************************************************************
+struct ElasticParameter {
+    available: bool,  // Elastic Effect を有効にするかどうか
+    middle_rate: f64, // ..0.0.. 0: no elastic effect
+    last_rate: f64,   // ..0.0.. 0: no elastic effect
+    middle_tick: i32, // tick_for_onemsr 以内の中間地点
+}
+
 #[allow(dead_code)]
 pub enum RitType {
     Linear,
@@ -88,8 +95,9 @@ pub struct TickGen {
     crnt_time: Instant,          // 現在の時刻
     tick_from_meter_starts: f64, // meter_start_msr からの経過 tick 数
     bpm_rate: f64,               // bpm 変化率[%] (100=変化なし、50=1/2、200=2倍)
+    elastic_param: ElasticParameter,
 
-    rit_pending: bool,  // rit. 開始準備中
+    rit_pending: bool, // rit. 開始準備中
     during_rit: bool,
     prm: RitPrm,
     start_mt: CrntMsrTick,
@@ -119,6 +127,12 @@ impl TickGen {
             bpm_start_tick: 0,
             meter_start_msr: 0,
             bpm_rate: 100.0,
+            elastic_param: ElasticParameter {
+                available: false,
+                middle_rate: 0.0,
+                last_rate: 0.0,
+                middle_tick: 0,
+            },
             crnt_msr: -1,
             crnt_tick_inmsr: 0,
             last_time: Instant::now(),
@@ -163,6 +177,18 @@ impl TickGen {
         self.bpm_start_time = self.crnt_time; // Get current time
         self.during_fermata = true; // 次回の gen_tick で反映
     }
+    pub fn change_elastic_param(&mut self, middle_rate: f64, last_rate: f64, middle_tick: i32) {
+        self.elastic_param.middle_rate = middle_rate;
+        self.elastic_param.last_rate = last_rate;
+        self.elastic_param.middle_tick = if middle_tick < 0 {
+            0
+        } else if middle_tick > self.tick_for_onemsr {
+            self.tick_for_onemsr
+        } else {
+            middle_tick
+        };
+        self.elastic_param.available = !(middle_rate == 0.0 && last_rate == 0.0);
+    }
     //pub fn calc_tick(&mut self)
     pub fn start(&mut self, time: Instant, bpm: i16, resume: bool) {
         self.during_rit = false;
@@ -197,7 +223,11 @@ impl TickGen {
             // tick_for_beat * self.bpm as f32 * diff.as_secs_f32() / 60.0;
         } else {
             // same bpm
-            self.tick_from_meter_starts += self.calc_diff_tick();
+            self.tick_from_meter_starts += if self.elastic_param.available {
+                self.calc_elastic_diff_tick(former_tick)
+            } else {
+                self.calc_diff_tick()
+            };
             self.crnt_msr =
                 (self.tick_from_meter_starts as i32) / self.tick_for_onemsr + self.meter_start_msr;
             self.crnt_tick_inmsr = (self.tick_from_meter_starts as i32) % self.tick_for_onemsr;
@@ -299,6 +329,22 @@ impl TickGen {
     // 直前の gen_tick 呼び出しからの経過 tick 数(float)を計算する
     fn calc_diff_tick(&self) -> f64 {
         let crnt_bpm = ((self.bpm as f64) * self.bpm_rate) / 100.0;
+        let diff = (self.crnt_time - self.last_time).as_secs_f64();
+        ((self.tick_for_beat as f64) * crnt_bpm * diff) / 60.0
+    }
+    // 直前の gen_tick 呼び出しからの経過 tick 数(float)を計算する
+    fn calc_elastic_diff_tick(&self, former_tick: i32) -> f64 {
+        let elastic_rate = if former_tick < self.elastic_param.middle_tick {
+            // 前回の tick が中間地点より前
+            let crnt_position = former_tick as f64 / self.elastic_param.middle_tick as f64;
+            self.elastic_param.middle_rate * crnt_position
+        } else {
+            // 前回の tick が中間地点以降
+            let crnt_position = (former_tick - self.elastic_param.middle_tick) as f64
+                / (self.tick_for_onemsr - self.elastic_param.middle_tick) as f64;
+            (self.elastic_param.last_rate - self.elastic_param.middle_rate) * crnt_position
+        } + 1.0;
+        let crnt_bpm = ((self.bpm as f64) * self.bpm_rate * elastic_rate) / 100.0;
         let diff = (self.crnt_time - self.last_time).as_secs_f64();
         ((self.tick_for_beat as f64) * crnt_bpm * diff) / 60.0
     }
@@ -607,13 +653,7 @@ impl Rit for RitLinearPrecise {
     // ratio  0:   tempo 停止
     //        50:  最終到達点でテンポが 50%(1/2)
     //        100: 何もしない
-    fn set_rit(
-        &mut self,
-        bpm: f32,
-        start_time: Instant,
-        start_tick: i32,
-        prm: RitPrm,
-    ) {
+    fn set_rit(&mut self, bpm: f32, start_time: Instant, start_tick: i32, prm: RitPrm) {
         self.base.init(bpm, start_time, start_tick, prm);
     }
     fn calc_tick_rit(&mut self, crnt_time: Instant) -> (i32, bool, bool) {
@@ -635,7 +675,9 @@ impl Rit for RitLinearPrecise {
 }
 impl RitLinearPrecise {
     pub fn new() -> Self {
-        Self { base: RitBase::new() }
+        Self {
+            base: RitBase::new(),
+        }
     }
 }
 
@@ -708,13 +750,7 @@ impl Rit for RitSigmoid {
     // ratio  0:   tempo 停止
     //        50:  最終到達点でテンポが 50%(1/2)
     //        100: 何もしない
-    fn set_rit(
-        &mut self,
-        bpm: f32,
-        start_time: Instant,
-        start_tick: i32,
-        prm: RitPrm,
-    ) {
+    fn set_rit(&mut self, bpm: f32, start_time: Instant, start_tick: i32, prm: RitPrm) {
         self.base.init(bpm, start_time, start_tick, prm);
         self.tps_ratio = self.base.original_tps as f32 / self.base.target_tps as f32;
     }

@@ -492,9 +492,8 @@ pub enum ElpsMsg {
     Rit([i16; 2]),
     Set([i16; 2]),
     Efct([i16; 2]),
-    //    SetBpm([i16; 3]),
     SetMeter([i16; 2]),
-    //    SetKey([i16; 3]),
+    SetElasticity([f64; 3]),
     Phr(i16, PhrData),      //  Phr : part, (whole_tick,evts)
     PhrX(i16),              //  PhrX : part
     Cmp(i16, CmpData),      //  Cmp : part, (whole_tick,evts)
@@ -537,7 +536,8 @@ pub const MSG_SET_FLOW_TICK_RESOLUTION: i16 = 5; // Flow の Tick 解像度を�
 pub const MSG_SET_FLOW_VELOCITY: i16 = 6; // Flow の Velocity を設定
 pub const MSG_SET_FLOW_STATIC_SCALE: i16 = 7; // Flow の Static Scale を設定
 pub const MSG_SET_MIDI_INPUT_CH: i16 = 8; // Flow の MIDI Input Ch を設定
-//  Set BEAT  : numerator, denomirator
+//  Set Meter  : numerator, denomirator
+//  Set Elasticity : middle_rate, last_rate, middle_tick
 //  Effect
 pub const MSG_EFCT_DMP: i16 = 1;
 pub const MSG_EFCT_CC70: i16 = 2;
