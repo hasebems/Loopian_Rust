@@ -94,7 +94,7 @@ pub struct TickGen {
     last_time: Instant,          // 1つ前に gen_tick を呼んだ時の時刻
     crnt_time: Instant,          // 現在の時刻
     tick_from_meter_starts: f64, // meter_start_msr からの経過 tick 数
-    bpm_rate: f64,               // bpm 変化率[%] (100=変化なし、50=1/2、200=2倍)
+    bpm_rate: f64,               // bpm 変化率 (1.0=変化なし、0.5=1/2、2.0=2倍)
     elastic_param: ElasticParameter,
 
     rit_pending: bool, // rit. 開始準備中
@@ -126,7 +126,7 @@ impl TickGen {
             bpm_start_time: Instant::now(),
             bpm_start_tick: 0,
             meter_start_msr: 0,
-            bpm_rate: 100.0,
+            bpm_rate: 1.0,
             elastic_param: ElasticParameter {
                 available: false,
                 middle_rate: 0.0,
@@ -296,7 +296,7 @@ impl TickGen {
         self.bpm
     }
     pub fn get_bpm_rate(&self) -> i16 {
-        self.bpm_rate.round() as i16
+        (self.bpm_rate * 100.0).round() as i16
     }
     pub fn get_real_bpm(&self) -> i16 {
         if self.during_rit {
@@ -312,10 +312,10 @@ impl TickGen {
         self.origin_time
     }
     pub fn set_relative_tempo(&mut self, ratio: i16) {
-        // -90 to +90[%]
-        let br = (100 + ratio) as f64;
+        // ratio: -90 to +90[%]
+        let br = 1.0 + (ratio as f64) / 100.0;
         if br != self.bpm_rate {
-            println!(">>> Set Relative Tempo: {}%", br);
+            println!(">>> Set Relative Tempo: {}%", br * 100.0);
             self.bpm_rate = br;
         }
     }
@@ -328,7 +328,7 @@ impl TickGen {
     }
     // 直前の gen_tick 呼び出しからの経過 tick 数(float)を計算する
     fn calc_diff_tick(&self) -> f64 {
-        let crnt_bpm = ((self.bpm as f64) * self.bpm_rate) / 100.0;
+        let crnt_bpm = (self.bpm as f64) * self.bpm_rate;
         let diff = (self.crnt_time - self.last_time).as_secs_f64();
         ((self.tick_for_beat as f64) * crnt_bpm * diff) / 60.0
     }
@@ -344,7 +344,7 @@ impl TickGen {
                 / (self.tick_for_onemsr - self.elastic_param.middle_tick) as f64;
             (self.elastic_param.last_rate - self.elastic_param.middle_rate) * crnt_position
         } + 1.0;
-        let crnt_bpm = ((self.bpm as f64) * self.bpm_rate * elastic_rate) / 100.0;
+        let crnt_bpm = (self.bpm as f64) * self.bpm_rate * elastic_rate;
         let diff = (self.crnt_time - self.last_time).as_secs_f64();
         ((self.tick_for_beat as f64) * crnt_bpm * diff) / 60.0
     }
