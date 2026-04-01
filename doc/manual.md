@@ -575,6 +575,9 @@ cd /path/to/loopian
 - `set.flowreso(reso)` : FLOWパートの tick の分解能を音価で表現
 - `set.flowvel(vel)` : FLOW.dyn(xx) と機能は同じだが、こちらは velocity 値を直接指定する
 - `set.midi_input_ch(ch)` : FLOW の MIDI Input Ch を 12/13ch 以外の ch でも使えるようにする 
+- `set.elasticity(type, depth)` : 1小節内のテンポの揺れを設定する
+    - type: テンポの揺れのタイプを選択(0:無し、1:Ballad, 2:Upbeat)
+    - depth: 上記のタイプの強さを 0..10 で設定できる
 
 ### Damper Pedal のより細かな制御
 

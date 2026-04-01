@@ -493,7 +493,7 @@ pub enum ElpsMsg {
     Set([i16; 2]),
     Efct([i16; 2]),
     SetMeter([i16; 2]),
-    SetElasticity([f64; 3]),
+    SetElasticity([i16; 2]),
     Phr(i16, PhrData),      //  Phr : part, (whole_tick,evts)
     PhrX(i16),              //  PhrX : part
     Cmp(i16, CmpData),      //  Cmp : part, (whole_tick,evts)

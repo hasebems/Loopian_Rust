@@ -23,7 +23,7 @@ pub enum SetCommand {
     FlowReso(i16),
     FlowVel(i16),
     MidiInputCh(u8),
-    Elasticity(f64, f64, i32),
+    Elasticity(i16, i16),
 }
 
 pub enum SetCmdError {
@@ -87,21 +87,17 @@ impl SetCommand {
             }
             "elasticity" => {
                 let parts = split_by(',', prm.to_string());
-                let mr = parts[0]
-                    .parse::<i32>()
+                let els_type = match parts[0].as_str() {
+                    "Ballade" => 1,
+                    _ => parts[0]
+                        .parse::<i16>()
+                        .map_err(|_| SetCmdError::BadNumber)?,
+                };
+                let depth = parts[1]
+                    .parse::<i16>()
                     .map_err(|_| SetCmdError::BadNumber)?;
-                let lr = parts[1]
-                    .parse::<i32>()
-                    .map_err(|_| SetCmdError::BadNumber)?;
-                let beat = parts[2].parse::<f64>().unwrap_or(100.0);
-                let middle_rate = (mr as f64) / 100.0;
-                let last_rate = (lr as f64) / 100.0;
-                let middle_tick = ((beat - 1.0) * 480.0) as i32;
-                println!(
-                    "Parsed Elasticity: middle_rate={}, last_rate={}, middle_tick={}",
-                    middle_rate, last_rate, middle_tick
-                );
-                Ok(Self::Elasticity(middle_rate, last_rate, middle_tick))
+                println!("Parsed Elasticity: type={}, depth={}", els_type, depth);
+                Ok(Self::Elasticity(els_type, depth))
             }
             _ => Err(SetCmdError::UnknownCommand),
         }
@@ -184,8 +180,8 @@ impl LoopianCmd {
                     .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, ch as i16]));
                 Ok("MIDI Input Ch has changed!".to_string())
             }
-            SetCommand::Elasticity(middle_rate, last_rate, middle_tick) => {
-                self.change_time_elasticity(middle_rate, last_rate, middle_tick);
+            SetCommand::Elasticity(els_type, depth) => {
+                self.change_time_elasticity(els_type, depth);
                 Ok("Time elasticity has changed!".to_string())
             }
         }
@@ -297,11 +293,8 @@ impl LoopianCmd {
     fn change_path(&mut self, path: &str) {
         self.path(path.to_string());
     }
-    pub fn change_time_elasticity(&mut self, middle_rate: f64, last_rate: f64, middle_tick: i32) {
-        self.sndr.send_msg_to_elapse(ElpsMsg::SetElasticity([
-            middle_rate,
-            last_rate,
-            middle_tick as f64,
-        ]));
+    pub fn change_time_elasticity(&mut self, els_type: i16, depth: i16) {
+        self.sndr
+            .send_msg_to_elapse(ElpsMsg::SetElasticity([els_type, depth]));
     }
 }
