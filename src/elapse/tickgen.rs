@@ -327,16 +327,14 @@ impl TickGen {
             raw_tick_inmsr.round() as i32
         }
     }
+    /// (0,0), (0.5,0.5), (1,1) を通る３次関数で、depth に応じて1/4の点が下に移動する関数
     fn barrade_tick(&self, raw_tick_inmsr: f64) -> i32 {
-        let depth = self.elastic_param.depth * 0.01;
-        if raw_tick_inmsr < self.tick_for_beat as f64 / 2.0 {
-            (raw_tick_inmsr * (1.0 - depth)).round() as i32
-        } else if raw_tick_inmsr > self.tick_for_onemsr as f64 - self.tick_for_beat as f64 / 2.0 {
-            ((raw_tick_inmsr * (1.0 - depth)).round() + ((self.tick_for_onemsr as f64) * depth).round()) as i32
-        } else {
-            ((raw_tick_inmsr * (1.0 + depth)).round() - ((self.tick_for_beat as f64) * depth / 2.0).round()) as i32
-        }
+        let x = raw_tick_inmsr / self.tick_for_onemsr as f64;
+        let coef = 2.0 * self.elastic_param.depth / 3.0;
+        let y = x - coef * x * (x - 0.5) * (x - 1.0);
+        (y * self.tick_for_onemsr as f64).round() as i32
     }
+    /// 拍の頭と拍の頭から半拍の位置を中心に、depth に応じて下に移動する関数
     fn swing_tick(&self, raw_tick_inmsr: f64) -> i32 {
         let clamped_tick = raw_tick_inmsr - 1.0; // 拍の頭は前の拍に含める
         let depth = self.elastic_param.depth;
