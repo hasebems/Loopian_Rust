@@ -89,6 +89,7 @@ impl SetCommand {
                 let parts = split_by(',', prm.to_string());
                 let els_type = match parts[0].as_str() {
                     "Ballade" => 1,
+                    "Swing" => 2,
                     _ => parts[0]
                         .parse::<i16>()
                         .map_err(|_| SetCmdError::BadNumber)?,

@@ -65,13 +65,9 @@ impl CrntMsrTick {
 //*******************************************************************
 //          Tick Generator Struct
 //*******************************************************************
-struct ElasticPoint(
-    f64, // bpm rate: ..1.0.. 1.0: no elastic effect
-    i32, // tick: tick_for_onemsr 以内の位置
-);
 struct ElasticParameter {
-    available: bool,          // Elastic Effect を有効にするかどうか
-    point: Vec<ElasticPoint>, // 2点の位置と変化率を指定する。point[0]: middle, point[1]: last
+    els_type: i16,              // 0: Flat, 1: Ballade, 2: Swing
+    depth: f64,                 // 0-1, 0: no effect, 1: max effect
 }
 #[allow(dead_code)]
 pub enum RitType {
@@ -92,7 +88,6 @@ pub struct TickGen {
     meter_start_msr: i32,        // meter が変わった時点の経過小節数
     crnt_msr: i32,               // start からの小節数（最初の小節からイベントを出すため、-1初期化)
     crnt_tick_inmsr: i32,        // 現在の小節内の tick 数
-    last_time: Instant,          // 1つ前に gen_tick を呼んだ時の時刻
     crnt_time: Instant,          // 現在の時刻
     tick_from_meter_starts: f64, // meter_start_msr からの経過 tick 数
     bpm_rate: f64,               // bpm 変化率 (1.0=変化なし、0.5=1/2、2.0=2倍)
@@ -129,12 +124,11 @@ impl TickGen {
             meter_start_msr: 0,
             bpm_rate: 1.0,
             elastic_param: ElasticParameter {
-                available: false,
-                point: Vec::new(),
+                els_type: 0,
+                depth: 0.0,
             },
             crnt_msr: -1,
             crnt_tick_inmsr: 0,
-            last_time: Instant::now(),
             crnt_time: Instant::now(),
             tick_from_meter_starts: 0.0,
             rit_pending: false,
@@ -159,6 +153,7 @@ impl TickGen {
         self.bpm_start_tick = 0;
         // DEFAULT_TICK_FOR_ONE_MEASURE を分母で割った値が 1拍の tick 数で正しい！
         self.tick_for_beat = DEFAULT_TICK_FOR_ONE_MEASURE / self.meter.1;
+        self.change_elastic_param(self.elastic_param.els_type, (self.elastic_param.depth * 10.0) as i16);
     }
     pub fn change_bpm(&mut self, bpm: i16) {
         self.bpm_stock = bpm;
@@ -179,37 +174,14 @@ impl TickGen {
     /// type: 0: Flat, 1: Ballade, 3: Upbeat
     /// depth: 0-10, 0: no effect, 10: max effect
     pub fn change_elastic_param(&mut self, els_type: i16, depth: i16) {
-        let dp = if depth > 10 {
-            10.0
-        } else if depth < 0 {
-            0.0
-        } else {
-            depth as f64
-        };
-        if els_type == 0 {
-            // Flat
-            self.elastic_param.available = false;
-            self.elastic_param.point.clear();
-        } else if els_type == 1 {
-            // Ballade
-            self.elastic_param.available = true;
-            self.elastic_param.point = vec![
-                ElasticPoint(1.0 - 0.3 * (dp / 10.0), 0), // 最初は 0
-                ElasticPoint(1.0, self.tick_for_beat / 2),
-                ElasticPoint(
-                    1.0 + 0.18 * (dp / 10.0),
-                    self.tick_for_onemsr - self.tick_for_beat / 2,
-                ),
-                ElasticPoint(1.0 - 0.3 * (dp / 10.0), self.tick_for_onemsr), // 最後は tick_for_onemsr
-            ];
-        }
+        self.elastic_param.els_type = els_type;
+        self.elastic_param.depth = (depth as f64 / 10.0).clamp(0.0, 1.0);
     }
     //pub fn calc_tick(&mut self)
     pub fn start(&mut self, time: Instant, bpm: i16, resume: bool) {
         self.during_rit = false;
         self.during_fermata = false;
         self.origin_time = time;
-        self.last_time = time;
         self.crnt_time = time;
         self.bpm_start_tick = 0;
         self.bpm_start_time = time;
@@ -229,6 +201,7 @@ impl TickGen {
     pub fn gen_tick(&mut self, crnt_time: Instant) -> (bool, bool, i32) {
         let former_msr = self.crnt_msr;
         let former_tick = self.crnt_tick_inmsr;
+        let last_time = self.crnt_time;
         self.crnt_time = crnt_time;
         if self.during_rit {
             self.gen_rit();
@@ -238,19 +211,15 @@ impl TickGen {
             // tick_for_beat * self.bpm as f32 * diff.as_secs_f32() / 60.0;
         } else {
             // same bpm
-            self.tick_from_meter_starts += if self.elastic_param.available {
-                self.calc_elastic_diff_tick(former_tick)
-            } else {
-                self.calc_diff_tick()
-            };
+            self.tick_from_meter_starts += self.calc_diff_tick(last_time);
             self.crnt_msr =
                 (self.tick_from_meter_starts as i32) / self.tick_for_onemsr + self.meter_start_msr;
-            self.crnt_tick_inmsr = (self.tick_from_meter_starts as i32) % self.tick_for_onemsr;
+            let raw_tick_inmsr = self.tick_from_meter_starts % (self.tick_for_onemsr as f64);
+            self.crnt_tick_inmsr = self.covert_to_elastic_tick(raw_tick_inmsr);
             if self.rit_pending && self.is_over(self.start_mt) {
                 self.start_rit(self.crnt_time);
             }
         }
-        self.last_time = self.crnt_time;
 
         // Generate Event
         let new_msr = self.crnt_msr != former_msr;
@@ -342,30 +311,43 @@ impl TickGen {
         elapsed_tick as i32 + self.bpm_start_tick
     }
     // 直前の gen_tick 呼び出しからの経過 tick 数(float)を計算する
-    fn calc_diff_tick(&self) -> f64 {
+    fn calc_diff_tick(&self, last_time: Instant) -> f64 {
         let crnt_bpm = (self.bpm as f64) * self.bpm_rate;
-        let diff = (self.crnt_time - self.last_time).as_secs_f64();
+        let diff = (self.crnt_time - last_time).as_secs_f64();
         ((self.tick_for_beat as f64) * crnt_bpm * diff) / 60.0
     }
-    // 直前の gen_tick 呼び出しからの経過 tick 数(float)を計算する
-    fn calc_elastic_diff_tick(&self, former_tick: i32) -> f64 {
-        let mut elastic_rate = 1.0;
-        for (idx, elm) in self.elastic_param.point.iter().enumerate() {
-            if former_tick < elm.1 && idx > 0 {
-                let prev_elm = &self.elastic_param.point[idx - 1];
-                let tick_diff = (elm.1 - prev_elm.1) as f64;
-                let rate_diff = elm.0 - prev_elm.0;
-                elastic_rate =
-                    prev_elm.0 + (rate_diff * (former_tick as f64 - prev_elm.1 as f64)) / tick_diff;
-                if elastic_rate < 0.1 {
-                    elastic_rate = 0.1; // 極端な値にならないように下限を設定
-                }
-                break;
+    fn covert_to_elastic_tick(&self, raw_tick_inmsr: f64) -> i32 {
+        if self.elastic_param.depth > 0.0 {
+            match self.elastic_param.els_type {
+                1 => self.barrade_tick(raw_tick_inmsr),
+                2 => self.swing_tick(raw_tick_inmsr),
+                _ => raw_tick_inmsr.round() as i32,
             }
+        } else {
+            raw_tick_inmsr.round() as i32
         }
-        let crnt_bpm = (self.bpm as f64) * self.bpm_rate * elastic_rate;
-        let diff = (self.crnt_time - self.last_time).as_secs_f64();
-        ((self.tick_for_beat as f64) * crnt_bpm * diff) / 60.0
+    }
+    fn barrade_tick(&self, raw_tick_inmsr: f64) -> i32 {
+        let depth = self.elastic_param.depth * 0.01;
+        if raw_tick_inmsr < self.tick_for_beat as f64 / 2.0 {
+            (raw_tick_inmsr * (1.0 - depth)).round() as i32
+        } else if raw_tick_inmsr > self.tick_for_onemsr as f64 - self.tick_for_beat as f64 / 2.0 {
+            ((raw_tick_inmsr * (1.0 - depth)).round() + ((self.tick_for_onemsr as f64) * depth).round()) as i32
+        } else {
+            ((raw_tick_inmsr * (1.0 + depth)).round() - ((self.tick_for_beat as f64) * depth / 2.0).round()) as i32
+        }
+    }
+    fn swing_tick(&self, raw_tick_inmsr: f64) -> i32 {
+        let clamped_tick = raw_tick_inmsr - 1.0; // 拍の頭は前の拍に含める
+        let depth = self.elastic_param.depth;
+        let tick_in_beat = clamped_tick % 480.0;
+        let past_tick = clamped_tick - tick_in_beat;
+        let rate = (depth + 0.9).clamp(1.0, 1.9);
+        if tick_in_beat < 240.0 {
+            (tick_in_beat * (2.0 - rate) + past_tick).round() as i32
+        } else {
+            (tick_in_beat * rate - 480.0 * (rate - 1.0) + past_tick).round() as i32
+        }
     }
     /// rit. を開始準備する
     /// 現在の時間と tick を得るが、rit. 開始は拍にクオンタイズされるため、すぐに開始しない
