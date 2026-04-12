@@ -155,6 +155,9 @@ pub fn tokenize_cmd(input_text: &str) -> Vec<String> {
     let mut paren_depth = 0i32;
     let mut brace_depth = 0i32;
     let mut bracket_depth = 0i32;
+    if input_text.is_empty() {
+        return vec![];
+    }
     if input_text.len() == 1 && input_text.starts_with('.') {
         return vec![".".to_string()];
     }

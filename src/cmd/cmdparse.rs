@@ -97,7 +97,7 @@ fn get_part_num(part_str: &str) -> Result<Vec<usize>, CmdError> {
         "D" | "DAMPER" => vec![DAMPER_PART],
         "SO" | "SOSTENUTO" => vec![SOSTENUTO_PART],
         "SH" | "SHIFT" => vec![SHIFT_PART],
-        "ALL" => (0..MAX_KBD_PART).collect(),
+        "ALL" => (0..MAX_COMPOSITION_PART).collect(),
         _ => return Err(CmdError::UnknownCommand),
     };
     Ok(part_num)
@@ -105,6 +105,9 @@ fn get_part_num(part_str: &str) -> Result<Vec<usize>, CmdError> {
 
 /// 入力テキストと token 列からコマンド種別を判定する純関数
 pub fn classify_cmd(tokens: &[String]) -> CmdKind {
+    if tokens.is_empty() {
+        return CmdKind::Unknown;
+    }
     let first = tokens
         .first()
         .and_then(|token| token.chars().next())
@@ -514,7 +517,13 @@ impl LoopianCmd {
         let mut rtn = Err(CmdError::UnknownCommand);
         match first_letter {
             '[' => {
-                for &pnum in &part_num {
+                // FLOW パートが含まれている場合は、FLOW パートを除いたパートに対してフレーズコマンドを適用する
+                let proper_part = if part_num.contains(&FLOW_PART) {
+                    part_num.iter().filter(|&&p| p != FLOW_PART).cloned().collect()
+                } else {
+                    part_num
+                };
+                for &pnum in &proper_part {
                     rtn = self.apply_phrase_to_part(pnum, rest_vec.clone());
                 }
             }
@@ -549,7 +558,7 @@ impl LoopianCmd {
     }
     fn flow_part_command(&mut self, msg_vec: Vec<String>) -> String {
         if &msg_vec[0][0..1] == "{" {
-            self.apply_composition_to_part(FLOW_PART, msg_vec[1..].to_vec())
+            self.apply_composition_to_part(FLOW_PART, msg_vec)
                 .unwrap_or_else(|error| cmd_error_to_text(&error))
         } else if msg_vec[0].contains("dyn") {
             let dyntxt = extract_texts_from_parentheses(&msg_vec[0]);
