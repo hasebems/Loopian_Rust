@@ -51,37 +51,25 @@ const CHORD_TABLE: &[ChordTable] = &[
     ChordTable {name: "_sus4",  table: &SUS4,},
     ChordTable {name: "_7sus4", table: &M7SUS4,},
 
-    // parasc(29-34): para() を付けなくても、para機能
+    ChordTable {name: "_dia",   table: &IONIAN,},
+    ChordTable {name: "_avl",   table: &MAJ9ADD6,},
+    ChordTable {name: "_root",  table: &NONE,},
+    // parasc: para() を付けなくても、para機能
     ChordTable {name: "_chr",   table: &THRU,}, // Iのとき音程そのまま。音程関係を保持したまま並行移動
     ChordTable {name: "_ion",   table: &IONIAN,}, // Iが音程そのまま。Iとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name: "_dor",   table: &IONIAN,}, // IIが音程そのまま。IIとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name: "_lyd",   table: &IONIAN,}, // IVが音程そのまま。IVとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name: "_mix",   table: &IONIAN,}, // Vが音程そのまま。Vとの差分分並行移動し、音程をkeyに合わせる
     ChordTable {name: "_aeo",   table: &IONIAN,}, // VIが音程そのまま。VIとの差分分並行移動し、音程をkeyに合わせる
-    ChordTable {name: "_drmslt",table: &IONIAN,},
     ChordTable {name: "diatonic",table: &IONIAN,},
+
     ChordTable {name: "dorian", table: &DORIAN,},
     ChordTable {name: "lydian", table: &LYDIAN,},
-
     ChordTable {name: "mixolydian",table: &MIXOLYDIAN,},
     ChordTable {name: "aeolian",table: &AEOLIAN,},
     ChordTable {name: "comdim", table: &COMDIM,},
     ChordTable {name: "pentatonic",table: &PENTATONIC,},
     ChordTable {name: "blues",  table: &BLUES,},
-    // scale n: n半音分上の diatonic scale
-    ChordTable {name: "sc0",    table: &IONIAN,},
-    ChordTable {name: "sc1",    table: &SC1,},
-    ChordTable {name: "sc2",    table: &SC2,},
-    ChordTable {name: "sc3",    table: &SC3,},
-    ChordTable {name: "sc4",    table: &SC4,},
-
-    ChordTable {name: "sc5",    table: &MIXOLYDIAN,},
-    ChordTable {name: "sc6",    table: &SC6,},
-    ChordTable {name: "sc7",    table: &LYDIAN,},
-    ChordTable {name: "sc8",    table: &SC8,},
-    ChordTable {name: "sc9",    table: &SC9,},
-    ChordTable {name: "sc10",   table: &SC10,},
-    ChordTable {name: "sc11",   table: &SC11,},
     ChordTable {name: "Err",    table: &ERR,},
     ChordTable {name: "None",   table: &NONE,},
     ChordTable {name: "LPEND",  table: &NONE,}, // elapse では、再生が止まる
@@ -127,15 +115,6 @@ const PENTATONIC: [i16; 5] = [0, 2, 4, 7, 9];
 const BLUES: [i16; 6] = [0, 3, 5, 6, 7, 10];
 const ERR: [i16; 1] = [0];
 const NONE: [i16; 1] = [0];
-const SC1: [i16; 7] = [0, 1, 3, 5, 6, 8, 10];
-const SC2: [i16; 7] = [1, 2, 4, 6, 7, 9, 11];
-const SC3: [i16; 7] = [0, 2, 3, 5, 7, 8, 10];
-const SC4: [i16; 7] = [1, 3, 4, 6, 8, 9, 11];
-const SC6: [i16; 7] = [1, 3, 5, 6, 8, 10, 11];
-const SC8: [i16; 7] = [0, 1, 3, 5, 7, 8, 10];
-const SC9: [i16; 7] = [1, 2, 4, 6, 8, 9, 11];
-const SC10: [i16; 7] = [0, 2, 3, 5, 7, 9, 10];
-const SC11: [i16; 7] = [1, 3, 4, 6, 8, 10, 11];
 
 const ROOT2NTNUM: [i16; 22] = [
     0, -1, 0, 1, 1, 2, 3, 3, 4, 5, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 12,
