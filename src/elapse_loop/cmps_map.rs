@@ -151,9 +151,16 @@ impl CompositionMap {
         (msr, beat)
     }
     pub fn loop_msr_beat(&self, crnt_: &CrntMsrTick) -> (isize, isize) {
-        let tick_for_onebeat = crnt_.tick_for_onemsr / (self.max_beat as i32);
-        let beat = (crnt_.tick / tick_for_onebeat) as isize;
-        let loop_size = self.whole_tick as isize / crnt_.tick_for_onemsr as isize;
+        let max_beat = self.max_beat.max(1);
+        let tick_for_onebeat = (crnt_.tick_for_onemsr / (max_beat as i32)).max(1);
+        let mut beat = (crnt_.tick / tick_for_onebeat) as isize;
+        let max_beat_idx = max_beat.saturating_sub(1) as isize;
+        if beat < 0 {
+            beat = 0;
+        } else if beat > max_beat_idx {
+            beat = max_beat_idx;
+        }
+        let loop_size = (self.whole_tick as isize / (crnt_.tick_for_onemsr as isize).max(1)).max(1);
         let mut msr = if crnt_.msr >= self.first_msr_num {
             (crnt_.msr - self.first_msr_num) as isize
         } else {
@@ -214,16 +221,25 @@ impl CompositionMap {
     pub fn scan_chord(&self, crnt_msr: usize, crnt_beat: usize) -> (i16, i16) {
         let mut root: i16 = 0;
         let mut tbl: i16 = NO_PED_TBL_NUM;
-        let mut find: bool = false;
-        let mut msr = crnt_msr as isize;
-        let mut beat = crnt_beat as isize;
+
+        let max_msr = self.chord_map.len();
+        if max_msr == 0 || self.max_beat == 0 {
+            return (root, tbl);
+        }
+
+        let mut msr = (crnt_msr.min(max_msr - 1)) as isize;
+        let mut beat = (crnt_beat.min(self.max_beat - 1)) as isize;
         loop {
-            if let Some(c) = &self.chord_map[msr as usize][beat as usize] {
+            if let Some(c) = self
+                .chord_map
+                .get(msr as usize)
+                .and_then(|row| row.get(beat as usize))
+                .and_then(|opt| opt.as_ref())
+            {
                 root = c.0.root;
                 tbl = c.0.tbl;
-                find = true;
-            }
-            if !find {
+                break;
+            } else {
                 beat -= 1;
                 if beat < 0 {
                     msr -= 1;
@@ -232,8 +248,6 @@ impl CompositionMap {
                     }
                     beat = (self.max_beat - 1) as isize;
                 }
-            } else {
-                break;
             }
         }
         //println!("$$$Chord Data -> root:{}, tbl:{}", root, tbl);
@@ -244,12 +258,15 @@ impl CompositionMap {
         let (msr, beat) = self.loop_msr_beat(crnt_);
         let mut root = NO_ROOT;
         let mut tbl = NO_TABLE;
-        self.chord_map[msr as usize][beat as usize]
-            .iter()
-            .for_each(|evt| {
-                root = evt.0.root;
-                tbl = evt.0.tbl;
-            });
+        if let Some(evt) = self
+            .chord_map
+            .get(msr as usize)
+            .and_then(|row| row.get(beat as usize))
+            .and_then(|opt| opt.as_ref())
+        {
+            root = evt.0.root;
+            tbl = evt.0.tbl;
+        }
 
         if root != self.root_for_ui || tbl != self.tbl_for_ui {
             // 変化があった場合
