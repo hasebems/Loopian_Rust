@@ -66,8 +66,8 @@ impl CrntMsrTick {
 //          Tick Generator Struct
 //*******************************************************************
 struct ElasticParameter {
-    els_type: i16,              // 0: Flat, 1: Ballade, 2: Swing
-    depth: f64,                 // 0-1, 0: no effect, 1: max effect
+    els_type: i16, // 0: Flat, 1: Ballade, 2: Swing
+    depth: f64,    // 0-1, 0: no effect, 1: max effect
 }
 #[allow(dead_code)]
 pub enum RitType {
@@ -153,7 +153,10 @@ impl TickGen {
         self.bpm_start_tick = 0;
         // DEFAULT_TICK_FOR_ONE_MEASURE を分母で割った値が 1拍の tick 数で正しい！
         self.tick_for_beat = DEFAULT_TICK_FOR_ONE_MEASURE / self.meter.1;
-        self.change_elastic_param(self.elastic_param.els_type, (self.elastic_param.depth * 10.0) as i16);
+        self.change_elastic_param(
+            self.elastic_param.els_type,
+            (self.elastic_param.depth * 10.0) as i16,
+        );
     }
     pub fn change_bpm(&mut self, bpm: i16) {
         self.bpm_stock = bpm;

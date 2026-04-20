@@ -42,7 +42,7 @@ impl Resize {
             full_size_x: win_width,
             full_size_y: win_height,
             eight_indic_left: win_width / 2.0 - MIN_RIGHT_MARGIN,
-            scroll_txt_left: st_left_margin,    // 真ん中の少し左寄り
+            scroll_txt_left: st_left_margin, // 真ん中の少し左寄り
             input_txt_top: -win_height / 2.0 + INPUT_TXT_LOWER_MARGIN,
             input_txt_left: 0.0,
         }
@@ -643,8 +643,7 @@ impl Graphic {
                     .color(txt_color)
                     .left_justify()
                     .x_y(
-                        self.rs.scroll_txt_left
-                            + Graphic::SCRTXT_FONT_WIDTH * (j as f32),
+                        self.rs.scroll_txt_left + Graphic::SCRTXT_FONT_WIDTH * (j as f32),
                         scroll_txt_bottom
                             + Graphic::SCRTXT_FONT_HEIGHT * ((max_lines - 1 - i) as f32),
                     );
