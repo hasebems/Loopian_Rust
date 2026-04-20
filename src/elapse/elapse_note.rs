@@ -76,6 +76,7 @@ pub struct Note {
     next_tick: i32,
     tick_for_onemsr: i32,
     part: u32,
+    midi_ch: u8,
     _deb_txt: String,
 }
 impl Note {
@@ -105,7 +106,17 @@ impl Note {
             velocity += amp.auto_amp as i32;
         }
         velocity = velocity.clamp(Self::MIN_AVILABLE_VELO, 127);
-
+        let midi_ch = if (0..=SHIFT_PART).contains(&(prm.part as usize)) {
+            0
+        } else if prm.part as usize == VIOLIN1 {
+            1
+        } else if prm.part as usize == VIOLIN2 {
+            2
+        } else if prm.part as usize == FLOW_VN_PART {
+            3
+        } else {
+            0
+        };
         Rc::new(RefCell::new(Self {
             id: ElapseId {
                 pid,
@@ -125,6 +136,7 @@ impl Note {
             next_tick: prm.evt_tick.tick,
             tick_for_onemsr: prm.evt_tick.tick_for_onemsr,
             part: prm.part,
+            midi_ch,
             _deb_txt: prm._deb_txt,
         }))
     }
@@ -142,9 +154,9 @@ impl Note {
             let vel = self.random_velocity(self.velocity);
             estk.inc_key_map(num, vel, self.part as u8);
             if self.flow {
-                estk.midi_out_flow(0x90, self.real_note, vel);
+                estk.midi_out_flow(0x90 | self.midi_ch, self.real_note, vel);
             } else {
-                estk.midi_out(0x90, self.real_note, vel);
+                estk.midi_out(0x90 | self.midi_ch, self.real_note, vel);
             }
             #[cfg(feature = "verbose")]
             println!(
@@ -164,9 +176,9 @@ impl Note {
         let snk = estk.dec_key_map(self.real_note);
         if snk == stack_elapse::SameKeyState::Last {
             if self.flow {
-                estk.midi_out_flow(0x90, self.real_note, 0);
+                estk.midi_out_flow(0x90 | self.midi_ch, self.real_note, 0);
             } else {
-                estk.midi_out(0x90, self.real_note, 0);
+                estk.midi_out(0x90 | self.midi_ch, self.real_note, 0);
             }
             #[cfg(feature = "verbose")]
             println!("Off: N{}, ", self.real_note);

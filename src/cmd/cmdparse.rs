@@ -519,7 +519,11 @@ impl LoopianCmd {
             '[' => {
                 // FLOW パートが含まれている場合は、FLOW パートを除いたパートに対してフレーズコマンドを適用する
                 let proper_part = if part_num.contains(&FLOW_PART) {
-                    part_num.iter().filter(|&&p| p != FLOW_PART).cloned().collect()
+                    part_num
+                        .iter()
+                        .filter(|&&p| p != FLOW_PART)
+                        .cloned()
+                        .collect()
                 } else {
                     part_num
                 };
