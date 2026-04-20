@@ -54,8 +54,9 @@ pub struct ElapseStack {
     display_time: Instant,
     tg: TickGen,
     flac: u64,
-    part_vec: Vec<Rc<RefCell<Part>>>, // Part Instance が繋がれた Vec
+    piano_part: Vec<Rc<RefCell<Part>>>, // Part Instance が繋がれた Vec
     pedal_part: Vec<Rc<RefCell<PedalPart>>>,
+    violin_part: Vec<Rc<RefCell<Part>>>, // Violin Part Instance が繋がれた Vec
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
     limit_for_deb: i32,
@@ -85,29 +86,46 @@ impl ElapseStack {
         if let Some(err) = e {
             println!("{}", err);
         }
-        let mut part_vec = Vec::new();
+        let mut piano_part = Vec::new();
         let mut pedal_part = Vec::new();
+        let mut violin_part = Vec::new();
         let mut elapse_vec = Vec::new();
 
         // Keyboard Part
         for i in 0..MAX_KBD_PART {
-            // 同じ Part を part_vec, elapse_vec 両方に繋げる
+            // 同じ Part を piano_part, elapse_vec 両方に繋げる
             let pt = Part::new(i as u32, None);
-            part_vec.push(Rc::clone(&pt));
+            piano_part.push(Rc::clone(&pt));
             elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
         }
+
         // Flow Part
         let flow = Flow::new(0, FLOW_PART as u32, false);
         elapse_vec.push(flow.clone() as Rc<RefCell<dyn Elapse>>);
         let pt = Part::new(FLOW_PART as u32, Some(flow));
-        part_vec.push(Rc::clone(&pt));
+        piano_part.push(Rc::clone(&pt));
         elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
+
         // Pedal Part
         for i in DAMPER_PART..=SHIFT_PART {
             let ppt = PedalPart::new(i as u32);
             pedal_part.push(Rc::clone(&ppt));
             elapse_vec.push(ppt as Rc<RefCell<dyn Elapse>>);
         }
+
+        // Violin Part
+        for i in VIOLIN1..=VIOLIN2 {
+            let vpt = Part::new(i as u32, None);
+            violin_part.push(Rc::clone(&vpt));
+            elapse_vec.push(vpt as Rc<RefCell<dyn Elapse>>);
+        }
+
+        // Flow Violin Part
+        let flow_vn = Flow::new(0, FLOW_VN_PART as u32, false);
+        elapse_vec.push(flow_vn.clone() as Rc<RefCell<dyn Elapse>>);
+        let pt = Part::new(FLOW_VN_PART as u32, Some(flow_vn));
+        violin_part.push(Rc::clone(&pt));
+        elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
 
         let (rx_hndr, tx_ctrl) = gen_midirx_thread();
         Self {
@@ -125,8 +143,9 @@ impl ElapseStack {
             display_time: Instant::now(),
             tg: TickGen::new(RitType::Sigmoid),
             flac: 0,
-            part_vec,
+            piano_part,
             pedal_part,
+            violin_part,
             elapse_vec,
             key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
             limit_for_deb: 0,
@@ -147,21 +166,21 @@ impl ElapseStack {
     }
     pub fn part(&mut self, part_num: u32) -> Option<Rc<RefCell<Part>>> {
         if let Some(index) = self
-            .part_vec
+            .piano_part
             .iter()
             .position(|x| x.borrow().id().sid == part_num)
         {
-            let part = Rc::clone(&self.part_vec[index]);
+            let part = Rc::clone(&self.piano_part[index]);
             Some(part)
         } else {
             None
         }
     }
     pub fn get_phr(&self, part_num: usize) -> Option<Rc<RefCell<PhraseLoop>>> {
-        self.part_vec[part_num].borrow().get_phr().cloned()
+        self.piano_part[part_num].borrow().get_phr().cloned()
     }
     pub fn get_flow(&self) -> Option<Rc<RefCell<Flow>>> {
-        self.part_vec[FLOW_PART].borrow().get_flow()
+        self.piano_part[FLOW_PART].borrow().get_flow()
     }
     pub fn tg(&self) -> &TickGen {
         &self.tg
@@ -184,14 +203,6 @@ impl ElapseStack {
             Ordering::Less => SameKeyState::Nothing,
         }
     }
-    //    pub fn set_phrase_vari(&self, part_num: usize, vari_num: usize) {
-    //        self.part_vec[part_num]
-    //            .borrow_mut()
-    //            .set_phrase_vari(vari_num);
-    //    }
-    //    pub fn set_loop_end(&self, part_num: usize) {
-    //        self.part_vec[part_num].borrow_mut().set_loop_end();
-    //    }
     pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
         self.mdx.midi_out(status, data1, data2, true);
     }
@@ -406,11 +417,11 @@ impl ElapseStack {
     fn midi_chord_out(&mut self, crnt_: &CrntMsrTick) {
         // Flow Part の和音を MIDI OUT する
         let mut keynote = 0;
-        if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+        if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
             keynote = fl.borrow().get_keynote();
         }
         let (root, tbl) = {
-            let mut pt_borrow = self.part_vec[FLOW_PART].borrow_mut();
+            let mut pt_borrow = self.piano_part[FLOW_PART].borrow_mut();
             let cmp_med = pt_borrow.get_cmps_med();
             cmp_med.get_chord(crnt_)
         };
@@ -448,7 +459,7 @@ impl ElapseStack {
                     self.mdx.midi_out_for_led(sts, nt, vel);
                 } else if sts & 0xf0 == 0xa0 {
                     // Flow Part に和音を設定する
-                    if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+                    if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
                         fl.borrow_mut().set_chord_for_noplay(nt, vel, ex);
                     }
                 }
@@ -476,7 +487,7 @@ impl ElapseStack {
 
         // すべての Part の開始beatを調べる
         let mut first_beat = FULL;
-        self.part_vec.iter_mut().for_each(|x| {
+        self.piano_part.iter_mut().for_each(|x| {
             if let Some(auf) = x.borrow().get_start_beat()
                 && auf < first_beat
             {
@@ -547,7 +558,7 @@ impl ElapseStack {
     }
     fn call_sync(&mut self, min: usize, max: usize) {
         for i in min..=max {
-            let part = self.part_vec[i].clone();
+            let part = self.piano_part[i].clone();
             let crnt_ = self.last_msr_tick;
             part.borrow_mut().set_sync(&crnt_, self);
         }
@@ -602,11 +613,11 @@ impl ElapseStack {
             self.tg.change_bpm(msg[1])
         } else if msg[0] == MSG_SET_KEY {
             self.current_key = msg[1] as u8;
-            self.part_vec
+            self.piano_part
                 .iter()
                 .for_each(|x| x.borrow_mut().change_key(msg[1] as u8));
         } else if msg[0] == MSG_SET_TURN {
-            self.part_vec
+            self.piano_part
                 .iter_mut()
                 .for_each(|x| x.borrow_mut().set_turnnote(msg[1]));
         } else if msg[0] == MSG_SET_CRNT_MSR {
@@ -615,17 +626,17 @@ impl ElapseStack {
             }
             self.tg.set_crnt_msr(msg[1] as i32);
         } else if msg[0] == MSG_SET_FLOW_TICK_RESOLUTION {
-            if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+            if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
                 fl.borrow_mut().set_tick_resolution(msg[1] as i32);
             }
         } else if msg[0] == MSG_SET_FLOW_VELOCITY {
             println!("Set Flow Velocity: {}", msg[1]);
-            if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+            if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
                 fl.borrow_mut().set_velocity(msg[1]);
             }
         } else if msg[0] == MSG_SET_FLOW_STATIC_SCALE {
             println!("Set Flow Static Scale: {}", msg[1]);
-            if let Some(fl) = self.part_vec[FLOW_PART].borrow_mut().get_flow() {
+            if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
                 fl.borrow_mut().set_static_scale(msg[1]);
             }
         } else if msg[0] == MSG_SET_MIDI_INPUT_CH {
@@ -653,30 +664,51 @@ impl ElapseStack {
     fn phrase(&mut self, part_num: i16, evts: PhrData) {
         println!("Received Phrase Message! Part: {}", part_num);
         let crnt_ = self.last_msr_tick;
-        if part_num < MAX_ALL_KBD_PART as i16 {
-            let pt = self.part_vec[part_num as usize].clone();
+        if (0..MAX_KBD_PART).contains(&(part_num as usize)) {
+            let pt = self.piano_part[part_num as usize].clone();
             pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
-        } else {
+        } else if (DAMPER_PART..=SHIFT_PART).contains(&(part_num as usize)) {
             let pt = self.pedal_part[part_num as usize - DAMPER_PART].clone();
+            pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
+        } else if (VIOLIN1..=VIOLIN2).contains(&(part_num as usize)) {
+            let pt = self.violin_part[part_num as usize - VIOLIN1].clone();
             pt.borrow_mut().rcv_phr_msg(evts, &crnt_, self);
         }
     }
     fn composition(&mut self, part_num: i16, evts: CmpData) {
         println!("Received Composition Message! Part: {}", part_num);
-        self.part_vec[part_num as usize]
-            .borrow_mut()
-            .rcv_cmps_msg(evts, self.tg().get_beat_tick());
+        if (0..MAX_KBD_PART).contains(&(part_num as usize)) {
+            self.piano_part[part_num as usize]
+                .borrow_mut()
+                .rcv_cmps_msg(evts, self.tg().get_beat_tick());
+        } else if (VIOLIN1..=VIOLIN2).contains(&(part_num as usize)) {
+            self.violin_part[part_num as usize - VIOLIN1]
+                .borrow_mut()
+                .rcv_cmps_msg(evts, self.tg().get_beat_tick());
+        }
     }
     #[allow(dead_code)]
     fn del_phrase(&mut self, part_num: i16) {
         println!("Deleted Phrase Message! Part: {}", part_num);
-        self.part_vec[part_num as usize].borrow_mut().del_phr();
+        if (0..MAX_KBD_PART).contains(&(part_num as usize)) {
+            self.piano_part[part_num as usize].borrow_mut().del_phr();
+        } else if (VIOLIN1..=VIOLIN2).contains(&(part_num as usize)) {
+            self.violin_part[part_num as usize - VIOLIN1]
+                .borrow_mut()
+                .del_phr();
+        }
     }
     fn del_composition(&mut self, part_num: i16) {
         println!("Deleted Composition Message! Part: {}", part_num);
-        self.part_vec[part_num as usize]
-            .borrow_mut()
-            .rcv_cmps_msg(CmpData::empty(), self.tg().get_beat_tick());
+        if (0..MAX_KBD_PART).contains(&(part_num as usize)) {
+            self.piano_part[part_num as usize]
+                .borrow_mut()
+                .rcv_cmps_msg(CmpData::empty(), self.tg().get_beat_tick());
+        } else if (VIOLIN1..=VIOLIN2).contains(&(part_num as usize)) {
+            self.violin_part[part_num as usize - VIOLIN1]
+                .borrow_mut()
+                .rcv_cmps_msg(CmpData::empty(), self.tg().get_beat_tick());
+        }
     }
     //*******************************************************************
     //      Pick out playable
@@ -758,7 +790,7 @@ impl ElapseStack {
             // part
             let crnt_ = self.tg.get_crnt_msr_tick();
             for i in 0..MAX_KBD_PART {
-                let part = Rc::clone(&self.part_vec[i]);
+                let part = Rc::clone(&self.piano_part[i]);
                 let part_ui = part.borrow_mut().gen_part_indicator(&crnt_);
                 self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
             }

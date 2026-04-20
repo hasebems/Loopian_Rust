@@ -39,6 +39,9 @@ pub enum PtName {
     Damper = 5,
     Sostenuto = 6,
     Shift = 7,
+    Violin1 = 8,
+    Violin2 = 9,
+    FlowVn = 10,
 }
 // Comp 2(L)+2(R), Phrase 2(L)+2(R), Flow 1, Pedal 3(Damper,Sostenuto,Shift)
 pub const LEFT1: usize = PtName::Left1 as usize;
@@ -56,6 +59,9 @@ pub const DAMPER_PART: usize = PtName::Damper as usize; // Elapse inside Part
 pub const SOSTENUTO_PART: usize = PtName::Sostenuto as usize; // Elapse inside Part
 pub const SHIFT_PART: usize = PtName::Shift as usize; // Elapse inside Part
 pub const MAX_PEDAL_PART: usize = PtName::Shift as usize + 1 - PtName::Damper as usize; // Damper, Sostenuto, Shift
+pub const VIOLIN1: usize = PtName::Violin1 as usize; // Violin1 part
+pub const VIOLIN2: usize = PtName::Violin2 as usize; // Violin2 part
+pub const FLOW_VN_PART: usize = PtName::FlowVn as usize; // Flow Violin part
 pub const NONE_NUM: usize = 255;
 
 //*******************************************************************
