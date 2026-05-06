@@ -287,7 +287,7 @@ impl Graphic {
         }
         if self.text_visible != TextVisible::Invisible && self.text_visible != TextVisible::VeryPale
         {
-            self.input_text(draw.clone(), guiev, itxt, tm);
+            self.input_text(draw.clone(), itxt, tm);
         }
 
         // Eight Indicator の表示
@@ -419,7 +419,7 @@ impl Graphic {
 
         for i in 0..4 {
             let pt = guiev.get_indicator(7 - i);
-            draw.text(&(guiev.get_part_txt(3 - i).to_string() + pt))
+            draw.text(&(txt_common::get_part_txt(3 - i).to_string() + pt))
                 .font(self.font_bold.clone())
                 .font_size(20)
                 .color(txt_color)
@@ -432,7 +432,7 @@ impl Graphic {
         }
     }
     /// Input Text の描画
-    fn input_text(&self, draw: Draw, guiev: &GuiEv, itxt: &InputText, tm: f32) {
+    fn input_text(&self, draw: Draw, itxt: &InputText, tm: f32) {
         const INPUT_TXT_Y_SZ: f32 = 40.0;
         const LETTER_SZ_X: f32 = 15.0;
         const CURSOR_THICKNESS: f32 = 5.0;
@@ -475,7 +475,7 @@ impl Graphic {
         let base_y = bottom_y + line_h / 2.0 + LETTER_MARGIN_Y - line_h / 2.0;
 
         // プロンプトの描画（最上行に揃える）
-        let prompt_txt: &str = &(guiev.get_part_txt(itxt.get_input_part()).to_string() + ">");
+        let prompt_txt: &str = &(txt_common::get_part_txt(itxt.get_input_part()).to_string() + ">");
         let txt_color = self.get_text_color(true);
         for (i, c) in prompt_txt.chars().enumerate() {
             draw.text(&c.to_string())
