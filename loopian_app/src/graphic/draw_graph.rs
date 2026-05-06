@@ -12,7 +12,7 @@ use super::guiev::*;
 use super::view_waterripple::WaterRipple;
 use crate::cmd::input_txt::InputText;
 use crate::common::lpnlib::*;
-use crate::common::txt_common;
+use crate::common::txt_common::*;
 pub type Resize = loopian_graphic_api::Resize;
 
 //*******************************************************************
@@ -321,7 +321,7 @@ impl Graphic {
                 .x_y(0.0, self.rs.full_size_y / 2.0 - TOP_MARGIN)
                 .w_h(self.rs.full_size_x - 80.0, 80.0);
         }
-        draw.text(&txt_common::get_crnt_date_txt())
+        draw.text(&get_crnt_date_txt())
             .font(self.font_nrm.clone())
             .font_size(14)
             .color(title_color)
@@ -417,9 +417,10 @@ impl Graphic {
             .x_y(self.rs.eight_indic_left + 120.0, eight_indic_top - 150.0)
             .w_h(400.0, 40.0);
 
-        for i in 0..4 {
-            let pt = guiev.get_indicator(7 - i);
-            draw.text(&(txt_common::get_part_txt(3 - i).to_string() + pt))
+        for i in 0..(MAX_KBD_PART + MAX_VIOLIN_PART) {
+            let pt = guiev.get_indicator(INDC_PART + i);
+            let ptnum = ptnum(i);
+            draw.text(&(get_part_txt(ptnum).to_string() + pt))
                 .font(self.font_bold.clone())
                 .font_size(20)
                 .color(txt_color)
@@ -475,7 +476,7 @@ impl Graphic {
         let base_y = bottom_y + line_h / 2.0 + LETTER_MARGIN_Y - line_h / 2.0;
 
         // プロンプトの描画（最上行に揃える）
-        let prompt_txt: &str = &(txt_common::get_part_txt(itxt.get_input_part()).to_string() + ">");
+        let prompt_txt: &str = &(get_part_txt(itxt.get_input_part()).to_string() + ">");
         let txt_color = self.get_text_color(true);
         for (i, c) in prompt_txt.chars().enumerate() {
             draw.text(&c.to_string())

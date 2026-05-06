@@ -74,7 +74,7 @@ impl SeqDataStock {
             PhraseAs::Variation(v) => v,
             PhraseAs::Measure(_m) => MAX_VARIATION,
         };
-        let ptnum = Self::ptnum(part);
+        let ptnum = ptnum(part);
         if self.pdt[ptnum][num].send_enable {
             Some(&self.pdt[ptnum][num])
         } else {
@@ -82,7 +82,7 @@ impl SeqDataStock {
         }
     }
     pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {
-        let ptnum = Self::ptnum(part);
+        let ptnum = ptnum(part);
         &self.cdt[ptnum]
     }
     pub fn get_pdlstk(&self, part: usize) -> &PedalDataStock {
@@ -109,7 +109,7 @@ impl SeqDataStock {
                 PhraseAs::Variation(v) => v,
                 PhraseAs::Measure(_m) => MAX_VARIATION,
             };
-            let ptnum = Self::ptnum(part);
+            let ptnum = ptnum(part);
             if self.pdt[ptnum][num].set_raw_vec(normalized_vec, Some(&self.cluster_memory)) {
                 self.pdt[ptnum][num].set_recombined(
                     Some(self.input_mode),
@@ -158,7 +158,7 @@ impl SeqDataStock {
                 );
             }
         } else if (VIOLIN1..=VIOLIN2).contains(&part) {
-            let ptnum = Self::ptnum(part);
+            let ptnum = ptnum(part);
             for i in 0..(MAX_VARIATION + 1) {
                 if self.pdt[ptnum][i].set_raw("[]".to_string(), Some(&self.cluster_memory)) {
                     self.pdt[ptnum][i].set_recombined(
@@ -176,7 +176,7 @@ impl SeqDataStock {
         part: usize,
         input_text: Vec<String>,
     ) -> Result<(), CompositionCmdError> {
-        let ptnum = Self::ptnum(part);
+        let ptnum = ptnum(part);
         if ptnum < MAX_COMPOSITION_PART && self.cdt[ptnum].set_raw_vec(input_text) {
             self.cdt[ptnum].set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
             return Ok(());
@@ -202,7 +202,7 @@ impl SeqDataStock {
     pub fn change_oct(&mut self, oct: i32, relative: bool, part: usize) -> bool {
         let mut update = false;
         let new_bd: i32;
-        let ptnum = Self::ptnum(part);
+        let ptnum = ptnum(part);
         if oct == 0 {
             // Reset Octave
             new_bd = Self::default_base_note(ptnum);
@@ -325,13 +325,6 @@ impl SeqDataStock {
         }
         for epdl in self.pdldt.iter_mut() {
             epdl.set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
-        }
-    }
-    fn ptnum(part: usize) -> usize {
-        if (VIOLIN1..=VIOLIN2).contains(&part) {
-            part - VIOLIN1 + MAX_KBD_PART
-        } else {
-            part
         }
     }
     fn default_base_note(ptnum: usize) -> i32 {

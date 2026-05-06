@@ -11,11 +11,11 @@ pub const INDC_BPM: usize = 1;
 pub const INDC_METER: usize = 2;
 pub const INDC_TICK: usize = 3;
 pub const INDC_PART: usize = 4;
-pub const MAX_INDICATOR: usize = 8;
+pub const MAX_INDICATOR: usize = 10;
 
 //*******************************************************************
 //  Stock GUI Event from Text Input by User,
-//      and Indicator Text: 0:Key, 1:BPM, 2:Meter, 3:Tick, 4-7:Part
+//      and Indicator Text: 0:Key, 1:BPM, 2:Meter, 3:Tick, 4-9:Part
 //*******************************************************************
 pub struct GuiEv {
     has_gui: bool,

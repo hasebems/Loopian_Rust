@@ -9,6 +9,13 @@ use chrono::Local;
 //*******************************************************************
 //          Func
 //*******************************************************************
+pub fn ptnum(part: usize) -> usize {
+    if (VIOLIN1..=VIOLIN2).contains(&part) {
+        part - VIOLIN1 + MAX_KBD_PART
+    } else {
+        part
+    }
+}
 pub fn get_part_txt(input_part: usize) -> &'static str {
     match input_part {
         LEFT1 => "L1",
