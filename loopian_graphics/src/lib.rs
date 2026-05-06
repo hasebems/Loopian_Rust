@@ -133,7 +133,11 @@ pub fn get_view_instance(
             font_nrm,
             arg: arg.as_deref(),
         };
-        find_factory(name).and_then(|factory| factory(&ctx))
+        if let Some(factory) = find_factory(name) {
+            factory(&ctx)
+        } else {
+            loopian_graphic_quantum::get_view_instance(crnt_time, gmsg, gmode, meter_text, ctx.font_nrm)
+        }
     } else {
         None
     }

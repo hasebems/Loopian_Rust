@@ -1236,10 +1236,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "loopian_graphic_quantum"
+version = "0.7.0"
+dependencies = [
+ "loopian_graphic_api",
+ "nannou",
+ "rand 0.9.2",
+ "rand_distr",
+]
+
+[[package]]
 name = "loopian_graphics"
 version = "0.7.0"
 dependencies = [
  "loopian_graphic_api",
+ "loopian_graphic_quantum",
  "nannou",
  "rand 0.9.2",
  "rand_distr",
