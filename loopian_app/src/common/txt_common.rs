@@ -9,6 +9,17 @@ use chrono::Local;
 //*******************************************************************
 //          Func
 //*******************************************************************
+pub fn get_part_txt(input_part: usize) -> &'static str {
+    match input_part {
+        LEFT1 => "L1",
+        LEFT2 => "L2",
+        RIGHT1 => "R1",
+        RIGHT2 => "R2",
+        VIOLIN1 => "V1",
+        VIOLIN2 => "V2",
+        _ => "__",
+    }
+}
 pub fn convert_expstr2amp(vel_text: &str) -> i16 {
     match vel_text {
         "fff" => 16,

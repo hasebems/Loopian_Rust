@@ -494,12 +494,11 @@ impl LoopianCmd {
     fn change_current_part(&mut self, part_str: &str) -> Result<String, CmdError> {
         if let Some(pnum) = detect_part(part_str) {
             self.input_part = pnum;
-            Ok(format!("Changed current part to {pnum}."))
+            Ok(format!("Changed current part to {}.", get_part_txt(pnum)))
         } else {
             Err(CmdError::InvalidPart)
         }
     }
-
     fn com_with_part(
         &mut self,
         part_num: Vec<usize>,

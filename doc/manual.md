@@ -46,6 +46,7 @@
     - [再生に関する仕様](#再生に関する仕様)
     - [set command のその他の仕様](#set-command-のその他の仕様)
     - [Damper Pedal のより細かな制御](#damper-pedal-のより細かな制御)
+    - [音楽表現関数の詳細仕様](#音楽表現関数の詳細仕様)
 - [Graphic](#graphic)
 - [setting.tomlの記述](#settingtomlの記述)
 - [Loopian::ORBIT/QUBIT での演奏](#loopianorbitqubit-での演奏)
@@ -166,6 +167,8 @@ cd /path/to/loopian
 * `left2` or `L2` : 入力パートをleft2 にする
 * `right1` or `R1` : 入力パートをright1 にする
 * `right2` or `R2` : 入力パートをright2 にする
+* `V1` : 入力パートを violin1 にする
+* `V2` : 入力パートを violin2 にする
 * 下図に各パートのオクターブ指定方法を示す
 
 <img src="./image/design_octfixed.png" width="70%">
@@ -294,7 +297,6 @@ cd /path/to/loopian
     - `stacc(50)` : 音価を半分にする（1-100まで調整可能）
     - `legato(120)` : 音価を20%増やす（100-200まで調整可能）
     - `trns(para)` or `para()` : 和音変換時、parallel 指定する。（全フレーズの parallel と同じ）
-    - `asMin()` or `as(VI)` : parallel 指定の時、Phrase を VI のスケールとみなし、VI からの差分で並行移動する
 
 
 ### Dynamic-Pattern
@@ -576,7 +578,7 @@ cd /path/to/loopian
 - `set.flowvel(vel)` : FLOW.dyn(xx) と機能は同じだが、こちらは velocity 値を直接指定する
 - `set.midi_input_ch(ch)` : FLOW の MIDI Input Ch を 12/13ch 以外の ch でも使えるようにする 
 - `set.elasticity(type, depth)` : 1小節内のテンポの揺れを設定する
-    - type: テンポの揺れのタイプを選択(0:無し、1:Ballad, 2:Upbeat)
+    - type: テンポの揺れのタイプを選択(0:無し、1:Ballad, 2:Swing)
     - depth: 上記のタイプの強さを 0..10 で設定できる
 
 ### Damper Pedal のより細かな制御
@@ -594,6 +596,19 @@ cd /path/to/loopian
   - Composition にて `X``O` 指定があっても、ペダル制御があればそちらを優先する
   - 優先順位は `DAMPER.[]` > `.dmp(on/off)` > `{X/O}`
 
+### 音楽表現関数の詳細仕様
+
+  - `asMin()` or `as(VI)` : parallel 指定の時、Phrase を VI のスケールとみなし、VI からの差分で並行移動する
+  - 音楽表現関数の中でも音量や音価の変化を指示する場合、`R1.fn()` のように、Phrase を記述せずにパート名の後にピリオドで繋げて指定することも可能である
+    - `R1.dyn(mf)` : R1 の音量を mf にする
+    - `L2.stacc()` : L2 を staccato にする(その他：legato())
+  - Phrase の音量の時間変化を指示するメッセージとして、cresc, dim を使用することができる[未実装]
+    - `cresc()` or `crs()` : Phrase 終了までだんだん大きくする（１段階大きくする）
+    - `dim()` : Phrase 終了までだんだん小さくする（１段階小さくする）
+    - `cresc(mf)` : Phrase 最後が mf になるようにだんだん大きくする
+    - `cresc(mp..f)` : Phrase が mp から f に、二拍でなるようにだんだん大きくする（ピリオドが１拍を示す）
+    - `cresc(mp/f)` : １小節で音量が移行する（スラッシュが１小節を示す）
+
 ## Graphic
 
 - `graph.light` : 白基調の画面に変化
@@ -610,6 +625,8 @@ cd /path/to/loopian
 - `graph.jumping` : 図形が beat に合わせて跳ねるパターン
 - `graph.wavestick` : 画面全体に、棒状の図形がサイン波の模様を作るパターン
 - `graph.circlethreads` : 画面中央に、ランダムな糸が円形に現れるパターン
+- `graph.noteroll(a)` : Note の音高に応じて円がピアノロール風に現れるパターン
+    - `a` : v-上下、h-左右
 - shift + space で、以下のように4段階で表示する Text の状況を変化させられる。4の次は1に戻る。
     - 1: 通常の表示。Graphic は文字の後ろのレイヤーとして表示。
     - 2: Scroll Text が少し薄くなる。Graphic は文字の前のレイヤーとして表示。

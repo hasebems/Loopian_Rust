@@ -41,15 +41,6 @@ impl GuiEv {
             during_play: false,
         }
     }
-    pub fn get_part_txt(&self, input_part: usize) -> &str {
-        match input_part {
-            LEFT1 => "L1",
-            LEFT2 => "L2",
-            RIGHT1 => "R1",
-            RIGHT2 => "R2",
-            _ => "__",
-        }
-    }
     pub fn get_indicator(&self, num: usize) -> &str {
         &self.indicator[num]
     }
