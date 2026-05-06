@@ -153,6 +153,11 @@ impl CircleThread {
         }
     }
 }
+impl Default for CircleThread {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl GenerativeView for CircleThread {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) {
         self.rs = rs;

@@ -79,10 +79,7 @@ fn create_lissajous(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>>
 }
 
 fn create_beatlissa(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
-    let md = ctx
-        .arg
-        .and_then(|x| x.parse::<i32>().ok())
-        .unwrap_or(0);
+    let md = ctx.arg.and_then(|x| x.parse::<i32>().ok()).unwrap_or(0);
     let num = ctx
         .meter_text
         .split('/')

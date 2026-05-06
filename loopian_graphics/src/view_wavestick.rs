@@ -43,6 +43,11 @@ impl WaveStick {
         a + (b - a) * t
     }
 }
+impl Default for WaveStick {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl GenerativeView for WaveStick {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) {
         self.rs = rs;
