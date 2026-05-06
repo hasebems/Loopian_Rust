@@ -160,8 +160,8 @@ impl Note {
             }
             #[cfg(feature = "verbose")]
             println!(
-                "On: N{} V{} D{} Trns: {}, ",
-                num, vel, self.duration, self._deb_txt
+                "On: N{} V{} D{} Trns: {}, MIDI: {}",
+                num, vel, self.duration, self._deb_txt, self.midi_ch
             );
             true
         } else {

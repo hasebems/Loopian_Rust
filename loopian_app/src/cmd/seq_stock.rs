@@ -48,7 +48,7 @@ pub struct SeqDataStock {
 impl SeqDataStock {
     pub fn new() -> Self {
         let mut pd = Vec::new();
-        for i in 0..MAX_KBD_PART {
+        for i in 0..(MAX_KBD_PART + MAX_VIOLIN_PART) {
             let mut vari = Vec::new();
             let base_note = Self::default_base_note(i);
             for _ in 0..(MAX_VARIATION + 1) {
@@ -74,14 +74,16 @@ impl SeqDataStock {
             PhraseAs::Variation(v) => v,
             PhraseAs::Measure(_m) => MAX_VARIATION,
         };
-        if self.pdt[part][num].send_enable {
-            Some(&self.pdt[part][num])
+        let ptnum = Self::ptnum(part);
+        if self.pdt[ptnum][num].send_enable {
+            Some(&self.pdt[ptnum][num])
         } else {
             None
         }
     }
     pub fn get_cdstk(&self, part: usize) -> &CompositionDataStock {
-        &self.cdt[part]
+        let ptnum = Self::ptnum(part);
+        &self.cdt[ptnum]
     }
     pub fn get_pdlstk(&self, part: usize) -> &PedalDataStock {
         &self.pdldt[part - MAX_ALL_KBD_PART]
@@ -101,14 +103,15 @@ impl SeqDataStock {
         } else {
             return Ok(SetPhraseResult::BufferedAdditional);
         }
-        if part < MAX_KBD_PART {
+        if part < MAX_KBD_PART || (VIOLIN1..=VIOLIN2).contains(&part) {
             let num = match vari {
                 PhraseAs::Normal => 0,
                 PhraseAs::Variation(v) => v,
                 PhraseAs::Measure(_m) => MAX_VARIATION,
             };
-            if self.pdt[part][num].set_raw_vec(normalized_vec, Some(&self.cluster_memory)) {
-                self.pdt[part][num].set_recombined(
+            let ptnum = Self::ptnum(part);
+            if self.pdt[ptnum][num].set_raw_vec(normalized_vec, Some(&self.cluster_memory)) {
+                self.pdt[ptnum][num].set_recombined(
                     Some(self.input_mode),
                     self.tick_for_onemsr,
                     self.tick_for_beat,
@@ -154,6 +157,18 @@ impl SeqDataStock {
                     None,
                 );
             }
+        } else if (VIOLIN1..=VIOLIN2).contains(&part) {
+            let ptnum = Self::ptnum(part);
+            for i in 0..(MAX_VARIATION + 1) {
+                if self.pdt[ptnum][i].set_raw("[]".to_string(), Some(&self.cluster_memory)) {
+                    self.pdt[ptnum][i].set_recombined(
+                        Some(self.input_mode),
+                        self.tick_for_onemsr,
+                        self.tick_for_beat,
+                        Some(false),
+                    );
+                }
+            }
         }
     }
     pub fn set_raw_composition(
@@ -161,8 +176,9 @@ impl SeqDataStock {
         part: usize,
         input_text: Vec<String>,
     ) -> Result<(), CompositionCmdError> {
-        if part < MAX_COMPOSITION_PART && self.cdt[part].set_raw_vec(input_text) {
-            self.cdt[part].set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
+        let ptnum = Self::ptnum(part);
+        if ptnum < MAX_COMPOSITION_PART && self.cdt[ptnum].set_raw_vec(input_text) {
+            self.cdt[ptnum].set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
             return Ok(());
         }
         if part < MAX_COMPOSITION_PART {
@@ -186,15 +202,16 @@ impl SeqDataStock {
     pub fn change_oct(&mut self, oct: i32, relative: bool, part: usize) -> bool {
         let mut update = false;
         let new_bd: i32;
+        let ptnum = Self::ptnum(part);
         if oct == 0 {
             // Reset Octave
-            new_bd = Self::default_base_note(part);
-            let dbn_now = self.pdt[part][0].base_note;
+            new_bd = Self::default_base_note(ptnum);
+            let dbn_now = self.pdt[ptnum][0].base_note;
             if new_bd != dbn_now {
                 update = true;
             }
         } else {
-            let old = self.pdt[part][0].base_note / 12 - 1;
+            let old = self.pdt[ptnum][0].base_note / 12 - 1;
             let mut new = old;
             if relative {
                 new += oct;
@@ -210,7 +227,7 @@ impl SeqDataStock {
             new_bd = (new + 1) * 12;
         }
         if update {
-            for epd in self.pdt[part].iter_mut() {
+            for epd in self.pdt[ptnum].iter_mut() {
                 epd.base_note = new_bd;
                 epd.set_recombined(
                     Some(self.input_mode),
@@ -310,8 +327,22 @@ impl SeqDataStock {
             epdl.set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
         }
     }
-    fn default_base_note(part_num: usize) -> i32 {
-        (DEFAULT_NOTE_NUMBER as i32) + 12 * ((part_num as i32) - 2)
+    fn ptnum(part: usize) -> usize {
+        if (VIOLIN1..=VIOLIN2).contains(&part) {
+            part - VIOLIN1 + MAX_KBD_PART
+        } else {
+            part
+        }
+    }
+    fn default_base_note(ptnum: usize) -> i32 {
+        // ptnum: MAX_KBD_PART のあと、VIOLIN1, VIOLIN2 と続く
+        if ptnum < MAX_KBD_PART {
+            (DEFAULT_NOTE_NUMBER as i32) + 12 * ((ptnum as i32) - 2)
+        //} else if ptnum < MAX_KBD_PART + MAX_VIOLIN_PART {
+        //    72
+        } else {
+            60
+        }
     }
 }
 

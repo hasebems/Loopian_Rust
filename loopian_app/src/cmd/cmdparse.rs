@@ -78,6 +78,8 @@ pub fn detect_part(part_str: &str) -> Option<usize> {
         "left2" | "L2" => Some(LEFT2),
         "right1" | "R1" => Some(RIGHT1),
         "right2" | "R2" => Some(RIGHT2),
+        "V1" => Some(VIOLIN1),
+        "V2" => Some(VIOLIN2),
         _ => None,
     }
 }
@@ -97,6 +99,9 @@ fn get_part_num(part_str: &str) -> Result<Vec<usize>, CmdError> {
         "D" | "DAMPER" => vec![DAMPER_PART],
         "SO" | "SOSTENUTO" => vec![SOSTENUTO_PART],
         "SH" | "SHIFT" => vec![SHIFT_PART],
+        "V" => vec![VIOLIN1, VIOLIN2],
+        "V1" => vec![VIOLIN1],
+        "V2" => vec![VIOLIN2],
         "ALL" => (0..MAX_COMPOSITION_PART).collect(),
         _ => return Err(CmdError::UnknownCommand),
     };
@@ -120,7 +125,7 @@ pub fn classify_cmd(tokens: &[String]) -> CmdKind {
         '@' => CmdKind::At,
         '[' => CmdKind::Bracket,
         '{' => CmdKind::Brace,
-        _ if token_count >= 2 && matches!(first, 'L' | 'R' | 'F' | 'A' | 'D' | 'S') => {
+        _ if token_count >= 2 && matches!(first, 'L' | 'R' | 'F' | 'A' | 'D' | 'S' | 'V') => {
             if let Ok(part_num) = get_part_num(first_token) {
                 CmdKind::PartWithPayload(part_num)
             } else {
@@ -489,13 +494,7 @@ impl LoopianCmd {
     fn change_current_part(&mut self, part_str: &str) -> Result<String, CmdError> {
         if let Some(pnum) = detect_part(part_str) {
             self.input_part = pnum;
-            Ok(match pnum {
-                LEFT1 => "Changed current part to left1.".to_string(),
-                LEFT2 => "Changed current part to left2.".to_string(),
-                RIGHT1 => "Changed current part to right1.".to_string(),
-                RIGHT2 => "Changed current part to right2.".to_string(),
-                _ => return Err(CmdError::InvalidPart),
-            })
+            Ok(format!("Changed current part to {pnum}."))
         } else {
             Err(CmdError::InvalidPart)
         }
@@ -624,6 +623,8 @@ impl LoopianCmd {
                     self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
                 } else if (DAMPER_PART..=SHIFT_PART).contains(&part_num) {
                     self.sndr.send_pedal_to_elapse(part_num, &self.dtstk);
+                } else if (VIOLIN1..=VIOLIN2).contains(&part_num) {
+                    self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
                 }
                 Ok(SetPhraseResult::Applied)
             }

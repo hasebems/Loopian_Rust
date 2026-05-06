@@ -129,8 +129,7 @@ impl MidiTx {
             return;
         }
         if let Some(cnct) = self.connection_tx.as_mut() {
-            let status_with_ch = status & 0xf0; // ch.1
-            let _ = cnct.send(&[status_with_ch, dt1, dt2]);
+            let _ = cnct.send(&[status, dt1, dt2]);
         }
         if let Some(cnct) = self.connection_ext_loopian.as_mut() {
             let status_with_ch = (status & 0xf0) + 10; // ch.11
