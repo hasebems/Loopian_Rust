@@ -6,8 +6,8 @@
 //  originally based on p5.js code by zhaoyc
 //      https://openprocessing.org/sketch/1627198
 //
-use super::draw_graph::Resize;
-use super::generative_view::*;
+use loopian_graphic_api::Resize;
+use loopian_graphic_api::generative_view::*;
 use nannou::prelude::*;
 
 //*******************************************************************

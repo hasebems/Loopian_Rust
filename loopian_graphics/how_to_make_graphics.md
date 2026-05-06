@@ -1,0 +1,21 @@
+# How to make new graphics
+
+- 新しい描画ファイルを `src/view_xxx.rs` として作成する。
+- `loopian_graphic_api::generative_view::GenerativeView` を実装する。
+- 必要に応じて `NoteObj` / `BeatObj` を実装する。
+- `Resize` は `loopian_graphic_api::Resize` を使う。
+- 画面モード切替が必要なら `set_mode` を実装する。
+- `loopian_graphics/src/lib.rs` に `pub mod view_xxx;` を追加する。
+- `loopian_graphics/src/lib.rs` で `use view_xxx::YourGraphic;` を追加する。
+- `loopian_graphics/src/lib.rs` に factory 関数 `create_xxx(ctx: &GraphicContext) -> Option<Box<dyn GenerativeView>>` を追加する。
+- `ensure_builtin_graphics()` に `reg.insert("graph_command_name".to_string(), create_xxx);` を追加する。
+- 引数付きコマンドにしたい場合は `ctx.arg` を使ってパラメータを解釈する。
+- 拍情報が必要な場合は `ctx.meter_text` を使って拍子分子を解釈する。
+- 時間情報が必要な場合は `ctx.crnt_time` を使う。
+- フォントが必要な場合は `ctx.font_nrm` を使う。
+- アプリ本体から呼ぶコマンドは `graph.graph_command_name` の形式で使う。
+- 引数付きは `graph.graph_command_name(arg)` の形式で使う。
+- 追加後に workspace ルートで `cargo check` を実行してビルド確認する。
+- 既存の API crate (`loopian_graphic_api`) には新しい graphic 名を追加しない。
+- 本体に残す特別扱い graphic（現在は ripple）にしない限り、`loopian_app` 側の編集は不要。
+- 必要なら `register_graphic()` を使って外部 crate から動的登録する。

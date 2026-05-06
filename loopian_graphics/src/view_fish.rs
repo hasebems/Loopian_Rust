@@ -6,8 +6,8 @@
 //  originally based on p5.js code by zhaoyc
 //      https://openprocessing.org/sketch/1608539
 //
-use super::draw_graph::Resize;
-use crate::graphic::generative_view::{GenerativeView, GraphMode};
+use loopian_graphic_api::Resize;
+use loopian_graphic_api::generative_view::{GenerativeView, GraphMode};
 use nannou::prelude::*;
 
 // 定数定義を追加（必要に応じてモジュールやスコープに配置）

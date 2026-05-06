@@ -6,8 +6,8 @@
 //  originally based on p5.js code by takawo
 //      https://openprocessing.org/sketch/1914365
 //
-use super::draw_graph::Resize;
-use super::generative_view::{GenerativeView, GraphMode};
+use loopian_graphic_api::Resize;
+use loopian_graphic_api::generative_view::{GenerativeView, GraphMode};
 use nannou::noise::{NoiseFn, Perlin};
 use nannou::prelude::*;
 
