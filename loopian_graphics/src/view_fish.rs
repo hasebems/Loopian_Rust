@@ -32,6 +32,11 @@ impl SchoolOfFish {
         }
     }
 }
+impl Default for SchoolOfFish {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl GenerativeView for SchoolOfFish {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) {
         // density に応じて魚の数を増やす

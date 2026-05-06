@@ -51,6 +51,11 @@ impl Jumping {
         }
     }
 }
+impl Default for Jumping {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl GenerativeView for Jumping {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) {
         self.rs = rs;
