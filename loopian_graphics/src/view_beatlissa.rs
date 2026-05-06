@@ -5,8 +5,8 @@
 //
 use nannou::prelude::*;
 
-use super::draw_graph::Resize;
-use super::generative_view::{BeatObj, GenerativeView, GraphMode};
+use loopian_graphic_api::Resize;
+use loopian_graphic_api::generative_view::{BeatObj, GenerativeView, GraphMode};
 
 //*******************************************************************
 //      struct BeatLissa

@@ -4,8 +4,8 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use nannou::prelude::*;
-use super::generative_view::{GenerativeView, GraphMode};
-use super::draw_graph::*;
+use loopian_graphic_api::generative_view::{BeatObj, GenerativeView, GraphMode, NoteObj};
+use loopian_graphic_api::Resize;
 
 //*******************************************************************
 //     メモ： View 作成のテンプレート

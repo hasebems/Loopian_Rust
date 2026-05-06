@@ -1,6 +1,8 @@
 [workspace]
 members = [
     "loopian_app",
+    "loopian_graphic_api",
+    "loopian_graphics",
 ]
 resolver = "2"
 

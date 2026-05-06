@@ -6,9 +6,11 @@
 use nannou::prelude::*;
 use std::f32::consts::PI;
 
-use super::draw_graph::Resize;
-use super::generative_view::{GenerativeView, GraphMode};
-use crate::common::lpnlib::*;
+use loopian_graphic_api::Resize;
+use loopian_graphic_api::generative_view::{GenerativeView, GraphMode};
+
+const MIN_NOTE_NUMBER: u8 = 21;
+const MAX_NOTE_NUMBER: u8 = 108;
 
 pub struct Lissajous {
     crnt_time: f32,
