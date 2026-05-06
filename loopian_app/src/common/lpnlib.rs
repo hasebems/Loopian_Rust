@@ -51,7 +51,7 @@ pub const RIGHT2: usize = PtName::Right2 as usize;
 pub const MAX_LEFT_PART: usize = LEFT2 + 1;
 pub const MAX_RIGHT_PART: usize = RIGHT2 - LEFT2;
 pub const MAX_KBD_PART: usize = MAX_LEFT_PART + MAX_RIGHT_PART;
-pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + 1;
+pub const MAX_COMPOSITION_PART: usize = MAX_KBD_PART + MAX_VIOLIN_PART;
 pub const MAX_VARIATION: usize = 10; // normal + vari(1-9) + 1(for measure)
 pub const FLOW_PART: usize = PtName::Flow as usize; // Flow part
 pub const MAX_ALL_KBD_PART: usize = PtName::Flow as usize + 1; // Flow part included
@@ -62,6 +62,7 @@ pub const MAX_PEDAL_PART: usize = PtName::Shift as usize + 1 - PtName::Damper as
 pub const VIOLIN1: usize = PtName::Violin1 as usize; // Violin1 part
 pub const VIOLIN2: usize = PtName::Violin2 as usize; // Violin2 part
 pub const FLOW_VN_PART: usize = PtName::FlowVn as usize; // Flow Violin part
+pub const MAX_VIOLIN_PART: usize = PtName::Violin2 as usize + 1 - PtName::Violin1 as usize; // Violin1, Violin2, FlowVn
 pub const NONE_NUM: usize = 255;
 
 //*******************************************************************
