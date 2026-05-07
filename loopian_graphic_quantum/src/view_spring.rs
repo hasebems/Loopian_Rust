@@ -14,21 +14,36 @@ pub struct Spring {
     pub last_time: f32,
     pub global_phase: f32,
     pub drive_amp: f32,
+    pub drive_freq: f32,
+    pub left_hit: f32,
+    pub left_hit_vel: f32,
 }
 
 impl Spring {
     const NUM_UNITS: usize = 28;
-    const BASE_AMP: f32 = 0.11;
+    // 左端の定常駆動振幅。大きいほど全体の見かけ振幅は増える。
+    const BASE_AMP: f32 = 0.08;
+    // 駆動振幅が基準値に戻る速さ。大きいほど余韻が短くなる。
     const DRIVE_DECAY: f32 = 1.6;
-    const PHASE_SPEED: f32 = 2.4;
-    const PHASE_STEP: f32 = 0.42;
+    // 左端の定常駆動周波数。
+    const BASE_FREQ: f32 = 2.2;
+    // 隣接質点間の結合バネ定数。右へ伝わる速さを上げたいなら基本はこれを上げる。
+    const SPRING_K: f32 = 80.0;
+    // 鎖全体の速度減衰。右へ届きやすくしたいなら下げる（下げ過ぎると暴れやすい）。
+    const DAMPING: f32 = 2.0;
+    // 数値積分の内部刻み。小さくすると安定だが重くなる。
+    const SUBSTEP_DT: f32 = 1.0 / 240.0;
+    // NoteOnインパルス自体の復元力。大きいほど「叩き」の周期は短くなる。
+    const HIT_K: f32 = 220.0;
+    // NoteOnインパルスの減衰。小さくすると叩きの余韻が長くなり、右へ伝搬しやすくなる。
+    const HIT_DAMPING: f32 = 8.0;
     const SPRING_COILS: usize = 14;
 
     pub fn new(font: Font) -> Self {
         let osc = (0..Self::NUM_UNITS)
             .map(|i| {
                 let f = i as f32 / (Self::NUM_UNITS.saturating_sub(1)) as f32;
-                OscUnit::new(f, f * TAU * 0.15)
+                OscUnit::new(f)
             })
             .collect();
 
@@ -42,33 +57,34 @@ impl Spring {
             last_time: 0.0,
             global_phase: 0.0,
             drive_amp: Self::BASE_AMP,
+            drive_freq: Self::BASE_FREQ,
+            left_hit: 0.0,
+            left_hit_vel: 0.0,
         }
     }
 
     pub fn clear(&mut self) {
-        self.osc.iter_mut().for_each(OscUnit::reset_energy);
+        self.osc.iter_mut().for_each(OscUnit::clear);
         self.notes.clear();
         self.beats.clear();
         self.drive_amp = Self::BASE_AMP;
+        self.drive_freq = Self::BASE_FREQ;
+        self.left_hit = 0.0;
+        self.left_hit_vel = 0.0;
     }
 
     fn spawn_note(&mut self, nt: i32, vel: i32, pt: i32, tm: f32) {
-        let _ = (pt, tm);
-        let idx = nt.rem_euclid(Self::NUM_UNITS as i32) as usize;
-        let kick = map_range(vel as f32, 0.0, 127.0, 0.04, 0.28);
-        if let Some(osc) = self.osc.get_mut(idx) {
-            osc.energy = (osc.energy + kick).clamp(0.0, 1.0);
-        }
-        self.drive_amp = (self.drive_amp + kick * 0.4).clamp(Self::BASE_AMP, 0.65);
+        let _ = (nt, pt, tm);
+        let kick = map_range(vel as f32, 0.0, 127.0, 0.6, 3.2);
+        // Strike only the left boundary. The sign alternates with current phase to avoid DC drift.
+        let sign = if self.global_phase.cos() >= 0.0 { 1.0 } else { -1.0 };
+        self.left_hit_vel += sign * kick;
+        self.drive_amp = (self.drive_amp + kick * 0.02).clamp(Self::BASE_AMP, 0.65);
+        self.drive_freq = (self.drive_freq + kick * 0.03).clamp(Self::BASE_FREQ, 5.8);
     }
 
     fn spawn_beat(&mut self, bt: i32, ct: f32, dt: f32) {
-        let _ = bt;
-        let _ = ct;
-        self.drive_amp = (self.drive_amp + 0.06).clamp(Self::BASE_AMP, 0.65);
-        for osc in &mut self.osc {
-            osc.energy = (osc.energy + dt * 0.05).clamp(0.0, 1.0);
-        }
+        let _ = (bt, ct, dt);
     }
 
     fn style(&self) -> (Rgba, Rgba, Rgba, Rgba) {
@@ -152,12 +168,48 @@ impl GenerativeView for Spring {
         };
         self.last_time = crnt_time;
 
-        self.global_phase += dt * Self::PHASE_SPEED;
+        self.global_phase += dt * self.drive_freq;
         self.drive_amp += (Self::BASE_AMP - self.drive_amp) * dt * Self::DRIVE_DECAY;
+        self.drive_freq += (Self::BASE_FREQ - self.drive_freq) * dt * 0.9;
 
-        for (i, osc) in self.osc.iter_mut().enumerate() {
-            osc.phase = self.global_phase + i as f32 * Self::PHASE_STEP + osc.phase_jitter;
-            osc.energy += (0.0 - osc.energy) * dt * 1.1;
+        if self.osc.len() < 2 {
+            return;
+        }
+
+        let mut substeps = (dt / Self::SUBSTEP_DT).ceil() as usize;
+        substeps = substeps.max(1);
+        let h = dt / substeps as f32;
+
+        for _ in 0..substeps {
+            let hit_force = -Self::HIT_K * self.left_hit - Self::HIT_DAMPING * self.left_hit_vel;
+            self.left_hit_vel += hit_force * h;
+            self.left_hit += self.left_hit_vel * h;
+
+            let forced_left_y = self.drive_amp * self.global_phase.sin() + self.left_hit;
+            if let Some(left) = self.osc.get_mut(0) {
+                left.y = forced_left_y;
+                left.vel = 0.0;
+            }
+
+            let y_snapshot: Vec<f32> = self.osc.iter().map(|o| o.y).collect();
+
+            for i in 1..self.osc.len() {
+                let y = y_snapshot[i];
+                let y_left = y_snapshot[i - 1];
+                let y_right = if i + 1 < self.osc.len() {
+                    y_snapshot[i + 1]
+                } else {
+                    0.0
+                };
+
+                let force = Self::SPRING_K * (y_left + y_right - 2.0 * y)
+                    - Self::DAMPING * self.osc[i].vel;
+                self.osc[i].vel += force * h;
+            }
+
+            for osc in self.osc.iter_mut().skip(1) {
+                osc.y += osc.vel * h;
+            }
         }
     }
 
@@ -192,10 +244,8 @@ impl GenerativeView for Spring {
 
         for (i, osc) in self.osc.iter().enumerate() {
             let x = left + step * i as f32;
-            let amp = h * (self.drive_amp + osc.energy * 0.18);
-            let y = base_y + amp * osc.phase.sin();
-            let wobble = (osc.phase * 0.5 + i as f32 * 0.07).sin() * (w / 320.0);
-            let mass_center = pt2(x + wobble, y);
+            let y = base_y + h * osc.y;
+            let mass_center = pt2(x, y);
             let anchor = pt2(x, top_y);
 
             self.draw_spring(
@@ -219,23 +269,22 @@ impl GenerativeView for Spring {
 
 pub struct OscUnit {
     pub x_ratio: f32,
-    pub phase: f32,
-    pub phase_jitter: f32,
-    pub energy: f32,
+    pub y: f32,
+    pub vel: f32,
 }
 
 impl OscUnit {
-    pub fn new(x_ratio: f32, phase_jitter: f32) -> Self {
+    pub fn new(x_ratio: f32) -> Self {
         Self {
             x_ratio,
-            phase: 0.0,
-            phase_jitter,
-            energy: 0.0,
+            y: 0.0,
+            vel: 0.0,
         }
     }
 
-    pub fn reset_energy(&mut self) {
-        self.energy = 0.0;
+    pub fn clear(&mut self) {
+        self.y = 0.0;
+        self.vel = 0.0;
     }
 }
 
