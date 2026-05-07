@@ -9,9 +9,18 @@ use chrono::Local;
 //*******************************************************************
 //          Func
 //*******************************************************************
+// PtName を 0-3(keyboard) と 4-5(violin) に詰めた数値に変換する
 pub fn ptnum(part: usize) -> usize {
     if (VIOLIN1..=VIOLIN2).contains(&part) {
         part - VIOLIN1 + MAX_KBD_PART
+    } else {
+        part
+    }
+}
+// 0-3(keyboard) と 4-5(violin) に詰めた数値を PtName に戻す
+pub fn return_part_num(part: usize) -> usize {
+    if part >= MAX_KBD_PART {
+        part - MAX_KBD_PART + VIOLIN1
     } else {
         part
     }

@@ -790,9 +790,12 @@ impl ElapseStack {
             // part
             let crnt_ = self.tg.get_crnt_msr_tick();
             for i in 0..MAX_KBD_PART {
-                let part = Rc::clone(&self.piano_part[i]);
-                let part_ui = part.borrow_mut().gen_part_indicator(&crnt_);
+                let part_ui = self.piano_part[i].borrow_mut().gen_part_indicator(&crnt_);
                 self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
+            }
+            for i in 0..MAX_VIOLIN_PART {
+                let part_ui = self.violin_part[i].borrow_mut().gen_part_indicator(&crnt_);
+                self.send_msg_to_ui(UiMsg::PartUi(i + MAX_KBD_PART, part_ui));
             }
             self.flac = (t % 10) as u64;
         }

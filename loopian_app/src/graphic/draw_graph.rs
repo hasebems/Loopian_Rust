@@ -418,9 +418,9 @@ impl Graphic {
             .w_h(400.0, 40.0);
 
         for i in 0..(MAX_KBD_PART + MAX_VIOLIN_PART) {
-            let pt = guiev.get_indicator(INDC_PART + i);
-            let ptnum = ptnum(i);
-            draw.text(&(get_part_txt(ptnum).to_string() + pt))
+            let pt_sts = &("  ".to_owned() + guiev.get_indicator(INDC_PART + i));
+            let part_num = return_part_num(i);
+            draw.text(&(get_part_txt(part_num).to_string() + pt_sts))
                 .font(self.font_bold.clone())
                 .font_size(20)
                 .color(txt_color)
