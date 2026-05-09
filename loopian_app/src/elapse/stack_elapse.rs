@@ -60,6 +60,7 @@ pub struct ElapseStack {
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
     key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
     limit_for_deb: i32,
+    part_ui_old: [bool; MAX_KBD_PART + MAX_VIOLIN_PART],
 }
 //*******************************************************************
 //          Public Method for Elapse Stack Struct
@@ -149,6 +150,7 @@ impl ElapseStack {
             elapse_vec,
             key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
             limit_for_deb: 0,
+            part_ui_old: [false; MAX_KBD_PART + MAX_VIOLIN_PART],
         }
     }
     pub fn add_elapse(&mut self, elps: Rc<RefCell<dyn Elapse>>) {
@@ -789,13 +791,20 @@ impl ElapseStack {
             self.send_msg_to_ui(UiMsg::TickUi(self.during_play, m, b, t));
             // part
             let crnt_ = self.tg.get_crnt_msr_tick();
-            for i in 0..MAX_KBD_PART {
-                let part_ui = self.piano_part[i].borrow_mut().gen_part_indicator(&crnt_);
-                self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
-            }
-            for i in 0..MAX_VIOLIN_PART {
-                let part_ui = self.violin_part[i].borrow_mut().gen_part_indicator(&crnt_);
-                self.send_msg_to_ui(UiMsg::PartUi(i + MAX_KBD_PART, part_ui));
+            for i in 0..(MAX_KBD_PART + MAX_VIOLIN_PART) {
+                let part_ui = if i < MAX_KBD_PART {
+                    self.piano_part[i].borrow_mut().gen_part_indicator(&crnt_)
+                } else {
+                    self.violin_part[i - MAX_KBD_PART].borrow_mut().gen_part_indicator(&crnt_)
+                };
+                let exist = part_ui.exist;
+                if exist {
+                    self.send_msg_to_ui(UiMsg::PartUi(i, part_ui));
+                } else if self.part_ui_old[i] {
+                    // 前回はあったのに今回はない場合、消すイベントを送る
+                    self.send_msg_to_ui(UiMsg::PartUi(i, PartUi::default()));
+                }
+                self.part_ui_old[i] = exist;
             }
             self.flac = (t % 10) as u64;
         }

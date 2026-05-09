@@ -571,6 +571,17 @@ pub struct PartUi {
     pub flow: bool,
     pub chord_name: String,
 }
+impl PartUi {
+    pub fn default() -> Self {
+        Self {
+            exist: false,
+            msr_in_loop: 0,
+            all_msrs: 0,
+            flow: false,
+            chord_name: String::new(),
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GraphicEv {
     NoteEv(NoteUiEv),

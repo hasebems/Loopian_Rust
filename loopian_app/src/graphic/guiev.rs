@@ -19,7 +19,7 @@ pub const MAX_INDICATOR: usize = 10;
 //*******************************************************************
 pub struct GuiEv {
     has_gui: bool,
-    indicator: Vec<String>,
+    indicator: Vec<Option<String>>,
     graphic_ev: Vec<GraphicEv>,
     crnt_msr: CrntMsrTick,
     numerator: i32,
@@ -28,9 +28,9 @@ pub struct GuiEv {
 }
 impl GuiEv {
     pub fn new(has_gui: bool) -> Self {
-        let mut indicator = vec![String::from("---"); MAX_INDICATOR];
-        indicator[INDC_KEY] = "C".to_string();
-        indicator[INDC_BPM] = DEFAULT_BPM.to_string();
+        let mut indicator: Vec<Option<String>> = vec![None; MAX_INDICATOR];
+        indicator[INDC_KEY] = Some("C".to_string());
+        indicator[INDC_BPM] = Some(DEFAULT_BPM.to_string());
         Self {
             has_gui,
             indicator,
@@ -41,8 +41,11 @@ impl GuiEv {
             during_play: false,
         }
     }
+    pub fn get_indicator_direct(&self, num: usize) -> Option<&String> {
+        self.indicator[num].as_ref()
+    }
     pub fn get_indicator(&self, num: usize) -> &str {
-        &self.indicator[num]
+        self.indicator[num].as_deref().unwrap_or("---")
     }
     pub fn get_graphic_ev(&self) -> Option<Vec<GraphicEv>> {
         if self.has_gui {
@@ -65,7 +68,7 @@ impl GuiEv {
         match msg {
             UiMsg::NewMeasure => {
                 // 小節頭の時のみ、key 表示を更新する
-                self.indicator[INDC_KEY] = key.clone();
+                self.indicator[INDC_KEY] = Some(key.clone());
             }
             UiMsg::NewBeat(beat) => {
                 self.graphic_ev.push(GraphicEv::BeatEv(beat));
@@ -77,17 +80,17 @@ impl GuiEv {
                 } else {
                     " ↓".to_string()
                 };
-                self.indicator[INDC_BPM] = format!("{}{}", disp_bpm, rate_txt);
+                self.indicator[INDC_BPM] = Some(format!("{}{}", disp_bpm, rate_txt));
             }
             UiMsg::Meter(nume, denomi) => {
-                self.indicator[INDC_METER] = format!("{}/{}", nume, denomi);
+                self.indicator[INDC_METER] = Some(format!("{}/{}", nume, denomi));
                 self.numerator = nume;
                 self.denomirator = denomi;
             }
             UiMsg::TickUi(during_play, m, b, t) => {
                 let p = if during_play { ">" } else { " " };
                 let msr = if m >= 0 { m } else { 0 };
-                self.indicator[INDC_TICK] = format!("{}{}:{}:{:>03}", p, msr, b, t);
+                self.indicator[INDC_TICK] = Some(format!("{}{}:{}:{:>03}", p, msr, b, t));
                 self.during_play = during_play;
                 self.crnt_msr.msr = m;
                 let base_tick = DEFAULT_TICK_FOR_ONE_MEASURE / self.denomirator;
@@ -97,12 +100,12 @@ impl GuiEv {
             UiMsg::PartUi(pnum, pui) => {
                 if pui.exist {
                     let loop_msr = format!("{}/{}", pui.msr_in_loop, pui.all_msrs);
-                    self.indicator[INDC_PART + pnum] = format!("{} {}", loop_msr, pui.chord_name);
+                    self.indicator[INDC_PART + pnum] = Some(format!("{} {}", loop_msr, pui.chord_name));
                 } else if pui.flow {
                     let loop_msr = "FLOW".to_string();
-                    self.indicator[INDC_PART + pnum] = format!("{} {}", loop_msr, pui.chord_name);
+                    self.indicator[INDC_PART + pnum] = Some(format!("{} {}", loop_msr, pui.chord_name));
                 } else {
-                    self.indicator[INDC_PART + pnum] = "---".to_string();
+                    self.indicator[INDC_PART + pnum] = None;
                 }
             }
             UiMsg::NoteUi(note_ev) => {
@@ -114,7 +117,7 @@ impl GuiEv {
         //  シーケンサが動作していない時は、key変更は即時反映する
         //  この関数は定期的に呼ばれる前提
         if !self.during_play {
-            self.indicator[INDC_KEY] = key;
+            self.indicator[INDC_KEY] = Some(key);
         }
     }
 }

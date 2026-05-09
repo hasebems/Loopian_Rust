@@ -417,19 +417,22 @@ impl Graphic {
             .x_y(self.rs.eight_indic_left + 120.0, eight_indic_top - 150.0)
             .w_h(400.0, 40.0);
 
+        let mut available_part = 0.0;
         for i in 0..(MAX_KBD_PART + MAX_VIOLIN_PART) {
-            let pt_sts = &("  ".to_owned() + guiev.get_indicator(INDC_PART + i));
-            let part_num = return_part_num(i);
-            draw.text(&(get_part_txt(part_num).to_string() + pt_sts))
-                .font(self.font_bold.clone())
-                .font_size(20)
-                .color(txt_color)
-                .left_justify()
-                .x_y(
-                    self.rs.eight_indic_left,
-                    eight_indic_top - 190.0 - (i as f32) * 30.0,
-                )
-                .w_h(400.0, 30.0);
+            if let Some(pt_sts) = guiev.get_indicator_direct(INDC_PART + i) {
+                let part_num = return_part_num(i);
+                draw.text(&(get_part_txt(part_num).to_string() + "  " + pt_sts))
+                    .font(self.font_bold.clone())
+                    .font_size(20)
+                    .color(txt_color)
+                    .left_justify()
+                    .x_y(
+                        self.rs.eight_indic_left,
+                        eight_indic_top - 190.0 - available_part * 30.0,
+                    )
+                    .w_h(400.0, 30.0);
+                available_part += 1.0;
+            }
         }
     }
     /// Input Text の描画
