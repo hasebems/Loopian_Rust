@@ -8,4 +8,3 @@ nannou = "0.19.0"
 rand = "0.9.2"
 rand_distr = "0.5.1"
 loopian_graphic_api = { path = "../loopian_graphic_api" }
-loopian_graphic_quantum = { path = "../loopian_graphic_quantum" }

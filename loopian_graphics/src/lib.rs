@@ -13,6 +13,7 @@ pub mod view_raineffect;
 pub mod view_sinewave;
 pub mod view_voice4;
 pub mod view_wavestick;
+pub mod view_spring;
 
 use view_beatlissa::BeatLissa;
 use view_circlethds::CircleThread;
@@ -24,6 +25,7 @@ use view_raineffect::RainEffect;
 use view_sinewave::SineWave;
 use view_voice4::Voice4;
 use view_wavestick::WaveStick;
+use view_spring::Spring;
 
 pub struct GraphicContext<'a> {
     pub crnt_time: f32,
@@ -56,6 +58,7 @@ fn ensure_builtin_graphics() {
     reg.insert("wavestick".to_string(), create_wavestick);
     reg.insert("circlethreads".to_string(), create_circlethreads);
     reg.insert("noteroll".to_string(), create_noteroll);
+    reg.insert("spring".to_string(), create_spring);
 }
 
 pub fn register_graphic(name: impl Into<String>, factory: GraphicFactory) {
@@ -68,6 +71,14 @@ fn find_factory(name: &str) -> Option<GraphicFactory> {
     ensure_builtin_graphics();
     let reg = registry().lock().expect("Graphic registry mutex poisoned");
     reg.get(name).copied()
+}
+
+pub fn builtin_graphic_names() -> Vec<String> {
+    ensure_builtin_graphics();
+    let reg = registry().lock().expect("Graphic registry mutex poisoned");
+    let mut names = reg.keys().cloned().collect::<Vec<String>>();
+    names.sort();
+    names
 }
 
 fn create_voice(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
@@ -113,6 +124,10 @@ fn create_circlethreads(_ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeV
     Some(Box::new(CircleThread::new()))
 }
 
+fn create_spring(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
+    Some(Box::new(Spring::new(ctx.font_nrm.clone())))
+}
+
 fn create_noteroll(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
     let roll_mode = ctx.arg.unwrap_or("v");
     Some(Box::new(NoteRoll::new(roll_mode, ctx.gmode)))
@@ -136,13 +151,7 @@ pub fn get_view_instance(
         if let Some(factory) = find_factory(name) {
             factory(&ctx)
         } else {
-            loopian_graphic_quantum::get_view_instance(
-                crnt_time,
-                gmsg,
-                gmode,
-                meter_text,
-                ctx.font_nrm,
-            )
+            None
         }
     } else {
         None
