@@ -102,7 +102,7 @@ fn get_part_num(part_str: &str) -> Result<Vec<usize>, CmdError> {
         "V" => vec![VIOLIN1, VIOLIN2],
         "V1" => vec![VIOLIN1],
         "V2" => vec![VIOLIN2],
-        "ALL" => (0..MAX_COMPOSITION_PART).collect(),
+        "ALL" => vec![LEFT1, LEFT2, RIGHT1, RIGHT2, VIOLIN1, VIOLIN2],
         _ => return Err(CmdError::UnknownCommand),
     };
     Ok(part_num)
