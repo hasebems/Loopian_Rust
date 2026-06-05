@@ -391,8 +391,18 @@ impl InputText {
     }
     /// Answer に出力する文字列をセットする
     fn set_answer_line(&mut self, answer: String) {
-        self.scroll_lines
-            .push((TextAttribute::Answer, "".to_string(), answer)); // for display answer
+        if answer.contains('\n') {
+            for line in answer.lines() {
+                self.scroll_lines.push((
+                    TextAttribute::Answer,
+                    "".to_string(),
+                    line.to_string(),
+                ));
+            }
+        } else {
+            self.scroll_lines
+                .push((TextAttribute::Answer, "".to_string(), answer)); // for display answer
+        }
     }
     fn save_command(&mut self, itxt: String) {
         let itxts = split_by('.', itxt);
@@ -526,8 +536,7 @@ impl InputText {
         self.scroll_lines
             .push((TextAttribute::Common, prefix, itxt)); // for display text
         if let Some(a) = answer {
-            self.scroll_lines
-                .push((TextAttribute::Answer, "".to_string(), a.to_string())); // for display answer
+            self.set_answer_line(a.to_string());
         }
     }
 }

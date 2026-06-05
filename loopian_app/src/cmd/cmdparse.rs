@@ -416,8 +416,6 @@ impl LoopianCmd {
     fn cmd_help(&mut self, input_text: &str) -> String {
         if input_text.is_empty() {
             "How can I assist you?".to_string()
-        } else if input_text == "graph" {
-            "ripple/voice/lissa/beatlissa()/sinewave/rain/fish/jumping/wavestick".to_string()
         } else {
             "what?".to_string()
         }
