@@ -36,7 +36,7 @@ pub enum CompositionCmdError {
 #[derive(Debug)]
 pub struct SeqDataStock {
     pdt: Vec<Vec<PhraseDataStock>>,
-    cdt: [CompositionDataStock; MAX_COMPOSITION_PART],
+    cdt: [CompositionDataStock; MAX_INST_PART],
     pdldt: [PedalDataStock; MAX_PEDAL_PART],
     input_mode: InputMode,
     cluster_memory: String,
@@ -177,11 +177,11 @@ impl SeqDataStock {
         input_text: Vec<String>,
     ) -> Result<(), CompositionCmdError> {
         let ptnum = ptnum(part);
-        if ptnum < MAX_COMPOSITION_PART && self.cdt[ptnum].set_raw_vec(input_text) {
+        if ptnum < MAX_INST_PART && self.cdt[ptnum].set_raw_vec(input_text) {
             self.cdt[ptnum].set_recombined(None, self.tick_for_onemsr, self.tick_for_beat, None);
             return Ok(());
         }
-        if part < MAX_COMPOSITION_PART {
+        if part < MAX_INST_PART {
             Err(CompositionCmdError::InvalidComposition)
         } else {
             Err(CompositionCmdError::InvalidPart)
