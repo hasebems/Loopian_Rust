@@ -33,6 +33,7 @@ pub struct BrokenPattern {
 
     part: u32,
     keynote: u8,
+    inst_part: InstPart,
     play_counter: usize,
     last_note: i16,
     para: bool,
@@ -53,6 +54,7 @@ impl BrokenPattern {
         pid: u32,
         part: u32, // loop pid
         keynote: u8,
+        inst_part: InstPart,
         msr: i32, // crnt_msr
         (ptn, ana, artic_rate, phrase_amp): (BrkPatternEvt, Vec<AnaEvt>, i32, i16),
         //        ptn: BrkPatternEvt,
@@ -84,6 +86,7 @@ impl BrokenPattern {
             analys: ana,
             part,
             keynote,
+            inst_part,
             play_counter: 0,
             last_note: NO_NOTE as i16,
             para,
@@ -254,7 +257,7 @@ impl BrokenPattern {
             NoteParam::new(
                 &crnt_ev,
                 format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
-                (self.keynote, evt_tick, self.part, false),
+                (self.keynote, evt_tick, self.inst_part, false),
             ),
             self.phrase_amp,
         );

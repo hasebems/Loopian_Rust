@@ -41,6 +41,7 @@ pub struct Flow {
     translation_tbl: i16,
     tick_resolution: i32,
     set_velocity: i16,
+    inst_part: InstPart,
 
     // for super's member
     during_play: bool,
@@ -70,6 +71,7 @@ impl Flow {
             translation_tbl: NO_TABLE,
             tick_resolution: TICK_RESOLUTION,
             set_velocity: 0,
+            inst_part: InstPart::Flow,
 
             // for super's member
             during_play,
@@ -229,7 +231,7 @@ impl Flow {
             NoteParam::new(
                 &ev,
                 format!(" Pt:{} Flow:{}", &self.id.pid, &self.id.sid),
-                (self.keynote, evt_tick, self.id.pid, true),
+                (self.keynote, evt_tick, self.inst_part, true),
             ),
             0,
         );

@@ -27,6 +27,7 @@ pub struct PhraseLoopParam {
     ana: Vec<AnaEvt>,
     whole_tick: i32,
     turnnote: i16,
+    inst_part: InstPart,
 }
 impl PhraseLoopParam {
     pub fn new(
@@ -36,6 +37,7 @@ impl PhraseLoopParam {
         ana: Vec<AnaEvt>,
         whole_tick: i32,
         turnnote: i16,
+        inst_part: InstPart,
     ) -> Self {
         Self {
             keynote,
@@ -44,6 +46,7 @@ impl PhraseLoopParam {
             ana,
             whole_tick,
             turnnote,
+            inst_part,
         }
     }
 }
@@ -67,6 +70,7 @@ pub struct PhraseLoop {
     next_tick_in_phrase: i32,
     last_note: i16,
     noped: bool,
+    inst_part: InstPart,
     turnnote: i16,
     para_root_base: i16,
     same_time_stuck: Vec<(u8, String)>,
@@ -107,6 +111,7 @@ impl PhraseLoop {
             next_tick_in_phrase: 0,
             last_note: NO_NOTE as i16,
             noped,
+            inst_part: prm.inst_part,
             turnnote: prm.turnnote,
             para_root_base,
             same_time_stuck: Vec::new(),
@@ -144,6 +149,7 @@ impl PhraseLoop {
         let mut trace: usize = self.play_counter;
         let phr = self.phrase.to_vec();
         let max_ev = self.phrase.len();
+
         loop {
             if max_ev <= trace {
                 next_tick = END_OF_DATA; // means sequence finished
@@ -154,6 +160,9 @@ impl PhraseLoop {
                 let evtx = phr[trace].clone();
                 match evtx {
                     PhrEvt::Note(ev) => {
+                        if trace == 0 {
+                            self.init_violin_part(estk);
+                        }
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
                         let (trans_note, deb_txt) = self.translate_note(rt_tbl, ev.note, next_tick);
                         let nep = NoteEventPrm {
@@ -186,6 +195,13 @@ impl PhraseLoop {
         self.play_counter = trace;
         self.check_next_evt_and_set_floating(trace);
         next_tick
+    }
+    fn init_violin_part(&mut self, estk: &mut ElapseStack) {
+        if self.inst_part == InstPart::Violin1 || self.inst_part == InstPart::Violin2 {
+            // Violin Loop の場合、最初のイベントが呼ばれるタイミングで、フレーズ全体の音量を送る
+            let ch = midi_ch(self.inst_part);
+            estk.midi_out(0xb0 + ch, 0x0b, (64 + self.phrase_amp * 2).clamp(1, 127) as u8);
+        }
     }
     fn note_on_at_the_same_time(
         &mut self,
@@ -291,7 +307,7 @@ impl PhraseLoop {
             NoteParam::new(
                 &crnt_ev,
                 nep.deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
-                (self.keynote, evt_tick, self.id.pid, false),
+                (self.keynote, evt_tick, self.inst_part, false),
             ),
             self.phrase_amp,
         );
@@ -367,6 +383,7 @@ impl PhraseLoop {
             self.id.sid,      //  loop.sid -> note.pid
             self.id.pid,      //  part
             self.keynote,
+            self.inst_part,
             tk.0,
             (ev, self.analys.to_vec(), self.artic_rate, self.phrase_amp),
         );
@@ -383,6 +400,7 @@ impl PhraseLoop {
             self.id.sid,      //  loop.sid -> note.pid
             self.id.pid,      //  part
             self.keynote,
+            self.inst_part,
             (
                 tk.0,
                 self.flt.just_crnt().msr,

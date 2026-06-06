@@ -44,7 +44,8 @@ impl Damper {
         self.destroy = true;
         self.next_msr = FULL;
         // midi damper off
-        estk.midi_out(0xb0, 0x40, 0);
+        let midi_ch = midi_ch(InstPart::Pedal);
+        estk.midi_out(0xb0 + midi_ch, 0x40, 0);
         #[cfg(feature = "verbose")]
         println!("Damper-Off");
     }
@@ -56,7 +57,8 @@ impl Damper {
         } else {
             self.position
         };
-        estk.midi_out(0xb0, 0x40, pos);
+        let midi_ch = midi_ch(InstPart::Pedal);
+        estk.midi_out(0xb0 + midi_ch, 0x40, pos);
         #[cfg(feature = "verbose")]
         println!("Damper-Event: {}", self.position);
     }

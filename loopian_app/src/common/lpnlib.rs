@@ -30,6 +30,23 @@ pub const MAX_PATTERN_NUM: u8 = 16; // Max Pattern Number
 //*******************************************************************
 //          part count
 //*******************************************************************
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum InstPart {
+    Kbd,        // MIDI Ch 1
+    Pedal,      // MIDI Ch 1
+    Violin1,    // MIDI Ch 2
+    Violin2,    // MIDI Ch 3
+    Flow,
+}
+pub fn midi_ch(inst_part: InstPart) -> u8 {
+    match inst_part {
+        InstPart::Kbd => 0,
+        InstPart::Violin1 => 1,
+        InstPart::Violin2 => 2,
+        InstPart::Pedal => 0,
+        _ => 0,
+    }
+}
 pub enum PtName {
     Left1 = 0,
     Left2 = 1,

@@ -95,7 +95,7 @@ impl ElapseStack {
         // Keyboard Part
         for i in 0..MAX_KBD_PART {
             // 同じ Part を piano_part, elapse_vec 両方に繋げる
-            let pt = Part::new(i as u32, None);
+            let pt = Part::new(i as u32, None, InstPart::Kbd);
             piano_part.push(Rc::clone(&pt));
             elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
         }
@@ -103,7 +103,7 @@ impl ElapseStack {
         // Flow Part
         let flow = Flow::new(0, FLOW_PART as u32, false);
         elapse_vec.push(flow.clone() as Rc<RefCell<dyn Elapse>>);
-        let pt = Part::new(FLOW_PART as u32, Some(flow));
+        let pt = Part::new(FLOW_PART as u32, Some(flow), InstPart::Flow);
         piano_part.push(Rc::clone(&pt));
         elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
 
@@ -115,16 +115,17 @@ impl ElapseStack {
         }
 
         // Violin Part
-        for i in VIOLIN1..=VIOLIN2 {
-            let vpt = Part::new(i as u32, None);
-            violin_part.push(Rc::clone(&vpt));
-            elapse_vec.push(vpt as Rc<RefCell<dyn Elapse>>);
-        }
+        let vpt = Part::new(VIOLIN1 as u32, None, InstPart::Violin1);
+        violin_part.push(Rc::clone(&vpt));
+        elapse_vec.push(vpt as Rc<RefCell<dyn Elapse>>);
+        let vpt = Part::new(VIOLIN2 as u32, None, InstPart::Violin2);
+        violin_part.push(Rc::clone(&vpt));
+        elapse_vec.push(vpt as Rc<RefCell<dyn Elapse>>);
 
         // Flow Violin Part
         let flow_vn = Flow::new(0, FLOW_VN_PART as u32, false);
         elapse_vec.push(flow_vn.clone() as Rc<RefCell<dyn Elapse>>);
-        let pt = Part::new(FLOW_VN_PART as u32, Some(flow_vn));
+        let pt = Part::new(FLOW_VN_PART as u32, Some(flow_vn), InstPart::Flow);
         violin_part.push(Rc::clone(&pt));
         elapse_vec.push(pt as Rc<RefCell<dyn Elapse>>);
 

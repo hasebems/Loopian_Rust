@@ -29,6 +29,7 @@ pub struct Part {
     id: ElapseId,
     priority: u32,
 
+    inst_part: InstPart,
     during_play: bool,
     keynote: u8,
     next_msr: i32,
@@ -41,7 +42,7 @@ pub struct Part {
 }
 //*******************************************************************
 impl Part {
-    pub fn new(num: u32, flow: Option<Rc<RefCell<Flow>>>) -> Rc<RefCell<Part>> {
+    pub fn new(num: u32, flow: Option<Rc<RefCell<Flow>>>, inst_part: InstPart) -> Rc<RefCell<Part>> {
         let new_id = ElapseId {
             pid: 0,
             sid: num,
@@ -50,11 +51,12 @@ impl Part {
         Rc::new(RefCell::new(Self {
             id: new_id,
             priority: PRI_PART,
+            inst_part,
             during_play: false,
             keynote: 0,
             next_msr: 0,
             next_tick: 0,
-            pm: PhrLoopManager::new(),
+            pm: PhrLoopManager::new(inst_part),
             cm: CmpsLoopMediator::new(),
             flow,
             sync_next_msr_flag: false,
@@ -184,7 +186,7 @@ impl Elapse for Part {
     }
     /// 再生データを消去
     fn clear(&mut self, _estk: &mut ElapseStack) {
-        self.pm = PhrLoopManager::new();
+        self.pm = PhrLoopManager::new(self.inst_part);
         self.cm = CmpsLoopMediator::new();
     }
     /// 再生 msr/tick に達したらコールされる

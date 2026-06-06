@@ -43,6 +43,7 @@ impl PhrLoopWrapper {
         pbp: PartBasicPrm,
         loop_id: u32,
         turnnote: i16,
+        inst_part: InstPart,
         phr_stock: PhrData,
     ) -> Self {
         let mut repeat_tick = phr_stock.whole_tick as i32;
@@ -76,6 +77,7 @@ impl PhrLoopWrapper {
                 phr_stock.ana.to_vec(),
                 phr_stock.whole_tick as i32,
                 turnnote,
+                inst_part,
             ),
         );
         Self {
@@ -123,6 +125,7 @@ pub struct PhrLoopManager {
     loop_id: u32,            // loop sid
     phr_stock: Vec<PhrData>, // 0: Normal
     phr_idx: usize,          // 0: Normal, 現在再生されている phr_stock の index
+    inst_part: InstPart,
     phr_instance_a: Option<PhrLoopWrapper>,
     phr_instance_b: Option<PhrLoopWrapper>,
     vari_reserve: Option<usize>, // 1-9: rsv, None: Normal
@@ -135,11 +138,12 @@ pub struct PhrLoopManager {
     keynote_stock: Option<u8>, // 0-11
 }
 impl PhrLoopManager {
-    pub fn new() -> Self {
+    pub fn new(inst_part: InstPart) -> Self {
         Self {
             loop_id: 0,
             phr_stock: vec![PhrData::empty()],
             phr_idx: 0,
+            inst_part,
             phr_instance_a: None,
             phr_instance_b: None,
             vari_reserve: None,
@@ -633,6 +637,7 @@ impl PhrLoopManager {
             pbp,
             self.loop_id + 1, // loop_id をインクリメント
             self.turnnote,
+            self.inst_part,
             phr_stock,
         );
         if self.a_is_gened_last || overwrite_b {
