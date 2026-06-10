@@ -120,7 +120,7 @@ impl Flow {
         if !self.during_play {
             // ORBIT 自身の Pattern が鳴っていない時
             if self.translation_tbl != NO_TABLE {
-                let mut real_note = self.note_appropriate(locate as i16);
+                let mut real_note = Self::note_appropriate(locate as i16);
                 real_note = translate_note_com(0, self.translation_tbl, real_note);
                 self.static_note_on_off(estk_, status, real_note, vel, locate);
             } else if (4..92).contains(&locate) {
@@ -281,7 +281,7 @@ impl Flow {
         self.keynote = keynote;
     }
     fn detect_real_note(&mut self, estk: &mut ElapseStack, crnt_: &CrntMsrTick, locate: i16) -> u8 {
-        let mut real_note = self.note_appropriate(locate);
+        let mut real_note = Self::note_appropriate(locate);
         if self.during_play {
             if let Some(pt) = estk.part(self.id.pid) {
                 let mut pt_borrowed = pt.borrow_mut();
@@ -291,17 +291,16 @@ impl Flow {
                     return real_note;
                 }
                 let root: i16 = get_note_from_root(rt);
-                println!(">>>Real Note: {}", real_note);
+                println!(">>>Converted Note: {}", real_note);
                 real_note = translate_note_com(root, ctbl, real_note);
             }
         } else {
             let root: i16 = get_note_from_root(self.root);
             real_note = translate_note_com(root, self.translation_tbl, real_note);
         }
-
         real_note.clamp(MIN_NOTE_NUMBER, MAX_NOTE_NUMBER)
     }
-    fn note_appropriate(&self, locate: i16) -> u8 {
+    fn note_appropriate(locate: i16) -> u8 {
         let temp_note = (locate * 12) / 16 + 36;
         temp_note.clamp(MIN_NOTE_NUMBER as i16, MAX_NOTE_NUMBER as i16) as u8
     }

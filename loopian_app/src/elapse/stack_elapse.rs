@@ -680,11 +680,11 @@ impl ElapseStack {
     }
     fn composition(&mut self, part_num: i16, evts: CmpData) {
         println!("Received Composition Message! Part: {}", part_num);
-        if (0..MAX_KBD_PART).contains(&(part_num as usize)) {
+        if (0..MAX_ALL_KBD_PART).contains(&(part_num as usize)) {
             self.piano_part[part_num as usize]
                 .borrow_mut()
                 .rcv_cmps_msg(evts, self.tg().get_beat_tick());
-        } else if (VIOLIN1..=VIOLIN2).contains(&(part_num as usize)) {
+        } else if (VIOLIN1..=FLOW_VN_PART).contains(&(part_num as usize)) {
             self.violin_part[part_num as usize - VIOLIN1]
                 .borrow_mut()
                 .rcv_cmps_msg(evts, self.tg().get_beat_tick());
