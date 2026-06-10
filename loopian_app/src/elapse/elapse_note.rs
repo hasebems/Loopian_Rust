@@ -166,9 +166,9 @@ impl Note {
         let midi_ch = midi_ch(self.inst_part);
         if snk == stack_elapse::SameKeyState::Last {
             if self.flow {
-                estk.midi_out_flow(0x90 | midi_ch, self.real_note, 0);
+                estk.midi_out_flow(0x80 | midi_ch, self.real_note, 0x40);
             } else {
-                estk.midi_out(0x90 | midi_ch, self.real_note, 0);
+                estk.midi_out(0x80 | midi_ch, self.real_note, 0x40);
             }
             #[cfg(feature = "verbose")]
             println!("Off: N{}, ", self.real_note);
