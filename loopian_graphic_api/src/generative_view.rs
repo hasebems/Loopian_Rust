@@ -27,7 +27,7 @@ pub fn generate_graphic_msg(input_msgs: Vec<String>) -> (String, GraphicMsg) {
         ("Changed Graphic!".to_string(), GraphicMsg::LightMode)
     } else if input_msgs[1] == "dark" {
         ("Changed Graphic!".to_string(), GraphicMsg::DarkMode)
-    } else if input_msgs[1] == "title" {
+    } else if input_msgs[1].starts_with("title") {
         let txt = extract_texts_from_parentheses(&input_msgs[1]);
         let txts = txt.split(',').collect::<Vec<&str>>();
         let title_txt = txts.first().unwrap_or(&"");
