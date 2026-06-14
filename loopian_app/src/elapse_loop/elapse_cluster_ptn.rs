@@ -101,7 +101,11 @@ impl ClusterPattern {
             ptn_tick: ptn.tick as i32,
             ptn_min_nt: ptn.lowest,
             ptn_amp: ptn.amp,
-            ptn_each_dur: ptn.each_dur as i32,
+            ptn_each_dur: if ptn.each_dur == ENOUGH {
+                mst.3 // tick_for_onemsr をそのまま使う
+            } else {
+                ptn.each_dur as i32
+            },
             ptn_max_vce: ptn.max_count as i32,
             analys: ana,
             arpeggio: floating,

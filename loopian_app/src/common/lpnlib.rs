@@ -24,6 +24,7 @@ pub const NO_TABLE: i16 = 10000;
 pub const NO_PED_TBL_NUM: i16 = 0; // 'X'
 pub const _CANCEL: i16 = -1;
 pub const NOTHING: i16 = -1;
+pub const ENOUGH: i16 = -2;
 
 pub const MAX_PATTERN_NUM: u8 = 16; // Max Pattern Number
 

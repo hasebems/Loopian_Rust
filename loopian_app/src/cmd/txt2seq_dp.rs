@@ -158,6 +158,7 @@ fn calc_dur(durstr: &str) -> i16 {
         }
     }
     match val {
+        'o' => dur = ENOUGH,
         'h' => dur = 960,
         'q' => dur = 480,
         'e' => dur = 240,
