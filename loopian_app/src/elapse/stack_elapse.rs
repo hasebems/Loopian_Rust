@@ -168,15 +168,17 @@ impl ElapseStack {
         }
     }
     pub fn part(&mut self, part_num: u32) -> Option<Rc<RefCell<Part>>> {
-        if let Some(index) = self
-            .piano_part
-            .iter()
-            .position(|x| x.borrow().id().sid == part_num)
-        {
-            let part = Rc::clone(&self.piano_part[index]);
-            Some(part)
-        } else {
-            None
+        let part_num = part_num as usize;
+        match part_num {
+            0..=FLOW_PART => {
+                let part = Rc::clone(&self.piano_part[part_num]);
+                Some(part)
+            }
+            VIOLIN1..=FLOW_VN_PART => {
+                let part = Rc::clone(&self.violin_part[part_num - VIOLIN1]);
+                Some(part)
+            }
+            _ => None,
         }
     }
     pub fn get_phr(&self, part_num: usize) -> Option<Rc<RefCell<PhraseLoop>>> {
