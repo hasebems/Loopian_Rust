@@ -10,7 +10,8 @@ use midir::{MidiOutput, /*MidiOutputPort,*/ MidiOutputConnection};
 
 pub struct MidiTx {
     tx_available: bool,
-    connection_tx: Option<Box<MidiOutputConnection>>,
+    connection_tx1: Option<Box<MidiOutputConnection>>,
+    connection_tx2: Option<Box<MidiOutputConnection>>,
     connection_tx_led1: Option<Box<MidiOutputConnection>>,
     connection_tx_led2: Option<Box<MidiOutputConnection>>,
     connection_ext_loopian: Option<Box<MidiOutputConnection>>,
@@ -21,7 +22,8 @@ impl MidiTx {
     pub fn connect() -> (Self, Option<String>) {
         let mut this = MidiTx {
             tx_available: false,
-            connection_tx: None,
+            connection_tx1: None,
+            connection_tx2: None,
             connection_tx_led1: None,
             connection_tx_led2: None,
             connection_ext_loopian: None,
@@ -55,7 +57,7 @@ impl MidiTx {
         let midi_out = &Settings::load_settings().midi.midi_out;
         let midi_ext_out = &Settings::load_settings().midi.midi_ext_out;
         let midi_device = &Settings::load_settings().midi.midi_device;
-        let mut an_least_one = false;
+        let mut at_least_one = false;
         for (i, p) in out_ports.iter().enumerate() {
             let driver;
             let drv_name;
@@ -67,15 +69,28 @@ impl MidiTx {
                 }
                 Err(_e) => continue,
             }
-            if drv_name.contains(midi_out) {
-                match driver.connect(p, "loopian_tx1") {
-                    Ok(c) => {
-                        this.connection_tx = Some(Box::new(c));
-                        an_least_one = true;
-                        println!("<<Output Connected!>> No.{}: {} <as Piano>", i, drv_name);
+            if midi_out.iter().any(|out| drv_name.contains(out)) {
+                if this.connection_tx1.is_none() {
+                    match driver.connect(p, "loopian_tx") {
+                        Ok(c) => {
+                            this.connection_tx1 = Some(Box::new(c));
+                            at_least_one = true;
+                            println!("<<Output Connected!>> No.{}: {} <as Piano>", i, drv_name);
+                        }
+                        Err(_e) => {
+                            println!("Connection Failed! for No.{}", i);
+                        }
                     }
-                    Err(_e) => {
-                        println!("Connection Failed! for No.{}", i);
+                } else {
+                    match driver.connect(p, "loopian_tx") {
+                        Ok(c) => {
+                            this.connection_tx2 = Some(Box::new(c));
+                            at_least_one = true;
+                            println!("<<Output Connected!>> No.{}: {} <as Piano>", i, drv_name);
+                        }
+                        Err(_e) => {
+                            println!("Connection Failed! for No.{}", i);
+                        }
                     }
                 }
             } else if drv_name.contains(midi_device) {
@@ -83,7 +98,7 @@ impl MidiTx {
                     match driver.connect(p, "loopian_tx2") {
                         Ok(c) => {
                             this.connection_tx_led1 = Some(Box::new(c));
-                            an_least_one = true;
+                            at_least_one = true;
                             println!("<<Output Connected!>> No.{}: {} <as LED1>", i, drv_name);
                         }
                         Err(_e) => {
@@ -94,7 +109,7 @@ impl MidiTx {
                     match driver.connect(p, "loopian_tx2") {
                         Ok(c) => {
                             this.connection_tx_led2 = Some(Box::new(c));
-                            an_least_one = true;
+                            at_least_one = true;
                             println!("<<Output Connected!>> No.{}: {} <as LED2>", i, drv_name);
                         }
                         Err(_e) => {
@@ -106,7 +121,7 @@ impl MidiTx {
                 match driver.connect(p, "loopian_tx3") {
                     Ok(c) => {
                         this.connection_ext_loopian = Some(Box::new(c));
-                        an_least_one = true;
+                        at_least_one = true;
                         println!("<<Output Connected!>> No.{}: {} <as Ext>", i, drv_name);
                     }
                     Err(_e) => {
@@ -117,18 +132,22 @@ impl MidiTx {
                 println!("no connect: {}", drv_name);
             }
         }
-        if an_least_one {
+        if at_least_one {
             this.tx_available = true;
             (this, None)
         } else {
             (this, Some("port not connected!".into()))
         }
     }
-    pub fn midi_out(&mut self, status: u8, dt1: u8, dt2: u8, to_led: bool) {
+    pub fn midi_out(&mut self, status: u8, dt1: u8, dt2: u8, to_out1: bool, to_led: bool) {
         if !self.tx_available {
             return;
         }
-        if let Some(cnct) = self.connection_tx.as_mut() {
+        if to_out1 || (!to_out1 && self.connection_tx2.is_none()) {
+            if let Some(cnct) = self.connection_tx1.as_mut() {
+                let _ = cnct.send(&[status, dt1, dt2]);
+            }
+        } else if let Some(cnct) = self.connection_tx2.as_mut() {
             let _ = cnct.send(&[status, dt1, dt2]);
         }
         if let Some(cnct) = self.connection_ext_loopian.as_mut() {

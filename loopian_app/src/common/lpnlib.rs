@@ -82,6 +82,7 @@ pub const FLOW_VN_PART: usize = PtName::FlowVn as usize; // Flow Violin part
 pub const MAX_VIOLIN_PART: usize = PtName::Violin2 as usize + 1 - PtName::Violin1 as usize; // Violin1, Violin2, FlowVn
 pub const MAX_INST_PART: usize = MAX_KBD_PART + MAX_VIOLIN_PART;
 pub const NONE_NUM: usize = 255;
+pub const MAX_MIDI_CHANNELS: usize = 3;
 
 //*******************************************************************
 //          default value

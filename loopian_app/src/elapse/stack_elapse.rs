@@ -58,7 +58,7 @@ pub struct ElapseStack {
     pedal_part: Vec<Rc<RefCell<PedalPart>>>,
     violin_part: Vec<Rc<RefCell<Part>>>, // Violin Part Instance が繋がれた Vec
     elapse_vec: Vec<Rc<RefCell<dyn Elapse>>>, // dyn Elapse Instance が繋がれた Vec
-    key_map: [i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
+    key_map: [[i32; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize]; MAX_MIDI_CHANNELS],
     limit_for_deb: i32,
     part_ui_old: [bool; MAX_KBD_PART + MAX_VIOLIN_PART],
 }
@@ -149,7 +149,7 @@ impl ElapseStack {
             pedal_part,
             violin_part,
             elapse_vec,
-            key_map: [0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize],
+            key_map: [[0; (MAX_NOTE_NUMBER - MIN_NOTE_NUMBER + 1) as usize]; MAX_MIDI_CHANNELS],
             limit_for_deb: 0,
             part_ui_old: [false; MAX_KBD_PART + MAX_VIOLIN_PART],
         }
@@ -190,29 +190,35 @@ impl ElapseStack {
     pub fn tg(&self) -> &TickGen {
         &self.tg
     }
-    pub fn inc_key_map(&mut self, key_num: u8, vel: u8, pt: u8) {
-        self.key_map[(key_num - MIN_NOTE_NUMBER) as usize] += 1;
-        self.send_msg_to_ui(UiMsg::NoteUi(NoteUiEv { key_num, vel, pt }));
+    pub fn inc_key_map(&mut self, key_num: u8, vel: u8, mch: u8) {
+        self.key_map[mch as usize][(key_num - MIN_NOTE_NUMBER) as usize] += 1;
+        self.send_msg_to_ui(UiMsg::NoteUi(NoteUiEv { key_num, vel, pt: mch }));
     }
-    pub fn dec_key_map(&mut self, key_num: u8) -> SameKeyState {
+    pub fn dec_key_map(&mut self, key_num: u8, mch: u8) -> SameKeyState {
         let idx = (key_num - MIN_NOTE_NUMBER) as usize;
-        match self.key_map[idx].cmp(&1) {
+        match self.key_map[mch as usize][idx].cmp(&1) {
             Ordering::Greater => {
-                self.key_map[idx] -= 1;
+                self.key_map[mch as usize][idx] -= 1;
                 SameKeyState::More
             }
             Ordering::Equal => {
-                self.key_map[idx] = 0;
+                self.key_map[mch as usize][idx] = 0;
                 SameKeyState::Last
             }
             Ordering::Less => SameKeyState::Nothing,
         }
     }
     pub fn midi_out(&mut self, status: u8, data1: u8, data2: u8) {
-        self.mdx.midi_out(status, data1, data2, true);
+        self.mdx.midi_out(status, data1, data2, true, true);
+    }
+    pub fn midi_out2(&mut self, status: u8, data1: u8, data2: u8) {
+        self.mdx.midi_out(status, data1, data2, false, true);
     }
     pub fn midi_out_flow(&mut self, status: u8, data1: u8, data2: u8) {
-        self.mdx.midi_out(status, data1, data2, false);
+        self.mdx.midi_out(status, data1, data2, true, false);
+    }
+    pub fn midi_out2_flow(&mut self, status: u8, data1: u8, data2: u8) {
+        self.mdx.midi_out(status, data1, data2, false, false);
     }
     pub fn midi_out_ext(&mut self, status: u8, data1: u8, data2: u8) {
         // DIN MIDI OUT

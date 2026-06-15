@@ -142,11 +142,18 @@ impl Note {
             let vel = self.random_velocity(self.velocity);
             let midi_ch = midi_ch(self.inst_part);
             estk.inc_key_map(num, vel, midi_ch);
-            if self.flow {
-                estk.midi_out_flow(0x90 | midi_ch, self.real_note, vel);
+            if midi_ch == 0 {
+                if self.flow {
+                    estk.midi_out_flow(0x90, self.real_note, vel);
+                } else {
+                    estk.midi_out(0x90, self.real_note, vel);
+                }
+            } else if self.flow {
+                estk.midi_out2_flow(0x90 | midi_ch, self.real_note, vel);
             } else {
-                estk.midi_out(0x90 | midi_ch, self.real_note, vel);
+                estk.midi_out2(0x90 | midi_ch, self.real_note, vel);
             }
+
             #[cfg(feature = "verbose")]
             println!(
                 "On: N{} V{} D{} Trns: {}, MIDI: {}",
@@ -162,13 +169,19 @@ impl Note {
         self.destroy = true;
         self.next_msr = FULL;
         // midi note off
-        let snk = estk.dec_key_map(self.real_note);
         let midi_ch = midi_ch(self.inst_part);
+        let snk = estk.dec_key_map(self.real_note, midi_ch);
         if snk == stack_elapse::SameKeyState::Last {
-            if self.flow {
-                estk.midi_out_flow(0x80 | midi_ch, self.real_note, 0x40);
+            if midi_ch == 0 {
+                if self.flow {
+                    estk.midi_out_flow(0x80, self.real_note, 0x40);
+                } else {
+                    estk.midi_out(0x80, self.real_note, 0x40);
+                }
+            } else if self.flow {
+                estk.midi_out2_flow(0x80 | midi_ch, self.real_note, 0x40);
             } else {
-                estk.midi_out(0x80 | midi_ch, self.real_note, 0x40);
+                estk.midi_out2(0x80 | midi_ch, self.real_note, 0x40);
             }
             #[cfg(feature = "verbose")]
             println!("Off: N{}, ", self.real_note);

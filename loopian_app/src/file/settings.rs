@@ -16,7 +16,7 @@ pub struct WindowSize {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Midi {
-    pub midi_out: String,
+    pub midi_out: Vec<String>,
     pub midi_ext_out: String,
     pub midi_device: String,
 }
