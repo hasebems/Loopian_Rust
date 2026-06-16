@@ -77,7 +77,11 @@ impl Spring {
         let _ = (nt, pt, tm);
         let kick = map_range(vel as f32, 0.0, 127.0, 0.6, 3.2);
         // Strike only the left boundary. The sign alternates with current phase to avoid DC drift.
-        let sign = if self.global_phase.cos() >= 0.0 { 1.0 } else { -1.0 };
+        let sign = if self.global_phase.cos() >= 0.0 {
+            1.0
+        } else {
+            -1.0
+        };
         self.left_hit_vel += sign * kick;
         self.drive_amp = (self.drive_amp + kick * 0.02).clamp(Self::BASE_AMP, 0.65);
         self.drive_freq = (self.drive_freq + kick * 0.03).clamp(Self::BASE_FREQ, 5.8);
@@ -202,8 +206,8 @@ impl GenerativeView for Spring {
                     0.0
                 };
 
-                let force = Self::SPRING_K * (y_left + y_right - 2.0 * y)
-                    - Self::DAMPING * self.osc[i].vel;
+                let force =
+                    Self::SPRING_K * (y_left + y_right - 2.0 * y) - Self::DAMPING * self.osc[i].vel;
                 self.osc[i].vel += force * h;
             }
 

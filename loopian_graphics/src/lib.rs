@@ -11,9 +11,9 @@ pub mod view_lissajous;
 pub mod view_noteroll;
 pub mod view_raineffect;
 pub mod view_sinewave;
+pub mod view_spring;
 pub mod view_voice4;
 pub mod view_wavestick;
-pub mod view_spring;
 
 use view_beatlissa::BeatLissa;
 use view_circlethds::CircleThread;
@@ -23,9 +23,9 @@ use view_lissajous::Lissajous;
 use view_noteroll::NoteRoll;
 use view_raineffect::RainEffect;
 use view_sinewave::SineWave;
+use view_spring::Spring;
 use view_voice4::Voice4;
 use view_wavestick::WaveStick;
-use view_spring::Spring;
 
 pub struct GraphicContext<'a> {
     pub crnt_time: f32,

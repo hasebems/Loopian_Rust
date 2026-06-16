@@ -142,7 +142,7 @@ impl Note {
             let vel = self.random_velocity(self.velocity);
             let midi_ch = midi_ch(self.inst_part);
             estk.inc_key_map(num, vel, midi_ch);
-            Self::midi_out(midi_ch, estk, 0x90, self.real_note, vel);
+            self.midi_out(midi_ch, estk, 0x90, self.real_note, vel);
 
             #[cfg(feature = "verbose")]
             println!(
@@ -162,7 +162,7 @@ impl Note {
         let midi_ch = midi_ch(self.inst_part);
         let snk = estk.dec_key_map(self.real_note, midi_ch);
         if snk == stack_elapse::SameKeyState::Last {
-            Self::midi_out(midi_ch, estk, 0x80, self.real_note, 0x40);
+            self.midi_out(midi_ch, estk, 0x80, self.real_note, 0x40);
 
             #[cfg(feature = "verbose")]
             println!("Off: N{}, ", self.real_note);
@@ -205,7 +205,7 @@ impl Note {
                 || (crnt_.msr > self.next_msr)
         }
     }
-    fn midi_out(midi_ch: u8, estk: &mut ElapseStack, status: u8, num: u8, vel: u8) {
+    fn midi_out(&self, midi_ch: u8, estk: &mut ElapseStack, status: u8, num: u8, vel: u8) {
         if midi_ch == 0 {
             if self.flow {
                 estk.midi_out_flow(status, num, vel);

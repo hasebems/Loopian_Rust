@@ -192,7 +192,11 @@ impl ElapseStack {
     }
     pub fn inc_key_map(&mut self, key_num: u8, vel: u8, mch: u8) {
         self.key_map[mch as usize][(key_num - MIN_NOTE_NUMBER) as usize] += 1;
-        self.send_msg_to_ui(UiMsg::NoteUi(NoteUiEv { key_num, vel, pt: mch }));
+        self.send_msg_to_ui(UiMsg::NoteUi(NoteUiEv {
+            key_num,
+            vel,
+            pt: mch,
+        }));
     }
     pub fn dec_key_map(&mut self, key_num: u8, mch: u8) -> SameKeyState {
         let idx = (key_num - MIN_NOTE_NUMBER) as usize;
@@ -804,7 +808,9 @@ impl ElapseStack {
                 let part_ui = if i < MAX_KBD_PART {
                     self.piano_part[i].borrow_mut().gen_part_indicator(&crnt_)
                 } else {
-                    self.violin_part[i - MAX_KBD_PART].borrow_mut().gen_part_indicator(&crnt_)
+                    self.violin_part[i - MAX_KBD_PART]
+                        .borrow_mut()
+                        .gen_part_indicator(&crnt_)
                 };
                 let exist = part_ui.exist;
                 if exist {

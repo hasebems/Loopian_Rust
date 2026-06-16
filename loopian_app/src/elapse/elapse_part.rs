@@ -42,7 +42,11 @@ pub struct Part {
 }
 //*******************************************************************
 impl Part {
-    pub fn new(num: u32, flow: Option<Rc<RefCell<Flow>>>, inst_part: InstPart) -> Rc<RefCell<Part>> {
+    pub fn new(
+        num: u32,
+        flow: Option<Rc<RefCell<Flow>>>,
+        inst_part: InstPart,
+    ) -> Rc<RefCell<Part>> {
         let new_id = ElapseId {
             pid: 0,
             sid: num,

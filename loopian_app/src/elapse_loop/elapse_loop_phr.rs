@@ -200,7 +200,11 @@ impl PhraseLoop {
         if self.inst_part == InstPart::Violin1 || self.inst_part == InstPart::Violin2 {
             // Violin Loop の場合、最初のイベントが呼ばれるタイミングで、フレーズ全体の音量を送る
             let ch = midi_ch(self.inst_part);
-            estk.midi_out2(0xb0 + ch, 0x0b, (64 + self.phrase_amp * 2).clamp(1, 127) as u8);
+            estk.midi_out2(
+                0xb0 + ch,
+                0x0b,
+                (64 + self.phrase_amp * 2).clamp(1, 127) as u8,
+            );
         }
     }
     fn note_on_at_the_same_time(

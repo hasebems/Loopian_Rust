@@ -393,11 +393,8 @@ impl InputText {
     fn set_answer_line(&mut self, answer: String) {
         if answer.contains('\n') {
             for line in answer.lines() {
-                self.scroll_lines.push((
-                    TextAttribute::Answer,
-                    "".to_string(),
-                    line.to_string(),
-                ));
+                self.scroll_lines
+                    .push((TextAttribute::Answer, "".to_string(), line.to_string()));
             }
         } else {
             self.scroll_lines

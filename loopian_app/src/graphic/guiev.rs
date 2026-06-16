@@ -100,10 +100,12 @@ impl GuiEv {
             UiMsg::PartUi(pnum, pui) => {
                 if pui.exist {
                     let loop_msr = format!("{}/{}", pui.msr_in_loop, pui.all_msrs);
-                    self.indicator[INDC_PART + pnum] = Some(format!("{} {}", loop_msr, pui.chord_name));
+                    self.indicator[INDC_PART + pnum] =
+                        Some(format!("{} {}", loop_msr, pui.chord_name));
                 } else if pui.flow {
                     let loop_msr = "FLOW".to_string();
-                    self.indicator[INDC_PART + pnum] = Some(format!("{} {}", loop_msr, pui.chord_name));
+                    self.indicator[INDC_PART + pnum] =
+                        Some(format!("{} {}", loop_msr, pui.chord_name));
                 } else {
                     self.indicator[INDC_PART + pnum] = None;
                 }

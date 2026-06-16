@@ -33,10 +33,10 @@ pub const MAX_PATTERN_NUM: u8 = 16; // Max Pattern Number
 //*******************************************************************
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum InstPart {
-    Kbd,        // MIDI Ch 1
-    Pedal,      // MIDI Ch 1
-    Violin1,    // MIDI Ch 2
-    Violin2,    // MIDI Ch 3
+    Kbd,     // MIDI Ch 1
+    Pedal,   // MIDI Ch 1
+    Violin1, // MIDI Ch 2
+    Violin2, // MIDI Ch 3
     Flow,
 }
 pub fn midi_ch(inst_part: InstPart) -> u8 {

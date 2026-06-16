@@ -143,7 +143,7 @@ impl MidiTx {
         if !self.tx_available {
             return;
         }
-        if to_out1 || (!to_out1 && self.connection_tx2.is_none()) {
+        if to_out1 || self.connection_tx2.is_none() {
             if let Some(cnct) = self.connection_tx1.as_mut() {
                 let _ = cnct.send(&[status, dt1, dt2]);
             }
