@@ -25,28 +25,31 @@
     - [Anacrusis Expression Function](#anacrusis-expression-function)
     - [Note Volume and Articulation Specification](#note-volume-and-articulation-specification)
     - [Function Notation Following Phrases](#function-notation-following-phrases)
-    - [Dynamic Pattern](#dynamic-pattern)
-    - [Cluster Memory Function](#cluster-memory-function)
-    - [Multiple Phrase Addition Input Function](#multiple-phrase-addition-input-function)
 - [Composition Specification](#composition-specification)
     - [Composition Basic Format](#composition-basic-format)
     - [Chord Duration Specification Methods](#chord-duration-specification-methods)
     - [Chord Root Specification Methods](#chord-root-specification-methods)
     - [Chord Notation Methods](#chord-notation-methods)
     - [Types of Chords and Scales](#types-of-chords-and-scales)
-- [Common Specifications for Parts/Compositions and Their Coordination](#common-specifications-for-partscompositions-and-their-coordination)
+    - [Direct Scale Specification](#direct-scale-specification)
+- [Common Specifications for Phrase/Composition and Their Coordination Features](#common-specifications-for-phrasecomposition-and-their-coordination-features)
+    - [Dynamic Pattern](#dynamic-pattern)
     - [Part Specification Notation](#part-specification-notation)
     - [Phrase Parallel Specification](#phrase-parallel-specification)
     - [Variation Function](#variation-function)
+- [Other Phrase Functions](#other-phrase-functions)
+    - [Cluster Memory Function](#cluster-memory-function)
+    - [Multiple Phrase Addition Input Function](#multiple-phrase-addition-input-function)
 - [File Loading and Saving](#file-loading-and-saving)
     - [Saving Log Files](#saving-log-files)
     - [Loading Files](#loading-files)
     - [File Description Rules](#file-description-rules)
     - [File Conversion](#file-conversion)
-- [Addtional Extended Specifications](#addtional-extended-specifications)
+- [Additional Extended Specifications](#additional-extended-specifications)
     - [Playback Control Specifications](#playback-control-specifications)
-    - [Addtional Set Command Specifications](#addtional-set-command-specifications)
+    - [Additional Set Command Specifications](#additional-set-command-specifications)
     - [More Detailed Control of Damper Pedal](#more-detailed-control-of-damper-pedal)
+    - [Detailed Specifications of Musical Expression Functions](#detailed-specifications-of-musical-expression-functions)
 - [Graphic](#graphic)
 - [setting.toml Description](#settingtoml-description)
 - [Performance with Loopian::ORBIT/QUBIT](#performance-with-loopianorbitqubit)
@@ -115,7 +118,7 @@ This document explains all features of Loopian.
     - You can recall any line in the Scroll Text using the up/down arrow keys.
     - If you move the cursor to the right of the line head with the left/right keys, the recall operation will not work.
 - The Status Indicator at the top of the screen displays the following information:
-    - `>M:B:TTT`: Indicates playback imformation, showing the measure number (M), beat (B), and the tick (TTT) within the beat.
+    - `>M:B:TTT`: Indicates playback information, showing the measure number (M), beat (B), and the tick (TTT) within the beat.
     - `bpm:BBB`: Displays the current tempo.
     - `meter:N/D`: Displays the current time signature.
     - `key:N`: Displays the current key.
@@ -125,7 +128,7 @@ This document explains all features of Loopian.
 
 ### Exiting
 
-- Enter `!quit` or `!q` in the Input Window and press return to exit the application.
+- Enter `!quit` or `!q` in the Input Window and press Return to exit the application.
 - You can also exit by pressing the window's close button.
     - However, log files will not be recorded in this case.
 
@@ -278,41 +281,6 @@ This document explains all features of Loopian.
     - `trns(para)` or `para()`: Specify parallel during chord conversion (same as parallel for all phrases)
     - `asMin()` or `as(VI)`: When parallel is specified, treat Phrase as VI scale and move in parallel based on difference from VI
 
-### Dynamic Pattern
-- Dynamic Pattern automatically generates simultaneous or broken chords without explicitly specifying the pitches in a Phrase.
-- For simultaneous chords, use `Cls()` (Cluster), and for broken chords, use `Arp()` (Arpeggio).
-    - You may omit lowercase letters, e.g. `C(), A()`.
-    - Specify the overall duration of the pattern before the function as in `[hCls(),hArp()]`.
-- `Cls(a,b,c)` takes up to three comma-separated parameters:
-    - Excess parameters beyond three are ignored.
-    - If fewer than three parameters are provided, default values are applied.
-    - a: duration symbol (choose from h, q, e, v, w and their triplet, quintuplet, or dotted variations; default: q).
-    - b: number of chord notes (allowed range 2–5; default: 4).
-    - c: lowest note position (range -6 to 7; default: 0).
-    - Prefixing with `$` (e.g. `$C()`) indicates that the chord should be arpeggiated:
-        - `$SC` for a slow arpeggio.
-        - `$QC` for a quick arpeggio.
-        - `h$C()`: Timing information is placed before the arpeggio symbol.
-        - Although its name overlaps with `Arp()`, the `$` denotes the arpeggio notation in the score.
-- `Arp(a,b,c)` parameters are as follows:
-    - a: duration symbol (choose from h, q, e, v, w and their triplet, quintuplet, or dotted variations; default: q).
-    - b: form indicator, where u means ascending, d descending, ux cross-ascending, and dx cross-descending.
-    - c: lowest note position (range -6 to 7; default: 0).
-- Additional functions can be appended to the Phrase.
-- Generally, the Dynamic Pattern does not span across measures.
-
-### Cluster Memory Function
-- You can pre-register one beat's worth of notes to use in Phrases
-- `@c=dms`: Play do-mi-so chord simultaneously
-- `[ec,x,x,c,c,x,x,c]`: Play previously set chord at timing c
-
-### Multiple Phrase Addition Input Function
-- When writing `[...]+` after a Phrase and pressing return, it won't play but will wait for next Phrase input
-    - After `[aaa]+`, inputting `[bbb]` will be treated as `[aaabbb]` and generate playback data
-    - Since strings are simply concatenated, you need `,` or `/` after `c` in cases like `[a,b,c,]+`
-- If you input rpt()+ at the end like `[ax].rpt(2)+`, it will be treated as `[axaxax]`
-    - If you use part specification like `L1.[...]+`, it will result in an error
-
 ## Composition Specification
 
 ### Composition Basic Format
@@ -405,13 +373,37 @@ This document explains all features of Loopian.
     |Through (no root)|O|`oooo-oooo-oooo`|
     |Through, no pedal (no root)|X|`oooo-oooo-oooo`|
 
-### Direct scale specification
+### Direct Scale Specification
 
 - You can specify a scale directly in a Composition by encoding the 12 on/off bits as a three‑digit hexadecimal number.
     - `Onnn` / `Xnnn`: write a three‑digit hexadecimal number (nnn) after `O` or `X`.
     - For example, Ionian mode is oxox-ooxo-xoxo, so write `Oad5`.
 
-## Common Specifications for Parts/Compositions and Their Coordination
+## Common Specifications for Phrase/Composition and Their Coordination Features
+
+### Dynamic Pattern
+- Dynamic Pattern automatically generates simultaneous chords or broken chords from the chord specified in Composition, without explicitly writing pitches in a Phrase.
+- For simultaneous chords, use `Cls()` (Cluster), and for broken chords, use `Arp()` (Arpeggio).
+    - You may omit lowercase letters, e.g. `C(), A()`.
+    - Write it in a Phrase like `[hCls(),hArp()]`, where the duration before the function indicates the overall pattern length.
+- `Cls(x,y,z)` takes comma-separated parameters in parentheses:
+    - Up to three parameters are accepted. If four or more are given, extras are ignored.
+    - If fewer parameters are given, defaults are used.
+    - x (first): duration symbol. You can use h, q, e, v, w and their triplet, quintuplet, or dotted variants (default: q).
+        - If `o` is specified, one full measure is used regardless of time signature.
+    - y (second): number of chord notes (2-5, default: 4).
+    - z (third): lowest note position (-6 to 7, default: 0).
+    - If `$` appears before `C` as in `$C()`, the simultaneous chord is played as an arpeggio.
+        - `$SC`: slow arpeggio.
+        - `$QC`: quick arpeggio.
+        - `h$C()`: duration information is written before the arpeggio symbol.
+        - Although the naming overlaps with `Arp()`, `$` refers to the arpeggio notation symbol.
+- For `Arp(x,y,z)`, each parameter means:
+    - x: duration symbol. You can use h, q, e, v, w and their triplet, quintuplet, or dotted variants (default: q).
+    - y: pattern direction, where u means ascending, d descending, ux cross ascending, and dx cross descending.
+    - z: lowest note position (-6 to 7, default: 0).
+- You can append the same trailing functions as normal Phrase notation.
+- In principle, Dynamic Pattern does not span across barlines.
 
 ### Part Specification Notation
 - For both Phrase and Composition, you can input to parts different from the prompt part by specifying at the beginning
@@ -436,11 +428,26 @@ This document explains all features of Loopian.
 - `@n=[..]`: Add Variation by adding @n (n is number 1-9) at beginning of Phrase specification
 - Added Variation Phrases can be specified in Composition as follows:
     - `{I/II@n}` Writing `@n`(n:1-9) after Chord specification starts playing Variation Phrase from beginning of this measure
-    - When writing only `@n` without chord specification, Chord is treated same as when nothing was written
+    - When writing only `@n` without chord specification, the chord is treated the same as when nothing was written
     - When specified in Composition, interrupts previous Phrase even if mid-way and plays Variation Phrase
     - Even if Composition ends before Phrase, continues playing if Variation Phrase remains
 - When playing at specific measure, write `@msr(M)=[..]` and describe measure conditions in part M
     - When M is a number, plays when that measure number is reached
+- After the Variation Phrase ends, if no new Variation is specified, normal Phrase playback resumes
+
+## Other Phrase Functions
+
+### Cluster Memory Function
+- You can pre-register one beat's worth of notes for use in Phrases.
+- `@c=dms`: Play do-mi-so chord simultaneously.
+- `[ec,x,x,c,c,x,x,c]`: Play the pre-registered chord at each `c` timing.
+
+### Multiple Phrase Addition Input Function
+- If you write `[...]+` after a Phrase and press Return, it does not play immediately and waits for the next Phrase input.
+    - If you input `[bbb]` after `[aaa]+`, it is treated as `[aaabbb]` and playback data is generated.
+    - Because strings are concatenated directly, `,` or `/` is also required after `c` in cases such as `[a,b,c,]+`.
+- If you append rpt()+ like `[ax].rpt(2)+`, it is treated as `[axaxax]`.
+    - Using this together with part specification like `L1.[...]+` results in an error.
 
 
 ## File Loading and Saving
@@ -495,7 +502,7 @@ This document explains all features of Loopian.
     - `!cnv2tl.`*filename* converts and saves with filename+tl.lpn
     - Refer to [Data Input Methods](#data-input-methods)
 
-##  Addtional Extended Specifications
+## Additional Extended Specifications
 
 ### Playback Control Specifications
 
@@ -510,14 +517,14 @@ This document explains all features of Loopian.
         - `rit.poco.bar(2)`
         - `rit.poco.bar(2).bpm(100)`
         - N in bar(N) can be any number
-- `sync`: Synchronize that part's Phrase and Composition at beginning of next measure
+- `sync`: Synchronize the part's Phrase and Composition at the beginning of the next measure
     - `sync.right`: Right hand parts (right1/2)
     - `sync.left`: Left hand parts (left1/2)
     - `sync.all`: All parts
 - `fine`: End sequence after current measure finishes
     - `fine.next`: End after next measure finishes
     - `fine.beat(2)`: End at 2nd beat of next measure (2,3,4)
-- `clear`: Clear data content
+- `clear`: Clear data
     - Without arguments, clears all parts and stops playback
     - `clear.L1`: Clear L1 part content. Similarly for L2,R1,R2
     - `clear.env`: Reset key, meter, bpm, oct to default values rather than data
@@ -528,7 +535,7 @@ This document explains all features of Loopian.
 - By writing `&&` and placing separate commands on both sides, you can specify multiple commands on a single line.
     - `&&` cannot be used within file descriptions.
 
-### Addtional Set Command Specifications
+### Additional Set Command Specifications
 
 - `set.input(fixed)`: Method for determining octave when inputting scale degrees
     - `fixed`: Input scale degrees are absolute positions (d-t within same octave)
@@ -539,6 +546,12 @@ This document explains all features of Loopian.
     - `common`: For general MIDI sound sources, note off is sent as many times as note on
 - `set.turnnote(5)`: Position to fold converted pitch in para specification (0-11, default=5)
 - `set.path(name)`: Specify directory name under load to read from
+- `set.flowreso(reso)`: Represent FLOW part tick resolution as note value.
+- `set.flowvel(vel)`: Similar to `FLOW.dyn(xx)`, but directly specifies velocity value.
+- `set.midi_input_ch(ch)`: Allow FLOW MIDI Input Ch to use channels other than 12/13ch.
+- `set.elasticity(type, depth)`: Set tempo fluctuation within one measure.
+    - type: choose fluctuation type (0:none, 1:Ballad, 2:Swing)
+    - depth: set strength of the selected type in range 0..10
 
 ### More Detailed Control of Damper Pedal
 
@@ -554,6 +567,19 @@ This document explains all features of Loopian.
 - `!/`: To keep the pedal depressed across a barline, put `!` before `/`.
 - Even if `X``O` are specified in Composition, explicit pedal control takes precedence.
 - Priority: `DAMPER.[]` > `.dmp(on/off)` > `{X/O}`
+
+### Detailed Specifications of Musical Expression Functions
+
+- `asMin()` or `as(VI)`: When parallel is specified, treat the Phrase as the VI scale and move it in parallel by the interval difference from VI.
+- For musical expression functions that control volume or note length, you can also specify them by connecting a part name and function with a dot, without writing a Phrase.
+    - `R1.dyn(mf)`: Set R1 volume to mf.
+    - `L2.stacc()`: Set L2 to staccato (also available: `legato()`).
+- You can use cresc and dim as messages to indicate time-varying Phrase volume [not yet implemented].
+    - `cresc()` or `crs()`: Gradually increase volume until Phrase end (increase by one step).
+    - `dim()`: Gradually decrease volume until Phrase end (decrease by one step).
+    - `cresc(mf)`: Gradually increase so that the Phrase ends at mf.
+    - `cresc(mp..f)`: Gradually increase from mp to f over two beats (each dot represents one beat).
+    - `cresc(mp/f)`: Transition volume over one measure (slash represents one measure).
 
 ## Graphic
 
@@ -571,6 +597,8 @@ This document explains all features of Loopian.
 - `graph.jumping`: A pattern where shapes bounce in time with the beat.
 - `graph.wavestick`: A pattern where stick‑like shapes across the screen form a sine‑wave pattern.
 - `graph.circlethreads`: A pattern where random threads appear in a circle at the center of the screen.
+- `graph.noteroll(a)`: A pattern where circles appear in a piano-roll style according to note pitch.
+    - `a`: `v` for vertical, `h` for horizontal.
 - Pressing shift + space changes Text display status in 4 stages as follows. After 4 returns to 1.
     - 1: Normal display. Graphic displays as layer behind text.
     - 2: Scroll Text becomes slightly transparent. Graphic displays as layer in front of text.
@@ -607,8 +635,8 @@ This document explains all features of Loopian.
 
 ### Data Playback Methods
 
-- Data in load folder is played with following steps:
-    1. Launch loopian
+- Data in the load folder is played back using the following steps:
+    1. Launch Loopian
     1. Specify folder name(xxx) containing song data with `set.path(xxx)`
     1. Specify song data with `!l.yyy` (to play yyy.lpn, specify only yyy)
     1. Transfer loaded data from a file with `!play` or `!p`
@@ -616,14 +644,14 @@ This document explains all features of Loopian.
     1. After playback, stop with `stop` or `.`
 - To play from middle of measure:
     1. Specify filename(yyy) and measure number(M) with `!l.yyy.msr(M)`
-        - From second time, can omit filename like `!l.msr(M)`
+        - From the second time, you can omit the filename, as in `!l.msr(M)`
     1. Play with `resume`
 
 ### Data Input Methods
 
 - When inputting song data, follow these steps:
     1. Create new folder under load folder as needed, create text file named `xxx.lpn`
-    1. Write necessary settings like set commands for song playback at beginning
+    1. Write necessary settings, such as set commands, at the beginning for song playback
         - Write clear at start, then set meter, key, bpm
         - Set graph as needed so screen doesn't depend on state before load
     1. Input song data by part using Variation function's `@msr(M)=[]` (part division notation)
@@ -635,7 +663,7 @@ This document explains all features of Loopian.
         - This notation is more visually enjoyable as it loads sequentially during automatic loading at playback
     1. Add tempo changes etc.
 - Notes on Phrase input:
-    - Currently, ties across measures must be written in same line
+    - Currently, ties across measures must be written in the same line
         - May not be possible to write entire song one measure per line
 
 ## Automatic Internal Application Processes
@@ -644,5 +672,5 @@ This document explains all features of Loopian.
     - For phrases of eighth notes or shorter in succession, treats as arpeggio-like playing and tries to avoid same notes continuing
 - Changes velocity (note strength) according to beat and tempo
     - Slightly shifts velocity randomly
-- Unless noped specified, automatically calculates pedal information according to most detailed chord specification
-    - When same chord continues, re-presses once per measure
+- Unless `noped` is specified, automatically calculates pedal information according to the most detailed chord specification
+    - When the same chord continues, re-presses once per measure
