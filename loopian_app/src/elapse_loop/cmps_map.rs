@@ -406,7 +406,7 @@ impl CmpsLoopMediator {
             }
         }
         #[cfg(feature = "verbose")]
-        println!("Received next_cmps >next_cmps is {:?}", self.next_cmps);
+        println!("Received next_cmps > {:?}", self.next_cmps);
         self.do_loop = msg.do_loop;
         self.state_reserve = true;
     }
@@ -537,8 +537,8 @@ impl CmpsLoopMediator {
     }
     pub fn get_chord(&self, designated_: &CrntMsrTick) -> (i16, i16) {
         if designated_.msr >= self.first_msr_num + self.max_msr {
-            // 指定された小節が、ループサイズを超えている場合
-            if let Some(ref cmp) = self.next_cmps {
+            // 指定された小節が、ループサイズを超えている場合 & 現在 Composition Loop が存在する場合
+            if self.cmps.is_some() && let Some(ref cmp) = self.next_cmps {
                 let (msr, beat) = cmp.loop_msr_beat(designated_);
                 return cmp.scan_chord(msr as usize, beat as usize);
             }

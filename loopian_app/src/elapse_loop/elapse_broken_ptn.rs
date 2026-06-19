@@ -107,17 +107,14 @@ impl BrokenPattern {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
             // 和音情報を読み込む
-            let (rt, mut tbl) = cmp_med.get_chord(crnt_);
+            let (rt, tbl) = cmp_med.get_chord(crnt_);
             let root = get_note_from_root(rt);
-            if tbl == NO_TABLE {
-                #[cfg(feature = "verbose")]
-                println!("BrokenPattern: No Chord Table!!");
-                tbl = 0; //  No Table の場合は、Table 0 を使用する
-            } else {
+            if tbl != NO_TABLE {
                 #[cfg(feature = "verbose")]
                 println!("BrokenPattern: root-{root}, table-{tbl}");
+                self.gen_each_note(crnt_, estk, root, tbl);
             }
-            self.gen_each_note(crnt_, estk, root, tbl);
+            self.play_counter += 1;
         }
         self.recalc_next_tick(crnt_)
     }
@@ -139,7 +136,6 @@ impl BrokenPattern {
             estk.tg().get_meter().1,
         );
         self.play_arpeggio(estk, root, tblptr);
-        self.play_counter += 1;
     }
     fn calc_dynamic_amp(&self, tick_for_onemsr: i32, bpm: i16, denomi: i32) -> i16 {
         let mut amp = 0;

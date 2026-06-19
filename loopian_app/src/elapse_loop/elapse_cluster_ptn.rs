@@ -135,19 +135,16 @@ impl ClusterPattern {
             let mut pt_borrowed = pt.borrow_mut();
             let cmp_med = pt_borrowed.get_cmps_med();
             // 和音情報を読み込む
-            let (rt, mut tbl) = cmp_med.get_chord(crnt_);
+            let (rt, tbl) = cmp_med.get_chord(crnt_);
             let root = get_note_from_root(rt);
-            if tbl == NO_TABLE {
-                // 対応する Chord Table が存在しない場合
-                tbl = 0;
+            if tbl != NO_TABLE {
+                #[cfg(feature = "verbose")]
+                println!("ClusterPattern: root-{root}, table-{tbl}");
+                let tblptr_cow = self.gen_each_note(crnt_, estk, tbl);
+                let tblptr: &[i16] = tblptr_cow.as_ref();
+                let ntlist = self.gen_cluster_list(root, tblptr);
+                self.play_cluster(estk, &ntlist);
             }
-            #[cfg(feature = "verbose")]
-            println!("ClusterPattern: root-{root}, table-{tbl}");
-            let tblptr_cow = self.gen_each_note(crnt_, estk, tbl);
-            let tblptr: &[i16] = tblptr_cow.as_ref();
-            let ntlist = self.gen_cluster_list(root, tblptr);
-            self.play_cluster(estk, &ntlist);
-
             self.play_counter += 1;
             self.recalc_next_tick(crnt_)
         } else {
