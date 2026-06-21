@@ -168,9 +168,10 @@ impl InputText {
             }
             &Key::V => {
                 // for ctrl+V
-                if self.ctrl_pressed {
-                    let mut ctx = ClipboardContext::new().unwrap();
-                    let clip_text = ctx.get_contents().unwrap();
+                if self.ctrl_pressed
+                    && let Ok(mut ctx) = ClipboardContext::new()
+                    && let Ok(clip_text) = ctx.get_contents()
+                {
                     self.input_text += &clip_text;
                 }
             }
