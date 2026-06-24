@@ -60,7 +60,33 @@ const EXP_TABLE: [i32; MAX_EXP_INDEX] = [
 //*******************************************************************
 //          Note Struct
 //*******************************************************************
-pub struct Note {
+pub trait Note: Elapse {
+    fn note_on(&mut self, estk: &mut ElapseStack) -> bool;
+    fn note_off(&mut self, estk: &mut ElapseStack);
+    fn midi_out(&self, midi_ch: u8, estk: &mut ElapseStack, status: u8, num: u8, vel: u8);
+    fn note_limit_available(num: u8, min_value: u8, max_value: u8) -> bool
+    where
+        Self: Sized,
+    {
+        (min_value..=max_value).contains(&num)
+    }
+}
+//*******************************************************************
+//          Note Type Marker
+//  Piano と Violin の実装を変えるときは、下の Piano/Violin に実装を追加する
+//*******************************************************************
+pub trait NoteType: Send + Sync {}
+
+pub struct Piano;
+impl NoteType for Piano {}
+
+pub struct Violin;
+impl NoteType for Violin {}
+
+//*******************************************************************
+//          Generic Note Struct
+//*******************************************************************
+pub struct GenericNote<T: NoteType> {
     id: ElapseId,
     priority: u32,
 
@@ -77,19 +103,16 @@ pub struct Note {
     tick_for_onemsr: i32,
     inst_part: InstPart,
     _deb_txt: String,
+    _phantom: std::marker::PhantomData<T>,
 }
-impl Note {
+
+impl<T: NoteType> GenericNote<T> {
     const MIN_AVILABLE_VELO: i32 = 30;
+
     pub fn new(
         sid: u32,
         pid: u32,
         prm: NoteParam,
-        //ev: &PhrEvt,
-        //keynote: u8,
-        //_deb_txt: String,
-        //msr: i32,
-        //tick: i32,
-        //part: u32,
         phrase_amp: i16, // phrase amplitude -16..0..+16
     ) -> Rc<RefCell<Self>> {
         //  Amp から velocity を計算
@@ -126,8 +149,49 @@ impl Note {
             tick_for_onemsr: prm.evt_tick.tick_for_onemsr,
             inst_part: prm.inst_part,
             _deb_txt: prm._deb_txt,
+            _phantom: std::marker::PhantomData,
         }))
     }
+
+    fn random_velocity(&self, input_vel: u8) -> u8 {
+        let mut rng = rand::rng();
+        // std_dev: 標準偏差
+        let dist = Normal::<f64>::new(0.0, 3.0).unwrap();
+        let diff = dist.sample(&mut rng) as i32;
+        if input_vel as i32 + diff > 0 && input_vel as i32 + diff < 128 {
+            (input_vel as i32 + diff) as u8
+        } else {
+            input_vel
+        }
+    }
+
+    fn auto_duration(bpm: i16, meter: Meter, dur: i32) -> i32 {
+        // 0.3 秒以内の音価なら、音価はそのまま
+        // それ以上の音価なら、10%程度短くなる
+        // bpm が 30 ～ 300 の範囲に収まるように調整(fermata のbpm=0に反応しない)
+        let bpm = bpm.clamp(30, 300) as f32;
+        let beat_per_sec = bpm / 60.0;
+        let note_per_beat = (dur as f32) / (1920.0 / (meter.1 as f32));
+        let sec = note_per_beat / beat_per_sec;
+        let real_sec = if sec > 0.3 {
+            sec - (sec * 0.1 - 0.03)
+        } else {
+            sec
+        };
+        (real_sec * bpm * 1920.0 / (60.0 * (meter.1 as f32))) as i32
+    }
+
+    fn timing_reached(&self, crnt_: &CrntMsrTick) -> bool {
+        if let Some(itk) = crnt_.imaginary_tick {
+            (crnt_.msr == self.next_msr && itk >= self.next_tick) || (crnt_.msr > self.next_msr)
+        } else {
+            (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick)
+                || (crnt_.msr > self.next_msr)
+        }
+    }
+}
+
+impl<T: NoteType> Note for GenericNote<T> {
     fn note_on(&mut self, estk: &mut ElapseStack) -> bool {
         let num = self.note_num + self.keynote;
         let bpm = estk.tg().get_bpm();
@@ -137,7 +201,7 @@ impl Note {
         } else {
             self.duration = Self::auto_duration(bpm, meter, self.duration);
         }
-        if Note::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
+        if Self::note_limit_available(num, MIN_NOTE_NUMBER, MAX_NOTE_NUMBER) {
             self.real_note = num;
             let vel = self.random_velocity(self.velocity);
             let midi_ch = midi_ch(self.inst_part);
@@ -155,7 +219,8 @@ impl Note {
             false
         }
     }
-    pub fn note_off(&mut self, estk: &mut ElapseStack) {
+
+    fn note_off(&mut self, estk: &mut ElapseStack) {
         self.destroy = true;
         self.next_msr = FULL;
         // midi note off
@@ -168,43 +233,7 @@ impl Note {
             println!("Off: N{}, ", self.real_note);
         }
     }
-    fn note_limit_available(num: u8, min_value: u8, max_value: u8) -> bool {
-        (min_value..=max_value).contains(&num)
-    }
-    fn random_velocity(&self, input_vel: u8) -> u8 {
-        let mut rng = rand::rng();
-        // std_dev: 標準偏差
-        let dist = Normal::<f64>::new(0.0, 3.0).unwrap();
-        let diff = dist.sample(&mut rng) as i32;
-        if input_vel as i32 + diff > 0 && input_vel as i32 + diff < 128 {
-            (input_vel as i32 + diff) as u8
-        } else {
-            input_vel
-        }
-    }
-    fn auto_duration(bpm: i16, meter: Meter, dur: i32) -> i32 {
-        // 0.3 秒以内の音価なら、音価はそのまま
-        // それ以上の音価なら、10%程度短くなる
-        // bpm が 30 ～ 300 の範囲に収まるように調整(fermata のbpm=0に反応しない)
-        let bpm = bpm.clamp(30, 300) as f32;
-        let beat_per_sec = bpm / 60.0;
-        let note_per_beat = (dur as f32) / (1920.0 / (meter.1 as f32));
-        let sec = note_per_beat / beat_per_sec;
-        let real_sec = if sec > 0.3 {
-            sec - (sec * 0.1 - 0.03)
-        } else {
-            sec
-        };
-        (real_sec * bpm * 1920.0 / (60.0 * (meter.1 as f32))) as i32
-    }
-    fn timing_reached(&self, crnt_: &CrntMsrTick) -> bool {
-        if let Some(itk) = crnt_.imaginary_tick {
-            (crnt_.msr == self.next_msr && itk >= self.next_tick) || (crnt_.msr > self.next_msr)
-        } else {
-            (crnt_.msr == self.next_msr && crnt_.tick >= self.next_tick)
-                || (crnt_.msr > self.next_msr)
-        }
-    }
+
     fn midi_out(&self, midi_ch: u8, estk: &mut ElapseStack, status: u8, num: u8, vel: u8) {
         if midi_ch == 0 {
             if self.flow {
@@ -219,7 +248,8 @@ impl Note {
         }
     }
 }
-impl Elapse for Note {
+
+impl<T: NoteType> Elapse for GenericNote<T> {
     /// id を得る
     fn id(&self) -> ElapseId {
         self.id
@@ -278,4 +308,34 @@ impl Elapse for Note {
     fn destroy_me(&self) -> bool {
         self.destroy
     } // 自クラスが役割を終えた時に True を返す
+}
+
+//*******************************************************************
+//          Type Aliases
+//*******************************************************************
+pub type PianoNote = GenericNote<Piano>;
+pub type ViolinNote = GenericNote<Violin>;
+
+//*******************************************************************
+//          Factory Function
+//*******************************************************************
+pub fn create_note(
+    inst_part: InstPart,
+    sid: u32,
+    pid: u32,
+    prm: NoteParam,
+    phrase_amp: i16,
+) -> Rc<RefCell<dyn Elapse>> {
+    match inst_part {
+        InstPart::Kbd | InstPart::Pedal => {
+            PianoNote::new(sid, pid, prm, phrase_amp) as Rc<RefCell<dyn Elapse>>
+        }
+        InstPart::Violin1 | InstPart::Violin2 => {
+            ViolinNote::new(sid, pid, prm, phrase_amp) as Rc<RefCell<dyn Elapse>>
+        }
+        InstPart::Flow => {
+            // Flow の場合は Piano にデフォルト
+            PianoNote::new(sid, pid, prm, phrase_amp) as Rc<RefCell<dyn Elapse>>
+        }
+    }
 }

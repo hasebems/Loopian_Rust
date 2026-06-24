@@ -268,7 +268,8 @@ impl ClusterPattern {
             ..Default::default()
         };
         (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick, estk.tg().get_bpm());
-        let nt: Rc<RefCell<dyn Elapse>> = Note::new(
+        let nt = create_note(
+            self.inst_part,
             self.play_counter as u32, //  read pointer
             self.id.sid,              //  loop.sid -> note.pid
             NoteParam::new(

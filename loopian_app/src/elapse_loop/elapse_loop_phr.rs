@@ -305,7 +305,8 @@ impl PhraseLoop {
         }
 
         //  Generate Note Struct
-        let nt: Rc<RefCell<dyn Elapse>> = Note::new(
+        let nt = create_note(
+            self.inst_part,
             nep.trace as u32, //  read pointer
             self.id.sid,      //  loop.sid -> note.pid
             NoteParam::new(

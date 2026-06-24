@@ -11,6 +11,7 @@ use super::note_translation::*;
 use crate::cmd::{txt2seq_cmps, txt2seq_cmps::*};
 use crate::common::lpnlib::*;
 use crate::elapse::elapse_base::*;
+use crate::elapse::elapse_note::create_note;
 use crate::elapse::elapse_note::*;
 use crate::elapse::stack_elapse::ElapseStack;
 use crate::elapse::tickgen::CrntMsrTick;
@@ -247,7 +248,8 @@ impl BrokenPattern {
             ..Default::default()
         };
         (evt_tick.msr, evt_tick.tick) = self.flt.disperse_tick(&evt_tick, estk.tg().get_bpm());
-        let nt: Rc<RefCell<dyn Elapse>> = Note::new(
+        let nt = create_note(
+            self.inst_part,
             self.play_counter as u32, //  read pointer
             self.id.sid,              //  loop.sid -> note.pid
             NoteParam::new(

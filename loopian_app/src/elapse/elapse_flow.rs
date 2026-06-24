@@ -28,7 +28,7 @@ use crate::elapse_loop::note_translation::*;
 //
 
 pub const TICK_RESOLUTION: i32 = 120;
-struct NoteStock(Option<Rc<RefCell<Note>>>, u8, u8); // 0:note, 1:real_note, 2:locate
+struct NoteStock(Option<Rc<RefCell<dyn Elapse>>>, u8, u8); // 0:note, 1:real_note, 2:locate
 
 pub struct Flow {
     id: ElapseId,
@@ -225,7 +225,8 @@ impl Flow {
             tick_for_onemsr: crnt_.tick_for_onemsr,
             ..Default::default()
         };
-        let nt: Rc<RefCell<Note>> = Note::new(
+        let nt = create_note(
+            self.inst_part,
             (crnt_.msr * crnt_.tick_for_onemsr + crnt_.tick) as u32, //  unique number
             self.id.sid,                                             //  loop.sid -> note.pid
             NoteParam::new(
