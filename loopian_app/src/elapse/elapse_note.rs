@@ -73,15 +73,15 @@ pub trait Note: Elapse {
 }
 //*******************************************************************
 //          Note Type Marker
-//  Piano と Violin の実装を変えるときは、下の Piano/Violin に実装を追加する
+//  Piano と Violin の実装を変えるときは、下の PianoNoteType/ViolinNoteType に実装を追加する
 //*******************************************************************
 pub trait NoteType: Send + Sync {}
 
-pub struct Piano;
-impl NoteType for Piano {}
+pub struct PianoNoteType;
+impl NoteType for PianoNoteType {}
 
-pub struct Violin;
-impl NoteType for Violin {}
+pub struct ViolinNoteType;
+impl NoteType for ViolinNoteType {}
 
 //*******************************************************************
 //          Generic Note Struct
@@ -313,8 +313,8 @@ impl<T: NoteType> Elapse for GenericNote<T> {
 //*******************************************************************
 //          Type Aliases
 //*******************************************************************
-pub type PianoNote = GenericNote<Piano>;
-pub type ViolinNote = GenericNote<Violin>;
+pub type PianoNote = GenericNote<PianoNoteType>;
+pub type ViolinNote = GenericNote<ViolinNoteType>;
 
 //*******************************************************************
 //          Factory Function
