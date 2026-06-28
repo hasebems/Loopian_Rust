@@ -50,12 +50,12 @@ pub fn put_amp_data(exps: &[String]) -> Vec<AnaEvt> {
         // - dyn(/f)     → AMP_REACH_NEXT_BAR (次の小節頭で到達)
         // - dyn(<f)     → AMP_CRESCENDO_COND (条件付きクレシェンド)
         // - dyn(>p)     → AMP_DIMINUENDO_COND (条件付きディミニエンド)
-        let (amp_txt, modifier_tick) = if dyntxt.starts_with('/') {
-            (&dyntxt[1..], AMP_REACH_NEXT_BAR as i32)
-        } else if dyntxt.starts_with('<') {
-            (&dyntxt[1..], AMP_CRESCENDO_COND as i32)
-        } else if dyntxt.starts_with('>') {
-            (&dyntxt[1..], AMP_DIMINUENDO_COND as i32)
+        let (amp_txt, modifier_tick) = if let Some(stripped) = dyntxt.strip_prefix('/') {
+            (stripped, AMP_REACH_NEXT_BAR as i32)
+        } else if let Some(stripped) = dyntxt.strip_prefix('<') {
+            (stripped, AMP_CRESCENDO_COND as i32)
+        } else if let Some(stripped) = dyntxt.strip_prefix('>') {
+            (stripped, AMP_DIMINUENDO_COND as i32)
         } else {
             (dyntxt, AMP_CHANGE_IMMEDIATE as i32)
         };
