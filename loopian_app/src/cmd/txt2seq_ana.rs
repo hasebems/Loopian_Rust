@@ -44,10 +44,27 @@ pub fn put_amp_data(exps: &[String]) -> Vec<AnaEvt> {
     let ampevt = exps.iter().find(|exp| exp.contains("dyn"));
     if let Some(txt) = ampevt {
         let dyntxt = extract_texts_from_parentheses(txt);
-        let amp = convert_expstr2amp(dyntxt);
+
+        // 修飾子を解析してtickフィールドに値を格納
+        // - dyn(f)      → AMP_CHANGE_IMMEDIATE (即時変更)
+        // - dyn(/f)     → AMP_REACH_NEXT_BAR (次の小節頭で到達)
+        // - dyn(<f)     → AMP_CRESCENDO_COND (条件付きクレシェンド)
+        // - dyn(>p)     → AMP_DIMINUENDO_COND (条件付きディミニエンド)
+        let (amp_txt, modifier_tick) = if dyntxt.starts_with('/') {
+            (&dyntxt[1..], AMP_REACH_NEXT_BAR as i32)
+        } else if dyntxt.starts_with('<') {
+            (&dyntxt[1..], AMP_CRESCENDO_COND as i32)
+        } else if dyntxt.starts_with('>') {
+            (&dyntxt[1..], AMP_DIMINUENDO_COND as i32)
+        } else {
+            (dyntxt, AMP_CHANGE_IMMEDIATE as i32)
+        };
+
+        let amp = convert_expstr2amp(amp_txt);
         let anev = AnaEvt::Exp(AnaExpEvt {
             atype: ExpType::Amp,
             value: amp,
+            tick: modifier_tick as i16,
             ..Default::default()
         });
         exp.push(anev);

@@ -26,6 +26,12 @@ pub const _CANCEL: i16 = -1;
 pub const NOTHING: i16 = -1;
 pub const ENOUGH: i16 = -2;
 
+// Amplitude Transition Modifiers (stored in AnaExpEvt.tick)
+pub const AMP_CHANGE_IMMEDIATE: i16 = 0; // dyn(f) - immediate change
+pub const AMP_REACH_NEXT_BAR: i16 = -1; // dyn(/f) - reach at next bar head
+pub const AMP_CRESCENDO_COND: i16 = -2; // dyn(<f) - conditional crescendo
+pub const AMP_DIMINUENDO_COND: i16 = -3; // dyn(>p) - conditional diminuendo
+
 pub const MAX_PATTERN_NUM: u8 = 16; // Max Pattern Number
 
 //*******************************************************************

@@ -111,6 +111,10 @@ impl PhrLoopWrapper {
         // PhraseLoop の destroy をセット
         self.phrase.borrow_mut().set_destroy();
     }
+    fn is_crnt(&self, crnt_: &CrntMsrTick) -> bool {
+        let phase = self.crnt_phase(crnt_);
+        phase == LoopPhase::AfterBeginCnct || phase == LoopPhase::OneBarBeforeEndCnct
+    }
 }
 
 //*******************************************************************
@@ -242,7 +246,7 @@ impl PhrLoopManager {
                 // phrase = [] かつ ana = [] のときは、Phrase Loop を削除する
                 self.empty_phrase(msg);
             } else {
-                self.rcv_ana(msg.ana);
+                self.rcv_ana(msg.ana, crnt_);
             }
         } else {
             // Phrase 入力イベントがあった場合
@@ -374,19 +378,39 @@ impl PhrLoopManager {
         None
     }
     /// ana のみのイベントを受信した場合の処理
-    fn rcv_ana(&mut self, ana: Vec<AnaEvt>) {
+    fn rcv_ana(&mut self, ana: Vec<AnaEvt>, crnt_: &CrntMsrTick) {
         for evt in ana {
             if let AnaEvt::Exp(ae) = evt {
                 match ae.atype {
                     ExpType::Amp => {
-                        // 二つの Phrase Loop インスタンスの両方に amp をセット
-                        if let Some(inst_a) = &self.phr_instance_a {
-                            inst_a.phrase.borrow_mut().set_phrase_amp(ae.value);
+                        let target_amp = ae.value;
+
+                        // tick フィールドで修飾子をチェック
+                        // - AMP_CHANGE_IMMEDIATE (0): 即時変更
+                        // - AMP_REACH_NEXT_BAR (-1): 次の小節頭で到達
+                        // - AMP_CRESCENDO_COND (-2): 条件付きクレシェンド
+                        // - AMP_DIMINUENDO_COND (-3): 条件付きディミニエンド
+                        if ae.tick == AMP_REACH_NEXT_BAR
+                            || ae.tick == AMP_CRESCENDO_COND
+                            || ae.tick == AMP_DIMINUENDO_COND
+                        {
+                            // tick ベースの遷移：条件判定と end_tick を計算して呼ぶ
+                            self.set_amp_with_transition(target_amp, ae.tick, crnt_);
+                        } else {
+                            if let Some(inst_a) = &self.phr_instance_a {
+                                inst_a
+                                    .phrase
+                                    .borrow_mut()
+                                    .set_phrase_amp_immediate(target_amp);
+                            }
+                            if let Some(inst_b) = &self.phr_instance_b {
+                                inst_b
+                                    .phrase
+                                    .borrow_mut()
+                                    .set_phrase_amp_immediate(target_amp);
+                            }
                         }
-                        if let Some(inst_b) = &self.phr_instance_b {
-                            inst_b.phrase.borrow_mut().set_phrase_amp(ae.value);
-                        }
-                        self.replace_amp(ae.value);
+                        self.replace_stock_amp_ev(target_amp);
                     }
                     ExpType::Artic => {
                         // 二つの Phrase Loop インスタンスの両方に artic をセット
@@ -396,14 +420,48 @@ impl PhrLoopManager {
                         if let Some(inst_b) = &self.phr_instance_b {
                             inst_b.phrase.borrow_mut().set_artic_rate(ae.value as i32);
                         }
-                        self.replace_artic(ae.value);
+                        self.replace_stock_artic_ev(ae.value);
                     }
                     _ => {}
                 }
             }
         }
     }
-    fn replace_amp(&mut self, amp: i16) {
+
+    /// 振幅遷移を設定: 1小節かけて段階的に到達
+    fn set_amp_with_transition(&self, target_amp: i16, modifier: i16, crnt_: &CrntMsrTick) {
+        // dyn(<f), dyn(>p) の遷移は、1小節（tick_for_onemsr）かけて実行
+        // phraseサイズに関わらず常に最大1小節分の遷移期間を確保
+        let end_tick = crnt_.tick_for_onemsr - 1;
+
+        // 条件判定：
+        // - AMP_REACH_NEXT_BAR (-1): 常に遷移開始
+        // - AMP_CRESCENDO_COND (-2): 現在の amp <= target_amp なら遷移開始
+        // - AMP_DIMINUENDO_COND (-3): 現在の amp >= target_amp なら遷移開始
+
+        //let crnt_inst = self.loop_phr(crnt_).unwrap();
+        for inst in [self.phr_instance_a.as_ref(), self.phr_instance_b.as_ref()]
+            .into_iter()
+            .flatten()
+        {
+            let mut phr = inst.phrase.borrow_mut();
+            let crnt_amp = phr.get_phrase_amp();
+
+            let should_transition = match modifier {
+                AMP_REACH_NEXT_BAR => true,
+                AMP_CRESCENDO_COND => crnt_amp <= target_amp,
+                AMP_DIMINUENDO_COND => crnt_amp >= target_amp,
+                _ => false, // AMP_CHANGE_IMMEDIATE: 即座に変更
+            };
+
+            if should_transition && inst.is_crnt(crnt_) {
+                phr.set_phrase_amp_until_tick(target_amp, end_tick, crnt_);
+            } else {
+                phr.set_phrase_amp_immediate(target_amp);
+            }
+        }
+    }
+    fn replace_stock_amp_ev(&mut self, amp: i16) {
         self.phr_stock.iter_mut().for_each(|phr| {
             if let Some(AnaEvt::Exp(ae)) = phr
                 .ana
@@ -411,18 +469,20 @@ impl PhrLoopManager {
                 .find(|ana| matches!(ana, AnaEvt::Exp(ae) if ae.atype == ExpType::Amp))
             {
                 // 既に Amp の Exp イベントがある場合は、値を更新
+                ae.tick = AMP_CHANGE_IMMEDIATE; // 即時変更に設定
                 ae.value = amp;
             } else {
                 // Amp の Exp イベントがない場合は、新たに追加
                 phr.ana.push(AnaEvt::Exp(AnaExpEvt {
                     atype: ExpType::Amp,
+                    tick: AMP_CHANGE_IMMEDIATE, // 即時変更に設定
                     value: amp,
                     ..Default::default()
                 }));
             }
         });
     }
-    fn replace_artic(&mut self, artic: i16) {
+    fn replace_stock_artic_ev(&mut self, artic: i16) {
         self.phr_stock.iter_mut().for_each(|phr| {
             if let Some(AnaEvt::Exp(ae)) = phr
                 .ana

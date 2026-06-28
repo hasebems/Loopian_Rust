@@ -56,6 +56,14 @@ struct NoteEventPrm {
     trans_note: u8,
     deb_txt: String,
 }
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct AmpTransition {
+    target_measure: i32,
+    start_tick: i32,
+    end_tick: i32,
+    start_amp: i16,
+    target_amp: i16,
+}
 //*******************************************************************
 //          Phrase Loop Struct
 //*******************************************************************
@@ -76,6 +84,8 @@ pub struct PhraseLoop {
     same_time_stuck: Vec<(u8, String)>,
     artic_rate: i32,
     phrase_amp: i16,
+    amp_transition: Option<AmpTransition>,
+    last_elapsed_tick: i32,
     flt: FloatingTick, //  FloatingTick を保持する
 
     // for super's member
@@ -117,6 +127,8 @@ impl PhraseLoop {
             same_time_stuck: Vec::new(),
             artic_rate,
             phrase_amp,
+            amp_transition: None,
+            last_elapsed_tick: 0,
             flt: FloatingTick::new(false),
             // for super's member
             whole_tick: prm.whole_tick,
@@ -137,7 +149,65 @@ impl PhraseLoop {
         self.artic_rate = rate;
     }
     pub fn set_phrase_amp(&mut self, amp: i16) {
-        self.phrase_amp = amp;
+        self.set_phrase_amp_immediate(amp);
+    }
+    pub fn get_phrase_amp(&self) -> i16 {
+        self.phrase_amp
+    }
+    pub fn _get_whole_tick(&self) -> i32 {
+        self.whole_tick
+    }
+    pub fn _get_last_elapsed_tick(&self) -> i32 {
+        self.last_elapsed_tick
+    }
+    pub fn set_phrase_amp_immediate(&mut self, amp: i16) {
+        self.phrase_amp = amp.clamp(-16, 16);
+        self.amp_transition = None;
+    }
+    pub fn set_phrase_amp_until_tick(
+        &mut self,
+        target_amp: i16,
+        end_tick: i32,
+        crnt_: &CrntMsrTick,
+    ) {
+        let target_amp = target_amp.clamp(-16, 16);
+        let end_tick = end_tick.clamp(0, self.whole_tick);
+        let crnt_tick = crnt_.tick.clamp(0, self.whole_tick);
+
+        if end_tick <= crnt_.tick {
+            self.set_phrase_amp_immediate(target_amp);
+            return;
+        }
+
+        self.amp_transition = Some(AmpTransition {
+            target_measure: crnt_.msr,
+            start_tick: crnt_tick,
+            end_tick,
+            start_amp: self.phrase_amp,
+            target_amp,
+        });
+    }
+    fn apply_amp_transition(&mut self, crnt_: &CrntMsrTick) {
+        if let Some(trans) = self.amp_transition {
+            let span = (trans.end_tick - trans.start_tick).max(1);
+            let elapsed = crnt_.tick.clamp(trans.start_tick, trans.end_tick);
+            let progress = elapsed - trans.start_tick;
+            let diff = trans.target_amp as i32 - trans.start_amp as i32;
+            let amp = trans.start_amp as i32 + (diff * progress) / span;
+            //let former_amp = self.phrase_amp;
+            self.phrase_amp = (amp as i16).clamp(-16, 16);
+            //if former_amp != self.phrase_amp {
+            //    println!("|__ apply_amp_transition: new_amp: {}, elapsed_tick: {}", self.phrase_amp, crnt_.tick);
+            //}
+
+            if (crnt_.tick >= trans.end_tick && trans.target_measure == crnt_.msr)
+                || trans.target_measure < crnt_.msr
+            {
+                self.phrase_amp = trans.target_amp;
+                self.amp_transition = None;
+                //println!("|__ apply_amp_transition: transition completed, final_amp: {}, elapsed_tick: {}", self.phrase_amp, crnt_.tick);
+            }
+        }
     }
     fn generate_event(
         &mut self,
@@ -467,6 +537,8 @@ impl Elapse for PhraseLoop {
         self.next_tick_in_phrase = 0;
         self.last_note = NO_NOTE as i16;
         self.same_time_stuck = Vec::new();
+        self.amp_transition = None;
+        self.last_elapsed_tick = 0;
         self.destroy = false;
         self.next_msr = 0;
         self.next_tick = 0;
@@ -486,6 +558,8 @@ impl Elapse for PhraseLoop {
         let ntcrnt_ = self.flt.convert_to_notational(crnt_);
 
         let elapsed_tick = self.calc_serial_tick(&ntcrnt_);
+        self.last_elapsed_tick = elapsed_tick.clamp(0, self.whole_tick);
+        self.apply_amp_transition(crnt_);
         if elapsed_tick > self.whole_tick {
             self.next_msr = FULL;
             self.destroy = true;
@@ -557,6 +631,7 @@ impl Loop for PhraseLoop {
         }
         self.play_counter = trace;
         self.next_tick_in_phrase = next_tick;
+        self.last_elapsed_tick = elapsed_tick.clamp(0, self.whole_tick);
         let (msr, tick) = self.gen_msr_tick(crnt_, self.next_tick_in_phrase);
         self.next_msr = msr;
         self.next_tick = tick;
