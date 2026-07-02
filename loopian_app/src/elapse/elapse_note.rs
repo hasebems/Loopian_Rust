@@ -13,6 +13,7 @@ use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use super::{elapse_base::*, stack_elapse};
 use crate::common::lpnlib::*;
+use crate::common::txt_common::*;
 
 //*******************************************************************
 //          Note Event Struct
@@ -41,21 +42,6 @@ impl<'a> NoteParam<'a> {
         }
     }
 }
-
-const MAX_EXP_INDEX: usize = 33;
-const CENTER_EXP_INDEX: i16 = 16; // mp
-#[rustfmt::skip]
-const EXP_TABLE: [i32; MAX_EXP_INDEX] = [
-    12, 15, 18, 22, // -16(pppp)
-    26, 30, 35, 40, 
-    45, 50, 55, 60, 
-    64, 68, 72, 76, 
-    80, 
-    84, 88, 92, 96, 
-    100, 103, 106, 109, 
-    112, 115, 118, 121, 
-    123, 125, 126, 127,
-];
 
 //*******************************************************************
 //          Note Struct
@@ -119,11 +105,7 @@ impl<T: NoteType> GenericNote<T> {
         let amp = prm.ev.amp;
         let mut velocity =
             EXP_TABLE[(phrase_amp + CENTER_EXP_INDEX).min(MAX_EXP_INDEX as i16 - 1) as usize];
-        velocity += if amp.note_amp > 0 {
-            (amp.note_amp * 2) as i32
-        } else {
-            (amp.note_amp * 5) as i32
-        };
+        velocity += amp.note_amp as i32;
         if amp.auto_amp != 0 {
             velocity += amp.auto_amp as i32;
         }

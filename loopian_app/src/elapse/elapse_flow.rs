@@ -12,6 +12,7 @@ use super::stack_elapse::ElapseStack;
 use super::tickgen::CrntMsrTick;
 use crate::cmd::txt2seq_cmps::*;
 use crate::common::lpnlib::*;
+use crate::common::txt_common::*;
 use crate::elapse_loop::note_translation::*;
 
 //*******************************************************************
@@ -107,75 +108,84 @@ impl Flow {
         crnt_: &CrntMsrTick,
         status: u8,
         locate: u8,
-        vel: u8,
+        org_vel: u8,
     ) {
+        let note_on = status & 0xf0 == 0x90 && org_vel != 0;
+        let note_off = (status & 0xf0 == 0x90 && org_vel == 0) || (status & 0xf0 == 0x80);
         let locate = locate - 18;
         #[cfg(feature = "verbose")]
-        println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, vel);
+        println!("MIDI IN >> {:x}-{:x}-{:x}", status, locate, org_vel);
         let vel = if self.set_velocity != 0 {
-            self.set_velocity as u8
+            self.set_velocity
         } else {
-            vel
+            let mut v = 0;
+            for (i, &exp_val) in EXP_TABLE[..MAX_EXP_INDEX].iter().enumerate() {
+                if (org_vel as i32) < exp_val {
+                    v = i as i16;
+                    break;
+                }
+            }
+            v
         };
         if !self.during_play {
             // ORBIT 自身の Pattern が鳴っていない時
             if self.translation_tbl != NO_TABLE {
                 let mut real_note = Self::note_appropriate(locate as i16);
                 real_note = translate_note_com(0, self.translation_tbl, real_note);
-                self.static_note_on_off(estk_, status, real_note, vel, locate);
+                if note_on {
+                    self.static_note_on(estk_, status, real_note, vel, locate);
+                } else if note_off {
+                    self.static_note_off(estk_, 0x80 | (status & 0x0f), real_note, locate);
+                }
             } else if (4..92).contains(&locate) {
                 // locate >= 4 && locate < 92
                 // 外部から Chord 情報が来ていない時
                 // 3->21 A0, 90->108 C8
-                estk_.midi_out_flow(status, locate + 18, vel);
+                estk_.midi_out_flow(status, locate + 18, org_vel);
             }
         } else {
             // 再生中
-            if status & 0xf0 == 0x90 {
-                if vel != 0 {
-                    let (msr, tick) = if !self.note_stock.is_empty() {
-                        self.calculate_tick(crnt_)
-                    } else {
-                        (crnt_.msr, crnt_.tick)
-                    };
-                    self.note_on_flow(estk_, crnt_, locate, vel, (msr, tick));
+            if note_on {
+                let (msr, tick) = if !self.note_stock.is_empty() {
+                    self.calculate_tick(crnt_)
                 } else {
-                    self.note_off_flow(estk_, locate);
-                }
-            } else if status & 0xf0 == 0x80 {
+                    (crnt_.msr, crnt_.tick)
+                };
+                self.note_on_flow(estk_, crnt_, locate, vel, (msr, tick));
+            } else if note_off {
                 self.note_off_flow(estk_, locate);
             }
         }
     }
-    fn static_note_on_off(
+    fn static_note_on(
         &mut self,
         estk_: &mut ElapseStack,
         status: u8,
         real_note: u8,
-        vel: u8,
+        vel: i16,
         locate: u8,
     ) {
-        if status & 0xf0 == 0x90 && vel != 0 {
-            for nt in self.note_stock.iter_mut() {
-                if nt.1 == real_note {
-                    nt.2 = locate;
-                    return; // 同じノートが連続している場合は、locate だけ更新
-                }
+        for nt in self.note_stock.iter_mut() {
+            if nt.1 == real_note {
+                nt.2 = locate;
+                return; // 同じノートが連続している場合は、locate だけ更新
             }
-            self.note_stock.push(NoteStock(None, real_note, locate));
-            estk_.midi_out_flow(status, real_note + self.keynote, vel);
-        } else if (status & 0xf0 == 0x90 && vel == 0) || (status & 0xf0 == 0x80) {
-            let mut del_number = None;
-            for (i, nt) in self.note_stock.iter().enumerate() {
-                if nt.2 == locate {
-                    del_number = Some(i);
-                    break;
-                }
+        }
+        self.note_stock.push(NoteStock(None, real_note, locate));
+        let velocity = EXP_TABLE[(vel + CENTER_EXP_INDEX).min(MAX_EXP_INDEX as i16 - 1) as usize];
+        estk_.midi_out_flow(status, real_note + self.keynote, velocity as u8);
+    }
+    fn static_note_off(&mut self, estk_: &mut ElapseStack, status: u8, real_note: u8, locate: u8) {
+        let mut del_number = None;
+        for (i, nt) in self.note_stock.iter().enumerate() {
+            if nt.2 == locate {
+                del_number = Some(i);
+                break;
             }
-            if let Some(d) = del_number {
-                self.note_stock.remove(d);
-                estk_.midi_out_flow(status, real_note + self.keynote, vel);
-            }
+        }
+        if let Some(d) = del_number {
+            self.note_stock.remove(d);
+            estk_.midi_out_flow(status, real_note + self.keynote, 0x40);
         }
     }
     fn calculate_tick(&self, crnt_: &CrntMsrTick) -> (i32, i32) {
@@ -199,7 +209,7 @@ impl Flow {
         estk: &mut ElapseStack,
         crnt_: &CrntMsrTick,
         locate: u8,
-        vel: u8,
+        vel: i16,
         tk: (i32, i32),
     ) {
         let real_note = self.detect_real_note(estk, crnt_, locate as i16);
@@ -209,7 +219,7 @@ impl Flow {
             return; // 同じノートが連続している場合は、locate だけ更新
         }
         let mut amp = Amp::default();
-        amp.note_amp = vel as i16;
+        amp.note_amp = vel;
         let ev = NoteEvt {
             tick: crnt_.tick as i16,
             dur: 0, // 必要ない

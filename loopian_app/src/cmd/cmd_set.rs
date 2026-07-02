@@ -172,8 +172,15 @@ impl LoopianCmd {
                 if !(1..=127).contains(&vel) {
                     return Err(CmdError::UnknownCommand);
                 }
+                let mut amp = 0;
+                for (i, &exp_val) in EXP_TABLE[..MAX_EXP_INDEX].iter().enumerate() {
+                    if (vel as i32) < exp_val {
+                        amp = i as i16;
+                        break;
+                    }
+                }            
                 self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
+                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, amp]));
                 Ok("Flow velocity has changed!".to_string())
             }
             SetCommand::MidiInputCh(ch) => {

@@ -565,7 +565,7 @@ impl LoopianCmd {
             let vel = if dyntxt.is_empty() {
                 0
             } else {
-                convert_exp2vel(dyntxt) as i16
+                convert_expstr2amp(dyntxt)
             };
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));

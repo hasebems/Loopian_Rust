@@ -50,7 +50,7 @@ pub fn convert_expstr2amp(vel_text: &str) -> i16 {
         _ => 0,
     }
 }
-pub fn convert_exp2vel(vel_text: &str) -> i32 {
+pub fn _convert_exp2vel(vel_text: &str) -> i32 {
     match vel_text {
         "ff" => 127,
         "f" => 114,
@@ -64,6 +64,20 @@ pub fn convert_exp2vel(vel_text: &str) -> i32 {
         _ => END_OF_DATA,
     }
 }
+pub const MAX_EXP_INDEX: usize = 33;
+pub const CENTER_EXP_INDEX: i16 = 16; // mp
+#[rustfmt::skip]
+pub const EXP_TABLE: [i32; MAX_EXP_INDEX] = [
+    12, 15, 18, 22, // -16(pppp)
+    26, 30, 35, 40, 
+    45, 50, 55, 60, 
+    64, 68, 72, 76, 
+    80, 
+    84, 88, 92, 96, 
+    100, 103, 106, 109, 
+    112, 115, 118, 121, 
+    123, 125, 126, 127,
+];
 pub fn split_by(splitter: char, txt: String) -> Vec<String> {
     let mut splited: Vec<String> = Vec::new();
     let mut old_locate: usize = 0;
