@@ -302,6 +302,7 @@ impl Flow {
                     return real_note;
                 }
                 let root: i16 = get_note_from_root(rt);
+                #[cfg(feature = "verbose")]
                 println!(">>>Converted Note: {}", real_note);
                 real_note = translate_note_com(root, ctbl, real_note);
             }

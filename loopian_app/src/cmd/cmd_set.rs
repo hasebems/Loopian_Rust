@@ -178,7 +178,7 @@ impl LoopianCmd {
                         amp = i as i16;
                         break;
                     }
-                }            
+                }
                 self.sndr
                     .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, amp]));
                 Ok("Flow velocity has changed!".to_string())
