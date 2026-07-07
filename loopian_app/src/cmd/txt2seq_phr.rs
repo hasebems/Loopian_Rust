@@ -10,6 +10,48 @@ use crate::common::txt_common::*;
 //*******************************************************************
 //          complement_phrase
 //*******************************************************************
+pub fn complement_phrase(input_text: Vec<String>, cluster_word: &str) -> Box<PhraseComplemented> {
+    let mut pc = Box::new(PhraseComplemented::new());
+
+    // 1. 分割済みメッセージから [] 内と関数チェーンを抽出
+    pc.set_note_and_exp_from_msg(&input_text);
+
+    // 2. 音符情報はさらに : で分割、auftaktの展開、装飾音符の分離
+    let ntdiv = split_by(':', pc.note_str.clone());
+    pc.divide_atrb(ntdiv.clone());
+
+    // 3. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
+    pc.divide_arrow_bracket();
+    pc.note_str = pc.note_str.replace('c', cluster_word);
+
+    // 4. ,| 重複による休符指示の補填、()内の ',' を '_' に変換。音符のVector化
+    pc.fill_omitted_note_data();
+    pc.note_info = split_by(',', pc.note_str.clone());
+
+    // 5. 音符変調関数の展開
+    pc.note_repeat();
+    let mut note_mod = pc.note_mod.clone();
+    for (i, ne) in note_mod.iter_mut().enumerate() {
+        if ne.len() >= 3 && &ne[0..3] == "rpt" {
+            pc.repeat_ntimes(ne);
+            note_mod.remove(i);
+            break;
+        }
+        //if (ne.len() >= 4 && &ne[0..4] == "copy") || (ne.len() >= 2 && &ne[0..2] == "cp") {
+        //    pc.copy_notes(ne);
+        //}
+        //if (ne.len() >= 4 && &ne[0..4] == "move") || (ne.len() >= 2 && &ne[0..2] == "mv") {
+        //    pc.move_notes(ne);
+        //}
+    }
+    pc.note_mod = note_mod; // 残りの関数は後回し
+
+    // 6. 装飾音符を分離する
+    pc.divide_acciaccatura();
+
+    pc
+}
+//*******************************************************************
 #[derive(Debug)]
 pub struct PhraseComplemented {
     pub note_str: String,                 // []内
@@ -102,7 +144,12 @@ impl PhraseComplemented {
         let mut ne: Vec<String> = Vec::new();
 
         for nx in nev.iter() {
-            if nx.len() >= 3 && &nx[0..3] == "rpt" {
+            if (nx.len() >= 3 && &nx[0..3] == "rpt")
+                || (nx.len() >= 4 && &nx[0..4] == "move")
+                || (nx.len() >= 2 && &nx[0..2] == "mv")
+                || (nx.len() >= 4 && &nx[0..4] == "copy")
+                || (nx.len() >= 2 && &nx[0..2] == "cp")
+            {
                 nm.push(nx.to_string());
             } else {
                 ne.push(nx.to_string());
@@ -285,42 +332,86 @@ impl PhraseComplemented {
         }
     }
 }
-//*******************************************************************
-pub fn complement_phrase(input_text: Vec<String>, cluster_word: &str) -> Box<PhraseComplemented> {
-    let mut pc = Box::new(PhraseComplemented::new());
-
-    // 1. 分割済みメッセージから [] 内と関数チェーンを抽出
-    pc.set_note_and_exp_from_msg(&input_text);
-
-    // 2. 音符情報はさらに : で分割、auftaktの展開、装飾音符の分離
-    let ntdiv = split_by(':', pc.note_str.clone());
-    pc.divide_atrb(ntdiv.clone());
-
-    // 3. <> の検出と、囲まれた要素へのコマンド追加と cluster の展開
-    pc.divide_arrow_bracket();
-    pc.note_str = pc.note_str.replace('c', cluster_word);
-
-    // 4. ,| 重複による休符指示の補填、()内の ',' を '_' に変換。音符のVector化
-    pc.fill_omitted_note_data();
-    pc.note_info = split_by(',', pc.note_str.clone());
-
-    // 5. 同音繰り返しの展開、同フレーズの繰り返し展開
-    pc.note_repeat();
-    let note_mod = pc.note_mod.clone();
-    for ne in note_mod.iter() {
-        if &ne[0..3] == "rpt" {
-            pc.repeat_ntimes(ne);
-        }
-    }
-
-    // 6. 装飾音符を分離する
-    pc.divide_acciaccatura();
-
-    pc
-}
 
 //*******************************************************************
 ///          recombine_to_internal_format
+//*******************************************************************
+pub fn recombine_to_internal_format(
+    pc: &PhraseComplemented,
+    imd: InputMode,
+    base_note: i32,
+    tick_for_onemsr: i32,
+) -> (i32, bool, Vec<PhrEvt>) {
+    let mut pr = PhraseRecombined::new(tick_for_onemsr, base_note);
+    let mut crnt_tick: i32 = 0;
+    let mut mes_top: bool = false;
+    let mut do_loop = true;
+
+    loop {
+        let (nt_val, accia_val) = pc.get_origin(pr.get_and_inc_read_ptr());
+        if nt_val.is_none() {
+            break;
+        }
+        let nt = nt_val.unwrap();
+        if nt == "|" {
+            // 小節線
+            crnt_tick = pr.update_crnt_tick();
+            mes_top = true;
+            continue;
+        }
+        if nt == "LPEND" {
+            // 繰り返しなしを示す終端
+            do_loop = false;
+            break;
+        }
+        let nt_origin = nt;
+
+        // イベント抽出
+        let (note_text, trns) = extract_trans_info(nt_origin);
+        if note_text == "$RPT" {
+            // complement時に入れた、繰り返しを表す特殊マーク$
+            let nt_data = PhrEvt::Info(InfoEvt::gen_repeat(crnt_tick as i16));
+            pr.rcmb.push(nt_data);
+            pr.last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
+        } else if txt2seq_dp::available_for_dp(&note_text) {
+            // Dynamic Pattern
+            let ca_ev = txt2seq_dp::treat_dyn_ptn(&mut pr, note_text.clone(), base_note, crnt_tick);
+            if pr.is_less_than_whole_tick(crnt_tick) {
+                crnt_tick += ca_ev.dur() as i32;
+                pr.rcmb.push(ca_ev);
+            }
+        } else {
+            // Note 処理
+            let (notes, note_dur, diff_amp, others) =
+                pr.break_up_nt_dur_vel(note_text, crnt_tick, imd);
+            let amp = Amp {
+                note_amp: diff_amp,
+                ..Default::default()
+            };
+            if pr.is_less_than_whole_tick(crnt_tick) {
+                // add to recombined data (NO_NOTE 含む(タイの時に使用))
+                let prm = AddNoteParam {
+                    mes_top,
+                    dur: get_note_dur(note_dur, pr.whole_msr_tick(), crnt_tick),
+                    amp,
+                    trns,
+                    others,
+                };
+                let new_notes = if !pc.note_mod.is_empty() {
+                    mv_cp_notes(notes, &pc.note_mod)
+                } else {
+                    notes
+                };
+                pr.add_note(crnt_tick, new_notes, prm, accia_val);
+                crnt_tick += note_dur;
+            }
+        }
+        mes_top = false;
+    }
+
+    (pr.adjust_crnt_tick(crnt_tick), do_loop, pr.rcmb)
+}
+
 //*******************************************************************
 #[derive(Clone, Debug)]
 struct AddNoteParam {
@@ -468,9 +559,11 @@ impl PhraseRecombined {
         // 何も音名が入らなかった時
         if notes.is_empty() {
             notes.push(NO_NOTE);
-        } else if notes.len() > 1 && first_note.is_some() {
+        } else if notes.len() > 1
+            && let Some(first_note_val) = first_note
+        {
             // Upcloser + 和音の時、最低音を next_last_nt とする
-            next_last_nt = first_note.unwrap();
+            next_last_nt = first_note_val;
         }
         self.last_nt = next_last_nt; // 次回の音程の上下判断のため
         self.base_dur = base_dur; // 次回の音符のために保存しておく
@@ -564,77 +657,9 @@ impl PhraseRecombined {
         }
     }
 }
+
 //*******************************************************************
-pub fn recombine_to_internal_format(
-    pc: &PhraseComplemented,
-    imd: InputMode,
-    base_note: i32,
-    tick_for_onemsr: i32,
-) -> (i32, bool, Vec<PhrEvt>) {
-    let mut pr = PhraseRecombined::new(tick_for_onemsr, base_note);
-    let mut crnt_tick: i32 = 0;
-    let mut mes_top: bool = false;
-    let mut do_loop = true;
-
-    loop {
-        let (nt_val, accia_val) = pc.get_origin(pr.get_and_inc_read_ptr());
-        if nt_val.is_none() {
-            break;
-        }
-        let nt = nt_val.unwrap();
-        if nt == "|" {
-            // 小節線
-            crnt_tick = pr.update_crnt_tick();
-            mes_top = true;
-            continue;
-        }
-        if nt == "LPEND" {
-            // 繰り返しなしを示す終端
-            do_loop = false;
-            break;
-        }
-        let nt_origin = nt;
-
-        // イベント抽出
-        let (note_text, trns) = extract_trans_info(nt_origin);
-        if note_text == "$RPT" {
-            // complement時に入れた、繰り返しを表す特殊マーク$
-            let nt_data = PhrEvt::Info(InfoEvt::gen_repeat(crnt_tick as i16));
-            pr.rcmb.push(nt_data);
-            pr.last_nt = 0; // closed の判断用の前Noteの値をクリアする -> 繰り返し最初の音のオクターブが最初と同じになる
-        } else if txt2seq_dp::available_for_dp(&note_text) {
-            // Dynamic Pattern
-            let ca_ev = txt2seq_dp::treat_dyn_ptn(&mut pr, note_text.clone(), base_note, crnt_tick);
-            if pr.is_less_than_whole_tick(crnt_tick) {
-                crnt_tick += ca_ev.dur() as i32;
-                pr.rcmb.push(ca_ev);
-            }
-        } else {
-            // Note 処理
-            let (notes, note_dur, diff_amp, others) =
-                pr.break_up_nt_dur_vel(note_text, crnt_tick, imd);
-            let amp = Amp {
-                note_amp: diff_amp,
-                ..Default::default()
-            };
-            if pr.is_less_than_whole_tick(crnt_tick) {
-                // add to recombined data (NO_NOTE 含む(タイの時に使用))
-                let prm = AddNoteParam {
-                    mes_top,
-                    dur: get_note_dur(note_dur, pr.whole_msr_tick(), crnt_tick),
-                    amp,
-                    trns,
-                    others,
-                };
-                pr.add_note(crnt_tick, notes, prm, accia_val);
-                crnt_tick += note_dur;
-            }
-        }
-        mes_top = false;
-    }
-
-    (pr.adjust_crnt_tick(crnt_tick), do_loop, pr.rcmb)
-}
+///  ノート変換指定を抽出する
 fn extract_trans_info(origin: String) -> (String, TrnsType) {
     if origin.len() > 2 && &origin[0..2] == ">>" {
         (origin[2..].to_string(), TrnsType::NoTrns)
@@ -875,6 +900,34 @@ fn get_note_dur(ndur: i32, whole_msr_tick: i32, crnt_tick: i32) -> i32 {
         note_dur = whole_msr_tick - crnt_tick; // 小節線を超えたら、音価をそこでリミット
     }
     note_dur
+}
+fn mv_cp_notes(mut notes: Vec<u8>, note_mod: &[String]) -> Vec<u8> {
+    for nm in note_mod.iter() {
+        if (nm.len() >= 4 && &nm[0..4] == "move") || (nm.len() >= 2 && &nm[0..2] == "mv") {
+            let howhigh = extract_anynumber_from_parentheses::<i32>(nm).unwrap_or(0);
+            // 全要素を howhigh だけ上げる
+            notes.iter_mut().for_each(|n| {
+                *n = (*n as i32 + howhigh).clamp(MIN_NOTE_NUMBER as i32, MAX_NOTE_NUMBER as i32)
+                    as u8
+            });
+        } else if (nm.len() >= 4 && &nm[0..4] == "copy") || (nm.len() >= 2 && &nm[0..2] == "cp") {
+            let howhigh = extract_anynumber_from_parentheses::<i32>(nm).unwrap_or(0);
+            // 全要素を howhigh だけ上げたコピーを追加する
+            let new_notes: Vec<u8> = notes
+                .iter()
+                .map(|n| {
+                    (*n as i32 + howhigh).clamp(MIN_NOTE_NUMBER as i32, MAX_NOTE_NUMBER as i32)
+                        as u8
+                })
+                .collect();
+            for note in new_notes {
+                if !notes.contains(&note) {
+                    notes.push(note);
+                }
+            }
+        }
+    }
+    notes
 }
 
 //*******************************************************************

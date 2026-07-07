@@ -160,7 +160,6 @@ pub fn extract_number_from_parentheses(ne: &str) -> Option<usize> {
         _ => None,
     }
 }
-#[allow(dead_code)]
 pub fn extract_anynumber_from_parentheses<T: std::str::FromStr>(ne: &str) -> Option<T> {
     match (ne.find('('), ne.find(')')) {
         (Some(i), Some(e)) if i + 1 < e => ne[(i + 1)..e].parse::<T>().ok(),
