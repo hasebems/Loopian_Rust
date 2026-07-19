@@ -99,7 +99,7 @@ pub struct TickGen {
     start_mt: CrntMsrTick,
     ritgen: Box<dyn Rit>,
 
-    during_fermata: bool, // fermata で止まっている状態
+    during_fermata: bool,  // fermata で止まっている状態
     fermata_tps: i32,
     fermata_start_time: Instant,
     fermata_tick_inmsr: i32,
@@ -168,11 +168,8 @@ impl TickGen {
         self.bpm_start_time = self.crnt_time; // Get current time
         self.bpm = bpm;
     }
-    fn _change_fermata_event(&mut self) {
-        self.during_rit = false;
-        self.bpm_start_tick = self.calc_crnt_tick();
-        self.bpm_start_time = self.crnt_time; // Get current time
-        self.during_fermata = true; // 次回の gen_tick で反映
+    pub fn set_fermata(&mut self) {
+        self.bpm_stock = 0;
     }
     /// type: 0: Flat, 1: Ballade, 3: Upbeat
     /// depth: 0-10, 0: no effect, 10: max effect
@@ -226,9 +223,14 @@ impl TickGen {
 
         // Generate Event
         let new_msr = self.crnt_msr != former_msr;
-        if new_msr && !self.during_rit && (self.bpm != self.bpm_stock) {
-            // Tempo Change
-            self.change_bpm_event(self.bpm_stock);
+        if new_msr && !self.during_rit {
+            if self.bpm_stock == 0 && !self.during_fermata {
+                // Fermata
+                self.start_fermata();
+            } else if self.bpm != self.bpm_stock {
+                // Tempo Change
+                self.change_bpm_event(self.bpm_stock);
+            }
         }
         let beat_num = self.crnt_tick_inmsr / self.tick_for_beat;
         let new_beat = if new_msr {
@@ -390,21 +392,25 @@ impl TickGen {
             self.bpm_start_tick = self.crnt_tick_inmsr;
             self.prm = RitPrm::default();
             self.start_mt = CrntMsrTick::default();
-            self.bpm = self.bpm_stock;
-            if self.bpm == 0 {
+            if self.bpm_stock == 0 {
                 // start fermata
-                self.crnt_tick_inmsr = 0;
-                self.during_fermata = true;
-                self.fermata_tps = self.ritgen.get_real_tps();
-                self.fermata_start_time = self.crnt_time;
-                self.fermata_tick_inmsr = 0;
-                println!(
-                    ">>>Fermata Start: tps:{}, bpm:{}",
-                    self.fermata_tps,
-                    self.get_real_bpm()
-                );
+                self.start_fermata();
             }
+            self.bpm = self.bpm_stock;
         }
+    }
+    fn start_fermata(&mut self) {
+        self.bpm = 0;
+        self.crnt_tick_inmsr = 0;
+        self.during_fermata = true;
+        self.fermata_tps = 60; // fermata での音符の伸びを設定
+        self.fermata_start_time = self.crnt_time;
+        self.fermata_tick_inmsr = 0;
+        println!(
+            ">>>Fermata Start: tps:{}, bpm:{}",
+            self.fermata_tps,
+            self.get_real_bpm()
+        );
     }
     fn is_over(&self, tgt: CrntMsrTick) -> bool {
         self.crnt_msr > tgt.msr || (self.crnt_msr == tgt.msr && self.crnt_tick_inmsr >= tgt.tick)
@@ -455,6 +461,7 @@ pub trait Rit {
 
     //  現在の bpm を得る
     fn get_real_bpm(&self) -> i16; // 現在のテンポ
+    #[allow(dead_code)]
     fn get_real_tps(&self) -> i32; // 現在の TPS
 }
 
@@ -638,6 +645,7 @@ impl RitBase {
     fn get_real_bpm(&self) -> i16 {
         (self.crnt_tps as f32 / self.bpm2tps) as i16
     }
+    #[allow(dead_code)]
     fn get_real_tps(&self) -> i32 {
         self.crnt_tps
     }
