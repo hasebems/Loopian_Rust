@@ -156,7 +156,7 @@ impl LoopianCmd {
             SetCommand::SameNote => Err(CmdError::UnknownCommand),
             SetCommand::TurnNote(turn_note) => {
                 self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_TURN, turn_note]));
+                    .send_msg_to_elapse(ElpsMsg::Set(MsgSet::Turn(turn_note)));
                 Ok("Turn note has changed!".to_string())
             }
             SetCommand::Path(prm) => {
@@ -165,7 +165,7 @@ impl LoopianCmd {
             }
             SetCommand::FlowReso(reso) => {
                 self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_TICK_RESOLUTION, reso]));
+                    .send_msg_to_elapse(ElpsMsg::Set(MsgSet::FlowTickResolution(reso)));
                 Ok("Flow tick resolution has changed!".to_string())
             }
             SetCommand::FlowVel(vel) => {
@@ -180,12 +180,12 @@ impl LoopianCmd {
                     }
                 }
                 self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, amp]));
+                    .send_msg_to_elapse(ElpsMsg::Set(MsgSet::FlowVelocity(amp)));
                 Ok("Flow velocity has changed!".to_string())
             }
             SetCommand::MidiInputCh(ch) => {
                 self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, ch as i16]));
+                    .send_msg_to_elapse(ElpsMsg::Set(MsgSet::MidiInputCh(ch as i16)));
                 Ok("MIDI Input Ch has changed!".to_string())
             }
             SetCommand::Elasticity(els_type, depth) => {
@@ -251,7 +251,7 @@ impl LoopianCmd {
             }
             // elapse に key を送る
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_KEY, key as i16]));
+                .send_msg_to_elapse(ElpsMsg::Set(MsgSet::Key(key as i16)));
             self.indicator_key_stock(key_text.to_string());
             true
         } else {
@@ -272,8 +272,7 @@ impl LoopianCmd {
     }
     pub fn change_bpm(&mut self, bpm: i16) {
         self.dtstk.change_bpm(bpm);
-        self.sndr
-            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_BPM, bpm]));
+        self.sndr.send_msg_to_elapse(ElpsMsg::Set(MsgSet::Bpm(bpm)));
         self.sndr
             .send_all_vari_and_phrase(self.get_input_part(), &self.dtstk);
     }

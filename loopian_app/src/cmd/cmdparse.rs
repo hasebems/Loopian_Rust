@@ -173,24 +173,24 @@ impl LoopianCmd {
         self.path = Some(path);
     }
     pub fn send_quit(&self) {
-        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
+        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Quit));
     }
     pub fn set_measure(&mut self, msr: i16) {
         self.sndr
-            .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_CRNT_MSR, msr]));
+            .send_msg_to_elapse(ElpsMsg::Set(MsgSet::CurrentMsr(msr)));
     }
     pub fn send_clear(&self) {
-        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_CLEAR));
+        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Clear));
         println!("*** All data has been erased at Elapse thread! ***");
     }
     pub fn set_riten(&mut self, percent: i16) {
         self.sndr
-            .send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_RITEN, percent]));
+            .send_msg_to_elapse(ElpsMsg::Rit(MsgRit::Riten(percent)));
     }
     #[cfg(feature = "raspi")]
     pub fn send_reconnect(&self) {
         self.sndr
-            .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
+            .send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::MidiReconnect));
     }
     //*************************************************************************
     pub fn put_and_get_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
@@ -277,7 +277,7 @@ impl LoopianCmd {
     fn cmd_clear(&mut self, input_part: &str) -> String {
         if input_part.is_empty() {
             // stop
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Stop));
             self.during_play = false;
             // clear
             for i in 0..MAX_KBD_PART {
@@ -311,7 +311,7 @@ impl LoopianCmd {
         if parameter.contains("dmp(") {
             if let Some(dmp) = extract_number_from_parentheses(parameter) {
                 self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_DMP, dmp as i16]));
+                    .send_msg_to_elapse(ElpsMsg::Efct(MsgEfct::Dmp(dmp as i16)));
                 format!("Set Damper Value: {}", dmp)
             } else {
                 "No Value!".to_string()
@@ -319,7 +319,7 @@ impl LoopianCmd {
         } else if parameter.contains("cc70(") {
             if let Some(cc70) = extract_number_from_parentheses(parameter) {
                 self.sndr
-                    .send_msg_to_elapse(ElpsMsg::Efct([MSG_EFCT_CC70, cc70 as i16]));
+                    .send_msg_to_elapse(ElpsMsg::Efct(MsgEfct::Cc70(cc70 as i16)));
                 format!("Set CC70 Value: {}", cc70)
             } else {
                 "No Value!".to_string()
@@ -329,25 +329,24 @@ impl LoopianCmd {
         }
     }
     fn cmd_fermata(&mut self) -> String {
-        self.sndr
-            .send_msg_to_elapse(ElpsMsg::Rit([MSG_RIT_NRM, MSG2_RIT_FERMATA]));
+        self.sndr.send_msg_to_elapse(ElpsMsg::Rit(MsgRit::Fermata));
         "Will stop!".to_string()
     }
     fn cmd_fine(&mut self, input_next: &str) -> String {
         if input_next.is_empty() {
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Fine));
         } else if input_next == "next" {
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_2BAR));
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::FineNext2Bar));
         } else if input_next == "beat(2)" {
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_2BEAT));
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::FineNext2Beat));
         } else if input_next == "beat(3)" {
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_3BEAT));
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::FineNext3Beat));
         } else if input_next == "beat(4)" {
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_FINE_NEXT_4BEAT));
+                .send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::FineNext4Beat));
         }
         self.during_play = false;
         "Fine.".to_string()
@@ -355,7 +354,7 @@ impl LoopianCmd {
     fn cmd_play(&mut self) -> String {
         if !self.during_play {
             // play
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Start));
             self.during_play = true;
             "Phrase has started!".to_string()
         } else {
@@ -364,13 +363,13 @@ impl LoopianCmd {
     }
     fn cmd_panic(&mut self) -> String {
         // panic
-        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_PANIC));
+        self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Panic));
         "All Sound Off!".to_string()
     }
     fn cmd_resume(&mut self) -> String {
         if !self.during_play {
             // resume
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_RESUME));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Resume));
             self.during_play = true;
             "Resume.".to_string()
         } else {
@@ -379,13 +378,13 @@ impl LoopianCmd {
     }
     fn cmd_reconnect(&mut self) -> String {
         self.sndr
-            .send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_MIDI_RECONNECT));
+            .send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::MidiReconnect));
         "Send reconnect".to_string()
     }
     fn cmd_stop(&mut self) -> String {
         if self.during_play {
             // stop
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Stop));
             self.during_play = false;
             "Stopped!".to_string()
         } else {
@@ -395,16 +394,16 @@ impl LoopianCmd {
     fn cmd_sync(&mut self, part_text: &str) -> String {
         if part_text.is_empty() {
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Sync(self.input_part as i16));
+                .send_msg_to_elapse(ElpsMsg::Sync(MsgSync::Part(self.input_part as i16)));
             "Synchronized!".to_string()
         } else if part_text == "right" {
-            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_RGT));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MsgSync::Right));
             "Right Part Synchronized!".to_string()
         } else if part_text == "left" {
-            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_LFT));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MsgSync::Left));
             "Left Part Synchronized!".to_string()
         } else if part_text == "all" {
-            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MSG_SYNC_ALL));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Sync(MsgSync::All));
             "All Part Synchronized!".to_string()
         } else {
             "what?".to_string()
@@ -480,11 +479,11 @@ impl LoopianCmd {
     }
     fn cmd_dot(&mut self) -> String {
         if self.during_play {
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_STOP));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Stop));
             self.during_play = false;
             "Stopped!".to_string()
         } else {
-            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MSG_CTRL_START));
+            self.sndr.send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::Start));
             self.during_play = true;
             "Phrase has started!".to_string()
         }
@@ -568,13 +567,13 @@ impl LoopianCmd {
                 convert_expstr2amp(dyntxt)
             };
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_VELOCITY, vel]));
+                .send_msg_to_elapse(ElpsMsg::Set(MsgSet::FlowVelocity(vel)));
             "Flow Velocity Changed!".to_string()
         } else if msg_vec[0].contains("static") {
             let chord_txt = extract_texts_from_parentheses(&msg_vec[0]);
             let (_root, table) = convert_chord_to_num(chord_txt.to_string());
             self.sndr
-                .send_msg_to_elapse(ElpsMsg::Set([MSG_SET_FLOW_STATIC_SCALE, table]));
+                .send_msg_to_elapse(ElpsMsg::Set(MsgSet::FlowStaticScale(table)));
             "Flow Static Scale Changed!".to_string()
         } else {
             "what?".to_string()
@@ -644,8 +643,8 @@ impl LoopianCmd {
         self.dtstk.change_oct(0, true, part_num);
     }
     fn cmd_rit(&self, mut input_text: Vec<String>) -> String {
-        let mut aft_rit: i16 = MSG2_RIT_ATMP;
-        let mut strength_value: i16 = MSG_RIT_NRM;
+        let mut aft_rit: RitAfter = RitAfter::Atmp;
+        let mut strength: RitStrength = RitStrength::Nrm;
         let mut bar_num: i16 = 0;
 
         while !input_text.is_empty() {
@@ -659,25 +658,31 @@ impl LoopianCmd {
                         }
                     } else if cmd == "bpm" {
                         if let Ok(tmp) = prm.parse::<i16>() {
-                            aft_rit = tmp;
+                            aft_rit = RitAfter::Bpm(tmp);
                         } else {
                             return "Number is wrong.".to_string();
                         }
                     }
                 }
             } else if input_text[0] == "molto" {
-                strength_value = MSG_RIT_MLT;
+                strength = RitStrength::Mlt;
             } else if input_text[0] == "poco" {
-                strength_value = MSG_RIT_POCO;
+                strength = RitStrength::Poco;
             } else if input_text[0] == "fermata" {
-                aft_rit = MSG2_RIT_FERMATA;
+                aft_rit = RitAfter::Fermata;
             }
             input_text.remove(0);
         }
 
-        println!("Rit,strength:{strength_value}, bar:{bar_num}, after:{aft_rit}",);
-        self.sndr
-            .send_msg_to_elapse(ElpsMsg::Rit([strength_value + bar_num * 10, aft_rit]));
+        println!(
+            "Rit,strength:{:?}, bar:{}, after:{:?}",
+            strength, bar_num, aft_rit
+        );
+        self.sndr.send_msg_to_elapse(ElpsMsg::Rit(MsgRit::Strength {
+            strength,
+            bar: bar_num,
+            after: aft_rit,
+        }));
 
         "rit. has started!".to_string()
     }

@@ -238,7 +238,7 @@ impl ElapseStack {
 
         // message 受信処理
         if self.handle_msg(msg) {
-            self.send_msg_to_rx(ElpsMsg::Ctrl(MSG_CTRL_QUIT));
+            self.send_msg_to_rx(ElpsMsg::Ctrl(MsgCtrl::Quit));
             return true;
         }
 
@@ -375,7 +375,7 @@ impl ElapseStack {
             Ok(n) => {
                 match n {
                     Ctrl(m) => {
-                        if m == MSG_CTRL_QUIT {
+                        if m == MsgCtrl::Quit {
                             return true;
                         } else {
                             self.parse_elps_msg(n)
@@ -407,25 +407,25 @@ impl ElapseStack {
             _ => (),
         }
     }
-    fn ctrl_msg(&mut self, msg: i16) {
-        if msg == MSG_CTRL_START {
+    fn ctrl_msg(&mut self, msg: MsgCtrl) {
+        if msg == MsgCtrl::Start {
             self.start(false);
-        } else if msg == MSG_CTRL_STOP {
+        } else if msg == MsgCtrl::Stop {
             self.stop();
-        } else if msg == MSG_CTRL_FINE
-            || msg == MSG_CTRL_FINE_NEXT_2BAR
-            || msg == MSG_CTRL_FINE_NEXT_2BEAT
-            || msg == MSG_CTRL_FINE_NEXT_3BEAT
-            || msg == MSG_CTRL_FINE_NEXT_4BEAT
+        } else if msg == MsgCtrl::Fine
+            || msg == MsgCtrl::FineNext2Bar
+            || msg == MsgCtrl::FineNext2Beat
+            || msg == MsgCtrl::FineNext3Beat
+            || msg == MsgCtrl::FineNext4Beat
         {
             self.fine(msg);
-        } else if msg == MSG_CTRL_PANIC {
+        } else if msg == MsgCtrl::Panic {
             self.panic();
-        } else if msg == MSG_CTRL_RESUME {
+        } else if msg == MsgCtrl::Resume {
             self.start(true);
-        } else if msg == MSG_CTRL_CLEAR {
+        } else if msg == MsgCtrl::Clear {
             self.clear_elapse();
-        } else if msg == MSG_CTRL_MIDI_RECONNECT {
+        } else if msg == MsgCtrl::MidiReconnect {
             self.reconnect();
         }
     }
@@ -520,7 +520,7 @@ impl ElapseStack {
         for elps in self.elapse_vec.iter() {
             elps.borrow_mut().start(start_msr);
         }
-        self.send_msg_to_rx(ElpsMsg::Ctrl(MSG_CTRL_START));
+        self.send_msg_to_rx(ElpsMsg::Ctrl(MsgCtrl::Start));
         #[cfg(feature = "verbose")]
         println!("<Start Playing! in stack_elapse> M:{}", start_msr);
     }
@@ -551,23 +551,23 @@ impl ElapseStack {
         if let Some(err) = e {
             println!("{}", err);
         } else {
-            self.send_msg_to_rx(Ctrl(MSG_CTRL_MIDI_RECONNECT));
+            self.send_msg_to_rx(Ctrl(MsgCtrl::MidiReconnect));
         }
     }
-    fn fine(&mut self, msg: i16) {
-        if msg == MSG_CTRL_FINE {
+    fn fine(&mut self, msg: MsgCtrl) {
+        if msg == MsgCtrl::Fine {
             if self.tg().get_bpm() == 0 {
-                self.stop(); // fermata ならば即停止
+                self.stop();
             } else {
                 self.fine_stock = Some(FineType::NextBar);
             }
-        } else if msg == MSG_CTRL_FINE_NEXT_2BAR {
+        } else if msg == MsgCtrl::FineNext2Bar {
             self.fine_stock = Some(FineType::Next2Bar);
-        } else if msg == MSG_CTRL_FINE_NEXT_2BEAT {
+        } else if msg == MsgCtrl::FineNext2Beat {
             self.fine_stock = Some(FineType::NextBeat(1));
-        } else if msg == MSG_CTRL_FINE_NEXT_3BEAT {
+        } else if msg == MsgCtrl::FineNext3Beat {
             self.fine_stock = Some(FineType::NextBeat(2));
-        } else if msg == MSG_CTRL_FINE_NEXT_4BEAT {
+        } else if msg == MsgCtrl::FineNext4Beat {
             self.fine_stock = Some(FineType::NextBeat(3));
         }
     }
@@ -584,18 +584,43 @@ impl ElapseStack {
             part.borrow_mut().set_sync();
         }
     }
-    fn sync(&mut self, part: i16) {
-        if part < MAX_KBD_PART as i16 {
-            self.call_sync(part as usize, part as usize);
-        } else if part == MSG_SYNC_LFT {
-            self.call_sync(LEFT1, LEFT2);
-        } else if part == MSG_SYNC_RGT {
-            self.call_sync(RIGHT1, RIGHT2);
-        } else if part == MSG_SYNC_ALL {
-            self.call_sync(LEFT1, RIGHT2);
-            self.call_pedal_sync(DAMPER_PART, SHIFT_PART);
+    fn sync(&mut self, msg: MsgSync) {
+        match msg {
+            MsgSync::Part(part) if part < MAX_KBD_PART as i16 => {
+                self.call_sync(part as usize, part as usize)
+            }
+            MsgSync::Left => self.call_sync(LEFT1, LEFT2),
+            MsgSync::Right => self.call_sync(RIGHT1, RIGHT2),
+            MsgSync::All => {
+                self.call_sync(LEFT1, RIGHT2);
+                self.call_pedal_sync(DAMPER_PART, SHIFT_PART);
+            }
+            _ => {}
         }
     }
+    fn rit(&mut self, msg: MsgRit) {
+        match msg {
+            MsgRit::Strength {
+                strength,
+                bar,
+                after,
+            } => {
+                let strength_val = match strength {
+                    RitStrength::Poco => 80,
+                    RitStrength::Nrm => 60,
+                    RitStrength::Mlt => 40,
+                };
+                let target_bpm = match after {
+                    RitAfter::Atmp => self.tg.get_bpm(),
+                    RitAfter::Fermata => 0,
+                    RitAfter::Bpm(bpm) => bpm,
+                };
+                self.tg.prepare_rit(strength_val, bar as i32, target_bpm);
+            }
+            MsgRit::Riten(rate) => {
+                let rate = rate.clamp(-90, 90);
+                self.tg.set_relative_tempo(rate);
+            }
     fn rit(&mut self, msg: [i16; 2]) {
         let strength_set: [(i16, i32); 3] =
             [(MSG_RIT_POCO, 80), (MSG_RIT_NRM, 60), (MSG_RIT_MLT, 40)];
@@ -622,54 +647,66 @@ impl ElapseStack {
             self.tg.set_relative_tempo(rate);
         }
     }
-    fn setting_cmnd(&mut self, msg: [i16; 2]) {
-        if msg[0] == MSG_SET_BPM {
-            self.bpm_stock = msg[1];
-            self.tg.change_bpm(msg[1])
-        } else if msg[0] == MSG_SET_KEY {
-            self.current_key = msg[1] as u8;
-            self.piano_part
-                .iter()
-                .for_each(|x| x.borrow_mut().change_key(msg[1] as u8));
-        } else if msg[0] == MSG_SET_TURN {
-            self.piano_part
-                .iter_mut()
-                .for_each(|x| x.borrow_mut().set_turnnote(msg[1]));
-        } else if msg[0] == MSG_SET_CRNT_MSR {
-            if self.during_play {
-                self.stop();
+    fn setting_cmnd(&mut self, msg: MsgSet) {
+        match msg {
+            MsgSet::Bpm(bpm) => {
+                self.bpm_stock = bpm;
+                self.tg.change_bpm(bpm)
             }
-            self.tg.set_crnt_msr(msg[1] as i32);
-        } else if msg[0] == MSG_SET_FLOW_TICK_RESOLUTION {
-            if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
-                fl.borrow_mut().set_tick_resolution(msg[1] as i32);
+            MsgSet::Key(key) => {
+                self.current_key = key as u8;
+                self.piano_part
+                    .iter()
+                    .for_each(|x| x.borrow_mut().change_key(key as u8));
             }
-        } else if msg[0] == MSG_SET_FLOW_VELOCITY {
-            println!("Set Flow Velocity: {}", msg[1]);
-            if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
-                fl.borrow_mut().set_velocity(msg[1]);
+            MsgSet::Turn(turn) => {
+                self.piano_part
+                    .iter_mut()
+                    .for_each(|x| x.borrow_mut().set_turnnote(turn));
             }
-        } else if msg[0] == MSG_SET_FLOW_STATIC_SCALE {
-            println!("Set Flow Static Scale: {}", msg[1]);
-            if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
-                fl.borrow_mut().set_static_scale(msg[1]);
+            MsgSet::CurrentMsr(msr) => {
+                if self.during_play {
+                    self.stop();
+                }
+                self.tg.set_crnt_msr(msr as i32);
             }
-        } else if msg[0] == MSG_SET_MIDI_INPUT_CH {
-            println!("Set Flow MIDI Input Ch(Elapse): {}", msg[1]);
-            self.send_msg_to_rx(ElpsMsg::Set([MSG_SET_MIDI_INPUT_CH, msg[1]]));
+            MsgSet::FlowTickResolution(resolution) => {
+                if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
+                    fl.borrow_mut().set_tick_resolution(resolution as i32);
+                }
+            }
+            MsgSet::FlowVelocity(velocity) => {
+                println!("Set Flow Velocity: {}", velocity);
+                if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
+                    fl.borrow_mut().set_velocity(velocity);
+                }
+            }
+            MsgSet::FlowStaticScale(scale) => {
+                println!("Set Flow Static Scale: {}", scale);
+                if let Some(fl) = self.piano_part[FLOW_PART].borrow_mut().get_flow() {
+                    fl.borrow_mut().set_static_scale(scale);
+                }
+            }
+            MsgSet::MidiInputCh(ch) => {
+                println!("Set Flow MIDI Input Ch(Elapse): {}", ch);
+                self.send_msg_to_rx(ElpsMsg::Set(MsgSet::MidiInputCh(ch)));
+            }
         }
     }
-    fn efct(&mut self, msg: [i16; 2]) {
-        if msg[0] == MSG_EFCT_DMP {
-            self.pedal_part[0].borrow_mut().set_position(msg[1]);
-        } else if msg[0] == MSG_EFCT_CC70 {
-            let val = if msg[1] > 127 { 127 } else { msg[1] as u8 };
-            self.midi_out(0xb0, 70, val);
+    fn efct(&mut self, msg: MsgEfct) {
+        match msg {
+            MsgEfct::Dmp(dmp) => {
+                self.pedal_part[0].borrow_mut().set_position(dmp);
+            }
+            MsgEfct::Cc70(cc70) => {
+                let val = if cc70 > 127 { 127 } else { cc70 as u8 };
+                self.midi_out(0xb0, 70, val);
+            }
         }
     }
     fn set_meter(&mut self, msg: [i16; 2]) {
         self.beat_stock = Meter(msg[0] as i32, msg[1] as i32);
-        self.sync(MSG_SYNC_ALL);
+        self.sync(MsgSync::All);
         if !self.during_play {
             let tick_for_onemsr = (DEFAULT_TICK_FOR_ONE_MEASURE / msg[1] as i32) * msg[0] as i32;
             self.last_msr_tick.tick_for_onemsr = tick_for_onemsr;

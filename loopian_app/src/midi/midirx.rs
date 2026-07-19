@@ -187,29 +187,27 @@ impl MidiRxThread {
         }
     }
     /// stack_elapse::gen_midirx_thread() で生成したスレッドから定期的に呼び出される
-    /// ElpsMsg::Ctrl(MSG_CTRL_QUIT) を受け取ったら true を返す
+    /// ElpsMsg::Ctrl(MsgCtrl::Quit) を受け取ったら true を返す
     pub fn periodic(&mut self, rx_ctrlmsg: Result<ElpsMsg, TryRecvError>) -> bool {
         self.receive_midi_event();
         match rx_ctrlmsg {
             // 制御用メッセージ
             Ok(n) => {
                 if let ElpsMsg::Ctrl(m) = n {
-                    if m == MSG_CTRL_QUIT {
+                    if m == MsgCtrl::Quit {
                         return true;
-                    } else if m == MSG_CTRL_START {
+                    } else if m == MsgCtrl::Start {
                         for i in 0..2 {
                             if let Ok(mut mb) = self.mdr_buf[i].as_ref().unwrap().lock() {
                                 mb.flush(); // MIDI In Buffer をクリア
                             }
                         }
-                    } else if m == MSG_CTRL_MIDI_RECONNECT {
+                    } else if m == MsgCtrl::MidiReconnect {
                         let _b = self.set_connect();
                     }
-                } else if let ElpsMsg::Set(arr) = n
-                    && arr[0] == MSG_SET_MIDI_INPUT_CH
-                {
-                    println!("Set Flow MIDI Input Ch(MIDI Rx): {}", arr[1]);
-                    self.midi_input_ch = arr[1] as u8;
+                } else if let ElpsMsg::Set(MsgSet::MidiInputCh(ch)) = n {
+                    println!("Set Flow MIDI Input Ch(MIDI Rx): {}", ch);
+                    self.midi_input_ch = ch as u8;
                 }
             }
             Err(TryRecvError::Disconnected) => return true, // Wrong!

@@ -515,15 +515,84 @@ impl CmpData {
 //*******************************************************************
 //          Elapse Message Definition
 //*******************************************************************
+//  Ctrl
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MsgCtrl {
+    Quit = -1,
+    Start = -16, // 1byte msg
+    Stop = -15,
+    Fine = -14,          // 次の小節の頭で終了
+    FineNext2Bar = -21,  // 次の小節の頭の次の小節の頭で終了
+    FineNext2Beat = -22, // 次の小節の頭から２拍目で終了
+    FineNext3Beat = -23, // 次の小節の頭から３拍目で終了
+    FineNext4Beat = -24, // 次の小節の頭から４拍目で終了
+    Panic = -13,
+    Resume = -12,
+    Clear = -11, // Elapse Objectの内容をクリア
+    MidiReconnect = -10,
+    _Flow = 100, // 100-104
+    _EndFlow = 110,
+}
+//  Sync
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MsgSync {
+    Part(i16),
+    Left,
+    Right,
+    All,
+}
+//  Rit
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RitStrength {
+    Nrm,
+    Poco,
+    Mlt,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RitAfter {
+    Atmp,
+    Fermata,
+    Bpm(i16),
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MsgRit {
+    Strength {
+        strength: RitStrength,
+        bar: i16,
+        after: RitAfter,
+    },
+    // 現状テンポへの倍率: 90..10..0..-10..-90[%]
+    Riten(i16),
+    Fermata,
+}
+//  Set
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MsgSet {
+    Bpm(i16),
+    Key(i16),
+    Turn(i16),
+    CurrentMsr(i16), // RESUME と一緒に使う
+    FlowTickResolution(i16),
+    FlowVelocity(i16),
+    FlowStaticScale(i16),
+    MidiInputCh(i16),
+}
+//  Effect
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MsgEfct {
+    Dmp(i16),
+    Cc70(i16),
+}
+
 //  ElpsMsg <- Phr *- PhrData *- PhrEvt <- NoteEvt / PedalEvt / ...
 //          <- Cmp *- CmpData *- CmpEvt <- Chord / Vari / Control
 #[derive(Clone, Debug)]
 pub enum ElpsMsg {
-    Ctrl(i16),
-    Sync(i16),
-    Rit([i16; 2]),
-    Set([i16; 2]),
-    Efct([i16; 2]),
+    Ctrl(MsgCtrl),
+    Sync(MsgSync),
+    Rit(MsgRit),
+    Set(MsgSet),
+    Efct(MsgEfct),
     SetMeter([i16; 2]),
     SetElasticity([i16; 2]),
     Phr(i16, PhrData),      //  Phr : part, (whole_tick,evts)
@@ -532,47 +601,6 @@ pub enum ElpsMsg {
     CmpX(i16),              //  CmpX : part
     MIDIRx(u8, u8, u8, u8), //  status, dt1, dt2, extra
 }
-//  Ctrl
-pub const MSG_CTRL_QUIT: i16 = -1;
-pub const MSG_CTRL_START: i16 = -16; //  1byte msg
-pub const MSG_CTRL_STOP: i16 = -15;
-pub const MSG_CTRL_FINE: i16 = -14; // 次の小節の頭で終了
-pub const MSG_CTRL_FINE_NEXT_2BAR: i16 = -21; // 次の小節の頭の次の小節の頭で終了
-pub const MSG_CTRL_FINE_NEXT_2BEAT: i16 = -22; // 次の小節の頭から２拍目で終了
-pub const MSG_CTRL_FINE_NEXT_3BEAT: i16 = -23; // 次の小節の頭から３拍目で終了
-pub const MSG_CTRL_FINE_NEXT_4BEAT: i16 = -24; // 次の小節の頭から４拍目で終了
-pub const MSG_CTRL_PANIC: i16 = -13;
-pub const MSG_CTRL_RESUME: i16 = -12;
-pub const MSG_CTRL_CLEAR: i16 = -11; // Elapse Objectの内容をクリア
-pub const MSG_CTRL_MIDI_RECONNECT: i16 = -10;
-pub const _MSG_CTRL_FLOW: i16 = 100; // 100-104
-pub const _MSG_CTRL_ENDFLOW: i16 = 110;
-//  Sync
-// 0-4 : Part0-4
-pub const MSG_SYNC_LFT: i16 = 5;
-pub const MSG_SYNC_RGT: i16 = 6;
-pub const MSG_SYNC_ALL: i16 = 7;
-//  Rit : rit.を１小節以上かける場合、1byte目に [小節数*10] を足す（コマンドは10以下のみ）
-pub const MSG_RIT_NRM: i16 = 1;
-pub const MSG_RIT_POCO: i16 = 2;
-pub const MSG_RIT_MLT: i16 = 3;
-pub const MSG_RIT_RITEN: i16 = 8; // 2byte目: 現状のテンポへの倍率: 90..10..0..-10..-90[%]
-pub const MSG2_RIT_ATMP: i16 = 9999;
-pub const MSG2_RIT_FERMATA: i16 = 10000;
-//  Set
-pub const MSG_SET_BPM: i16 = 1;
-pub const MSG_SET_KEY: i16 = 2;
-pub const MSG_SET_TURN: i16 = 3;
-pub const MSG_SET_CRNT_MSR: i16 = 4; // RESUME と一緒に使う
-pub const MSG_SET_FLOW_TICK_RESOLUTION: i16 = 5; // Flow の Tick 解像度を設定
-pub const MSG_SET_FLOW_VELOCITY: i16 = 6; // Flow の Velocity を設定
-pub const MSG_SET_FLOW_STATIC_SCALE: i16 = 7; // Flow の Static Scale を設定
-pub const MSG_SET_MIDI_INPUT_CH: i16 = 8; // Flow の MIDI Input Ch を設定
-//  Set Meter  : numerator, denomirator
-//  Set Elasticity : middle_rate, last_rate, middle_tick
-//  Effect
-pub const MSG_EFCT_DMP: i16 = 1;
-pub const MSG_EFCT_CC70: i16 = 2;
 
 //*******************************************************************
 //          UI Message from Elapse thread
