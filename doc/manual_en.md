@@ -273,6 +273,8 @@ This document explains all features of Loopian.
 - There are two types: note modulation functions that modify the note notation itself, and musical expression functions that apply effects to the entire Phrase
 - **Note modulation functions**
     - `rpt(n)`: n=repeat count, if 2 then repeats total 3 times including itself
+    - `move(n)` `mv(n)`: Move input notes up/down by n semitones (n=-60..+60 max)
+    - `copy(n)` `cp(n)`: Add a new note at position n semitones away from the input note (n=-60..+60 max)
 - **Musical expression functions**
     - `dyn(f)`: Specify phrase volume with arguments f,mf,mp,p,pp
     - `dmp(on)` `dmp(off)`: off: Specify Pedal Off even during chord specification
@@ -486,7 +488,7 @@ This document explains all features of Loopian.
 - Lines after `!msr(n)` are transferred so they arrive in time for beat 1 of measure n
     - In practice, transfer starts when fewer than 240 ticks remain in measure n-1
     - Even if there is a wait during loading and it is treated as automatic loading, users can still enter input in the Input Window
-- If a line is written as `!rd(n): xxx` in a file, then after loading the file, entering `!rd(n)` in the Input Window automatically inputs the string `xxx` from that line (n can be any number)
+- If a line is written as `!rd(n): xxx` in a file, then after loading the file, entering `!rd(n)` in the Input Window automatically inputs `xxx` (n can be any number)
 - `!blk(a)`: Transfers lines starting from the line that begins with `!blk(a)` until the next blank line, or until another `!blk` or `!msr` appears
 - `!blk(a,T,S..)`: You can substitute arbitrary strings within a block by increasing the number of arguments to two or more (e.g., T, S)
     - First, write `!blk(a,T)` in the file (`a` is the block name and `T` is the substitution variable), then write `T` in later lines where replacement should occur
@@ -572,14 +574,11 @@ This document explains all features of Loopian.
 
 - `asMin()` or `as(VI)`: When parallel is specified, treat the Phrase as the VI scale and move it in parallel by the interval difference from VI.
 - For musical expression functions that control volume or note length, you can also specify them by connecting a part name and function with a dot, without writing a Phrase.
-    - `R1.dyn(mf)`: Set R1 volume to mf.
     - `L2.stacc()`: Set L2 to staccato (also available: `legato()`).
-- You can use cresc and dim as messages to indicate time-varying Phrase volume [not yet implemented].
-    - `cresc()` or `crs()`: Gradually increase volume until Phrase end (increase by one step).
-    - `dim()`: Gradually decrease volume until Phrase end (decrease by one step).
-    - `cresc(mf)`: Gradually increase so that the Phrase ends at mf.
-    - `cresc(mp..f)`: Gradually increase from mp to f over two beats (each dot represents one beat).
-    - `cresc(mp/f)`: Transition volume over one measure (slash represents one measure).
+    - `R1.dyn(mf)`: Immediately set R1 volume to mf.
+        - `dyn(/f)`: Become f at the beginning of the next measure (not yet implemented).
+        - `dyn(<f)`: If current LOOP volume is less than or equal to f, start crescendo from the beginning of this LOOP and become f at the beginning of the next measure.
+        - `dyn(>p)`: If current LOOP volume is greater than or equal to p, start diminuendo from the beginning of this LOOP and become p at the beginning of the next measure.
 
 ## Graphic
 
