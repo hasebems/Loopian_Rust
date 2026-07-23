@@ -43,38 +43,38 @@ impl TextVisible {
 #[derive(Debug, Clone)]
 struct AutoGraphState {
     bar: usize,
-    names: Vec<String>,
+    patterns: Vec<GraphicPatternSpec>,
     next_index: usize,
     measure_count: usize,
     last_msr: Option<i32>,
 }
 
 impl AutoGraphState {
-    fn new(bar: usize, names: Vec<String>) -> Self {
+    fn new(bar: usize, patterns: Vec<GraphicPatternSpec>) -> Self {
         Self {
             bar,
-            names,
+            patterns,
             next_index: 0,
             measure_count: 0,
             last_msr: None,
         }
     }
 
-    fn next_name(&mut self, msr: i32) -> Option<String> {
+    fn next_pattern(&mut self, msr: i32) -> Option<GraphicPatternSpec> {
         if self.last_msr == Some(msr) {
             return None;
         }
         self.last_msr = Some(msr);
 
-        if !self.measure_count.is_multiple_of(self.bar) || self.names.is_empty() {
+        if !self.measure_count.is_multiple_of(self.bar) || self.patterns.is_empty() {
             self.measure_count += 1;
             return None;
         }
 
-        let name = self.names[self.next_index].clone();
-        self.next_index = (self.next_index + 1) % self.names.len();
+        let pattern = self.patterns[self.next_index].clone();
+        self.next_index = (self.next_index + 1) % self.patterns.len();
         self.measure_count += 1;
-        Some(name)
+        Some(pattern)
     }
 }
 
@@ -245,11 +245,11 @@ impl Graphic {
                 self.title = title.clone();
                 self.subtitle = subtitle.clone();
             }
-            GraphicMsg::AutoPattern { bar, names } => {
-                if names.is_empty() {
+            GraphicMsg::AutoPattern { bar, patterns } => {
+                if patterns.is_empty() {
                     self.auto_graph = None;
                 } else {
-                    self.auto_graph = Some(AutoGraphState::new(*bar, names.clone()));
+                    self.auto_graph = Some(AutoGraphState::new(*bar, patterns.clone()));
                 }
             }
             GraphicMsg::AutoOff => {
@@ -272,11 +272,14 @@ impl Graphic {
         let Some(auto_graph) = self.auto_graph.as_mut() else {
             return;
         };
-        let Some(name) = auto_graph.next_name(msr) else {
+        let Some(pattern) = auto_graph.next_pattern(msr) else {
             return;
         };
 
-        let msg = GraphicMsg::Pattern { name, arg: None };
+        let msg = GraphicMsg::Pattern {
+            name: pattern.name,
+            arg: pattern.arg,
+        };
         self.apply_graphic_msg(guiev, crnt_time, &msg);
     }
     fn update_scroll_text(&mut self, itxt: &InputText) {

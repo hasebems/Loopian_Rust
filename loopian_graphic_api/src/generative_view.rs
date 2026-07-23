@@ -4,6 +4,12 @@ use std::sync::{Mutex, OnceLock};
 use crate::Resize;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub struct GraphicPatternSpec {
+    pub name: String,
+    pub arg: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum GraphicMsg {
     What,
     NoMsg,
@@ -12,7 +18,10 @@ pub enum GraphicMsg {
     TextVisibleCtrl,
     Title(String, String),
     Pattern { name: String, arg: Option<String> },
-    AutoPattern { bar: usize, names: Vec<String> },
+    AutoPattern {
+        bar: usize,
+        patterns: Vec<GraphicPatternSpec>,
+    },
     AutoOff,
 }
 
@@ -78,28 +87,54 @@ fn auto_message(text: &str) -> (String, GraphicMsg) {
         return ("what?".to_string(), GraphicMsg::What);
     }
 
-    let names = parse_auto_pattern_names(params[1]);
-    if names.is_empty() {
+    let patterns = parse_auto_pattern_specs(params[1]);
+    if patterns.is_empty() {
         ("what?".to_string(), GraphicMsg::What)
     } else {
         (
             format!("Graphic auto mode on: every {} bar(s).", bar),
-            GraphicMsg::AutoPattern { bar, names },
+            GraphicMsg::AutoPattern { bar, patterns },
         )
     }
 }
 
-fn parse_auto_pattern_names(ptn_seq: &str) -> Vec<String> {
+fn parse_auto_pattern_specs(ptn_seq: &str) -> Vec<GraphicPatternSpec> {
+    ptn_seq
+        .split('-')
+        .filter_map(resolve_graphic_spec)
+        .collect()
+}
+
+fn resolve_graphic_spec(text: &str) -> Option<GraphicPatternSpec> {
+    let spec_text = if text.starts_with("ptn") {
+        resolve_ptn_spec(text)?
+    } else if text
+        .chars()
+        .next()
+        .map(|ch| ch.is_ascii_digit())
+        .unwrap_or(false)
+    {
+        resolve_numeric_ptn_spec(text)?
+    } else {
+        text.trim().to_string()
+    };
+
+    pattern_spec_from_text(&spec_text)
+}
+
+fn resolve_numeric_ptn_spec(text: &str) -> Option<String> {
+    let (id_text, arg) = split_name_and_arg(text);
+    let id = id_text.trim().parse::<usize>().ok()?;
+
     let resolver = graphic_name_resolver()
         .lock()
         .expect("Graphic name resolver mutex poisoned");
+    let graphic_name = resolver.as_ref().and_then(|resolve| resolve(id))?;
 
-    ptn_seq
-        .split('-')
-        .filter_map(|idtxt| idtxt.trim().parse::<usize>().ok())
-        .filter_map(|id| resolver.as_ref().and_then(|resolve| resolve(id)))
-        .map(|name| name.to_string())
-        .collect()
+    Some(match arg {
+        Some(arg) if !arg.trim().is_empty() => format!("{}({})", graphic_name, arg),
+        _ => graphic_name.to_string(),
+    })
 }
 
 fn resolve_ptn_spec(text: &str) -> Option<String> {
@@ -123,17 +158,28 @@ fn resolve_ptn_spec(text: &str) -> Option<String> {
 }
 
 fn pattern_message(text: &str) -> (String, GraphicMsg) {
-    let (name, arg) = split_name_and_arg(text);
-    if name.is_empty() {
-        ("what?".to_string(), GraphicMsg::What)
-    } else {
+    if let Some(spec) = pattern_spec_from_text(text) {
         (
             "Changed Graphic!".to_string(),
             GraphicMsg::Pattern {
-                name: name.to_string(),
-                arg,
+                name: spec.name,
+                arg: spec.arg,
             },
         )
+    } else {
+        ("what?".to_string(), GraphicMsg::What)
+    }
+}
+
+fn pattern_spec_from_text(text: &str) -> Option<GraphicPatternSpec> {
+    let (name, arg) = split_name_and_arg(text);
+    if name.is_empty() {
+        None
+    } else {
+        Some(GraphicPatternSpec {
+            name: name.to_string(),
+            arg,
+        })
     }
 }
 
