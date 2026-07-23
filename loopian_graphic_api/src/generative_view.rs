@@ -12,6 +12,8 @@ pub enum GraphicMsg {
     TextVisibleCtrl,
     Title(String, String),
     Pattern { name: String, arg: Option<String> },
+    AutoPattern { bar: usize, names: Vec<String> },
+    AutoOff,
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -52,11 +54,52 @@ pub fn parse_graphic_msg(input_msgs: Vec<String>) -> (String, GraphicMsg) {
             format!("Set Title: {}", title_txt),
             GraphicMsg::Title(title_txt.to_string(), subtitle_txt.to_string()),
         )
+    } else if input_msgs[1].starts_with("auto") {
+        auto_message(&input_msgs[1])
     } else if let Some(ptn_spec) = resolve_ptn_spec(&input_msgs[1]) {
         pattern_message(&ptn_spec)
     } else {
         pattern_message(&input_msgs[1])
     }
+}
+
+fn auto_message(text: &str) -> (String, GraphicMsg) {
+    let txt = extract_texts_from_parentheses(text);
+    let params = txt.split(',').map(|x| x.trim()).collect::<Vec<&str>>();
+    if params.is_empty() {
+        return ("what?".to_string(), GraphicMsg::What);
+    }
+
+    let bar = params[0].parse::<usize>().unwrap_or(0);
+    if bar == 0 {
+        return ("Graphic auto mode off.".to_string(), GraphicMsg::AutoOff);
+    }
+    if params.len() < 2 {
+        return ("what?".to_string(), GraphicMsg::What);
+    }
+
+    let names = parse_auto_pattern_names(params[1]);
+    if names.is_empty() {
+        ("what?".to_string(), GraphicMsg::What)
+    } else {
+        (
+            format!("Graphic auto mode on: every {} bar(s).", bar),
+            GraphicMsg::AutoPattern { bar, names },
+        )
+    }
+}
+
+fn parse_auto_pattern_names(ptn_seq: &str) -> Vec<String> {
+    let resolver = graphic_name_resolver()
+        .lock()
+        .expect("Graphic name resolver mutex poisoned");
+
+    ptn_seq
+        .split('-')
+        .filter_map(|idtxt| idtxt.trim().parse::<usize>().ok())
+        .filter_map(|id| resolver.as_ref().and_then(|resolve| resolve(id)))
+        .map(|name| name.to_string())
+        .collect()
 }
 
 fn resolve_ptn_spec(text: &str) -> Option<String> {

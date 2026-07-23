@@ -39,6 +39,45 @@ impl TextVisible {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+struct AutoGraphState {
+    bar: usize,
+    names: Vec<String>,
+    next_index: usize,
+    measure_count: usize,
+    last_msr: Option<i32>,
+}
+
+impl AutoGraphState {
+    fn new(bar: usize, names: Vec<String>) -> Self {
+        Self {
+            bar,
+            names,
+            next_index: 0,
+            measure_count: 0,
+            last_msr: None,
+        }
+    }
+
+    fn next_name(&mut self, msr: i32) -> Option<String> {
+        if self.last_msr == Some(msr) {
+            return None;
+        }
+        self.last_msr = Some(msr);
+
+        if !self.measure_count.is_multiple_of(self.bar) || self.names.is_empty() {
+            self.measure_count += 1;
+            return None;
+        }
+
+        let name = self.names[self.next_index].clone();
+        self.next_index = (self.next_index + 1) % self.names.len();
+        self.measure_count += 1;
+        Some(name)
+    }
+}
+
 pub struct Graphic {
     graphmsg: Vec<GraphicMsg>,
     font_nrm: nannou::text::Font,
@@ -57,6 +96,7 @@ pub struct Graphic {
     crnt_line: usize,
     title: String,
     subtitle: String,
+    auto_graph: Option<AutoGraphState>,
 }
 
 //*******************************************************************
@@ -101,6 +141,7 @@ impl Graphic {
             crnt_line: 0,
             title: String::new(),
             subtitle: String::new(),
+            auto_graph: None,
         }
     }
     fn load_font(app: &App, font_path: &str) -> nannou::text::Font {
@@ -156,6 +197,9 @@ impl Graphic {
                         }
                     }
                     GraphicEv::BeatEv(beat) => {
+                        if beat == 0 {
+                            self.apply_auto_graphic(guiev, crnt_time);
+                        }
                         let bpm = guiev
                             .get_indicator(INDC_BPM)
                             .parse::<f32>()
@@ -201,15 +245,39 @@ impl Graphic {
                 self.title = title.clone();
                 self.subtitle = subtitle.clone();
             }
-            _ => {
-                // graphic pattern の変更
-                if let Some(svce) =
-                    get_view_instance(guiev, crnt_time, msg, self.gmode, self.font_nrm.clone())
-                {
-                    self.svce = Some(svce);
+            GraphicMsg::AutoPattern { bar, names } => {
+                if names.is_empty() {
+                    self.auto_graph = None;
+                } else {
+                    self.auto_graph = Some(AutoGraphState::new(*bar, names.clone()));
                 }
             }
+            GraphicMsg::AutoOff => {
+                self.auto_graph = None;
+            }
+            _ => {
+                // graphic pattern の変更
+                self.apply_graphic_msg(guiev, crnt_time, msg);
+            }
         }
+    }
+    fn apply_graphic_msg(&mut self, guiev: &mut GuiEv, crnt_time: f32, msg: &GraphicMsg) {
+        if let Some(svce) = get_view_instance(guiev, crnt_time, msg, self.gmode, self.font_nrm.clone())
+        {
+            self.svce = Some(svce);
+        }
+    }
+    fn apply_auto_graphic(&mut self, guiev: &mut GuiEv, crnt_time: f32) {
+        let msr = guiev.get_msr_tick().msr;
+        let Some(auto_graph) = self.auto_graph.as_mut() else {
+            return;
+        };
+        let Some(name) = auto_graph.next_name(msr) else {
+            return;
+        };
+
+        let msg = GraphicMsg::Pattern { name, arg: None };
+        self.apply_graphic_msg(guiev, crnt_time, &msg);
     }
     fn update_scroll_text(&mut self, itxt: &InputText) {
         // generating max_lines_in_window, and updating self.top_scroll_line
