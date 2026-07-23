@@ -1,4 +1,5 @@
 use nannou::prelude::*;
+use std::sync::{Mutex, OnceLock};
 
 use crate::Resize;
 
@@ -19,7 +20,22 @@ pub enum GraphMode {
     Light,
 }
 
-pub fn generate_graphic_msg(input_msgs: Vec<String>) -> (String, GraphicMsg) {
+type GraphicNameResolver = fn(usize) -> Option<&'static str>;
+
+static GRAPHIC_NAME_RESOLVER: OnceLock<Mutex<Option<GraphicNameResolver>>> = OnceLock::new();
+
+fn graphic_name_resolver() -> &'static Mutex<Option<GraphicNameResolver>> {
+    GRAPHIC_NAME_RESOLVER.get_or_init(|| Mutex::new(None))
+}
+
+pub fn register_graphic_name_resolver(resolver: GraphicNameResolver) {
+    let mut stored = graphic_name_resolver()
+        .lock()
+        .expect("Graphic name resolver mutex poisoned");
+    *stored = Some(resolver);
+}
+
+pub fn parse_graphic_msg(input_msgs: Vec<String>) -> (String, GraphicMsg) {
     if input_msgs.len() < 2 {
         return ("what?".to_string(), GraphicMsg::What);
     }
@@ -36,19 +52,45 @@ pub fn generate_graphic_msg(input_msgs: Vec<String>) -> (String, GraphicMsg) {
             format!("Set Title: {}", title_txt),
             GraphicMsg::Title(title_txt.to_string(), subtitle_txt.to_string()),
         )
+    } else if let Some(ptn_spec) = resolve_ptn_spec(&input_msgs[1]) {
+        pattern_message(&ptn_spec)
     } else {
-        let (name, arg) = split_name_and_arg(&input_msgs[1]);
-        if name.is_empty() {
-            ("what?".to_string(), GraphicMsg::What)
-        } else {
-            (
-                "Changed Graphic!".to_string(),
-                GraphicMsg::Pattern {
-                    name: name.to_string(),
-                    arg,
-                },
-            )
-        }
+        pattern_message(&input_msgs[1])
+    }
+}
+
+fn resolve_ptn_spec(text: &str) -> Option<String> {
+    if !text.starts_with("ptn") {
+        return None;
+    }
+
+    let txt = extract_texts_from_parentheses(text);
+    let (id_text, arg) = split_name_and_arg(&txt);
+    let id = id_text.trim().parse::<usize>().ok()?;
+
+    let resolver = graphic_name_resolver()
+        .lock()
+        .expect("Graphic name resolver mutex poisoned");
+    let graphic_name = resolver.as_ref().and_then(|resolve| resolve(id))?;
+
+    Some(match arg {
+        Some(arg) if !arg.trim().is_empty() => format!("{}({})", graphic_name, arg),
+        _ => graphic_name.to_string(),
+    })
+}
+
+fn pattern_message(text: &str) -> (String, GraphicMsg) {
+    let (name, arg) = split_name_and_arg(text);
+    if name.is_empty() {
+        ("what?".to_string(), GraphicMsg::What)
+    } else {
+        (
+            "Changed Graphic!".to_string(),
+            GraphicMsg::Pattern {
+                name: name.to_string(),
+                arg,
+            },
+        )
     }
 }
 

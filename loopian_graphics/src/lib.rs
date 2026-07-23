@@ -35,7 +35,49 @@ pub struct GraphicContext<'a> {
     pub arg: Option<&'a str>,
 }
 
+#[derive(Clone, Copy)]
+pub struct BuiltinGraphic {
+    pub id: usize,
+    pub name: &'static str,
+    pub list_note: &'static str,
+    factory: GraphicFactory,
+}
+
+impl BuiltinGraphic {
+    const fn new(
+        id: usize,
+        name: &'static str,
+        list_note: &'static str,
+        factory: GraphicFactory,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            list_note,
+            factory,
+        }
+    }
+
+    fn factory(self) -> GraphicFactory {
+        self.factory
+    }
+}
+
 type GraphicFactory = fn(&GraphicContext<'_>) -> Option<Box<dyn GenerativeView>>;
+
+const BUILTIN_GRAPHICS: &[BuiltinGraphic] = &[
+    BuiltinGraphic::new(0, "beatlissa", "(0/1)", create_beatlissa),
+    BuiltinGraphic::new(1, "circlethreads", "", create_circlethreads),
+    BuiltinGraphic::new(2, "fish", "", create_fish),
+    BuiltinGraphic::new(3, "jumping", "", create_jumping),
+    BuiltinGraphic::new(4, "lissa", "", create_lissajous),
+    BuiltinGraphic::new(5, "noteroll", "(v/h)", create_noteroll),
+    BuiltinGraphic::new(6, "rain", "", create_raineffect),
+    BuiltinGraphic::new(7, "sinewave", "", create_sinewave),
+    BuiltinGraphic::new(8, "spring", "", create_spring),
+    BuiltinGraphic::new(9, "voice", "", create_voice),
+    BuiltinGraphic::new(10, "wavestick", "", create_wavestick),
+];
 
 static GRAPHIC_REGISTRY: OnceLock<Mutex<HashMap<String, GraphicFactory>>> = OnceLock::new();
 
@@ -43,42 +85,75 @@ fn registry() -> &'static Mutex<HashMap<String, GraphicFactory>> {
     GRAPHIC_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-fn ensure_builtin_graphics() {
-    let mut reg = registry().lock().expect("Graphic registry mutex poisoned");
-    if !reg.is_empty() {
-        return;
-    }
-    reg.insert("voice".to_string(), create_voice);
-    reg.insert("lissa".to_string(), create_lissajous);
-    reg.insert("beatlissa".to_string(), create_beatlissa);
-    reg.insert("sinewave".to_string(), create_sinewave);
-    reg.insert("rain".to_string(), create_raineffect);
-    reg.insert("fish".to_string(), create_fish);
-    reg.insert("jumping".to_string(), create_jumping);
-    reg.insert("wavestick".to_string(), create_wavestick);
-    reg.insert("circlethreads".to_string(), create_circlethreads);
-    reg.insert("noteroll".to_string(), create_noteroll);
-    reg.insert("spring".to_string(), create_spring);
+pub fn install_graphic_name_resolver() {
+    loopian_graphic_api::generative_view::register_graphic_name_resolver(builtin_graphic_name);
+}
+
+pub fn builtin_graphics() -> &'static [BuiltinGraphic] {
+    BUILTIN_GRAPHICS
+}
+
+pub fn builtin_graphic_list_text() -> String {
+    BUILTIN_GRAPHICS
+        .iter()
+        .map(|graphic| format!("{}: {}{}", graphic.id, graphic.name, graphic.list_note))
+        .collect::<Vec<String>>()
+        .join("\n")
+}
+
+pub fn builtin_graphic_names() -> Vec<String> {
+    BUILTIN_GRAPHICS
+        .iter()
+        .map(|graphic| graphic.name.to_string())
+        .collect()
+}
+
+pub fn builtin_graphic_name(id: usize) -> Option<&'static str> {
+    BUILTIN_GRAPHICS
+        .iter()
+        .find(|graphic| graphic.id == id)
+        .map(|graphic| graphic.name)
+}
+
+pub fn builtin_graphic_id(name: &str) -> Option<usize> {
+    BUILTIN_GRAPHICS
+        .iter()
+        .find(|graphic| graphic.name == name)
+        .map(|graphic| graphic.id)
+}
+
+fn builtin_factory_by_id(id: usize) -> Option<GraphicFactory> {
+    BUILTIN_GRAPHICS
+        .iter()
+        .find(|graphic| graphic.id == id)
+        .map(|graphic| graphic.factory())
+}
+
+fn builtin_factory_by_name(name: &str) -> Option<GraphicFactory> {
+    BUILTIN_GRAPHICS
+        .iter()
+        .find(|graphic| graphic.name == name)
+        .map(|graphic| graphic.factory())
 }
 
 pub fn register_graphic(name: impl Into<String>, factory: GraphicFactory) {
-    ensure_builtin_graphics();
     let mut reg = registry().lock().expect("Graphic registry mutex poisoned");
     reg.insert(name.into(), factory);
 }
 
 fn find_factory(name: &str) -> Option<GraphicFactory> {
-    ensure_builtin_graphics();
+    if let Ok(id) = name.parse::<usize>()
+        && let Some(factory) = builtin_factory_by_id(id)
+    {
+        return Some(factory);
+    }
+
+    if let Some(factory) = builtin_factory_by_name(name) {
+        return Some(factory);
+    }
+
     let reg = registry().lock().expect("Graphic registry mutex poisoned");
     reg.get(name).copied()
-}
-
-pub fn builtin_graphic_names() -> Vec<String> {
-    ensure_builtin_graphics();
-    let reg = registry().lock().expect("Graphic registry mutex poisoned");
-    let mut names = reg.keys().cloned().collect::<Vec<String>>();
-    names.sort();
-    names
 }
 
 fn create_voice(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
