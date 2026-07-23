@@ -66,17 +66,17 @@ impl BuiltinGraphic {
 type GraphicFactory = fn(&GraphicContext<'_>) -> Option<Box<dyn GenerativeView>>;
 
 const BUILTIN_GRAPHICS: &[BuiltinGraphic] = &[
-    BuiltinGraphic::new(0, "beatlissa", "(0/1)", create_beatlissa),
-    BuiltinGraphic::new(1, "circlethreads", "", create_circlethreads),
-    BuiltinGraphic::new(2, "fish", "", create_fish),
-    BuiltinGraphic::new(3, "jumping", "", create_jumping),
-    BuiltinGraphic::new(4, "lissa", "", create_lissajous),
-    BuiltinGraphic::new(5, "noteroll", "(v/h)", create_noteroll),
-    BuiltinGraphic::new(6, "rain", "", create_raineffect),
-    BuiltinGraphic::new(7, "sinewave", "", create_sinewave),
-    BuiltinGraphic::new(8, "spring", "", create_spring),
-    BuiltinGraphic::new(9, "voice", "", create_voice),
-    BuiltinGraphic::new(10, "wavestick", "", create_wavestick),
+    BuiltinGraphic::new(1, "beatlissa", "(0/1)", create_beatlissa),
+    BuiltinGraphic::new(2, "circlethreads", "", create_circlethreads),
+    BuiltinGraphic::new(3, "fish", "", create_fish),
+    BuiltinGraphic::new(4, "jumping", "", create_jumping),
+    BuiltinGraphic::new(5, "lissa", "", create_lissajous),
+    BuiltinGraphic::new(6, "noteroll", "(v/h)", create_noteroll),
+    BuiltinGraphic::new(7, "rain", "", create_raineffect),
+    BuiltinGraphic::new(8, "sinewave", "", create_sinewave),
+    BuiltinGraphic::new(9, "spring", "", create_spring),
+    BuiltinGraphic::new(10, "voice", "", create_voice),
+    BuiltinGraphic::new(11, "wavestick", "", create_wavestick),
 ];
 
 static GRAPHIC_REGISTRY: OnceLock<Mutex<HashMap<String, GraphicFactory>>> = OnceLock::new();

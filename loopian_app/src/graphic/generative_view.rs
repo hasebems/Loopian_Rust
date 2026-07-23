@@ -8,11 +8,29 @@ use super::view_waterripple::WaterRipple;
 
 pub use loopian_graphic_api::generative_view::*;
 
+fn app_graphic_name(id: usize) -> Option<&'static str> {
+    if id == 0 {
+        Some("ripple")
+    } else {
+        loopian_graphics::builtin_graphic_name(id)
+    }
+}
+
+fn app_graphic_list_text() -> String {
+    let mut lines: Vec<String> = vec!["0: ripple".to_string()];
+    lines.extend(
+        loopian_graphics::builtin_graphics()
+            .iter()
+            .map(|graphic| format!("{}: {}{}", graphic.id, graphic.name, graphic.list_note)),
+    );
+    lines.join("\n")
+}
+
 pub fn generate_graphic_msg(input_msgs: Vec<String>) -> (String, GraphicMsg) {
-    loopian_graphics::install_graphic_name_resolver();
+    register_graphic_name_resolver(app_graphic_name);
 
     if input_msgs.len() >= 2 && input_msgs[1] == "list" {
-        return (loopian_graphics::builtin_graphic_list_text(), GraphicMsg::NoMsg);
+        return (app_graphic_list_text(), GraphicMsg::NoMsg);
     }
 
     loopian_graphic_api::generative_view::parse_graphic_msg(input_msgs)
