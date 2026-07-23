@@ -907,6 +907,9 @@ fn mv_cp_notes(mut notes: Vec<u8>, note_mod: &[String]) -> Vec<u8> {
             let howhigh = extract_anynumber_from_parentheses::<i32>(nm).unwrap_or(0);
             // 全要素を howhigh だけ上げる
             notes.iter_mut().for_each(|n| {
+                if *n == REST {
+                    return;
+                }
                 *n = (*n as i32 + howhigh).clamp(MIN_NOTE_NUMBER as i32, MAX_NOTE_NUMBER as i32)
                     as u8
             });
@@ -916,6 +919,9 @@ fn mv_cp_notes(mut notes: Vec<u8>, note_mod: &[String]) -> Vec<u8> {
             let new_notes: Vec<u8> = notes
                 .iter()
                 .map(|n| {
+                    if *n == REST {
+                        return *n;
+                    }
                     (*n as i32 + howhigh).clamp(MIN_NOTE_NUMBER as i32, MAX_NOTE_NUMBER as i32)
                         as u8
                 })
