@@ -369,6 +369,7 @@ cd /path/to/loopian
     |増三長七和音|_7+5,_aug7|`oxxx-oxxx-oxox`|
     |短九+属七和音|_7-9|`ooxx-oxxo-xxox`|
     |増九+属七和音|_7+9|`oxxo-oxxo-xxox`|
+    |長六+属九和音|_M96|`oxox-oxxo-xoox`|
     |減七和音|_dim|`oxxo-xxox-xxxx`|
     |導七和音|_m7-5|`oxxo-xxox-xxox`|
     |suspended4th|_sus4|`oxxx-xoxo-xxxx`|
@@ -617,19 +618,23 @@ cd /path/to/loopian
 - `graph.light` : 白基調の画面に変化
 - `graph.dark`  : 黒基調の画面に変化
 - `graph.title(XXX,YYY)` : 画面トップにタイトルとしてXXXを表示、サブタイトルとしてYYYを表示
-- `graph.ripple`: 水紋パターン(default)
-- `graph.voice` : 分割された各声部が円で表示されるパターン
-- `graph.lissa` : 二つのリサジューを結んだ線を表示するパターン
-- `graph.beatlissa(n)` : Beat でリサジュー波形を表示するパターン
-    - `n`: 0-一つ、1-拍数
-- `graph.sinewave` : 音に合わせたサイン波
-- `graph.rain` : 雨が降っている様子を模したパターン
-- `graph.fish` : 魚が泳いでいる様子を模したパターン
-- `graph.jumping` : 図形が beat に合わせて跳ねるパターン
-- `graph.wavestick` : 画面全体に、棒状の図形がサイン波の模様を作るパターン
-- `graph.circlethreads` : 画面中央に、ランダムな糸が円形に現れるパターン
-- `graph.noteroll(a)` : Note の音高に応じて円がピアノロール風に現れるパターン
-    - `a` : v-上下、h-左右
+- Graphic のパターンを以下のように設定できる
+    - `graph.ripple`: 水紋パターン(default)
+    - `graph.voice` : 分割された各声部が円で表示されるパターン
+    - `graph.lissa` : 二つのリサジューを結んだ線を表示するパターン
+    - `graph.beatlissa(0/1)` : Beat でリサジュー波形を表示するパターン（0-一つ、1-拍数）
+    - `graph.sinewave` : 音に合わせたサイン波
+    - `graph.rain` : 雨が降っている様子を模したパターン
+    - `graph.fish` : 魚が泳いでいる様子を模したパターン
+    - `graph.jumping` : 図形が beat に合わせて跳ねるパターン
+    - `graph.wavestick` : 画面全体に、棒状の図形がサイン波の模様を作るパターン
+    - `graph.circlethreads` : 画面中央に、ランダムな糸が円形に現れるパターン
+    - `graph.noteroll(v/h)` : Note の音高に応じて円がピアノロール風に現れるパターン（v-上下、h-左右）
+- `graph.list` : 上記のパターンのリストを番号付きで表示する
+- `graph.ptn(N)` : list で表示された番号(N)で指定されたパターンに変更する
+- `graph.auto(bar,ptn)` : パターンを小節が変わるタイミングで、自動的に変更する
+    - bar: 何小節ごとに変更するか、 ptn: `1-2-3` のように順番にID番号を、マイナスで繋いで表記
+    - bar に 0 を入れると、auto 設定は止まる
 - shift + space で、以下のように4段階で表示する Text の状況を変化させられる。4の次は1に戻る。
     - 1: 通常の表示。Graphic は文字の後ろのレイヤーとして表示。
     - 2: Scroll Text が少し薄くなる。Graphic は文字の前のレイヤーとして表示。

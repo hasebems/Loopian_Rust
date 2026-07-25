@@ -350,6 +350,7 @@ This document explains all features of Loopian.
     |Augmented major seventh|_7+5,_aug7|`oxxx-oxxx-oxox`|
     |Dominant seventh flat ninth|_7-9|`ooxx-oxxo-xxox`|
     |Dominant seventh sharp ninth|_7+9|`oxxo-oxxo-xxox`|
+    |Dominant ninth with major sixth|_M96|`oxox-oxxo-xoox`|
     |Diminished seventh|_dim|`oxxo-xxox-xxxx`|
     |Half-diminished seventh|_m7-5|`oxxo-xxox-xxox`|
     |Suspended fourth|_sus4|`oxxx-xoxo-xxxx`|
@@ -585,19 +586,23 @@ This document explains all features of Loopian.
 - `graph.light`: Change to white-based screen
 - `graph.dark`: Change to black-based screen
 - `graph.title(XXX,YYY)`: Display XXX as title, YYY as subtitle at the top of screen.
-- `graph.ripple`: Water ripple pattern (default)
-- `graph.voice`: Pattern showing divided voices in circles
-- `graph.lissa`: Pattern showing line connecting two Lissajous figures
-- `graph.beatlissa(n)`: Pattern showing Lissajous waveform with Beat
-    - `n`: 0-one, 1-number of beats
-- `graph.sinewave`: Sine wave synchronized with the sound.
-- `graph.rain` : A pattern that simulates the appearance of falling rain
-- `graph.fish` : A pattern that simulates the appearance of fish swimming
-- `graph.jumping`: A pattern where shapes bounce in time with the beat.
-- `graph.wavestick`: A pattern where stick‑like shapes across the screen form a sine‑wave pattern.
-- `graph.circlethreads`: A pattern where random threads appear in a circle at the center of the screen.
-- `graph.noteroll(a)`: A pattern where circles appear in a piano-roll style according to note pitch.
-    - `a`: `v` for vertical, `h` for horizontal.
+- Graphic patterns can be set as follows:
+    - `graph.ripple`: Water ripple pattern (default)
+    - `graph.voice`: Pattern showing each separated voice as circles
+    - `graph.lissa`: Pattern showing lines connecting two Lissajous figures
+    - `graph.beatlissa(0/1)`: Pattern showing a Beat-synced Lissajous waveform (`0`: single figure, `1`: per beat count)
+    - `graph.sinewave`: Sine wave synchronized with the sound
+    - `graph.rain`: Pattern that simulates falling rain
+    - `graph.fish`: Pattern that simulates fish swimming
+    - `graph.jumping`: Pattern where shapes bounce with the beat
+    - `graph.wavestick`: Pattern where stick-like shapes across the screen form a sine-wave pattern
+    - `graph.circlethreads`: Pattern where random threads appear in a circle at the center of the screen
+    - `graph.noteroll(v/h)`: Pattern where circles appear in a piano-roll style according to note pitch (`v`: vertical, `h`: horizontal)
+- `graph.list`: Display a numbered list of the patterns above
+- `graph.ptn(N)`: Change to the pattern specified by number `N` shown in `graph.list`
+- `graph.auto(bar,ptn)`: Automatically change patterns when bars change
+    - `bar`: number of bars between changes, `ptn`: pattern ID sequence connected by hyphens such as `1-2-3`
+    - If `bar` is `0`, auto mode is disabled
 - Pressing shift + space changes Text display status in 4 stages as follows. After 4 returns to 1.
     - 1: Normal display. Graphic displays as layer behind text.
     - 2: Scroll Text becomes slightly transparent. Graphic displays as layer in front of text.
