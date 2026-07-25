@@ -262,7 +262,8 @@ impl Graphic {
         }
     }
     fn apply_graphic_msg(&mut self, guiev: &mut GuiEv, crnt_time: f32, msg: &GraphicMsg) {
-        if let Some(svce) = get_view_instance(guiev, crnt_time, msg, self.gmode, self.font_nrm.clone())
+        if let Some(svce) =
+            get_view_instance(guiev, crnt_time, msg, self.gmode, self.font_nrm.clone())
         {
             self.svce = Some(svce);
         }

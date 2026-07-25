@@ -99,7 +99,7 @@ pub struct TickGen {
     start_mt: CrntMsrTick,
     ritgen: Box<dyn Rit>,
 
-    during_fermata: bool,  // fermata で止まっている状態
+    during_fermata: bool, // fermata で止まっている状態
     fermata_tps: i32,
     fermata_start_time: Instant,
     fermata_tick_inmsr: i32,
