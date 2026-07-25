@@ -17,7 +17,10 @@ pub enum GraphicMsg {
     DarkMode,
     TextVisibleCtrl,
     Title(String, String),
-    Pattern { name: String, arg: Option<String> },
+    Pattern {
+        name: String,
+        arg: Option<String>,
+    },
     AutoPattern {
         bar: usize,
         patterns: Vec<GraphicPatternSpec>,
