@@ -90,11 +90,14 @@ pub fn put_amp_data(exps: &[String]) -> Vec<AnaEvt> {
 //      atype   NOTHING
 //*******************************************************************
 fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
-    let get_hi = |na: Vec<u8>| -> u8 {
-        match na.iter().max() {
-            Some(x) => *x,
-            None => 0,
-        }
+    let get_hi = |na: Vec<NoteNum>| -> u8 {
+        na.iter()
+            .filter_map(|n| match n {
+                NoteNum::Num(num) => Some(*num),
+                _ => None,
+            })
+            .max()
+            .unwrap_or(0)
     };
     let get_arp = |crnt_t: i16, repeat_head_t: i16, trns: TrnsType| -> (TrnsType, i16) {
         if trns != TrnsType::Com {
@@ -111,7 +114,7 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
     let mut crnt_dur = 0;
     let mut crnt_trns = TrnsType::Com;
     let mut repeat_head_tick: i16 = NOTHING;
-    let mut note_all: Vec<u8> = Vec::new();
+    let mut note_all: Vec<NoteNum> = Vec::new();
     let mut beat_analysis = Vec::new();
     for phr in phr_evts.iter() {
         match phr {
@@ -130,7 +133,7 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
                         beat_analysis.push(AnaEvt::Beat(AnaBeatEvt {
                             tick: crnt_tick,
                             dur: crnt_dur,
-                            note: get_hi(note_all.clone()) as i16,
+                            note: NoteNum::Num(get_hi(note_all.clone())),
                             cnt: note_cnt,
                             trns: arp,
                         }));
@@ -155,7 +158,7 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
         beat_analysis.push(AnaEvt::Beat(AnaBeatEvt {
             tick: crnt_tick,
             dur: crnt_dur,
-            note: get_hi(note_all) as i16,
+            note: NoteNum::Num(get_hi(note_all)),
             cnt: note_cnt,
             trns: arp,
         }));
@@ -174,10 +177,8 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
         .iter()
         .any(|exp| exp == "para()" || exp == "trns(para)");
     let asmin = exps.iter().any(|exp| exp == "asMin()" || exp == "as(VI)");
-    let mut last_note = REST;
+    let mut last_note = NoteNum::Rest;
     let mut last_cnt = 0;
-    let mut crnt_note;
-    let mut crnt_cnt;
     let mut total_tick = 0;
     let mut all_dt = beat_analysis.clone();
     for ana in all_dt.iter_mut() {
@@ -190,22 +191,22 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
         if total_tick != ana.tick {
             // 前の音符の間に休符がある
             total_tick = ana.tick;
-            last_note = REST;
+            last_note = NoteNum::Rest;
             last_cnt = 0;
         } else if ana.dur as i32 >= DEFAULT_TICK_FOR_QUARTER {
             total_tick = ana.tick;
-            last_note = REST;
+            last_note = NoteNum::Rest;
             last_cnt = 0;
         } else {
             total_tick += ana.dur;
         }
 
         // crnt_note の更新
-        crnt_note = NO_NOTE;
-        crnt_cnt = ana.cnt;
-        if crnt_cnt == 1 {
+        let mut crnt_note = NoteNum::NoNote;
+        let crnt_cnt = ana.cnt;
+        if crnt_cnt == 1 && let NoteNum::Num(num) = ana.note {
             // 和音でなければ
-            crnt_note = ana.note as u8;
+            crnt_note = NoteNum::Num(num);
         }
 
         // 条件の確認と、ana への情報追加
@@ -216,17 +217,24 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
             // 強制的に para
             ana.trns = TrnsType::Para;
         } else if ana.trns == TrnsType::NoTrns {
-            if last_note <= MAX_NOTE_NUMBER
-                && last_cnt == 1
-                && crnt_note <= MAX_NOTE_NUMBER
-                && crnt_cnt == 1
-                && (last_note as i32) - (crnt_note as i32) < 10
-                && (crnt_note as i32) - (last_note as i32) < 10
+            if let NoteNum::Num(last_num) = last_note
+                && let NoteNum::Num(crnt_num) = crnt_note
             {
-                // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
-                ana.trns = TrnsType::Arp(crnt_note as i16 - last_note as i16); // arp
+                if last_num <= MAX_NOTE_NUMBER
+                    && crnt_num <= MAX_NOTE_NUMBER
+                    && last_cnt == 1
+                    && crnt_cnt == 1
+                    && last_num.abs_diff(crnt_num) < 10
+                {
+                    // 過去＆現在を比較：単音、かつ、ノート適正、差が10半音以内
+                    if let NoteNum::Num(crnt_num) = crnt_note {
+                        ana.trns = TrnsType::Arp(crnt_num as i16 - last_num as i16); // arp
+                    }
+                } else {
+                    // NOTHING で ARP にならなかったものは TRNS_COM
+                    ana.trns = TrnsType::Com;
+                }
             } else {
-                // NOTHING で ARP にならなかったものは TRNS_COM
                 ana.trns = TrnsType::Com;
             }
         }
@@ -234,9 +242,13 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
         last_note = crnt_note;
     }
     if para || asmin {
-        let note = if asmin { -3 } else { 0 };
+        let ofsnote = if asmin {
+            NoteNum::Ofs(-3)
+        } else {
+            NoteNum::Ofs(0)
+        };
         let ae = AnaEvt::Exp(AnaExpEvt {
-            note,
+            ofsnote,
             atype: ExpType::ParaRoot,
             ..Default::default()
         });

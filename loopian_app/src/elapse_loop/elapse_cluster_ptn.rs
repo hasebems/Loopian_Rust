@@ -113,7 +113,7 @@ impl ClusterPattern {
             keynote,
             inst_part,
             play_counter: 0,
-            last_note: NO_NOTE as i16,
+            last_note: INVALID as i16,
             para,
             artic_rate,
             phrase_amp,
@@ -249,7 +249,7 @@ impl ClusterPattern {
     fn gen_note_ev(&mut self, estk: &mut ElapseStack, note: i16, msr: i32, tick: i32) {
         let mut crnt_ev = NoteEvt {
             dur: self.ptn_each_dur as i16,
-            note: note as u8,
+            note: NoteNum::Num(note as u8),
             amp: self.ptn_amp,
             ..NoteEvt::default()
         };
@@ -319,7 +319,7 @@ impl Elapse for ClusterPattern {
     fn clear(&mut self, _estk: &mut ElapseStack) {
         self.analys = Vec::new();
         self.play_counter = 0;
-        self.last_note = NO_NOTE as i16;
+        self.last_note = INVALID as i16;
         self.next_msr = 0;
         self.next_tick = 0;
     }

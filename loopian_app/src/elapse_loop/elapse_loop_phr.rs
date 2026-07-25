@@ -119,7 +119,7 @@ impl PhraseLoop {
             keynote: prm.keynote,
             play_counter: 0,
             next_tick_in_phrase: 0,
-            last_note: NO_NOTE as i16,
+            last_note: INVALID as i16,
             noped,
             inst_part: prm.inst_part,
             turnnote: prm.turnnote,
@@ -234,7 +234,13 @@ impl PhraseLoop {
                             self.init_violin_part(estk);
                         }
                         let rt_tbl = self.get_root_tbl(estk, crnt_);
-                        let (trans_note, deb_txt) = self.translate_note(rt_tbl, ev.note, next_tick);
+                        let input_note = if let NoteNum::Num(ntval) = ev.note {
+                            ntval
+                        } else {
+                            0 // これはありえないが、念のため
+                        };
+                        let (trans_note, deb_txt) =
+                            self.translate_note(rt_tbl, input_note, next_tick);
                         let nep = NoteEventPrm {
                             trace: trace * 10,
                             ev,
@@ -287,7 +293,12 @@ impl PhraseLoop {
     ) {
         let mut same_time_stuck = Vec::new();
         for note in ev.notes.iter() {
-            let (trans_note, deb_txt) = self.translate_note(rt_tbl, *note, next_tick);
+            let input_note = if let NoteNum::Num(ntval) = note {
+                ntval
+            } else {
+                continue; // これはありえないが、念のため
+            };
+            let (trans_note, deb_txt) = self.translate_note(rt_tbl, *input_note, next_tick);
             if !same_time_stuck
                 .iter()
                 .any(|x: &(u8, String)| x.0 == trans_note)
@@ -349,7 +360,7 @@ impl PhraseLoop {
         tk: Option<(i32, i32)>, // for Floating Tick
     ) {
         let mut crnt_ev = nep.ev;
-        crnt_ev.note = nep.trans_note;
+        crnt_ev.note = NoteNum::Num(nep.trans_note);
 
         //  Generate Event Tick with Disperse
         let ntk = if let Some(tkr) = tk {
@@ -440,7 +451,7 @@ impl PhraseLoop {
         for anaone in self.analys.iter() {
             if let AnaEvt::Beat(b) = anaone
                 && b.tick == next_tick as i16
-                && b.note == note as i16
+                && b.note == NoteNum::Num(note)
             {
                 return b.trns;
             }
@@ -535,7 +546,7 @@ impl Elapse for PhraseLoop {
         self.analys = Vec::new();
         self.play_counter = 0;
         self.next_tick_in_phrase = 0;
-        self.last_note = NO_NOTE as i16;
+        self.last_note = INVALID as i16;
         self.same_time_stuck = Vec::new();
         self.amp_transition = None;
         self.last_elapsed_tick = 0;

@@ -105,7 +105,7 @@ pub fn split_by_by(sp1: char, sp2: char, txt: String) -> Vec<String> {
 }
 pub fn doremi_to_notenum(doremi: String, mut base_note: i32) -> i32 {
     if doremi.is_empty() {
-        base_note = NO_NOTE as i32;
+        base_note = INVALID as i32;
     } else {
         // d,r,m,f,s,l,t
         base_note = doremi_number(doremi.chars().next().unwrap_or(' '), base_note);
@@ -129,7 +129,7 @@ fn doremi_number(ltr: char, mut base_note: i32) -> i32 {
         's' => base_note += 7,
         'l' => base_note += 9,
         't' => base_note += 11,
-        _ => base_note = NO_NOTE as i32,
+        _ => base_note = INVALID as i32,
     }
     base_note
 }

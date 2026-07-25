@@ -110,6 +110,11 @@ impl<T: NoteType> GenericNote<T> {
             velocity += amp.auto_amp as i32;
         }
         velocity = velocity.clamp(Self::MIN_AVILABLE_VELO, 127);
+        let note_num = if let NoteNum::Num(ntval) = prm.ev.note {
+            ntval
+        } else {
+            0 // これはありえないが、念のため
+        };
 
         Rc::new(RefCell::new(Self {
             id: ElapseId {
@@ -118,7 +123,7 @@ impl<T: NoteType> GenericNote<T> {
                 elps_type: ElapseType::TpNote,
             },
             priority: PRI_NOTE,
-            note_num: prm.ev.note,
+            note_num,
             velocity: velocity as u8,
             duration: prm.ev.dur as i32,
             keynote: prm.keynote,

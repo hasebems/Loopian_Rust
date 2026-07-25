@@ -223,7 +223,7 @@ impl Flow {
         let ev = NoteEvt {
             tick: crnt_.tick as i16,
             dur: 0, // 必要ない
-            note: real_note,
+            note: NoteNum::Num(real_note),
             floating: false,
             amp,
             trns: TrnsType::NoTrns,

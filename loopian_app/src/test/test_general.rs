@@ -35,7 +35,7 @@ fn pedal() {
                         PhrEvt::Note(NoteEvt {
                             tick: 0,
                             dur: 440,
-                            note: 60,
+                            note: NoteNum::Num(60),
                             floating: false,
                             amp: Amp::default(),
                             trns: TrnsType::Com,

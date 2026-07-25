@@ -495,7 +495,7 @@ impl PhraseRecombined {
         note_text: String, // 分析対象のテキスト
         crnt_tick: i32,    // 現在の tick
         imd: InputMode,    // input mode
-    ) -> (Vec<u8>, i32, i16, (i16, bool)) /*
+    ) -> (Vec<NoteNum>, i32, i16, (i16, bool)) /*
     (   notes,      // 発音ノート
         dur_tick,   // 音符のtick数
         diff_amp,   // 音量情報
@@ -521,7 +521,7 @@ impl PhraseRecombined {
         let notes_vec = split_notes(ntext5.clone());
 
         // 階名への変換
-        let mut notes: Vec<u8> = Vec::new();
+        let mut notes: Vec<NoteNum> = Vec::new();
         let mut next_last_nt = self.last_nt;
         let mut first_note: Option<i32> = None; // 和音の最初の音程を記録するため
         for (i, nt) in notes_vec.iter().enumerate() {
@@ -558,7 +558,7 @@ impl PhraseRecombined {
 
         // 何も音名が入らなかった時
         if notes.is_empty() {
-            notes.push(NO_NOTE);
+            notes.push(NoteNum::NoNote);
         } else if notes.len() > 1
             && let Some(first_note_val) = first_note
         {
@@ -570,13 +570,19 @@ impl PhraseRecombined {
         (notes, dur_tick, diff_amp, (artic, arp))
     }
     /// 音符を指定して、Recombine に追加する
-    fn add_note(&mut self, tick: i32, notes: Vec<u8>, prm: AddNoteParam, accia: Option<String>) {
+    fn add_note(
+        &mut self,
+        tick: i32,
+        notes: Vec<NoteNum>,
+        prm: AddNoteParam,
+        accia: Option<String>,
+    ) {
         match notes.len() {
             0 => (),
             1 => {
                 match notes[0] {
-                    REST => (),
-                    NO_NOTE => {
+                    NoteNum::Rest => (),
+                    NoteNum::NoNote => {
                         // 小節先頭にタイがあった場合、前の音の音価を増やす
                         self.modify_last_note(&prm);
                     }
@@ -644,16 +650,16 @@ impl PhraseRecombined {
         let accia_notes = accia_str.split('@').collect::<Vec<&str>>();
         let acnum = accia_notes.len() as i16;
         for (i, &nt) in accia_notes.iter().enumerate() {
-            if nt.is_empty() {
-                continue;
+            if !nt.is_empty() && let NoteNum::Num(ntval) = note_data.note() {
+                let accia_value = nt.parse().unwrap_or(0);
+                let mut accia_note = note_data.clone();
+                accia_note.set_dur(Self::ACCIACCATURA_LENGTH);
+                accia_note.set_note(NoteNum::Num((ntval as i32 + accia_value) as u8));
+                accia_note
+                    .set_tick(accia_note.tick() - Self::ACCIACCATURA_LENGTH * (acnum - i as i16));
+                //println!("Added accia note: {:?}", nt);
+                self.rcmb.push(accia_note);
             }
-            let accia_value = nt.parse().unwrap_or(0);
-            let mut accia_note = note_data.clone();
-            accia_note.set_dur(Self::ACCIACCATURA_LENGTH);
-            accia_note.set_note((note_data.note() as i8 + accia_value) as u8);
-            accia_note.set_tick(accia_note.tick() - Self::ACCIACCATURA_LENGTH * (acnum - i as i16));
-            //println!("Added accia note: {:?}", nt);
-            self.rcmb.push(accia_note);
         }
     }
 }
@@ -686,13 +692,13 @@ fn extract_top_pm(ntext: &mut String) -> String {
     }
     oct
 }
-fn add_base_and_doremi(base_note: i32, doremi: i32) -> u8 {
+fn add_base_and_doremi(base_note: i32, doremi: i32) -> NoteNum {
     let mut base_pitch = doremi;
     if doremi < NO_MIDI_VALUE as i32 {
         // special meaning ex. NO_NOTE
         base_pitch = base_note + doremi;
     }
-    base_pitch as u8
+    NoteNum::Num(base_pitch as u8)
 }
 /// 音価情報を生成
 fn gen_dur_info(mut ntext1: String, bdur: i32, rest_tick: i32) -> (String, i32, i32, i16) {
@@ -901,29 +907,33 @@ fn get_note_dur(ndur: i32, whole_msr_tick: i32, crnt_tick: i32) -> i32 {
     }
     note_dur
 }
-fn mv_cp_notes(mut notes: Vec<u8>, note_mod: &[String]) -> Vec<u8> {
+fn mv_cp_notes(mut notes: Vec<NoteNum>, note_mod: &[String]) -> Vec<NoteNum> {
     for nm in note_mod.iter() {
         if (nm.len() >= 4 && &nm[0..4] == "move") || (nm.len() >= 2 && &nm[0..2] == "mv") {
             let howhigh = extract_anynumber_from_parentheses::<i32>(nm).unwrap_or(0);
             // 全要素を howhigh だけ上げる
             notes.iter_mut().for_each(|n| {
-                if *n == REST {
-                    return;
+                if let NoteNum::Num(nt) = *n {
+                    let nt = (nt as i32 + howhigh)
+                        .clamp(MIN_NOTE_NUMBER as i32, MAX_NOTE_NUMBER as i32)
+                        as u8;
+                    *n = NoteNum::Num(nt);
                 }
-                *n = (*n as i32 + howhigh).clamp(MIN_NOTE_NUMBER as i32, MAX_NOTE_NUMBER as i32)
-                    as u8
             });
         } else if (nm.len() >= 4 && &nm[0..4] == "copy") || (nm.len() >= 2 && &nm[0..2] == "cp") {
             let howhigh = extract_anynumber_from_parentheses::<i32>(nm).unwrap_or(0);
             // 全要素を howhigh だけ上げたコピーを追加する
-            let new_notes: Vec<u8> = notes
+            let new_notes: Vec<NoteNum> = notes
                 .iter()
                 .map(|n| {
-                    if *n == REST {
-                        return *n;
+                    if let NoteNum::Num(nt) = *n {
+                        let nt = (nt as i32 + howhigh)
+                            .clamp(MIN_NOTE_NUMBER as i32, MAX_NOTE_NUMBER as i32)
+                            as u8;
+                        NoteNum::Num(nt)
+                    } else {
+                        *n
                     }
-                    (*n as i32 + howhigh).clamp(MIN_NOTE_NUMBER as i32, MAX_NOTE_NUMBER as i32)
-                        as u8
                 })
                 .collect();
             for note in new_notes {
@@ -942,7 +952,7 @@ fn mv_cp_notes(mut notes: Vec<u8>, note_mod: &[String]) -> Vec<u8> {
 /// 最も近い上側の音を選択
 fn convert_doremi_upper_closer(doremi: String, last_nt: i32) -> i32 {
     if doremi.is_empty() {
-        return NO_NOTE as i32;
+        return INVALID as i32;
     }
     let last_doremi = get_pure_doremi(last_nt);
 
@@ -950,7 +960,7 @@ fn convert_doremi_upper_closer(doremi: String, last_nt: i32) -> i32 {
     let mut pure_doremi = String::from("");
     for (i, ltr) in doremi.char_indices() {
         if ltr == 'x' {
-            return REST as i32;
+            return INVALID as i32;
         } else if ltr == '+' {
             oct_pitch += 12;
         } else if ltr == '-' {
@@ -970,7 +980,7 @@ fn convert_doremi_upper_closer(doremi: String, last_nt: i32) -> i32 {
 /// 最も近い音を選択
 fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
     if doremi.is_empty() {
-        return NO_NOTE as i32;
+        return INVALID as i32;
     }
     let last_doremi = get_pure_doremi(last_nt);
 
@@ -978,7 +988,7 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
     let mut pure_doremi = String::from("");
     for (i, ltr) in doremi.char_indices() {
         if ltr == 'x' {
-            return REST as i32;
+            return INVALID as i32;
         } else if ltr == '+' {
             oct_pitch += 12;
         } else if ltr == '-' {
@@ -1001,13 +1011,13 @@ fn convert_doremi_closer(doremi: String, last_nt: i32) -> i32 {
 /// 絶対音高による指定
 fn convert_doremi_fixed(doremi: String) -> i32 {
     if doremi.is_empty() {
-        return NO_NOTE as i32;
+        return INVALID as i32;
     }
     let mut base_note: i32 = 0;
     let mut pure_doremi = String::from("");
     for (i, ltr) in doremi.char_indices() {
         if ltr == 'x' {
-            return REST as i32;
+            return INVALID as i32;
         } else if ltr == '+' {
             base_note += 12;
         } else if ltr == '-' {

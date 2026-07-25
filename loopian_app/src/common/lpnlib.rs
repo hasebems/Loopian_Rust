@@ -97,9 +97,7 @@ pub const DEFAULT_BPM: i16 = 100;
 pub const DEFAULT_NOTE_NUMBER: u8 = 60; // C4
 pub const MAX_NOTE_NUMBER: u8 = 108; // C8
 pub const MIN_NOTE_NUMBER: u8 = 21; // A0
-pub const NO_NOTE: u8 = 255;
 pub const INVALID: u8 = 255;
-pub const REST: u8 = 254;
 pub const RPT_HEAD: u8 = 253; // Head of Repeat
 pub const NO_MIDI_VALUE: u8 = 128;
 pub const DEFAULT_TURNNOTE: i16 = 5;
@@ -108,6 +106,14 @@ pub const DEFAULT_ARTIC: i16 = 100;
 //*******************************************************************
 //          Parameter Type
 //*******************************************************************
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
+pub enum NoteNum {
+    #[default]
+    NoNote,
+    Num(u8), // 0-127
+    Ofs(i16),
+    Rest,
+}
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TrnsType {
     #[default]
@@ -154,19 +160,19 @@ impl Amp {
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct NoteListEvt {
-    pub tick: i16,      // tick
-    pub dur: i16,       // duration
-    pub notes: Vec<u8>, // note number
-    pub floating: bool, // true: floating tick, false: not floating
-    pub amp: Amp,       // amplitude
-    pub trns: TrnsType, // translation
-    pub artic: i16,     // 0..100..200[%] staccato/legato
+    pub tick: i16,           // tick
+    pub dur: i16,            // duration
+    pub notes: Vec<NoteNum>, // note number
+    pub floating: bool,      // true: floating tick, false: not floating
+    pub amp: Amp,            // amplitude
+    pub trns: TrnsType,      // translation
+    pub artic: i16,          // 0..100..200[%] staccato/legato
 }
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct NoteEvt {
     pub tick: i16,      // tick
     pub dur: i16,       // duration
-    pub note: u8,       // note number
+    pub note: NoteNum,  // note number
     pub floating: bool, // true: floating tick, false: not floating
     pub amp: Amp,       // amplitude
     pub trns: TrnsType, // translation
@@ -177,7 +183,7 @@ impl NoteEvt {
         Self {
             tick: list.tick,
             dur: list.dur,
-            note,
+            note: NoteNum::Num(note),
             floating: list.floating,
             amp: list.amp,
             trns: list.trns,
@@ -313,17 +319,17 @@ impl PhrEvt {
             _ => {}
         }
     }
-    pub fn note(&self) -> u8 {
+    pub fn note(&self) -> NoteNum {
         match self {
             PhrEvt::Note(e) => e.note,
             PhrEvt::NoteList(e) => e.notes[e.notes.len() - 1], // last note
             //    PhrEvt::BrkPtn(e) => e.note,
             //    PhrEvt::ClsPtn(e) => e.note,
             //    PhrEvt::Info(e) => e.tick,
-            _ => NO_NOTE,
+            _ => NoteNum::NoNote,
         }
     }
-    pub fn set_note(&mut self, note: u8) {
+    pub fn set_note(&mut self, note: NoteNum) {
         if let PhrEvt::Note(e) = self {
             e.note = note;
             //    PhrEvt::NoteList(e) => e.set_note(note),
@@ -340,9 +346,9 @@ impl PhrEvt {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct AnaBeatEvt {
     pub tick: i16,
-    pub dur: i16,  // duration
-    pub note: i16, // highest note
-    pub cnt: i16,  // same timing note number
+    pub dur: i16,      // duration
+    pub note: NoteNum, // highest note
+    pub cnt: i16,      // same timing note number
     pub trns: TrnsType,
     // Com, Para, NoTrns,
     // Arp: -n .. +n ARP のときの Note 差分
@@ -350,8 +356,8 @@ pub struct AnaBeatEvt {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct AnaExpEvt {
     pub tick: i16,
-    pub dur: i16,  // duration
-    pub note: i16, // note
+    pub dur: i16,         // duration
+    pub ofsnote: NoteNum, // note
     pub value: i16,
     pub atype: ExpType,
     // Noped: TYPE_BEAT の Note情報より先に置く
@@ -401,7 +407,10 @@ pub fn get_para_root_base(ana: &[AnaEvt]) -> i16 {
     let mut para_root_base = 0;
     ana.iter().for_each(|x| match x {
         AnaEvt::Exp(e) if e.atype == ExpType::ParaRoot => {
-            para_root_base = e.note;
+            para_root_base = match e.ofsnote {
+                NoteNum::Ofs(n) => n,
+                _ => 0,
+            };
         }
         _ => (),
     });
