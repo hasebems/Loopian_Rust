@@ -348,7 +348,7 @@ impl LoadSession {
             });
         }
 
-        if itxt == "!play" || itxt == "!p" {
+        if itxt == "!transmit" || itxt == "!t" {
             if let Some(dispatch) = self.prepare_play_from_top() {
                 return FileCommandResult::Handled(FileCommandPlan {
                     actions: vec![FileAction::Dispatch {

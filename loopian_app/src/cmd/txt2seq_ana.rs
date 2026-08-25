@@ -175,7 +175,7 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
 fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
     let para = exps
         .iter()
-        .any(|exp| exp == "para()" || exp == "trns(para)");
+        .any(|exp| exp == "para()");
     let asmin = exps.iter().any(|exp| exp == "asMin()" || exp == "as(VI)");
     let mut last_note = NoteNum::Rest;
     let mut last_cnt = 0;

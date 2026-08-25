@@ -75,7 +75,7 @@ This document explains all features of Loopian.
 - phrase: Time-series note information such as melodies and chords
 - composition: Chord/Scale information that modifies sounds when applied to phrases
 - loop: Loopian basically repeats phrase/composition. This is the unit of repetition.
-- part: Four independent Loop playbacks are possible for phrase/composition. A set of phrase and composition is called a part.
+- part: Multiple independent sets of Loop playback are possible for phrase/composition. A set of phrase and composition is called a part.
 - note value: The length of a note
 - reference note value: If you specify a note value once, subsequent notes will inherit that value until another is specified. This is called the reference note value.
 
@@ -179,7 +179,7 @@ This document explains all features of Loopian.
     - The number after the note name indicates the octave but can be omitted
         - When omitted, the currently set octave is applied
 - `set.oct(+1)`: Raise one octave from current state
-    - `oct(0)`: 0 ignores current value and returns to initial value
+    - `set.oct(0)`: 0 ignores current value and returns to initial value
 - `set.msr(5)`: When `resume` is next input, start from measure 5
 
 ## Phrase Specification
@@ -215,7 +215,7 @@ This document explains all features of Loopian.
     - In absolute octave specification (input(fixed)), `d-t` are included in the same octave, and nothing is written if within the part's default octave
         - Add `+` before the pitch for octaves above default
         - Similarly, add `-` before the pitch for octaves below default
-    - In upcloser mode, the range is always one octave above the previous note (0..11)
+    - In upcloser mode, the range is always one octave above the previous note (1..11)
     - Relative or absolute can be changed with `set.input` (default is input(closer))
     - For chord input, absolute octave cannot be used
     - In closer/upcloser, the lowest note of the current chord is compared to the previous chord to determine octave notation
@@ -238,7 +238,7 @@ This document explains all features of Loopian.
 - `e` eighth note (example: `[em,r,d,r,qm,r]`)
 - `v` sixteenth note (example: `[em,vr,d,et,vd,r,em,vr,d,t,d,r,d]`)
 - `w` thirty-second note
-- `w(N)`: Specify arbitrary tick value for ornamental notes, etc. (N is tick count)
+- `w(N)`: Specify arbitrary tick value for ornamental notes, etc. (N is tick count; a quarter note is 480 ticks)
     - `[w(24)d,r,m,f,s]`: Play five notes d,r,m,f,s at equal intervals within a sixteenth note
 - `[3ed,r,m]`: Writing 3 before e creates triplet note value
     - Similarly, quintuplets are possible
@@ -256,7 +256,7 @@ This document explains all features of Loopian.
 - `[An:.....]`: At the beginning, writing A and any beat number allows you to write a phrase that starts from that beat as an anacrusis.
 - `[A3:d,r/m,f,s,t/d]`: Rest for two beats, then the phrase starts from the third beat
 - The anacrusis measure overlaps with the last measure of the previous phrase
-- **<Note!>** For phrases following an anacrusis phrase, care must be taken as the anacrusis phrase will start if input is made after the last measure. Input should be made earlier or use `//` with the anacrusis phrase to prevent repetition
+- **<Note!>** For the phrase that plays after an anacrusis phrase, entering it only once the last measure has begun will trigger the anacrusis phrase again, too late for it to take effect. Therefore, enter it in an earlier measure, or add `//` to the anacrusis phrase so it does not repeat
 
 ### Note Volume and Articulation Specification
 - `d^`: Adding `^` after a scale degree increases volume. Multiple can be added
@@ -277,10 +277,10 @@ This document explains all features of Loopian.
     - `copy(n)` `cp(n)`: Add a new note at position n semitones away from the input note (n=-60..+60 max)
 - **Musical expression functions**
     - `dyn(f)`: Specify phrase volume with arguments f,mf,mp,p,pp
-    - `dmp(on)` `dmp(off)`: off: Specify Pedal Off even during chord specification
+    - `dmp(off)`: off: Specify Pedal Off even during chord specification
     - `stacc(50)`: Halve note value (adjustable from 1-100)
     - `legato(120)`: Increase note value by 20% (adjustable from 100-200)
-    - `trns(para)` or `para()`: Specify parallel during chord conversion (same as parallel for all phrases)
+    - `para()`: Specify parallel during chord conversion (same as parallel for all phrases)
     - `asMin()` or `as(VI)`: When parallel is specified, treat Phrase as VI scale and move in parallel based on difference from VI
 
 ## Composition Specification
@@ -310,13 +310,13 @@ This document explains all features of Loopian.
 |Root notation|I|II|III|IV|V|VI|VII|
 
 ### Chord Notation Methods
-- `X`: original phrase(no pedal)
-- `O`: original phrase(pedal)
+- `X`: No chord conversion (no pedal)
+- `O`: No chord conversion (pedal)
 - `I`: `dms` (I chord)
-- `I#`: `dimisi` (adding # after number raises chord half step. b lowers half step)
-- `Iion`: Ionian scale with I as root
-    - When specifying church modes like `_ion, _dor, _lyd, _mix, _aeo`, behavior differs from normal chords
-    - `Iion, IIdor, IVlyd, Vmix, VIaeo` become that key's diatonic scale, and when other roots are specified, moves in parallel by that difference
+- `I#`: `dimisi` (adding # after the number raises the chord a half step; b lowers it a half step)
+- When specifying church modes such as `_ion, _dor, _lyd, _mix, _aeo`, the behavior differs from normal chord specification
+    - `Iion` means the Ionian scale with I as the tonic
+    - When the combination of Roman numeral and church mode is one of these five: `Iion, IIdor, IVlyd, Vmix, VIaeo`, it becomes the diatonic scale of the current key; for any other root, it shifts in parallel by the difference in Roman numeral from that combination
 - `lydian`: Lydian scale with current key as root
 - Adding `!` at end of chord adopts upper side when matching notes are equidistant (normally adopts lower side)
 - When chord or scale is indeterminable, results in error and only plays key's tonic
@@ -357,7 +357,7 @@ This document explains all features of Loopian.
     |Dominant seventh suspended fourth|_7sus4|`oxxx-xoxo-xxox`|
     |Chromatic|_chr|`oooo-oooo-oooo`|
 
-- Church Modes
+- Church Modes and Other Scales
     |Mode Name|Mode Notation|Mode Constitution|
     |-|-|-|
     |Ionian|_ion|`oxox-ooxo-xoxo`|
@@ -373,6 +373,10 @@ This document explains all features of Loopian.
     |Diminished (no root)|comdim|`oxoo-xoox-ooxo`|
     |Pentatonic (no root)|pentatonic|`oxox-oxxo-xoxx`|
     |Blues (no root)|blues|`oxxo-xooo-xxox`|
+
+- Special Functions
+    |Chord Name|Chord Notation|Chord Constitution|
+    |-|-|-|
     |Through (no root)|O|`oooo-oooo-oooo`|
     |Through, no pedal (no root)|X|`oooo-oooo-oooo`|
 
@@ -396,14 +400,14 @@ This document explains all features of Loopian.
         - If `o` is specified, one full measure is used regardless of time signature.
     - y (second): number of chord notes (2-5, default: 4).
     - z (third): lowest note position (-6 to 7, default: 0).
-    - If `$` appears before `C` as in `$C()`, the simultaneous chord is played as an arpeggio.
+    - If `$`, `$S`, or `$Q` appears before `C` as in `$C()`, the simultaneous chord is played as an arpeggio.
         - `$SC`: slow arpeggio.
         - `$QC`: quick arpeggio.
         - `h$C()`: duration information is written before the arpeggio symbol.
         - Although the naming overlaps with `Arp()`, `$` refers to the arpeggio notation symbol.
 - For `Arp(x,y,z)`, each parameter means:
     - x: duration symbol. You can use h, q, e, v, w and their triplet, quintuplet, or dotted variants (default: q).
-    - y: pattern direction, where u means ascending, d descending, ux cross ascending, and dx cross descending.
+    - y: pattern direction, where u means ascending, d descending, ux cross ascending (pitch moves up-down-up), and dx cross descending (down-up-down).
     - z: lowest note position (-6 to 7, default: 0).
 - You can append the same trailing functions as normal Phrase notation.
 - In principle, Dynamic Pattern does not span across barlines.
@@ -424,6 +428,8 @@ This document explains all features of Loopian.
         - `[<d,m,s,d,s,m>p]`: Entire phrase is parallel
         - `[<d,s>p,m,d,s,m]`: First two notes d,s are parallel
     - To make multiple notes unconverted, use `<...>n`
+- [`para()`](#function-notation-following-phrases) has the same effect as enclosing the entire phrase in `<...>p`
+    - Use `para()` when you want to apply parallel to the entire phrase, and `<...>p` when you want to apply it only to part of the phrase
 
 ### Variation Function
 - The Variation function allows inputting multiple Phrases to one part and specifying their playback order in Composition or playing them at specific measures
@@ -434,8 +440,7 @@ This document explains all features of Loopian.
     - When writing only `@n` without chord specification, the chord is treated the same as when nothing was written
     - When specified in Composition, interrupts previous Phrase even if mid-way and plays Variation Phrase
     - Even if Composition ends before Phrase, continues playing if Variation Phrase remains
-- When playing at specific measure, write `@msr(M)=[..]` and describe measure conditions in part M
-    - When M is a number, plays when that measure number is reached
+- When playing at a specific measure, write `@msr(M)=[..]` and write the measure number in place of M
 - After the Variation Phrase ends, if no new Variation is specified, normal Phrase playback resumes
 
 ## Other Phrase Functions
@@ -542,8 +547,8 @@ This document explains all features of Loopian.
 
 - `set.input(fixed)`: Method for determining octave when inputting scale degrees
     - `fixed`: Input scale degrees are absolute positions (d-t within same octave)
-    - `closer`: Without +- indication, uses pitch close to previous note (-5..6/g..fi) (default)
-    - `upcloser`: Without +- indication, uses range one octave above previous note (0..11/d..t)
+    - `closer`: Without +- indication, uses pitch close to previous note (-5..6/s..fi) (default)
+    - `upcloser`: Without +- indication, uses range one octave above previous note (1..11/d..t)
 - `set.samenote(modeling)`: Behavior for repeated notes
     - `modeling`: For modeling sound sources, note off is sent only once (default)
     - `common`: For general MIDI sound sources, note off is sent as many times as note on
@@ -569,7 +574,7 @@ This document explains all features of Loopian.
 - A `,` between beats causes a momentary release. `;` makes a momentary half‑pedal between beats.
 - `!/`: To keep the pedal depressed across a barline, put `!` before `/`.
 - Even if `X``O` are specified in Composition, explicit pedal control takes precedence.
-- Priority: `DAMPER.[]` > `.dmp(on/off)` > `{X/O}`
+- Priority: `DAMPER.[]` > `.dmp(off)` > `{X/O}`
 
 ### Detailed Specifications of Musical Expression Functions
 
