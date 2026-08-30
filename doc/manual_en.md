@@ -603,6 +603,7 @@ This document explains all features of Loopian.
     - `graph.wavestick`: Pattern where stick-like shapes across the screen form a sine-wave pattern
     - `graph.circlethreads`: Pattern where random threads appear in a circle at the center of the screen
     - `graph.noteroll(v/h)`: Pattern where circles appear in a piano-roll style according to note pitch (`v`: vertical, `h`: horizontal)
+    - `graph.spring`: Pattern where springs and weights are arranged side by side, with the weights swinging in time with the music
 - `graph.list`: Display a numbered list of the patterns above
 - `graph.ptn(N)`: Change to the pattern specified by number `N` shown in `graph.list`
 - `graph.auto(bar,ptn)`: Automatically change patterns when bars change

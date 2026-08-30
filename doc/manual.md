@@ -635,6 +635,7 @@ cd /path/to/loopian
     - `graph.wavestick` : 画面全体に、棒状の図形がサイン波の模様を作るパターン
     - `graph.circlethreads` : 画面中央に、ランダムな糸が円形に現れるパターン
     - `graph.noteroll(v/h)` : Note の音高に応じて円がピアノロール風に現れるパターン（v-上下、h-左右）
+    - `graph.spring` : バネとおもりが左右に並んでいて、音楽に合わせておもりが振れるパターン
 - `graph.list` : 上記のパターンのリストを番号付きで表示する
 - `graph.ptn(N)` : list で表示された番号(N)で指定されたパターンに変更する
 - `graph.auto(bar,ptn)` : パターンを小節が変わるタイミングで、自動的に変更する
