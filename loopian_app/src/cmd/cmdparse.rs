@@ -49,6 +49,9 @@ pub fn cmd_error_to_text(error: &CmdError) -> String {
         CmdError::BadNumber => "Number is wrong.".to_string(),
         CmdError::BadChannel => "Channel number is wrong.".to_string(),
         CmdError::InvalidPart => "what?".to_string(),
+        CmdError::Phrase(PhraseCmdError::PendingMismatch) => {
+            "Unfinished phrase input! Close it with a plain [...] first.".to_string()
+        }
         CmdError::Phrase(_) => "what?".to_string(),
         CmdError::Composition(_) => "what?".to_string(),
     }
@@ -211,7 +214,11 @@ impl LoopianCmd {
             CmdKind::Slash => Ok(CmdReply::text(self.letter_slash(input_text))),
             CmdKind::At => Ok(CmdReply::text(self.letter_at(input_text))),
             CmdKind::Bracket => self
-                .apply_phrase_to_part(self.input_part, tokens)
+                .dispatch_phrase(
+                    false,
+                    PhraseDest::Part(vec![self.input_part], PhraseAs::Normal),
+                    tokens,
+                )
                 .map(CmdReply::text),
             CmdKind::Brace => self
                 .apply_composition_to_part(self.input_part, tokens)
@@ -283,6 +290,7 @@ impl LoopianCmd {
             for i in 0..MAX_KBD_PART {
                 self.clear_part(i);
             }
+            self.dtstk.clear_common_variation();
             self.send_clear();
             "all data erased!".to_string()
         } else if let Some(pnum) = detect_part(input_part) {
@@ -438,16 +446,13 @@ impl LoopianCmd {
                 } else {
                     msr = 1;
                 }
-                match self.put_phrase(
-                    self.input_part,
-                    PhraseAs::Measure(msr),
+                match self.dispatch_phrase(
+                    true,
+                    PhraseDest::Part(vec![self.input_part], PhraseAs::Measure(msr)),
                     tokenize_cmd(&split_txt[1]),
                 ) {
-                    Ok(SetPhraseResult::BufferedAdditional) => {
-                        "Keep Phrase as being unified phrase!".to_string()
-                    }
-                    Ok(SetPhraseResult::Applied) => "Set Phrase!".to_string(),
-                    Err(error) => cmd_error_to_text(&CmdError::Phrase(error)),
+                    Ok(text) => text,
+                    Err(error) => cmd_error_to_text(&error),
                 }
             } else if len == 2 {
                 let ltr = split_txt[0].chars().nth(1).unwrap_or('x');
@@ -456,16 +461,13 @@ impl LoopianCmd {
                     self.dtstk.set_cluster_memory(split_txt[1].to_string());
                     "Set a cluster memory!".to_string()
                 } else if vari > 0 {
-                    match self.put_phrase(
-                        self.input_part,
-                        PhraseAs::Variation(vari as usize),
+                    match self.dispatch_phrase(
+                        true,
+                        PhraseDest::CommonVariation(vari as usize),
                         tokenize_cmd(&split_txt[1]),
                     ) {
-                        Ok(SetPhraseResult::BufferedAdditional) => {
-                            "Keep Phrase as being unified phrase!".to_string()
-                        }
-                        Ok(SetPhraseResult::Applied) => "Set Phrase!".to_string(),
-                        Err(error) => cmd_error_to_text(&CmdError::Phrase(error)),
+                        Ok(text) => text,
+                        Err(error) => cmd_error_to_text(&error),
                     }
                 } else {
                     "what?".to_string()
@@ -513,7 +515,7 @@ impl LoopianCmd {
         match first_letter {
             '[' => {
                 // FLOW パートが含まれている場合は、FLOW パートを除いたパートに対してフレーズコマンドを適用する
-                let proper_part = if part_num.contains(&FLOW_PART) {
+                let proper_part: Vec<usize> = if part_num.contains(&FLOW_PART) {
                     part_num
                         .iter()
                         .filter(|&&p| p != FLOW_PART)
@@ -522,9 +524,14 @@ impl LoopianCmd {
                 } else {
                     part_num
                 };
-                for &pnum in &proper_part {
-                    rtn = self.apply_phrase_to_part(pnum, rest_vec.clone());
-                }
+                // 複数パート一括指定でも []+ の解決処理を1回だけ通す
+                // (パート数だけループすると、同じ入力が多重にバッファへ
+                // 連結されてしまうため)
+                rtn = self.dispatch_phrase(
+                    true,
+                    PhraseDest::Part(proper_part, PhraseAs::Normal),
+                    rest_vec,
+                );
             }
             '{' => {
                 for &pnum in &part_num {
@@ -579,52 +586,72 @@ impl LoopianCmd {
             "what?".to_string()
         }
     }
-    fn apply_phrase_to_part(
+    /// []+ の保留/継続/差し替え/エラー判定を経て、確定した入力を宛先ごとに
+    /// ディスパッチする。素の `[...]`、`Part.[...]`、`@n=[...]`、
+    /// `@msr(M)=[...]` のいずれもこの関数を通す(`explicit` はどの経路から
+    /// 来たかを表す。素の `[...]` のみ false)。
+    fn dispatch_phrase(
+        &mut self,
+        explicit: bool,
+        dest: PhraseDest,
+        tokens: Vec<String>,
+    ) -> Result<String, CmdError> {
+        match self.dtstk.resolve_or_buffer_phrase(explicit, dest, tokens) {
+            PendingResult::Buffered => Ok("Keep Phrase as being unified phrase!".to_string()),
+            PendingResult::Replaced => {
+                Ok("Discarded unfinished phrase input, started a new one!".to_string())
+            }
+            PendingResult::Mismatch => Err(CmdError::Phrase(PhraseCmdError::PendingMismatch)),
+            PendingResult::Resolved(PhraseDest::Part(parts, vari), combined) => {
+                for part in parts {
+                    self.apply_resolved_phrase(part, vari.clone(), combined.clone())?;
+                }
+                Ok("Set Phrase!".to_string())
+            }
+            PendingResult::Resolved(PhraseDest::CommonVariation(n), combined) => {
+                self.dtstk.set_common_variation(n, combined);
+                Ok("Set Variation Phrase!".to_string())
+            }
+        }
+    }
+    /// 解決済みのフレーズテキストを1パート分だけ格納し、elapse へ送信する。
+    fn apply_resolved_phrase(
         &mut self,
         part_num: usize,
+        vari: PhraseAs,
         msg_vec: Vec<String>,
-    ) -> Result<String, CmdError> {
-        match self.put_phrase(part_num, PhraseAs::Normal, msg_vec) {
-            Ok(SetPhraseResult::BufferedAdditional) => {
-                Ok("Keep Phrase as being unified phrase!".to_string())
-            }
-            Ok(SetPhraseResult::Applied) => Ok("Set Phrase!".to_string()),
-            Err(error) => Err(CmdError::Phrase(error)),
+    ) -> Result<(), CmdError> {
+        self.dtstk
+            .apply_phrase_data(part_num, vari.clone(), msg_vec)
+            .map_err(CmdError::Phrase)?;
+        if part_num < MAX_KBD_PART {
+            self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
+        } else if (DAMPER_PART..=SHIFT_PART).contains(&part_num) {
+            self.sndr.send_pedal_to_elapse(part_num, &self.dtstk);
+        } else if (VIOLIN1..=VIOLIN2).contains(&part_num) {
+            self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
         }
+        Ok(())
     }
     fn apply_composition_to_part(
         &mut self,
         part_num: usize,
         msg_vec: Vec<String>,
     ) -> Result<String, CmdError> {
-        self.dtstk
+        let vari_refs = self
+            .dtstk
             .set_raw_composition(part_num, msg_vec)
             .map_err(CmdError::Composition)?;
         self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
-        Ok("Set Composition!".to_string())
-    }
-    fn put_phrase(
-        &mut self,
-        part_num: usize,
-        vari: PhraseAs,
-        msg_vec: Vec<String>,
-    ) -> Result<SetPhraseResult, PhraseCmdError> {
-        match self.dtstk.set_raw_phrase(part_num, vari.clone(), msg_vec)? {
-            SetPhraseResult::BufferedAdditional => {
-                // additional なので、elapse にはまだ送らない
-                Ok(SetPhraseResult::BufferedAdditional)
-            }
-            SetPhraseResult::Applied => {
-                if part_num < MAX_KBD_PART {
-                    self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
-                } else if (DAMPER_PART..=SHIFT_PART).contains(&part_num) {
-                    self.sndr.send_pedal_to_elapse(part_num, &self.dtstk);
-                } else if (VIOLIN1..=VIOLIN2).contains(&part_num) {
-                    self.sndr.send_phrase_to_elapse(part_num, vari, &self.dtstk);
-                }
-                Ok(SetPhraseResult::Applied)
+        // Composition が @n を参照していれば、共有 Variation ストアの内容を
+        // このパート向けに同期し、このタイミングで初めて elapse へ送信する。
+        for vari in vari_refs {
+            if self.dtstk.sync_common_variation_to_part(part_num, vari) {
+                self.sndr
+                    .send_phrase_to_elapse(part_num, PhraseAs::Variation(vari), &self.dtstk);
             }
         }
+        Ok("Set Composition!".to_string())
     }
     fn clear_part(&mut self, part_num: usize) {
         // seq stock のデータを消去

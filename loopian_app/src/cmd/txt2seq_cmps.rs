@@ -232,6 +232,24 @@ pub fn complement_composition(input_text: Vec<String>) -> Option<Vec<String>> {
         None
     }
 }
+/// complement_composition() 済みのトークン列から、`@n`(n:1-9) として
+/// 参照されている Variation 番号の一覧を、出現順・重複なしで返す。
+/// `recombine_to_chord_loop()` 内の "@" 検出ロジックと同種の走査。
+pub fn scan_variation_refs(cmpl_cd: &[String]) -> Vec<usize> {
+    let mut refs = Vec::new();
+    for msgs in cmpl_cd {
+        if let Some(pos) = msgs.find('@')
+            && let Some(c) = msgs[pos + 1..].chars().next()
+            && let Some(d) = c.to_digit(10)
+        {
+            let n = d as usize;
+            if n > 0 && n <= 9 && !refs.contains(&n) {
+                refs.push(n);
+            }
+        }
+    }
+    refs
+}
 pub fn divide_brace(input_text: &[String]) -> Option<String> {
     let top = input_text.first()?;
     if !top.starts_with('{') {
