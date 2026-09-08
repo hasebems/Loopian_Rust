@@ -693,6 +693,10 @@ fn extract_top_pm(ntext: &mut String) -> String {
     oct
 }
 fn add_base_and_doremi(base_note: i32, doremi: i32) -> NoteNum {
+    if doremi == INVALID as i32 {
+        // 休符("x")
+        return NoteNum::Rest;
+    }
     let mut base_pitch = doremi;
     if doremi < NO_MIDI_VALUE as i32 {
         // special meaning ex. NO_NOTE
