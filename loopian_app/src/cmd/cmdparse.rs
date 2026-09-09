@@ -356,7 +356,6 @@ impl LoopianCmd {
             self.sndr
                 .send_msg_to_elapse(ElpsMsg::Ctrl(MsgCtrl::FineNext4Beat));
         }
-        self.during_play = false;
         "Fine.".to_string()
     }
     fn cmd_play(&mut self) -> String {
@@ -669,7 +668,7 @@ impl LoopianCmd {
         }
         self.dtstk.change_oct(0, true, part_num);
     }
-    fn cmd_rit(&self, mut input_text: Vec<String>) -> String {
+    fn cmd_rit(&mut self, mut input_text: Vec<String>) -> String {
         let mut aft_rit: RitAfter = RitAfter::Atmp;
         let mut strength: RitStrength = RitStrength::Nrm;
         let mut bar_num: i16 = 0;
@@ -697,6 +696,8 @@ impl LoopianCmd {
                 strength = RitStrength::Poco;
             } else if input_text[0] == "fermata" {
                 aft_rit = RitAfter::Fermata;
+            } else if input_text[0] == "fine" {
+                aft_rit = RitAfter::Fine;
             }
             input_text.remove(0);
         }
@@ -711,6 +712,15 @@ impl LoopianCmd {
             after: aft_rit,
         }));
 
-        "rit. has started!".to_string()
+        if aft_rit == RitAfter::Fine {
+            "rit. has started and will be ended!".to_string()
+        } else {
+            "rit. has started!".to_string()
+        }
+    }
+    /// ElapseStack が実際に stop したタイミングで、UiMsg::TickUi 経由の
+    /// 通知を受けて during_play を同期させる
+    pub fn set_during_play(&mut self, playing: bool) {
+        self.during_play = playing;
     }
 }

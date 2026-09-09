@@ -136,6 +136,7 @@ pub enum FineType {
     NextBar,       // 次の小節の頭で終了
     NextBeat(i32), // 次の小節の頭からN拍目で終了
     Next2Bar,      // 次の次の小節の頭で終了
+    NextNBar(i32), // N回目の小節の頭で終了 (rit.fine.bar(N) 用)
     WaitForBeat(i32),
     WaitFor2Bar,
 }
@@ -561,6 +562,7 @@ pub enum RitStrength {
 pub enum RitAfter {
     Atmp,
     Fermata,
+    Fine,
     Bpm(i16),
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

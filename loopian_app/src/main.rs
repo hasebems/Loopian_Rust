@@ -141,6 +141,7 @@ fn read_from_ui_hndr(model: &mut Model) {
     loop {
         match model.ui_hndr.try_recv() {
             Ok(msg) => {
+                model.itxt.sync_during_play(&msg);
                 let key = model.itxt.get_indicator_key_stock();
                 model.guiev.set_indicator(msg, key);
             }

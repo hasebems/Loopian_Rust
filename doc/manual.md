@@ -547,7 +547,9 @@ cd /path/to/loopian
 
 - `rit.` : テンポをだんだん遅くして、次の小節の頭で元のテンポ
     - `rit.poco` : 遅さが弱い
-    - `rit.molto` : 遅さが強い 
+    - `rit.molto` : 遅さが強い
+    - `rit.fine` : rit. してその小節の最後で演奏終了
+        - `rit.fine.bar(2)` のように `bar(N)` と組み合わせると、N小節かけてrit.した上で演奏終了
     - `rit.fermata`  : rit.の次の小節の頭の拍を再生して停止
         - そのまま演奏終了ならば `fine` 再開するなら `resume` を指定する
     - `rit.molto.fermata`

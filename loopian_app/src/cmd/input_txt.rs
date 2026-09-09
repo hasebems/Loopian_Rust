@@ -65,6 +65,12 @@ impl InputText {
     pub fn get_indicator_key_stock(&self) -> String {
         self.cmd.get_indicator_key_stock()
     }
+    /// ElapseStack からの UiMsg を見て、実際の再生状態を cmd に反映する
+    pub fn sync_during_play(&mut self, msg: &UiMsg) {
+        if let UiMsg::TickUi(playing, ..) = msg {
+            self.cmd.set_during_play(*playing);
+        }
+    }
     pub fn put_and_get_responce(&mut self, input_text: &str) -> Option<CmndRtn> {
         self.cmd.put_and_get_responce(input_text)
     }

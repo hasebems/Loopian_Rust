@@ -517,6 +517,8 @@ This document explains all features of Loopian.
 - `rit.`: Gradually slow tempo, return to original tempo at beginning of next measure
     - `rit.poco`: Weak slowdown
     - `rit.molto`: Strong slowdown
+    - `rit.fine`: Apply rit. and end performance at the last beat of that measure
+        - Combine with `bar(N)`, e.g. `rit.fine.bar(2)`, to rit. over N measures before ending
     - `rit.fermata`: Play first beat of measure after rit. and stop
         - If ending performance, specify `fine`; to resume, specify `resume`
     - `rit.molto.fermata`

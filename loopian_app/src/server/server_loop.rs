@@ -41,6 +41,7 @@ impl LoopianServer {
         loop {
             match self.ui_hndr.try_recv() {
                 Ok(msg) => {
+                    self.itxt.sync_during_play(&msg);
                     if let UiMsg::ChangePtn(ptn) = msg {
                         self.get_pcmsg_from_midi(ptn);
                         return ptn;
@@ -51,6 +52,15 @@ impl LoopianServer {
             }
         }
         NO_MIDI_VALUE
+    }
+    /// 標準入力の CUI モード中も、ElapseStack からの再生状態を取りこぼさず反映する
+    fn sync_during_play_from_queue(&mut self) {
+        loop {
+            match self.ui_hndr.try_recv() {
+                Ok(msg) => self.itxt.sync_during_play(&msg),
+                Err(_) => break,
+            }
+        }
     }
     fn get_pcmsg_from_midi(&mut self, pc_num: u8) {
         // MIDI PC Message (1-128)
@@ -111,6 +121,7 @@ pub fn cui_loop() {
             if let Some(answer) = srv.itxt.put_and_get_responce(&input) {
                 println!("{}", answer.0);
             }
+            srv.sync_during_play_from_queue();
         } else {
             //  Read imformation from StackElapse/Gpio
             let rtn = srv.read_from_midi();

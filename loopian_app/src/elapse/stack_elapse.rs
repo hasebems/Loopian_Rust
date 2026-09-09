@@ -302,6 +302,15 @@ impl ElapseStack {
                 self.fine_stock = Some(FineType::WaitFor2Bar);
                 self.measure_top(crnt_);
             }
+            FineType::NextNBar(remain) => {
+                if remain <= 1 {
+                    self.stop();
+                    self.fine_stock = None;
+                } else {
+                    self.fine_stock = Some(FineType::NextNBar(remain - 1));
+                    self.measure_top(crnt_);
+                }
+            }
             FineType::NextBeat(beat) => {
                 self.fine_stock = Some(FineType::WaitForBeat(beat));
                 self.measure_top(crnt_);
@@ -613,6 +622,14 @@ impl ElapseStack {
                 let target_bpm = match after {
                     RitAfter::Atmp => self.tg.get_bpm(),
                     RitAfter::Fermata => 0,
+                    RitAfter::Fine => {
+                        self.fine_stock = if bar > 0 {
+                            Some(FineType::NextNBar(bar as i32 + 1))
+                        } else {
+                            Some(FineType::NextBar)
+                        };
+                        self.tg.get_bpm()
+                    }
                     RitAfter::Bpm(bpm) => bpm,
                 };
                 self.tg.prepare_rit(strength_val, bar as i32, target_bpm);
