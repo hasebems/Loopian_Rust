@@ -55,11 +55,8 @@ impl LoopianServer {
     }
     /// 標準入力の CUI モード中も、ElapseStack からの再生状態を取りこぼさず反映する
     fn sync_during_play_from_queue(&mut self) {
-        loop {
-            match self.ui_hndr.try_recv() {
-                Ok(msg) => self.itxt.sync_during_play(&msg),
-                Err(_) => break,
-            }
+        while let Ok(msg) = self.ui_hndr.try_recv() {
+            self.itxt.sync_during_play(&msg);
         }
     }
     fn get_pcmsg_from_midi(&mut self, pc_num: u8) {
