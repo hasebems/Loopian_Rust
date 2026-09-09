@@ -24,6 +24,7 @@ pub struct WaveStick {
 }
 impl WaveStick {
     const DEFAULT_AMP: f32 = 0.1;
+    const MAX_AMP: f32 = 1.0; // amp/amp_target の上限（暴走防止）
     const DECAY_RATE: f32 = 2.5;
     const RESPONSE_SPEED: f32 = 1.5;
     const BRIGHTNESS: f32 = 50.0; // 0..255
@@ -57,12 +58,14 @@ impl GenerativeView for WaveStick {
         // 強さを徐々に目標値へ近づけ、目標値は徐々に DEFAULT_AMP へ近づける
         self.amp += (self.amp_target - self.amp) * diff_time * Self::RESPONSE_SPEED;
         self.amp_target += (Self::DEFAULT_AMP - self.amp_target) * diff_time * Self::DECAY_RATE;
+        self.amp = self.amp.clamp(0.0, Self::MAX_AMP);
+        self.amp_target = self.amp_target.clamp(0.0, Self::MAX_AMP);
     }
     /// Beat Event
     fn on_beat(&mut self, _bt: i32, _tm: f32, _dt: f32) {}
     /// Note Event
     fn note_on(&mut self, _nt: i32, vel: i32, _pt: i32, _tm: f32) {
-        self.amp_target += 0.005 * vel as f32;
+        self.amp_target = (self.amp_target + 0.005 * vel as f32).min(Self::MAX_AMP);
     }
     fn set_mode(&mut self, _mode: GraphMode) {}
     fn disp(
