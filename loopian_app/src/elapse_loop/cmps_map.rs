@@ -348,7 +348,8 @@ impl CmpsLoopMediator {
         if self.state_reserve {
             // 前小節にて phrase/pattern 指定された時
             if crnt_.msr == 0 {
-                // 今回 start したとき
+                // start 直後、Variation 判定が Chord より1小節早く必要になるため、cmps を前倒しで生成する
+                self.new_loop(crnt_, estk);
                 self.state_reserve = true;
             } else if crnt_.msr == 1 {
                 // start 1小節後
@@ -423,7 +424,10 @@ impl CmpsLoopMediator {
         if let Some(ref nxcmps) = self.next_cmps {
             #[cfg(feature = "verbose")]
             println!("New Composition Loop! M:{:?},T:{:?}", crnt_.msr, crnt_.tick);
-            self.first_msr_num = crnt_.msr; // 計測開始の更新
+            if crnt_.msr != 0 {
+                // msr==0(再生開始直後)は start() で設定済みの first_msr_num(=1) を保持する
+                self.first_msr_num = crnt_.msr; // 計測開始の更新
+            }
             let whole_tick = nxcmps.whole_tick();
             let (tick_for_onemsr, tick_for_beat) = estk.tg().get_beat_tick();
             (self.max_msr, self.max_beat) =
@@ -443,8 +447,9 @@ impl CmpsLoopMediator {
             self.clear_cmp_prm();
             self.clear_cmps_ev = false;
         } else {
-            // 拍子が変わってイベントが発生したとき
-            // next_cmps が空なら、self.cmps をそのまま再生
+            // next_cmps が空の場合: 拍子が変わってイベントが発生したとき、
+            // あるいは msr==0 で前倒し生成した cmps を msr==1 で first_msr_num=1 に確定させる時
+            // (いずれも self.cmps はそのまま再生し、first_msr_num/beat 情報のみ更新する)
             self.first_msr_num = crnt_.msr;
             let mut max_msr = 0;
             let mut max_beat = 0;
