@@ -322,6 +322,127 @@ fn shared_variation_across_parts() {
 }
 
 #[test]
+fn variation_update_resends_to_subscribed_part() {
+    // {X@1} で @1 を参照済みのパートは、後から @1=[...] を変更した際、
+    // Composition を再指定しなくても自動的に再送される。
+    use crate::common::lpnlib::{ElpsMsg::*, *};
+
+    let (txmsg, rxmsg) = std::sync::mpsc::channel();
+    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
+
+    assert_eq!(
+        cmd.put_and_get_responce("@1=[d,r,]+").unwrap().0,
+        "Keep Phrase as being unified phrase!".to_string()
+    );
+    assert_eq!(
+        cmd.put_and_get_responce("[m,f]").unwrap().0,
+        "Set Variation Phrase!".to_string()
+    );
+    assert_eq!(
+        cmd.put_and_get_responce("R1.{X@1}").unwrap().0,
+        "Set Composition!".to_string()
+    );
+    // R1 が @1 を参照した時点の初回送信を読み捨てる
+    while rxmsg.try_recv().is_ok() {}
+
+    // @1 の内容を更新する。Composition の再指定は行わない。
+    assert_eq!(
+        cmd.put_and_get_responce("@1=[s,]+").unwrap().0,
+        "Keep Phrase as being unified phrase!".to_string()
+    );
+    assert_eq!(
+        cmd.put_and_get_responce("[l]").unwrap().0,
+        "Set Variation Phrase!".to_string()
+    );
+
+    // R1 へ自動的に再送されているはず
+    let mut found = false;
+    while let Ok(msg) = rxmsg.try_recv() {
+        if let Phr(part, dt) = msg
+            && part == RIGHT1 as i16
+        {
+            found = true;
+            assert_eq!(dt.vari, PhraseAs::Variation(1));
+            assert_eq!(dt.evts.len(), 2);
+        }
+    }
+    assert!(found);
+}
+
+#[test]
+fn variation_update_no_resend_after_clear_part() {
+    // `clear.R1` のようにパート単体をクリアすると、そのパートの
+    // Composition も {} にリセットされる。この時、@n の購読情報も
+    // 一緒に外れるので、以後 @n=[...] を変更しても R1 へは送られない。
+    use crate::common::lpnlib::{ElpsMsg::*, *};
+
+    let (txmsg, rxmsg) = std::sync::mpsc::channel();
+    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
+
+    cmd.put_and_get_responce("@1=[d,r,]+");
+    cmd.put_and_get_responce("[m,f]");
+    cmd.put_and_get_responce("R1.{X@1}");
+    while rxmsg.try_recv().is_ok() {}
+
+    assert_eq!(
+        cmd.put_and_get_responce("clear.R1").unwrap().0,
+        "part R1 data erased!".to_string()
+    );
+    while rxmsg.try_recv().is_ok() {}
+
+    // @1 を更新しても、clear 済みの R1 へはもう送られない
+    cmd.put_and_get_responce("@1=[s,]+");
+    cmd.put_and_get_responce("[l]");
+
+    let mut found = false;
+    while let Ok(msg) = rxmsg.try_recv() {
+        if let Phr(part, dt) = msg
+            && part == RIGHT1 as i16
+            && dt.vari == PhraseAs::Variation(1)
+        {
+            found = true;
+        }
+    }
+    assert!(!found);
+}
+
+#[test]
+fn variation_update_no_resend_after_unsubscribe() {
+    // パートの Composition が @n を参照しなくなったら、以後 @n=[...] を
+    // 変更してもそのパートへは再送されない。
+    use crate::common::lpnlib::{ElpsMsg::*, *};
+
+    let (txmsg, rxmsg) = std::sync::mpsc::channel();
+    let mut cmd = crate::cmd::cmdparse::LoopianCmd::new(txmsg);
+
+    cmd.put_and_get_responce("@1=[d,r,]+");
+    cmd.put_and_get_responce("[m,f]");
+    cmd.put_and_get_responce("R1.{X@1}");
+    while rxmsg.try_recv().is_ok() {}
+
+    // R1 の Composition を @1 を参照しない内容に変更する
+    assert_eq!(
+        cmd.put_and_get_responce("R1.{X}").unwrap().0,
+        "Set Composition!".to_string()
+    );
+    while rxmsg.try_recv().is_ok() {}
+
+    // @1 を更新しても、もう R1 へは送られない
+    cmd.put_and_get_responce("@1=[s,]+");
+    cmd.put_and_get_responce("[l]");
+
+    let mut found = false;
+    while let Ok(msg) = rxmsg.try_recv() {
+        if let Phr(part, _dt) = msg
+            && part == RIGHT1 as i16
+        {
+            found = true;
+        }
+    }
+    assert!(!found);
+}
+
+#[test]
 fn flow_composition_shortcut() {
     use crate::common::lpnlib::ElpsMsg::*;
 

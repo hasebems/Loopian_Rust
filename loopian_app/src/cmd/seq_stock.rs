@@ -134,6 +134,10 @@ pub struct SeqDataStock {
     cluster_memory: String,
     pending: Option<PendingPhrase>,
     common_vari: Vec<Vec<String>>,
+    /// 各 Variation 番号(index)を、現在 Composition で参照している
+    /// パート番号の一覧。`{X@n}` を設定したパートを記録しておき、
+    /// `@n=[...]` が変更された時にそのパートへ再送するために使う。
+    common_vari_subscribers: Vec<Vec<usize>>,
     tick_for_onemsr: i32,
     tick_for_beat: i32,
     bpm: i16,
@@ -157,6 +161,7 @@ impl SeqDataStock {
             cluster_memory: "".to_string(),
             pending: None,
             common_vari: vec![Vec::new(); MAX_VARIATION],
+            common_vari_subscribers: vec![Vec::new(); MAX_VARIATION],
             tick_for_onemsr: DEFAULT_TICK_FOR_ONE_MEASURE,
             tick_for_beat: DEFAULT_TICK_FOR_QUARTER,
             bpm: DEFAULT_BPM,
@@ -316,10 +321,39 @@ impl SeqDataStock {
             false
         }
     }
-    /// `!clear` 等、全データ消去時に共有 Variation ストアも消去する。
+    /// 指定パートが Composition で参照している Variation 番号集合を、
+    /// 今回の Composition 設定結果(`vari_refs`)に合わせて更新する。
+    /// 参照しなくなった番号の購読リストからはこのパートを外し、新たに
+    /// 参照した番号の購読リストにはこのパートを加える。これにより、
+    /// `common_vari_subscribers[n]` は常に「現在 `@n` を参照している
+    /// パート一覧」を保つ。
+    pub fn update_variation_subscription(&mut self, part: usize, vari_refs: &[usize]) {
+        for (n, subs) in self.common_vari_subscribers.iter_mut().enumerate() {
+            if vari_refs.contains(&n) {
+                if !subs.contains(&part) {
+                    subs.push(part);
+                }
+            } else {
+                subs.retain(|&p| p != part);
+            }
+        }
+    }
+    /// 指定 Variation 番号を、現在 Composition で参照しているパート一覧。
+    /// `@n=[...]` が変更された時、ここで得たパートへ再送する。
+    pub fn common_variation_subscribers(&self, vari: usize) -> Vec<usize> {
+        if vari == 0 || vari >= self.common_vari_subscribers.len() {
+            Vec::new()
+        } else {
+            self.common_vari_subscribers[vari].clone()
+        }
+    }
+    /// `!clear` 等、全データ消去時に共有 Variation ストアと購読情報も消去する。
     pub fn clear_common_variation(&mut self) {
         for v in self.common_vari.iter_mut() {
             v.clear();
+        }
+        for s in self.common_vari_subscribers.iter_mut() {
+            s.clear();
         }
     }
     pub fn del_raw_phrase(&mut self, part: usize) {

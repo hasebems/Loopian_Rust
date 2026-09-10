@@ -609,6 +609,14 @@ impl LoopianCmd {
             }
             PendingResult::Resolved(PhraseDest::CommonVariation(n), combined) => {
                 self.dtstk.set_common_variation(n, combined);
+                // @n=[...] が変更されたので、既に {X@n} でこの Variation を
+                // 参照済みのパートがあれば、そのパートへ再送する。
+                for part in self.dtstk.common_variation_subscribers(n) {
+                    if self.dtstk.sync_common_variation_to_part(part, n) {
+                        self.sndr
+                            .send_phrase_to_elapse(part, PhraseAs::Variation(n), &self.dtstk);
+                    }
+                }
                 Ok("Set Variation Phrase!".to_string())
             }
         }
@@ -642,6 +650,10 @@ impl LoopianCmd {
             .set_raw_composition(part_num, msg_vec)
             .map_err(CmdError::Composition)?;
         self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
+        // このパートが現在参照している Variation 番号集合を更新する
+        // (参照しなくなった番号の購読からは外れる)。
+        self.dtstk
+            .update_variation_subscription(part_num, &vari_refs);
         // Composition が @n を参照していれば、共有 Variation ストアの内容を
         // このパート向けに同期し、このタイミングで初めて elapse へ送信する。
         for vari in vari_refs {
@@ -659,11 +671,12 @@ impl LoopianCmd {
         // Phrase を消去する message を送る
         self.sndr.clear_phrase_to_elapse(part_num);
 
-        if self
+        if let Ok(vari_refs) = self
             .dtstk
             .set_raw_composition(part_num, vec!["{}".to_string()])
-            .is_ok()
         {
+            self.dtstk
+                .update_variation_subscription(part_num, &vari_refs);
             self.sndr.send_composition_to_elapse(part_num, &self.dtstk);
         }
         self.dtstk.change_oct(0, true, part_num);
