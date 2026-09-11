@@ -14,5 +14,9 @@ midi_device = "Loopian::QUBIT"  # Loopian::QUBIT as FLOW/LED
 
 [command]
 init_commands = [
-# 立ち上げ時に自動再生するコマンドをここに追記していく
+# 立ち上げ時に自動再生するコマンドを、""に入れてここに追記していく
 ]
+
+[folder]
+load = "load"
+log = "log"

@@ -4,12 +4,10 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 
+use super::settings::Settings;
 use chrono::Local;
 use std::fs;
 use std::path::Path;
-
-pub const LOG_FOLDER: &str = "log";
-pub const LOAD_FOLDER: &str = "load";
 
 pub trait LpnFile {
     /// ファイル名のデフォルト値を返す
@@ -29,12 +27,13 @@ pub trait LpnFile {
     }
     /// logフォルダを作成する
     fn make_log_folder(&self) {
-        self.make_folder(LOG_FOLDER)
+        let log_folder = &Settings::load_settings().folder.log;
+        self.make_folder(log_folder)
     }
     /// ロードファイル名を生成する
     fn gen_lpn_file_name(&self, fname: String, path: Option<&str>) -> String {
-        self.make_folder(LOAD_FOLDER); // フォルダ作成
-        let mut real_path = LOAD_FOLDER.to_string();
+        let load_folder = &Settings::load_settings().folder.load;
+        let mut real_path = load_folder.to_string();
         if let Some(lp) = path {
             real_path = real_path + "/" + lp;
         }

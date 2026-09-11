@@ -4,6 +4,7 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 use super::lpn_file::*;
+use super::settings::Settings;
 use std::fs;
 use std::io::Write;
 //*******************************************************************
@@ -33,7 +34,8 @@ impl History {
         } else {
             fname + ".lpn"
         };
-        let fn_with_path = &(String::from(LOG_FOLDER) + "/" + &fname);
+        let log_folder = &Settings::load_settings().folder.log;
+        let fn_with_path = &(String::from(log_folder) + "/" + &fname);
         let file_handler = self.path_str(fn_with_path);
         let display = file_handler.display();
         // log収集

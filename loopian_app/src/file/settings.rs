@@ -4,10 +4,9 @@
 //  https://opensource.org/licenses/mit-license.php
 //
 
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
-//use std::fs::File;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WindowSize {
@@ -24,11 +23,17 @@ pub struct Midi {
 pub struct Command {
     pub init_commands: Option<Vec<String>>,
 }
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Folder {
+    pub load: String,
+    pub log: String,
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub window_size: WindowSize,
     pub midi: Midi,
     pub command: Command,
+    pub folder: Folder,
 }
 
 impl Settings {
