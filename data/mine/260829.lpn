@@ -6,13 +6,13 @@ graph.auto(4,0-3-7-11)
 @4=[qdrs,edrs!,edms_h].dyn(mp)
 R1.{X@1/X@2/X@1/O@3}
 
-!rd(10):L2.[q'x,qta,eda,ra,ma/q'm,-es_h/q'la,qta,eda,ra,ma/q'm,es_h/]+
-!rd(11):[q'la,qta,ela,ta,la/q's,r,-qs/q'la,qta,ela,ta,la/q's,+em_h].dyn(mf)
+!rd(10):L2.[q'x,qta^,eda,ra,ma/q'm,-es_h/q'la^,qta,eda,ra,ma/q'm,es^_h/]+
+!rd(11):[q'la^,qta,ela,ta,la/q's,r,-qs/q'la,qta,ela,ta,la/q's,+em_h].dyn(mf)
 
-!rd(20):R2.[q'la,+ma,qla/q's,r,ql/q'la,+ma,qla/q's,r,et,l/]+
-!rd(21):[q'la,+qma,ela,s,la/q's,qr,ed,t,l/q'la,+qma,ela,ta,la/q's,qr,ed,t,s].dyn(mf)
+!rd(20):R2.[q'la^,+ma,qla/q's,r,ql/q'la^,+ma,qla/q's,r,et,l/]+
+!rd(21):[q'la^,+qma,ela^,s,la/q's,qr,ed,t,l/q'la^,+qma,ela^,ta,la/q's,qr,ed,t,s].dyn(mf)
 
-!rd(30):R2.[ex,la,ta,da,ra,ma,fa,sa/q's,qm,et,l,s/ex,la,ta,da,ra,ma,fa,sa/s,m,m,+t_q,x].dyn(f)
+!rd(30):R2.[ex,la,ta,da,ra,ma,fa,sa/q's^,qm,et,l,s/ex,la,ta,da,ra,ma,fa,sa/s^,m,m,+t^_q,x].dyn(f)
 
 // p
 // !rd(10) + !rd(11)
