@@ -1,0 +1,39 @@
+// set.path(mine)
+// !l.250323.blk(setting)
+// [1]
+!blk(setting)
+set.bpm(72)
+graph.beatlissa(1)
+set.input(closer)
+
+// [2]
+!blk(arp)
+R2
+[er^^,l,s^,d,t^,-f,m,l%/s^^,r,d^,f,m^,t,l,r%]
+@1=[er,l,s,d,t,-f,m,l/s,r,d,f,m,d,l,r]
+set.oct(1)
+
+// [3] teuchi
+{O}
+{O/O/O@1/O}
+
+// [4]
+!blk(bass)
+L1
+[r+ro/_h./-d+do/_h.].dyn(mp)
+
+// [5]
+!rd(0):[r+r/-d+d/-t+t/-ta+ta].dyn(mp)
+
+// [6]
+!blk(chord)
+R1
+[eldr,ldr,x,ldr].rpt(2).stacc(50).dyn(pp)
+@1=[eldr,ldr,x,ldr].rpt(2).stacc(50).dyn(pp)
+@2=[eldr,ldr,x,ldr].rpt(2).stacc(50).dyn(pp)
+@3=[eldr,ldr,x,ldr].rpt(2).stacc(50).dyn(pp)
+{O/O@1/O@2/O@3}
+
+// [7] teuchi
+rit.fermata
+fine

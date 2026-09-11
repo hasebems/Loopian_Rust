@@ -1,0 +1,8 @@
+set.bpm=60
+set.key=Bb
+R1
+[ex,m,f,-l,qsi,l/ex,vt,d,er,vd,t,qd,l/]+
+[ex,vt,l,es,vl,t,ed,l,fi,+ri/em..,fi,s,fi,s,l/]+
+[+et,vl,si,el,-ri,m,+t.,vl,si/ql,esi,t,qm,x//]
+set.oct=0
+set.oct=-1

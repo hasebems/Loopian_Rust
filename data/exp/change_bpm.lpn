@@ -1,0 +1,15 @@
+//  test
+//  set.path(exp)
+clear
+set.bpm(120)
+set.key(C)
+set.meter(4/4)
+
+R1
+@msr(1)=[d,r,m,f]
+@msr(2)=[s,l,s,m]
+@msr(3)=[ed,r,m,f,s,l,t,s]
+@msr(4)=[vd,r,m,f,s,l,t,d,t,l,s,f,m,r,d,r]
+
+!msr(3)
+set.bpm(61)

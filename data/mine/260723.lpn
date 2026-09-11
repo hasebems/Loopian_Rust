@@ -1,0 +1,36 @@
+
+set.bpm(144)
+set.key(D)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50)
+p
+L1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50)               # history + L1
+L1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).mv(6).para()  # history + mv(6)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(1)         # history(R1) + cp()
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(2)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(3)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(4)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(5)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(6)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(7)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(8)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(9)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(10)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(11)
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(12)
+
+D.[_***]
+R1.[ed^,r,r,d,x,r^,d,r].dyn(mf).stacc(50).cp(6)         # history + R1,cp(),-para()
+R2!.{IM7!/VIbM9!}
+L2.[hA(v,u,-5),hA(v,u,)].dyn(mp)
+
+R2!.{IM7!/VIbM96!/IVm9!/VIIb9!}                         # history + /IVm9!/VIIb9!
+graph.auto(4,4-6(h)-9-2)
+
+R2.[hm,s/f,s/d,s/f,ta].dyn(f)
+R2.[(-1)hm,s/f,s/d,s/f,ta].dyn(f)                       # (-1)
+R2.[(-1)hm,s/f,s/(-2)d,s/f,(-1)ta].dyn(f)               # (-2), (-1)
+R2.[(-1)hm,s/f,s/(-2)d,s/f,(-1)eta..,vs,f].dyn(f)           # eta..,vs,f
+R2.[(-1)hm,s/f,s/(-2)d,s/f,(-1)eta..,vs,f].dyn(f).cp(12)    # cp(12)
+R2!.{IM7!/VIbM96!/IVm9!/IIb9!}                          # IIb9!
+fermata
+fine

@@ -1,0 +1,15 @@
+clear
+//set.bpm(150)
+set.meter(5/4)
+
+!msr(10)
+set.bpm(160)
+
+!msr(20)
+set.bpm(170)
+
+!msr(30)
+set.bpm(180)
+
+!msr(40)
+set.bpm(190)

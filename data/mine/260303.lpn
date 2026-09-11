@@ -1,0 +1,45 @@
+set.path(mine)
+graph.noteroll(h)
+set.key(C#)
+set.bpm(74)
+
+// R1 主題と変化
+!rd(11):R1.[qx,em^!,-l^_v,es^^,vd%,ef!,x].dyn(mp)
+!rd(12):R1.[qx,em^!,-l^_v,es^^,vd%,ef!,l!].dyn(mp)
+
+// R2 主題と変化
+!rd(21):R2.[er!,-qs%,ex,+s^!,qr,vf^,m%].dyn(mp)
+!rd(22):R2.[er!,-es%!,t!,ex,+s^!,qr,vf^,m%].dyn(mp)
+
+// 低音パートに移動
+!rd(31):L1.[qx,+em^!,-l^_v,es^^,vd%,ef!,l!,x].dyn(mp)
+!rd(32):L2.[+er^!,-es%!,t!,ex,+s^!,qr,vf^,m%].dyn(mp)
+// R.[] // 上のパートを削除
+
+// R1 新メロディと変化(2bar pattern)
+!rd(41):R1.[A4:(-1)+vl,x,x,l/ex,vs,x,x,s,ex,qx,(-1)vd,x,x,d/ex,vt,x,x,t,xo].stacc(50).dyn(mf)
+!rd(42):R1.[A4:(-1)+vl^,x,s^,l/ex,vfi^,s,x,s^,ex,qx,(-1)vd^,x,t^,d/ex,vli^,t,x,t^!,xo].stacc(50).dyn(mf)
+!rd(43):R1.[A4:(-1)+vl^!,x,s^,l!/ex,vfi^,s!,x,s^!,ex,qx,(-1)vd^!,x,t^,d!/ex,vli^,t!,x,t^!,xo].dyn(mf)
+!rd(44):R1.[A4:+vl^!,l,s,l!/ex,vfi^,s!,x,s^!,ex,qx,vd^!,d,t,d!/ex,vli^,t!,x,t^!,xo].dyn(mf)
+
+// R1 & R2 交互(2bar pattern, 1bar pattern(53,55))
+!rd(51):R2.[q'x,++vd^,s,r,+r^,l,m,li,e'x/xo].dyn(f)
+!rd(52):R1.[A4:+vl^,-r,f,l/ex,vs^,r,fi,s,ex,qx,vd^,-f,l,d/ex,vt^,s,li,t,xo].dyn(mf)
+!rd(53):R2.[q'x,+vd^,+s,+r,-r^,+l,+m,s,e'x].dyn(f)
+!rd(54):R1.[A4:+vml,x,x,ml/ex,vrs,x,x,rs,ex,qx,vmd,x,x,md/ex,vrt,x,x,rt,xo].stacc(50).dyn(f)
+!rd(55):R2.[qx,+vds^,r,ds^,r,ml^,r,ml^,li^^,qx].dyn(f)
+
+// 低音パート(1bar pattern)
+!rd(61):L1.[qx,+es^!,+f_e',vm,er!,-l!].dyn(f)
+!rd(62):L2.[A3:+el^!,qr,vt,d/er!^,s!^,r!^,xo].dync(f)
+!rd(63):L1.[qx,es^!,+f_e',vm,er^!,x].dyn(f)
+!rd(64):L2.[A3:el^!,qr,vt,d/er!,s!^,xo].dync(f)
+
+// R1 最後のVariation(2bar pattern)
+!rd(71):R1.[A4:+vml,ml,x,ml/ex,vrs,rs,x,rs,ex,qx,vmd,md,x,md/ex,vrt,rt,x,rt,xo].stacc(50).dyn(ff)
+
+!blk(end)
+L1.[ef!^,s!^,xo].stacc(50).dyn(f)
+R1.[+erl!^,rl!^,xo/erl!^,rl!^,xo].stacc(50).dyn(f)
+R2.[+eds!^,ds!^,xo].stacc(50).dyn(f)
+fine.beat(2)

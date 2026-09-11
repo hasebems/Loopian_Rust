@@ -1,0 +1,12 @@
+// !blk(bug) をやったあと、[d,r,m] のフレーズが繰り返されない
+//  first_msr_num が更新されず
+
+R1
+[d,r,m]
+@1=[d,r,ma]
+{X/@1}
+play
+
+!blk(bug)
+[]
+[d,r,m]

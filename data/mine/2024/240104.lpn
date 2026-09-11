@@ -1,0 +1,62 @@
+// 240104
+//  Voice: NY Steinway D New Age
+//
+// set.path(mine)
+// !l.240104.blk(setting) ← これをそのまま書く
+!blk(setting)
+clear
+set.beat(3/4)
+set.key(Ab)
+set.bpm(144)
+set.turnnote(3)
+L1
+
+// by hand
+[<do>].dyn(mp)
+L12.{VIm/IIIm7/IVM7!/V6}
+p
+
+// by hand
+L2
+@c=dms
+[x,c.]
+
+R1
+[mo/o/.,r,d/t,l,s/l,mo/o/o/o].dyn(mp)
+set.oct(1)
+[mo/o/.,r,d/t,l,s/l,mo/o/f,m,f/es,l,to]
+[mo/o/.,r,d/t,l,s/l,+mo/o/o/o]
+[mo/o/.,r,d/t,l,s/l,+mo/o/f,m,d/er,d,to]
+
+[]
+
+// !l.240104.blk(chg)  ← これをそのまま書く
+!blk(chg)
+graph.light
+L12.{VIm/VIm/II7!/II7!}
+R1
+[l../t,d,t/l,s,l/em,r,qd.]
+set.oct(1)
+
+// by hand after 5bar
+L12.{VIm/VIm/II7!/II7!/IIm7/IIIm7/IVM7!/VIIb9}
+
+// by hand after 5bar
+[l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,d,ta]
+[l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,d,ta].dyn(mf)
+[l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,er,d,qta].dyn(mf)
+[l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,er,d,ta,si].dyn(mf)
+R2
+[l../t,d,t/l,s,l/em,r,qd./f.,em,f/qs../l.,esi,l/qta,er,d,ta,si].dyn(mf)
+R12.[]
+
+// by hand
+L12.{VIm/IIIm7/IVM7!/V6}
+graph.dark
+[mo/o/.,r,d/t,l,s/l,mo/o/o/o]
+L2
+[]
+L1
+[]
+
+fine

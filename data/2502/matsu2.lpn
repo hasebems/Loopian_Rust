@@ -1,0 +1,14 @@
+clear
+R1
+set.oct(1)
+set.bpm(80)
+{VIm9/VII7-9/VIIdim7/IIm9/V6/Im9/IIIion/Vsus4}
+[eC(h,5,0),qA(e,u,-4),eC(e,3,6),ex,q++s]
+R2
+{VIm9/VII7-9/VIIdim7/IIm9/V6/Im9/IIIion/Vsus4}
+[vl+l,x,-f+f,x,x,-d+d,x,x,-l+l,-m+m,-l+l,-m+m,x,-d+d,x,-m+m]
+set.oct(+1)
+L2
+{VIm9/VII7-9/VIIdim7/IIm9/V6/Im9/IIIion/Vsus4}
+[el,l,vx,lo/el,l,vx,lo/el,l,vx,lo/el,l,vx,lo/es,s,vx,so/ed,d,vx,do/ed,d,vx,do/es,so]
+set.oct(-1)

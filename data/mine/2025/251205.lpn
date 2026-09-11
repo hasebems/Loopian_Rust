@@ -1,0 +1,61 @@
+// 251205
+//  Bosendolfer VC Pop Mix
+//  <使い方>
+//  ・!rd(0) でテーマを提示
+//  ・!blk(main) でテーマを持つメロディ
+//  ・!blk(bass) でベース追加
+//  ・!blk(main,R2,mf) で１オクターブ上の音を追加
+//  ・ALL.[]&&!blk(soft)&&!blk(softh) で、曲の表情を一変して柔らかく
+//  ・!blk(main,L2,mp) で、L2をテーマに差し替え
+//  ・D.[] でハーフペダルをやめる
+//  ・!blk(attack) で、高音連続打鍵で盛り上げる
+//  ・最後は fine
+graph.dark
+graph.circlethreads
+set.bpm(144)
+
+!rd(0):[el^,t^,d,t,d,r%,x,t/d^,t,d,r%,x,x,x,x].stacc(70).dyn(mp)
+
+!blk(main,T=R1,S=mp)
+T
+[el^,t^,d,t,d,r%,x,t/d^,t,d,r%,x,t^,d^,r^].stacc(70).dyn(S)
+@2=[el^,t^,d,t,d,r%,x,t/d^,t,d,r%,x,d^,r^,m^].stacc(70).dyn(S)
+@3=[el^,t^,d,t,d,r%,x,t/d^,t,d,r%,x,t^,+s^,r^].stacc(70).dyn(S)
+@4=[el^,t^,d,t,d,r%,x,t/d^,t,d,r%,x,d^,ri^,l^].stacc(70).dyn(S)
+{X/X/@2/X/@3/X/@4/X}
+
+!blk(bass)
+L2
+[em,x,x,r,x,x,d,x/x,t,x,x,ql,r].stacc(70).dyn(mf)
+@2=[ed,x,x,r,x,x,m,x/x,r,x,x,qri,m].stacc(70).dyn(mf)
+@3=[+el,x,x,s,x,x,m,x/x,r,x,x,qs,f].stacc(70).dyn(mf)
+@4=[em,x,x,f,x,x,fi,x/x,s,x,x,qsi,l].stacc(70).dyn(mf)
+{X/X/@2/X/@3/X/@4/X}
+D.[]
+
+!blk(soft)
+L2
+[q'm,r,qd/_e,q't,ql^,r^].dyn(p)
+@2=[q'd,r,qm/_e,q'r,qri^,m^].dyn(p)
+@3=[+q'l,s,qm/_e,q'r,qs^,f^].dyn(p)
+@4=[q'm%,f%,qfi/_e,q's^,qsi^^,l^^].dyn(mp)
+{X/X/@2/X/@3/X/@4/X}
+D.[-]
+
+!blk(softh)
+R1
+[q'tdm,rms,qmsl/_e,q'mst,qstd,st].dyn(p)
+@2=[+q'sld,flt,qmsl/_e,q'sld,qfil,sit].dyn(p)
+@3=[q'mtd,ltr,qtdm/_e,q'drfi,qtdm,dms].dyn(p)
+@4=[+q'dml%,drla,qdms/_e,q'trfi^,qtrf^^,tdm^^].dyn(mp)
+{X/X/@2/X/@3/X/@4/X}
+
+!blk(attack)
+R2
+[emlt^,mlt,mlt,mlt^,mlt,mlt,mlt^,mlt].stacc(50).dyn(mf)
+@2=[emlt,mlt^,mlt,mlt,mlt^,mlt,mlt^^,mlt^^].stacc(50).dyn(mf)
+@3=[efitd^,fitd,fitd,fitd^,fitd,fitd,fitd^,fitd].stacc(50).dyn(mf)
+@4=[efitd,fitd^,fitd,fitd,fitd^,fitd,fitd^^,fitd^^].stacc(50).dyn(mf)
+@5=[+estdi^,stdi,stdi,stdi^,stdi,stdi,stdi^,stdi].stacc(50).dyn(mf)
+@6=[+estdi,ldiri^,ldiri,ldiri,ldiri^,lm^^,lm^^,lm^^].stacc(50).dyn(mf)
+{X/@2/X/@2/@3/@4/@5/@6}

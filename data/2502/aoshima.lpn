@@ -1,0 +1,8 @@
+
+set.bpm(72)
+R1
+[h'x,e'x,v+m/vs',h'A(v,u,-1),ex~,vm/vs',h'A(v,u,-1),ex~,vm/vl',h'A(v,u,-1),ex~,vm/vs',h'A(v,u,-1),ex~,v-d/vm',h'A(v,u,-1),ex~,vt/vd',h'A(v,u,-1),ex~,v+l/vt',h'A(v,u,-1),ex~,vt/vd',A(v,u,-1)o//]
+
+{x/I/IM7/IV/I/VIm/Vm7/V/I//}
+L1
+[hx,x/C(h,4,0)%%%,C(h,4,0)&&&/C(h,4,0)%%%,C(h,4,0)&&&/C(h,4,0)%%%,C(h,4,0)&&&/C(h,4,0)%%%,C(h,4,0)&&&/C(h,4,0)%%%,C(h,4,0)&&&/C(h,4,0)%%%,C(h,4,0)&&&/C(h,4,0)%%%,C(h,4,0)&&&/C(h,4,0)%%%,C(h,4,0)&&&//]

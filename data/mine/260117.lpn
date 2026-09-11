@@ -1,0 +1,32 @@
+set.bpm(84)
+set.key(A)
+set.meter(4/4)
+
+!rd(10):R1.[ed,t%,r,d,(-1)m,r^,s^,r^/m^^,r^,s^,m,(-1)l,s,t,s%].dyn(p)
+
+!rd(20):L2.[es%,m%,r%,m%,(-1)l,s%,t,l/+m^,r,s,m,(-1)r,d%,t%,l%].dyn(mp)
+
+!rd(30):R2.[em,vr,d,qt_e,l,t,d/er,vd,t,h'l].dyn(mp)
+
+!rd(40):L1.[ed,d,x,d,x,l,x,t/d,d,x,d,x,dr,dr,x].stacc(50).dyn(mp)
+
+// rd(10).dyn(mf)
+// rd(30).dyn(mf)
+
+// ALL.{IVion}
+// ALL.{IIion}
+// ALL.{Iion}
+
+// R1!.[]&& ...
+!rd(110):R1.[es^,f^,m,r%,m%,(-1)+qt^,el/r^^,d^,t,l%,t%,(-1)+qs^,em].dyn(mp)
+
+!rd(120):L2.[-ed,(-1)+qs^,er,d^,r^,m,s%/m%,(-1)+qt^,es,m^,s^,t,d%].dyn(mp)
+
+!rd(130):R2.[qx,vm,f,s,l,ht/qx,-vr,m,f,s,hl].dyn(mf)
+
+!rd(140):L1.[es,s,x,s,x,m^,x,f^/s^,s,x,s,x,sl,sl,x].stacc(50).dyn(mp)
+
+// ALL.{Vion}
+// ALL.{Iion}
+
+// R1!.[]&& ...

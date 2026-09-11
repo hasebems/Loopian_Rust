@@ -1,0 +1,6 @@
+set.path(mine)
+set.bpm(112)
+graph.updownroll
+R1.[el^,d,t,d%,m^,d,ta,di%].dyn(p)
+
+!rd(10):R2.[+hm,d/si,+ma/m,d/+si,ma].dyn(mf)

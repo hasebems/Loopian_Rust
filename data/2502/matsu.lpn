@@ -1,0 +1,6 @@
+clear
+R1
+set.oct(1)
+set.bpm(70)
+{VIm9/VII7-9/VIIdim7/IIm9/V6/Im9/IIIion/Vsus4}
+[eC(h,5,-6),qA(e,u,-4),eC(e,3,6),ex,q++s]

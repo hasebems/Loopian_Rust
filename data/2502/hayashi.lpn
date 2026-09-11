@@ -1,0 +1,13 @@
+clear
+set.key(E)
+set.bpm(56)
+graph.dark
+graph.ripple
+
+L2!.{VImM7/VIIm7-5/V#dim7/Vdim7/IV#m7-5/IV6/III7sus4/III7}
+L2.{Iion}
+
+R1.[A(q,d,0)].dyn(pp)
+R2.[A(e,d,+4)].dyn(pp)
+L2.[hx,qx,vm^,r%,d%,t%].dyn(pp).legato(120)
+L1.[hl^,ex,v+l,f%,ql].dyn(pp).legato(120)

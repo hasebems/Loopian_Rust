@@ -1,0 +1,18 @@
+//  rit_test
+//  set.path(exp)
+clear
+set.bpm(200)
+set.key(C)
+set.meter(6/8)
+
+[ed,r,m,f,m,r/m,f,s,l,s,f]
+
+!msr(3)
+[ed,r,m,f,m,r/m,f,s,l,s,f]
+
+!msr(5)
+[ed,r,m,f,m,r/m,f,s,l,s,f]
+rit.bar(2).bpm(210)
+
+!msr(7)
+[ed,r,m,f,m,r/m,f,m,r,d,t/d//]

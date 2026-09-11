@@ -1,0 +1,15 @@
+hello
+clear
+set.bpm(84)
+set.key(Bb)
+set.input(closer)
+L2
+[hA(e,u,-3),hA(e,u,-3)]
+{VIm/IV/V6/IV6}
+@1=[hA(e,u,-5),hA(e,u,-5)]
+@2=[hA(e,u,-7),hA(e,u,-7)]
+@3=[A(e,u,-7)]
+{VIm/IV/V6@1/IV6@2/VIm/IV/V6@1/IVM7@3}
+R2
+[qd..,l/d..,r/t..,ed,t/qt,lo/]+
+[qd..,l/d..,er,m/qr.,em,r,d,t/et,vd,t,l.]

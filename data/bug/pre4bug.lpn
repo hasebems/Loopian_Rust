@@ -1,0 +1,18 @@
+// Prelude No.4
+//  Voice: Bosendorfer VC new age
+//
+// set.path(classy)
+graph.dark
+graph.wavestick
+clear
+set.key(G)
+set.beat(4/4)
+set.bpm(54)
+set.input(upcloser)
+set.flowvel(70)
+
+!msr(1)
+ALL.{O.,X}
+R1.[el,-si,f^,-si^,si,l,d,-m//].dyn(mf)
+L2.[--em+m^^,+rftr*3,-dmsit,dml*3//].dyn(mp)
+

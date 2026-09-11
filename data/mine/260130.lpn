@@ -1,0 +1,22 @@
+set.bpm(120)
+set.key(C)
+graph.updownroll
+
+!rd(10):R1.[ed^,d,d%,d,x,d^,x,d^^].dyn(mp).stacc(80)
+//R1.[ed^,d,d,d,x,dr^,x,dr^].dyn(mp).stacc(80)
+//copy to L2
+
+//@c=dmslr
+!rd(100):L2.{Iion}&&R1.[ec^,c,c%,c,x,c^,x,c^^].dyn(mp).stacc(80)
+!rd(110):L2.[em,r,d,r,d,l,s,t/x].dyn(mf)
+!rd(120):R2.[+es,l,t,l,t,r,m,t/x].dyn(mf)
+
+//ALL.{Iion}
+//ALL.{IIIbM9}
+//ALL.{VIbM9}
+//ALL.{IbM9}
+//ALL.{Iion}
+
+//R2.[]
+!rd(200):R2.[+et,s,r,m,r,d,t,m/x].dyn(mf)
+!rd(210):R1.[etdm^,tdm,ml,ml^,x,fs^,x,fs^].dyn(mf).stacc(80)

@@ -1,0 +1,7 @@
+clear
+set.bpm(60)
+set.key(C)
+L2.{VIm7.,IIm7./V7.,IM7./IVM7.,VIIm7-5./III7.,VIm.}
+L2.[C(q,4,0)].dyn(pp)
+R1.{VIaeo.,IIdor/Vmix.,Iion./IVion.,VIIaeo./IIImix.,VIaeo}
+R1.[<ex,d,r,m,hm>p]

@@ -1,0 +1,15 @@
+// bach fugue No.16 
+clear
+graph.dark
+set.bpm(80)
+set.beat(4/4)
+set.key(Bb)
+
+[hx,ex,l^,d^,-m^/qri^,m^,ex,vfi,s,el,vs,fi/]+
+[es,vl,t,ed,vt,l,et,vd,r,em,vr,d/qr..,ed,f/]+
+[-vt,d,t,d,er,vd,t,ed,vr,m,qf/.,m,hr/qm,xo//].dyn(mp)
+
+!msr(7)
+[A3:ex,vs,f,em,vf%,s%/el,f,r,+t,hd/]+
+[ex,vr,d,et,vd%,r%,em,d,l,+fi/vs..,f,qm,er..,vm,r/hd,qt,]+
+[vx,d,r,m/ef,vs,f,em,-l.,s,d,ta/ql,et,r%,-s%,x..//].dyn(mp)

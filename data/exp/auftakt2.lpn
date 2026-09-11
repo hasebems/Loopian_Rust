@@ -1,0 +1,11 @@
+//  auftakt using @msr()
+//  set.path(exp)
+clear
+set.bpm(120)
+set.key(C)
+set.meter(4/4)
+@msr(1)=[d,r,m,f/s,f,m,f/s,l,t,d/ht,xo]
+@msr(4)=[A3:m,f/s,f,m,r/do]
+
+//!msr(4)
+//[A3:m,f/s,f,m,r/do]

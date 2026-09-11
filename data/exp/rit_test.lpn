@@ -1,0 +1,12 @@
+//  rit_test
+//  set.path(exp)
+clear
+set.bpm(120)
+set.key(C)
+set.meter(4/4)
+
+R1
+[ed,r,d,r,m,f,m,r]
+
+!msr(3)
+rit.bar(2)

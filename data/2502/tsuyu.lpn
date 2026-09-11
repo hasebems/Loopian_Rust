@@ -1,0 +1,10 @@
+clear
+L2
+{V/IIm/IV/I/VIm/I/IIm/V}
+[C(e,5,-5)]
+[C(h,5,-5)]
+R1
+[d,m,s,x/s,d,m,s/d,d,d,d/s,s,s,s]
+R2
+[mo/so/do/so/mo/mo/do/do]
+set.bpm(60)

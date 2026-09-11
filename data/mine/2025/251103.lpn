@@ -1,0 +1,12 @@
+clear
+graph.title(Moment Sound Sprouts,Loopian.Studies.#001)
+set.bpm(66)
+set.key(E)
+R2
+{O}
+[el^,t,+s^,r,m^,+r,l%.].dyn(mf)
+
+// plays 16bar
+//ALL.{IM7/IVM7/VIIbM7/IIIbM7}
+//L2
+//[$mfsltdro].dyn(mp)

@@ -1,0 +1,11 @@
+graph.title(Flow of Sound,Loopian.Studies.#002)
+graph.fish
+set.bpm(144)
+set.key(Gb)
+[A(e,d,12)]
+{VIm9}
+p
+{VIm9/./IIm9/.}
+{VIm9/./Vm9/.}
+{VIm9/./IIIbm9/.}
+{VIm9/./Im9/.}
