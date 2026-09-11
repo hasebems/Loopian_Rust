@@ -650,7 +650,9 @@ impl PhraseRecombined {
         let accia_notes = accia_str.split('@').collect::<Vec<&str>>();
         let acnum = accia_notes.len() as i16;
         for (i, &nt) in accia_notes.iter().enumerate() {
-            if !nt.is_empty() && let NoteNum::Num(ntval) = note_data.note() {
+            if !nt.is_empty()
+                && let NoteNum::Num(ntval) = note_data.note()
+            {
                 let accia_value = nt.parse().unwrap_or(0);
                 let mut accia_note = note_data.clone();
                 accia_note.set_dur(Self::ACCIACCATURA_LENGTH);

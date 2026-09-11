@@ -173,9 +173,7 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
 //       $DIFF: arp の場合の、前の音との音程の差分
 //*******************************************************************
 fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
-    let para = exps
-        .iter()
-        .any(|exp| exp == "para()");
+    let para = exps.iter().any(|exp| exp == "para()");
     let asmin = exps.iter().any(|exp| exp == "asMin()" || exp == "as(VI)");
     let mut last_note = NoteNum::Rest;
     let mut last_cnt = 0;
@@ -204,7 +202,9 @@ fn arp_translation(beat_analysis: Vec<AnaEvt>, exps: &[String]) -> Vec<AnaEvt> {
         // crnt_note の更新
         let mut crnt_note = NoteNum::NoNote;
         let crnt_cnt = ana.cnt;
-        if crnt_cnt == 1 && let NoteNum::Num(num) = ana.note {
+        if crnt_cnt == 1
+            && let NoteNum::Num(num) = ana.note
+        {
             // 和音でなければ
             crnt_note = NoteNum::Num(num);
         }
