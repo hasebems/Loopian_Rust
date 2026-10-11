@@ -298,7 +298,30 @@ impl InputText {
         ((*c != ' ') || !self.shift_pressed) && // Shift+Space を除外
         !self.ctrl_pressed // Ctrl 押下中は除外
     }
+    /// 直前の文字が prev_char なら、その2文字（直前の文字と今回の入力）を消して
+    /// symbol に差し替える。差し替えたら true を返す。
+    fn try_convert_to_symbol(&mut self, prev_char: char, symbol: char) -> bool {
+        if self.input_locate > 0
+            && self.input_text.chars().nth(self.input_locate - 1) == Some(prev_char)
+        {
+            self.input_text.remove(self.input_locate - 1);
+            self.input_locate -= 1;
+            self.input_text.insert(self.input_locate, symbol);
+            self.input_locate += 1;
+            self.just_after_hokan = false;
+            true
+        } else {
+            false
+        }
+    }
     fn input_letter(&mut self, ltr: &char) {
+        // "eq" を "=" に、"ps" を "+" に、"mn" を "-" に変換 
+        if (*ltr == 'q' && self.try_convert_to_symbol('e', '=')) ||
+           (*ltr == 's' && self.try_convert_to_symbol('p', '+')) ||
+           (*ltr == 'n' && self.try_convert_to_symbol('m', '-'))
+        {
+            return;
+        }
         self.input_text.insert(self.input_locate, *ltr);
         self.input_locate += 1;
         // 括弧の補完
