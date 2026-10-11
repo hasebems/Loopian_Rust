@@ -1,9 +1,9 @@
 set.bpm(80)
 graph.auto(4,0-3-7-11)
-@1=[qdrs,edrs!,qdrs,edrs!,qdrs].dyn(mp).mv(1)
-@2=[qdrs,edrs!,qdrs,edrs!,qdrs].dyn(mp)
-@3=[qdrs,edrs!,qdms,ed,t,s].dyn(mp)
-@4=[qdrs,edrs!,edms_h].dyn(mp)
+@1=[qdrs,edrs!,qdrs,edrs!,qdrs].dyn(p).mv(1)
+@2=[qdrs,edrs!,qdrs,edrs!,qdrs].dyn(p)
+@3=[qdrs,edrs!,qdms,ed,t,s].dyn(p)
+@4=[qdrs,edrs!,edms_h].dyn(p)
 R1.{X@1/X@2/X@1/O@3}
 
 !rd(10):L2.[q'x,qta^,eda,ra,ma/q'm,-es_h/q'la^,qta,eda,ra,ma/q'm,es^_h/]+
