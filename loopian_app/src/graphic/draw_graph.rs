@@ -84,7 +84,7 @@ pub struct Graphic {
     font_bold: nannou::text::Font,
     font_italic: nannou::text::Font,
     font_title: nannou::text::Font,
-    font_newyork: nannou::text::Font,
+    font_serif: nannou::text::Font,
     rs: Resize,
     svce: Option<Box<dyn GenerativeView>>, // Generaative View
     gmode: GraphMode,                      // Graph Mode  (Light or Dark)
@@ -121,7 +121,7 @@ impl Graphic {
         let font_bold = Self::load_font(app, "JetBrainsMono-SemiBold.ttf");
         let font_italic = Self::load_font(app, "JetBrainsMono-ExtraLightItalic.ttf");
         let font_title = Self::load_font(app, "JetBrainsMono-ExtraBold.ttf");
-        let font_newyork = Self::load_font(app, "NewYork.ttf");
+        let font_serif = Self::load_font(app, "Newsreader16pt-Regular.ttf");
 
         Self {
             graphmsg: Vec::new(),
@@ -129,7 +129,7 @@ impl Graphic {
             font_bold, //: font_bold.clone(),
             font_italic,
             font_title,
-            font_newyork,
+            font_serif,
             rs: Resize::default(),
             svce: Some(Box::new(WaterRipple::new(GraphMode::Dark))),
             gmode: GraphMode::Dark,
@@ -400,20 +400,20 @@ impl Graphic {
             .center_justify()
             .x_y(0.0, 16.0 - self.rs.full_size_y / 2.0);
         draw.text("Loopian")
-            .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
+            .font(self.font_serif.clone()) // 事前にロードしたフォントを使用
             .font_size(28)
             .color(title_color)
             .center_justify()
-            .x_y(-70.0, 56.0 - self.rs.full_size_y / 2.0)
+            .x_y(-80.0, 56.0 - self.rs.full_size_y / 2.0)
             .w_h(self.rs.full_size_x - 200.0, 40.0);
         draw.text("by Kigakudoh")
-            .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
+            .font(self.font_serif.clone()) // 事前にロードしたフォントを使用
             .font_size(18)
             .color(title_color)
             .center_justify()
-            .x_y(50.0, 50.0 - self.rs.full_size_y / 2.0);
+            .x_y(60.0, 50.0 - self.rs.full_size_y / 2.0);
         draw.text(&format!("Ver.{}", crate::VERSION))
-            .font(self.font_newyork.clone()) // 事前にロードしたフォントを使用
+            .font(self.font_serif.clone()) // 事前にロードしたフォントを使用
             .font_size(18)
             .color(Srgb::<u8>::new(130, 130, 130))
             .center_justify()
