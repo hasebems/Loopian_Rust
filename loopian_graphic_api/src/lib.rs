@@ -1,3 +1,4 @@
+pub mod font;
 pub mod generative_view;
 pub mod resize;
 

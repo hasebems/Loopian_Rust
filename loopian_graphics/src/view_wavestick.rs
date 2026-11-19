@@ -32,7 +32,7 @@ impl WaveStick {
     pub fn new() -> Self {
         Self {
             rs: Resize::default(),
-            perlin: Perlin::new(),
+            perlin: Perlin::new(Perlin::DEFAULT_SEED),
             t: 0.0,
             amp: Self::DEFAULT_AMP,
             prev_time: 0.0,
@@ -141,7 +141,7 @@ impl GenerativeView for WaveStick {
                         .start(pt2(x, yy0))
                         .end(pt2(x, yy1))
                         .weight(sw)
-                        .rgba(1.0, 1.0, 1.0, alpha);
+                        .srgba(1.0, 1.0, 1.0, alpha);
                 }
                 x += step_x;
             }

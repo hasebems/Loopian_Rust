@@ -145,9 +145,9 @@ impl NoteObj for NoteRollNote {
                 return;
             }
             let gray_scal = if self.mode == GraphMode::Dark {
-                rgba(1.0, 1.0, 1.0, alpha_level)
+                Srgba::new(1.0, 1.0, 1.0, alpha_level)
             } else {
-                rgba(0.0, 0.0, 0.0, alpha_level * 2.0) // 少し濃いめ
+                Srgba::new(0.0, 0.0, 0.0, alpha_level * 2.0) // 少し濃いめ
             };
 
             let radius_sz = ((i + 1) as f32) * 3.0 - self.elapsed_time * Self::CIRCLE_SIZE;

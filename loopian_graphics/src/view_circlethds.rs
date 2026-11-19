@@ -200,7 +200,7 @@ impl GenerativeView for CircleThread {
         // 線を描画
         for thread in &self.threads {
             let alpha = thread.alpha / 1.1_f32.powf(thread.count_down as f32);
-            let color = rgba(bgcolor, bgcolor, bgcolor, alpha);
+            let color = Srgba::new(bgcolor, bgcolor, bgcolor, alpha);
             draw.line()
                 .start(pt2(thread.x0, thread.y0))
                 .end(pt2(thread.x1, thread.y1))

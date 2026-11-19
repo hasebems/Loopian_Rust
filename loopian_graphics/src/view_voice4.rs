@@ -6,16 +6,17 @@
 use nannou::prelude::*;
 
 use loopian_graphic_api::Resize;
+use loopian_graphic_api::font::FontName;
 use loopian_graphic_api::generative_view::*;
 
 pub struct Voice4 {
-    font: nannou::text::Font,
+    font: FontName,
     nobj: Vec<Box<dyn NoteObj>>, // Note Object
     mode: GraphMode,
 }
 
 impl Voice4 {
-    pub fn new(font: nannou::text::Font) -> Self {
+    pub fn new(font: FontName) -> Self {
         Self {
             font,
             nobj: Vec::new(),
@@ -54,14 +55,15 @@ impl GenerativeView for Voice4 {
         for (i, &pt) in part_name.iter().enumerate() {
             let d = pt.to_string();
             draw.text(&d)
-                .font(self.font.clone())
+                .font(self.font)
                 .font_size(32)
                 .color(MAGENTA)
                 .center_justify()
                 .x_y(
                     if i / 2 == 1 { x } else { -x },
                     if i % 2 == 0 { -y } else { y },
-                );
+                )
+                .w_h(200.0, 200.0); // nannou 0.19 の既定サイズ
             draw.rect()
                 .x_y(
                     if i / 2 == 1 { x } else { -x },
@@ -126,9 +128,9 @@ impl NoteObj for Voice4Note {
             };
             let alpha_level = gray_scl * scale;
             let gray = if self.mode == GraphMode::Dark {
-                rgba(1.0, 1.0, 1.0, alpha_level)
+                Srgba::new(1.0, 1.0, 1.0, alpha_level)
             } else {
-                rgba(0.0, 0.0, 0.0, alpha_level)
+                Srgba::new(0.0, 0.0, 0.0, alpha_level)
             };
             draw.ellipse()
                 .x_y(

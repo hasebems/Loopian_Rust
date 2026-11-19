@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
+use loopian_graphic_api::font::FontName;
 use loopian_graphic_api::generative_view::{GenerativeView, GraphMode, GraphicMsg};
 
 pub mod view_beatlissa;
@@ -31,7 +32,7 @@ pub struct GraphicContext<'a> {
     pub crnt_time: f32,
     pub gmode: GraphMode,
     pub meter_text: &'a str,
-    pub font_nrm: nannou::text::Font,
+    pub font_nrm: FontName,
     pub arg: Option<&'a str>,
 }
 
@@ -157,7 +158,7 @@ fn find_factory(name: &str) -> Option<GraphicFactory> {
 }
 
 fn create_voice(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
-    Some(Box::new(Voice4::new(ctx.font_nrm.clone())))
+    Some(Box::new(Voice4::new(ctx.font_nrm)))
 }
 
 fn create_lissajous(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
@@ -200,7 +201,7 @@ fn create_circlethreads(_ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeV
 }
 
 fn create_spring(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
-    Some(Box::new(Spring::new(ctx.font_nrm.clone())))
+    Some(Box::new(Spring::new(ctx.font_nrm)))
 }
 
 fn create_noteroll(ctx: &GraphicContext<'_>) -> Option<Box<dyn GenerativeView>> {
@@ -213,7 +214,7 @@ pub fn get_view_instance(
     gmsg: &GraphicMsg,
     gmode: GraphMode,
     meter_text: &str,
-    font_nrm: nannou::text::Font,
+    font_nrm: FontName,
 ) -> Option<Box<dyn GenerativeView>> {
     if let GraphicMsg::Pattern { name, arg } = gmsg {
         let ctx = GraphicContext {

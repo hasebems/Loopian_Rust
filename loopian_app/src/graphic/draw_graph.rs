@@ -3,9 +3,12 @@
 //  Released under the MIT license
 //  https://opensource.org/licenses/mit-license.php
 //
+use bevy::text::Font;
 use nannou::prelude::*;
 use std::fs::File;
 use std::io::Read;
+
+use loopian_graphic_api::font::*;
 
 use super::generative_view::*;
 use super::guiev::*;
@@ -80,11 +83,7 @@ impl AutoGraphState {
 
 pub struct Graphic {
     graphmsg: Vec<GraphicMsg>,
-    font_nrm: nannou::text::Font,
-    font_bold: nannou::text::Font,
-    font_italic: nannou::text::Font,
-    font_title: nannou::text::Font,
-    font_serif: nannou::text::Font,
+    _fonts: Vec<Handle<Font>>, // 読み込んだフォント（保持しておく必要がある）
     rs: Resize,
     svce: Option<Box<dyn GenerativeView>>, // Generaative View
     gmode: GraphMode,                      // Graph Mode  (Light or Dark)
@@ -117,19 +116,14 @@ impl Graphic {
 
     pub fn new(app: &App) -> Graphic {
         // フォントをロード（初期化時に一度だけ）
-        let font_nrm = Self::load_font(app, "JetBrainsMono-ExtraLight-Loopian.ttf");
-        let font_bold = Self::load_font(app, "JetBrainsMono-SemiBold-Loopian.ttf");
-        let font_italic = Self::load_font(app, "JetBrainsMono-ExtraLightItalic-Loopian.ttf");
-        let font_title = Self::load_font(app, "JetBrainsMono-ExtraBold-Loopian.ttf");
-        let font_serif = Self::load_font(app, "Newsreader16pt-Regular.ttf");
+        let fonts = FONT_FILES
+            .iter()
+            .map(|f| Self::load_font(app, f))
+            .collect();
 
         Self {
             graphmsg: Vec::new(),
-            font_nrm,  //: font_nrm.clone(),
-            font_bold, //: font_bold.clone(),
-            font_italic,
-            font_title,
-            font_serif,
+            _fonts: fonts,
             rs: Resize::default(),
             svce: Some(Box::new(WaterRipple::new(GraphMode::Dark))),
             gmode: GraphMode::Dark,
@@ -144,8 +138,9 @@ impl Graphic {
             auto_graph: None,
         }
     }
-    fn load_font(app: &App, font_path: &str) -> nannou::text::Font {
-        let assets = app.assets_path().expect("The asset path cannot be found.");
+    /// フォントを読み込んで登録する。以後、ファミリー名で指定できる
+    fn load_font(app: &App, font_path: &str) -> Handle<Font> {
+        let assets = Self::assets_path().expect("The asset path cannot be found.");
         let font_path = assets.join("fonts").join(font_path); // フォントファイルのパスを指定
 
         // フォントファイルをバイト列として読み込む
@@ -154,8 +149,16 @@ impl Graphic {
         file.read_to_end(&mut font_data)
             .expect("Failed to load font file");
 
-        // バイト列からフォントを作成
-        nannou::text::Font::from_bytes(font_data).expect("Failed to analyze font file")
+        // バイト列からフォントを作成して登録
+        app.asset_server().add(Font::from_bytes(font_data))
+    }
+    /// 実行ファイルの場所から assets フォルダを探す（nannou 0.19 の assets_path() と同じ探し方）
+    fn assets_path() -> Result<std::path::PathBuf, nannou::find_folder::Error> {
+        let exe_path = std::env::current_exe()?;
+        let exe_dir = exe_path.parent().ok_or(nannou::find_folder::Error::NotFound)?;
+        nannou::find_folder::Search::ParentsThenKids(5, 3)
+            .of(exe_dir.into())
+            .for_folder("assets")
     }
     pub fn graph_msg(&mut self) -> &mut Vec<GraphicMsg> {
         &mut self.graphmsg
@@ -163,10 +166,10 @@ impl Graphic {
     pub fn set_rs(&mut self, rs: Resize) {
         self.rs = rs;
     }
-    pub fn bgcolor(&self) -> Srgb<u8> {
+    pub fn bgcolor(&self) -> Srgba {
         match self.gmode {
-            GraphMode::Dark => srgb::<u8>(Self::WHITE_BACK, Self::WHITE_BACK, Self::WHITE_BACK),
-            GraphMode::Light => srgb::<u8>(Self::BLACK_BACK, Self::BLACK_BACK, Self::BLACK_BACK),
+            GraphMode::Dark => Srgba::rgb_u8(Self::WHITE_BACK, Self::WHITE_BACK, Self::WHITE_BACK),
+            GraphMode::Light => Srgba::rgb_u8(Self::BLACK_BACK, Self::BLACK_BACK, Self::BLACK_BACK),
         }
     }
 
@@ -263,7 +266,7 @@ impl Graphic {
     }
     fn apply_graphic_msg(&mut self, guiev: &mut GuiEv, crnt_time: f32, msg: &GraphicMsg) {
         if let Some(svce) =
-            get_view_instance(guiev, crnt_time, msg, self.gmode, self.font_nrm.clone())
+            get_view_instance(guiev, crnt_time, msg, self.gmode, FONT_NRM)
         {
             self.svce = Some(svce);
         }
@@ -377,7 +380,7 @@ impl Graphic {
         let title_color = self.get_text_color(false);
         if !self.subtitle.is_empty() {
             draw.text(self.subtitle.as_str())
-                .font(self.font_title.clone()) // 事前にロードしたフォントを使用
+                .font(FONT_TITLE) // 事前にロードしたフォントを使用
                 .font_size(20)
                 .color(title_color)
                 .center_justify()
@@ -386,7 +389,7 @@ impl Graphic {
         }
         if !self.title.is_empty() {
             draw.text(self.title.as_str())
-                .font(self.font_title.clone()) // 事前にロードしたフォントを使用
+                .font(FONT_TITLE) // 事前にロードしたフォントを使用
                 .font_size(36)
                 .color(title_color)
                 .center_justify()
@@ -394,33 +397,36 @@ impl Graphic {
                 .w_h(self.rs.full_size_x - 80.0, 80.0);
         }
         draw.text(&get_crnt_date_txt())
-            .font(self.font_nrm.clone())
+            .font(FONT_NRM)
             .font_size(14)
             .color(title_color)
             .center_justify()
-            .x_y(0.0, 16.0 - self.rs.full_size_y / 2.0);
+            .x_y(0.0, 16.0 - self.rs.full_size_y / 2.0)
+            .w_h(200.0, 200.0); // nannou 0.19 の既定サイズ
         draw.text("Loopian")
-            .font(self.font_serif.clone()) // 事前にロードしたフォントを使用
+            .font(FONT_SERIF) // 事前にロードしたフォントを使用
             .font_size(28)
             .color(title_color)
             .center_justify()
-            .x_y(-80.0, 56.0 - self.rs.full_size_y / 2.0)
+            .x_y(-65.0, 52.0 - self.rs.full_size_y / 2.0)
             .w_h(self.rs.full_size_x - 200.0, 40.0);
         draw.text("by Kigakudoh")
-            .font(self.font_serif.clone()) // 事前にロードしたフォントを使用
+            .font(FONT_SERIF) // 事前にロードしたフォントを使用
             .font_size(18)
             .color(title_color)
             .center_justify()
-            .x_y(60.0, 50.0 - self.rs.full_size_y / 2.0);
+            .x_y(50.0, 50.0 - self.rs.full_size_y / 2.0)
+            .w_h(200.0, 200.0); // nannou 0.19 の既定サイズ
         draw.text(&format!("Ver.{}", crate::VERSION))
-            .font(self.font_serif.clone()) // 事前にロードしたフォントを使用
+            .font(FONT_SERIF) // 事前にロードしたフォントを使用
             .font_size(18)
-            .color(Srgb::<u8>::new(130, 130, 130))
+            .color(Srgba::rgb_u8(130, 130, 130))
             .center_justify()
             .x_y(
                 self.rs.full_size_x / 2.0 - 50.0,
                 24.0 - self.rs.full_size_y / 2.0,
-            );
+            )
+            .w_h(200.0, 200.0); // nannou 0.19 の既定サイズ
     }
     /// Eight Indicator の描画
     fn eight_indicator(&self, draw: Draw, guiev: &GuiEv) {
@@ -433,7 +439,7 @@ impl Graphic {
         };
         let eight_indic_top = self.rs.full_size_y / 2.0 - top_margin;
         draw.text(msr)
-            .font(self.font_bold.clone())
+            .font(FONT_BOLD)
             .font_size(40)
             .color(txt_color)
             .left_justify()
@@ -443,14 +449,14 @@ impl Graphic {
         let bpm = guiev.get_indicator(INDC_BPM);
         let txt_mcolor = self.get_text_color(true);
         draw.text("bpm:")
-            .font(self.font_bold.clone())
+            .font(FONT_BOLD)
             .font_size(28)
             .color(txt_mcolor)
             .left_justify()
             .x_y(self.rs.eight_indic_left, eight_indic_top - 70.0)
             .w_h(400.0, 40.0);
         draw.text(bpm)
-            .font(self.font_bold.clone())
+            .font(FONT_BOLD)
             .font_size(28)
             .color(txt_color)
             .left_justify()
@@ -459,14 +465,14 @@ impl Graphic {
 
         let meter = guiev.get_indicator(INDC_METER);
         draw.text("meter:")
-            .font(self.font_bold.clone())
+            .font(FONT_BOLD)
             .font_size(28)
             .color(txt_mcolor)
             .left_justify()
             .x_y(self.rs.eight_indic_left, eight_indic_top - 110.0)
             .w_h(400.0, 40.0);
         draw.text(meter)
-            .font(self.font_bold.clone())
+            .font(FONT_BOLD)
             .font_size(28)
             .color(txt_color)
             .left_justify()
@@ -475,14 +481,14 @@ impl Graphic {
 
         let key = guiev.get_indicator(INDC_KEY);
         draw.text("key:")
-            .font(self.font_bold.clone())
+            .font(FONT_BOLD)
             .font_size(28)
             .color(txt_mcolor)
             .left_justify()
             .x_y(self.rs.eight_indic_left, eight_indic_top - 150.0)
             .w_h(400.0, 40.0);
         draw.text(key)
-            .font(self.font_bold.clone())
+            .font(FONT_BOLD)
             .font_size(28)
             .color(txt_color)
             .left_justify()
@@ -494,7 +500,7 @@ impl Graphic {
             if let Some(pt_sts) = guiev.get_indicator_direct(INDC_PART + i) {
                 let part_num = return_part_num(i);
                 draw.text(&(get_part_txt(part_num).to_string() + "  " + pt_sts))
-                    .font(self.font_bold.clone())
+                    .font(FONT_BOLD)
                     .font_size(20)
                     .color(txt_color)
                     .left_justify()
@@ -517,7 +523,7 @@ impl Graphic {
         const PROMPT_LTR_NUM: f32 = 3.0; // プロンプト文字数分のスペース
 
         let input_txt_w_sz = self.rs.get_full_size_x() - 100.0;
-        let input_bg_color: Srgb<u8> = srgb::<u8>(50, 50, 50);
+        let input_bg_color: Srgba = Srgba::rgb_u8(50, 50, 50);
         let input_locate_x: f32 = self.rs.input_txt_left; // 入力スペースの中心座標
         let input_locate_y: f32 = self.rs.input_txt_top; // 入力スペースの中心座標
         let left_edge: f32 = input_locate_x - input_txt_w_sz / 2.0;
@@ -555,7 +561,7 @@ impl Graphic {
         let txt_color = self.get_text_color(true);
         for (i, c) in prompt_txt.chars().enumerate() {
             draw.text(&c.to_string())
-                .font(self.font_bold.clone()) // 事前にロードしたフォントを使用
+                .font(FONT_BOLD) // 事前にロードしたフォントを使用
                 .font_size(24)
                 .color(txt_color)
                 .left_justify()
@@ -571,7 +577,7 @@ impl Graphic {
         if (tm % 0.5) < 0.3 {
             // Cursor Blink
             draw.rect()
-                .color(LIGHTGRAY)
+                .color(LIGHT_GRAY)
                 .x_y(
                     (cursor_locate + PROMPT_LTR_NUM) * LETTER_SZ_X + input_start_x,
                     cursor_y + ((lines - cursor_line - 1) as f32) * line_h,
@@ -580,7 +586,7 @@ impl Graphic {
         }
 
         // テキストを描画（最下行を基準に上方向へ積む）
-        let txt_color = Srgb::new(Self::ALMOST_WHITE, Self::ALMOST_WHITE, Self::ALMOST_WHITE);
+        let txt_color = Srgba::rgb_u8(Self::ALMOST_WHITE, Self::ALMOST_WHITE, Self::ALMOST_WHITE);
         for (l, displayed_txt) in input_lines.iter().enumerate() {
             let displayed_txt = displayed_txt.as_str();
             // 下からのオフセット（最下行が offset = 0）
@@ -588,7 +594,7 @@ impl Graphic {
             let y = base_y + offset_from_bottom * line_h;
             for (i, c) in displayed_txt.chars().enumerate() {
                 draw.text(&c.to_string())
-                    .font(self.font_bold.clone()) // 事前にロードしたフォントを使用
+                    .font(FONT_BOLD) // 事前にロードしたフォントを使用
                     .font_size(24)
                     .color(txt_color)
                     .left_justify()
@@ -651,7 +657,7 @@ impl Graphic {
             // underline
             if top_visible_line + i == crnt_line {
                 draw.rect()
-                    .color(srgb::<u8>(
+                    .color(Srgba::rgb_u8(
                         (Self::CURSOR_GRAY as f32 * dissapiering) as u8 / alpha,
                         (Self::CURSOR_GRAY as f32 * dissapiering) as u8 / alpha,
                         (Self::CURSOR_GRAY as f32 * dissapiering) as u8 / alpha,
@@ -667,19 +673,16 @@ impl Graphic {
 
             // string
             let tcolor = self.get_text_color(answer);
-            let txt_color = Srgb::new(
-                (tcolor.red as f32 * dissapiering) as u8 / alpha,
-                (tcolor.green as f32 * dissapiering) as u8 / alpha,
-                (tcolor.blue as f32 * dissapiering) as u8 / alpha,
+            let [r, g, b, _] = tcolor.to_u8_array();
+            let txt_color = Srgba::rgb_u8(
+                (r as f32 * dissapiering) as u8 / alpha,
+                (g as f32 * dissapiering) as u8 / alpha,
+                (b as f32 * dissapiering) as u8 / alpha,
             );
-            let fontname = if answer {
-                &self.font_italic
-            } else {
-                &self.font_nrm
-            };
+            let fontname = if answer { FONT_ITALIC } else { FONT_NRM };
             for (j, d) in past_text.chars().enumerate() {
                 draw.text(&d.to_string())
-                    .font(fontname.clone())
+                    .font(fontname)
                     .font_size(SCRTXT_FONT_SIZE)
                     .color(txt_color)
                     .left_justify()
@@ -687,22 +690,23 @@ impl Graphic {
                         self.rs.scroll_txt_left + Graphic::SCRTXT_FONT_WIDTH * (j as f32),
                         scroll_txt_bottom
                             + Graphic::SCRTXT_FONT_HEIGHT * ((max_lines - 1 - i) as f32),
-                    );
+                    )
+                    .w_h(200.0, 200.0); // nannou 0.19 の既定サイズ
             }
         }
     }
-    fn get_text_color(&self, magenta: bool) -> Srgb<u8> {
+    fn get_text_color(&self, magenta: bool) -> Srgba {
         if magenta {
             if self.gmode == GraphMode::Dark {
-                //Srgb::new(Self::ALMOST_WHITE, 0, Self::ALMOST_WHITE)
-                Srgb::new(255, 102, 204)
+                //Srgba::rgb_u8(Self::ALMOST_WHITE, 0, Self::ALMOST_WHITE)
+                Srgba::rgb_u8(255, 102, 204)
             } else {
-                Srgb::new(192, 71, 153)
+                Srgba::rgb_u8(192, 71, 153)
             }
         } else if self.gmode == GraphMode::Light {
-            Srgb::new(Self::ALMOST_BLACK, Self::ALMOST_BLACK, Self::ALMOST_BLACK)
+            Srgba::rgb_u8(Self::ALMOST_BLACK, Self::ALMOST_BLACK, Self::ALMOST_BLACK)
         } else {
-            Srgb::new(Self::ALMOST_WHITE, Self::ALMOST_WHITE, Self::ALMOST_WHITE)
+            Srgba::rgb_u8(Self::ALMOST_WHITE, Self::ALMOST_WHITE, Self::ALMOST_WHITE)
         }
     }
 }

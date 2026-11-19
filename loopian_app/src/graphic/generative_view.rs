@@ -41,7 +41,7 @@ pub fn get_view_instance(
     crnt_time: f32,
     gmsg: &GraphicMsg,
     gmode: GraphMode,
-    font_nrm: nannou::text::Font,
+    font_nrm: loopian_graphic_api::font::FontName,
 ) -> Option<Box<dyn GenerativeView>> {
     match gmsg {
         GraphicMsg::Pattern { name, .. } if name == "ripple" => {

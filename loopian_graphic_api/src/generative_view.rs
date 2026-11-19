@@ -186,7 +186,7 @@ fn pattern_spec_from_text(text: &str) -> Option<GraphicPatternSpec> {
     }
 }
 
-pub trait GenerativeView {
+pub trait GenerativeView: Send + Sync {
     fn update_model(&mut self, crnt_time: f32, rs: Resize);
     fn note_on(&mut self, _nt: i32, _vel: i32, _pt: i32, _tm: f32) {}
     fn on_beat(&mut self, _bt: i32, _ct: f32, _dt: f32) {}
@@ -194,12 +194,12 @@ pub trait GenerativeView {
     fn disp(&self, draw: Draw, crnt_time: f32, rs: Resize);
 }
 
-pub trait NoteObj {
+pub trait NoteObj: Send + Sync {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) -> bool;
     fn disp(&self, draw: Draw, crnt_time: f32, rs: Resize);
 }
 
-pub trait BeatObj {
+pub trait BeatObj: Send + Sync {
     fn update_model(&mut self, crnt_time: f32, rs: Resize) -> bool;
     fn disp(&self, draw: Draw, crnt_time: f32, rs: Resize);
 }

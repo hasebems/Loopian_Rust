@@ -129,13 +129,12 @@ impl GenerativeView for RainEffect {
             WHITE
         };
         for (start, end, alpha, strongness) in &self.lines {
-            let alpha_int = (*alpha * 255.0).clamp(0.0, 255.0) as u8;
             let mut endr = *end;
             endr.y -= *strongness * 40.0;
             draw.line()
                 .start(*start)
                 .end(endr)
-                .color(rgba(md.red, md.green, md.blue, alpha_int)); // Changed color to white
+                .color(md.with_alpha(alpha.clamp(0.0, 1.0))); // Changed color to white
 
             // Add an ellipse outline at the end of the line to simulate rain hitting the ground
             draw.ellipse()
@@ -143,14 +142,14 @@ impl GenerativeView for RainEffect {
                 .width(60.0 * (*strongness)) // Width of the ellipse
                 .height(20.0 * (*strongness)) // Height of the ellipse
                 .no_fill() // Disable fill, only draw the outline
-                .stroke(rgba(md.red, md.green, md.blue, alpha_int)) // Set the stroke color
+                .stroke(md.with_alpha(alpha.clamp(0.0, 1.0))) // Set the stroke color
                 .stroke_weight(0.2); // Adjust the thickness of the outline
             draw.ellipse()
                 .x_y(end.x, endr.y)
                 .width(30.0 * (*strongness)) // Width of the ellipse
                 .height(10.0 * (*strongness)) // Height of the ellipse
                 .no_fill() // Disable fill, only draw the outline
-                .stroke(rgba(md.red, md.green, md.blue, alpha_int)) // Set the stroke color
+                .stroke(md.with_alpha(alpha.clamp(0.0, 1.0))) // Set the stroke color
                 .stroke_weight(0.5); // Adjust the thickness of the outline
         }
     }

@@ -1,12 +1,12 @@
 use nannou::prelude::*;
-use nannou::text::Font;
+use loopian_graphic_api::font::FontName;
 
 use loopian_graphic_api::Resize;
 use loopian_graphic_api::generative_view::{BeatObj, GenerativeView, GraphMode, NoteObj};
 
 pub struct Spring {
     pub rs: Resize,
-    pub font: Font,
+    pub font: FontName,
     pub mode: GraphMode,
     pub osc: Vec<OscUnit>,
     pub notes: Vec<SpringNote>,
@@ -39,7 +39,7 @@ impl Spring {
     const HIT_DAMPING: f32 = 8.0;
     const SPRING_COILS: usize = 14;
 
-    pub fn new(font: Font) -> Self {
+    pub fn new(font: FontName) -> Self {
         let osc = (0..Self::NUM_UNITS)
             .map(|i| {
                 let f = i as f32 / (Self::NUM_UNITS.saturating_sub(1)) as f32;
@@ -91,19 +91,19 @@ impl Spring {
         let _ = (bt, ct, dt);
     }
 
-    fn style(&self) -> (Rgba, Rgba, Rgba, Rgba) {
+    fn style(&self) -> (Srgba, Srgba, Srgba, Srgba) {
         match self.mode {
             GraphMode::Light => (
-                rgba(0.96, 0.96, 0.96, 1.0),
-                rgba(0.84, 0.84, 0.84, 0.72),
-                rgba(0.78, 0.78, 0.78, 0.96),
-                rgba(0.995, 0.995, 0.995, 0.9),
+                Srgba::new(0.96, 0.96, 0.96, 1.0),
+                Srgba::new(0.84, 0.84, 0.84, 0.72),
+                Srgba::new(0.78, 0.78, 0.78, 0.96),
+                Srgba::new(0.995, 0.995, 0.995, 0.9),
             ),
             GraphMode::Dark => (
-                rgba(0.94, 0.94, 0.94, 1.0),
-                rgba(0.87, 0.87, 0.87, 0.76),
-                rgba(0.9, 0.9, 0.9, 0.96),
-                rgba(1.0, 1.0, 1.0, 0.92),
+                Srgba::new(0.94, 0.94, 0.94, 1.0),
+                Srgba::new(0.87, 0.87, 0.87, 0.76),
+                Srgba::new(0.9, 0.9, 0.9, 0.96),
+                Srgba::new(1.0, 1.0, 1.0, 0.92),
             ),
         }
     }
@@ -113,7 +113,7 @@ impl Spring {
         draw: &Draw,
         anchor: Point2,
         mass_center: Point2,
-        spring_color: Rgba,
+        spring_color: Srgba,
         stroke: f32,
     ) {
         let coils = Self::SPRING_COILS.max(4);
@@ -140,13 +140,13 @@ impl Spring {
         draw: &Draw,
         center: Point2,
         radius: f32,
-        mass_color: Rgba,
-        highlight_color: Rgba,
+        mass_color: Srgba,
+        highlight_color: Srgba,
     ) {
         draw.ellipse()
             .xy(center + vec2(radius * 0.12, -radius * 0.1))
             .radius(radius * 1.05)
-            .rgba(0.58, 0.58, 0.58, 0.28);
+            .srgba(0.58, 0.58, 0.58, 0.28);
 
         draw.ellipse().xy(center).radius(radius).color(mass_color);
 
@@ -158,7 +158,7 @@ impl Spring {
         draw.ellipse()
             .xy(center + vec2(-radius * 0.1, radius * 0.08))
             .radius(radius * 0.82)
-            .rgba(0.9, 0.9, 0.9, 0.18);
+            .srgba(0.9, 0.9, 0.9, 0.18);
     }
 }
 
@@ -332,7 +332,7 @@ impl NoteObj for SpringNote {
         draw.ellipse()
             .x_y(x, rs.get_full_size_y() * 0.42)
             .radius((self.velocity as f32 / 127.0) * 10.0 + 2.0)
-            .rgba(0.96, 0.96, 0.96, alpha);
+            .srgba(0.96, 0.96, 0.96, alpha);
     }
 }
 
@@ -359,6 +359,6 @@ impl BeatObj for SpringBeat {
         draw.rect()
             .w_h(rs.get_full_size_x() * 0.94, 2.0)
             .x_y(0.0, rs.get_full_size_y() * 0.38)
-            .rgba(0.92, 0.92, 0.92, alpha);
+            .srgba(0.92, 0.92, 0.92, alpha);
     }
 }

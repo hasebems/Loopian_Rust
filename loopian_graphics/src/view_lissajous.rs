@@ -98,7 +98,7 @@ impl GenerativeView for Lissajous {
                 .start(self.track[i + 1][0])
                 .end(self.track[i][1])
                 .weight(2.0)
-                .color(rgb(stg, stg, stg));
+                .color(Srgba::rgb(stg, stg, stg));
         }
     }
 }

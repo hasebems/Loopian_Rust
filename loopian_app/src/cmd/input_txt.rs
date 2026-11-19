@@ -18,6 +18,15 @@ use crate::graphic::guiev::GuiEv;
 // return msg from command receiving job
 pub struct CmndRtn(pub String, pub GraphicMsg);
 
+/// キーボードからの入力（Bevy の KeyboardInput から作る）
+#[derive(Debug, Clone)]
+pub enum KeyInput {
+    /// 押されたキーと、そのキーで入力された文字
+    Pressed(KeyCode, Option<String>),
+    /// 離されたキー
+    Released(KeyCode),
+}
+
 //*******************************************************************
 //      Input Text from Keyboard
 //*******************************************************************
@@ -135,44 +144,38 @@ impl InputText {
     //*******************************************************************
     //          Window/Key Event
     //*******************************************************************
-    pub fn window_event(&mut self, event: Event, graphmsg: &mut Vec<GraphicMsg>) {
-        match event {
-            Event::WindowEvent {
-                simple: Some(WindowEvent::ReceivedCharacter(c)),
-                ..
-            } => {
-                // 制御文字（例: バックスペース）を除外
-                if self.exclusion_condition(&c) {
-                    self.input_letter(&c);
+    /// キー入力イベントの処理
+    /// 押されたキーの処理のあと、そのキーで入力された文字を処理する（nannou 0.19 の順番と同じ）
+    pub fn key_input(&mut self, input: KeyInput, graphmsg: &mut Vec<GraphicMsg>) {
+        match input {
+            KeyInput::Pressed(key, text) => {
+                self.key_pressed(&key, graphmsg);
+                if let Some(text) = text {
+                    for c in text.chars() {
+                        // 制御文字（例: バックスペース）を除外
+                        if self.exclusion_condition(&c) {
+                            self.input_letter(&c);
+                        }
+                    }
                 }
             }
-            Event::WindowEvent {
-                simple: Some(WindowEvent::KeyPressed(key)),
-                ..
-            } => {
-                self.key_pressed(&key, graphmsg);
-            }
-            Event::WindowEvent {
-                simple: Some(WindowEvent::KeyReleased(key)),
-                ..
-            } => {
+            KeyInput::Released(key) => {
                 self.key_released(&key);
             }
-            _ => {}
         }
     }
-    fn key_pressed(&mut self, key: &Key, graphmsg: &mut Vec<GraphicMsg>) {
+    fn key_pressed(&mut self, key: &KeyCode, graphmsg: &mut Vec<GraphicMsg>) {
         match key {
-            &Key::LShift | &Key::RShift => {
+            &KeyCode::ShiftLeft | &KeyCode::ShiftRight => {
                 self.shift_pressed = true;
             }
-            &Key::LControl => {
+            &KeyCode::ControlLeft => {
                 self.ctrl_pressed = true;
             }
-            &Key::Return => {
+            &KeyCode::Enter => {
                 self.pressed_enter(graphmsg);
             }
-            &Key::V => {
+            &KeyCode::KeyV => {
                 // for ctrl+V
                 if self.ctrl_pressed
                     && let Ok(mut ctx) = ClipboardContext::new()
@@ -181,7 +184,7 @@ impl InputText {
                     self.input_text += &clip_text;
                 }
             }
-            &Key::Back => {
+            &KeyCode::Backspace => {
                 if self.input_locate > 0 {
                     self.input_locate -= 1;
                     self.input_text.remove(self.input_locate);
@@ -190,14 +193,14 @@ impl InputText {
                     }
                 }
             }
-            &Key::Left => {
+            &KeyCode::ArrowLeft => {
                 if self.shift_pressed {
                     self.input_locate = 0;
                 } else if self.input_locate > 0 {
                     self.input_locate -= 1;
                 }
             }
-            &Key::Right => {
+            &KeyCode::ArrowRight => {
                 let maxlen = self.input_text.chars().count();
                 if self.shift_pressed {
                     self.input_locate = maxlen;
@@ -208,7 +211,7 @@ impl InputText {
                     self.input_locate = maxlen;
                 }
             }
-            &Key::Up => {
+            &KeyCode::ArrowUp => {
                 if self.input_locate == 0 {
                     if let Some(txt) = self.history.arrow_up() {
                         self.input_text = txt.0;
@@ -217,7 +220,7 @@ impl InputText {
                     self.input_locate = 0;
                 }
             }
-            &Key::Down => {
+            &KeyCode::ArrowDown => {
                 if self.input_locate == 0 {
                     if let Some(txt) = self.history.arrow_down() {
                         self.input_text = txt.0;
@@ -226,26 +229,26 @@ impl InputText {
                     self.input_locate = 0;
                 }
             }
-            &Key::Key1
-            | &Key::Key2
-            | &Key::Key3
-            | &Key::Key4
-            | &Key::Key5
-            | &Key::Key6
-            | &Key::Key7
-            | &Key::Key8
-            | &Key::Key9 => {
+            &KeyCode::Digit1
+            | &KeyCode::Digit2
+            | &KeyCode::Digit3
+            | &KeyCode::Digit4
+            | &KeyCode::Digit5
+            | &KeyCode::Digit6
+            | &KeyCode::Digit7
+            | &KeyCode::Digit8
+            | &KeyCode::Digit9 => {
                 if self.ctrl_pressed {
                     let num = match key {
-                        Key::Key1 => 1,
-                        Key::Key2 => 2,
-                        Key::Key3 => 3,
-                        Key::Key4 => 4,
-                        Key::Key5 => 5,
-                        Key::Key6 => 6,
-                        Key::Key7 => 7,
-                        Key::Key8 => 8,
-                        Key::Key9 => 9,
+                        KeyCode::Digit1 => 1,
+                        KeyCode::Digit2 => 2,
+                        KeyCode::Digit3 => 3,
+                        KeyCode::Digit4 => 4,
+                        KeyCode::Digit5 => 5,
+                        KeyCode::Digit6 => 6,
+                        KeyCode::Digit7 => 7,
+                        KeyCode::Digit8 => 8,
+                        KeyCode::Digit9 => 9,
                         _ => 0,
                     };
                     if num > 0 {
@@ -254,12 +257,12 @@ impl InputText {
                     }
                 }
             }
-            &Key::RControl => {}
-            &Key::LAlt => {}
-            &Key::RAlt => {}
-            &Key::LWin => {}
-            &Key::RWin => {}
-            &Key::Space => {
+            &KeyCode::ControlRight => {}
+            &KeyCode::AltLeft => {}
+            &KeyCode::AltRight => {}
+            &KeyCode::SuperLeft => {}
+            &KeyCode::SuperRight => {}
+            &KeyCode::Space => {
                 if self.shift_pressed {
                     graphmsg.push(GraphicMsg::TextVisibleCtrl);
                 }
@@ -268,20 +271,20 @@ impl InputText {
         }
         self.just_after_hokan = false;
     }
-    fn key_released(&mut self, key: &Key) {
+    fn key_released(&mut self, key: &KeyCode) {
         match key {
-            &Key::LShift | &Key::RShift => {
+            &KeyCode::ShiftLeft | &KeyCode::ShiftRight => {
                 self.shift_pressed = false;
             }
-            &Key::Key1
-            | &Key::Key2
-            | &Key::Key3
-            | &Key::Key4
-            | &Key::Key5
-            | &Key::Key6
-            | &Key::Key7
-            | &Key::Key8
-            | &Key::Key9 => {
+            &KeyCode::Digit1
+            | &KeyCode::Digit2
+            | &KeyCode::Digit3
+            | &KeyCode::Digit4
+            | &KeyCode::Digit5
+            | &KeyCode::Digit6
+            | &KeyCode::Digit7
+            | &KeyCode::Digit8
+            | &KeyCode::Digit9 => {
                 if self.riten_sent {
                     self.cmd.set_riten(0); // Normal
                     self.riten_sent = false;

@@ -222,7 +222,7 @@ impl BeatObj for BeatLissaObj {
         };
         for i in 0..num - 1 {
             let alpha_level = (i as f32) / (num as f32);
-            let color = rgba(gray, gray, gray, alpha_level);
+            let color = Srgba::new(gray, gray, gray, alpha_level);
             draw.line()
                 .start(self.polyline[i + 1])
                 .end(self.polyline[i])

@@ -157,7 +157,7 @@ impl Fish {
                     ((i as f32) * std::f32::consts::PI / FISH_DRAW_STEPS as f32).sin()
                         * self.thickness,
                 )
-                .color(srgba(
+                .color(Srgba::new(
                     1.0,
                     1.0,
                     1.0,

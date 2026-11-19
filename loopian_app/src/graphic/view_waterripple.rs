@@ -111,9 +111,9 @@ impl NoteObj for WaterRippleNote {
             }
 
             let gray_scal = if self.mode == GraphMode::Dark {
-                rgba(1.0, 1.0, 1.0, alpha_level)
+                Srgba::new(1.0, 1.0, 1.0, alpha_level)
             } else {
-                rgba(0.0, 0.0, 0.0, alpha_level)
+                Srgba::new(0.0, 0.0, 0.0, alpha_level)
             };
 
             let radius_sz = self.elapsed_time * Self::SPREAD_SPEED - (i as f32) * THICKNESS;
