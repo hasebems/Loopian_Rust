@@ -87,6 +87,9 @@ fn model(app: &App) -> Model {
     // サイズは起動後に adjust_window_size() で合わせる
     app.new_window::<Model>()
         .title("Loopian")
+        // 垂直同期: 画面の書き換えに合わせて描画する
+        // （nannou 0.20 の既定の Mailbox は macOS では使えず、垂直同期なしの Immediate になるため）
+        .present_mode(PresentMode::Fifo)
         .view(view)
         .build();
 
