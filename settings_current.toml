@@ -1,0 +1,30 @@
+[window_size]
+window_x_default = 2880
+window_y_default = 1620
+# window_x_default = 1090 # for short movie (1080)
+# window_y_default = 1940 # for short movie (1920)
+
+[midi]
+# midi_out = ["Camelot"]
+midi_out = ["IAC"]
+# midi_out = ["PRA32"]
+# midi_out = ["Midi Through:Midi Through Port-0 14:0"] # Loopian::ORBIT by raspberry pi5 
+midi_ext_out = "U6MIDI Pro ポート1"  # Loopian::ORBIT by raspberry pi5 
+# midi_device = "Pico"                # Loopian::ORBIT by raspberry pi5 
+# midi_device = "XIAO RP2350:XIAO RP2350 MIDI 1"   # Loopian::ORBIT by Seeed XIAO RP2350 
+midi_device = "Loopian::QUBIT"  # Loopian::QUBIT as FLOW/LED
+# midi_device = "Arduino Leonardo"
+# midi_device = "XIAO RP2350"  # mac で Loopian::ORBIT
+
+[command]
+init_commands = [
+# 立ち上げ時に自動再生するコマンドを、""に入れてここに追記していく
+#"graph.title(-----------,Loopian.Studies.#004)",
+#"//Please push left command to change alphanumeric mode",
+"set.path(mine)",
+"graph.noteroll(h)",
+]
+
+[folder]
+load = "data"
+log = "log"
