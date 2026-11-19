@@ -20,7 +20,7 @@ use bevy::input::keyboard::KeyboardInput;
 use nannou::prelude::*;
 use std::env;
 use std::sync::mpsc;
-use std::sync::mpsc::TryRecvError;
+use std::sync::mpsc::{RecvTimeoutError, TryRecvError};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Mutex;
 use std::thread;
@@ -113,7 +113,17 @@ fn gen_elapse_thread() -> (Sender<ElpsMsg>, Receiver<UiMsg>) {
         .spawn(move || {
             let mut est = ElapseStack::new(txui);
             loop {
-                if est.periodic(rxmsg.try_recv()) {
+                // 次のイベントが近いときは休まず、そうでなければメッセージを待ちながら少し休む
+                let wait = est.next_wait();
+                let msg = if wait.is_zero() {
+                    rxmsg.try_recv()
+                } else {
+                    rxmsg.recv_timeout(wait).map_err(|e| match e {
+                        RecvTimeoutError::Timeout => TryRecvError::Empty,
+                        RecvTimeoutError::Disconnected => TryRecvError::Disconnected,
+                    })
+                };
+                if est.periodic(msg) {
                     break;
                 }
             }

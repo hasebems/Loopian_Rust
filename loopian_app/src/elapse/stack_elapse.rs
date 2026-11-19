@@ -229,6 +229,47 @@ impl ElapseStack {
     //*******************************************************************
     //      Periodic
     //*******************************************************************
+    /// 何もないときに演奏スレッドが休む時間
+    pub const MAX_WAIT: Duration = Duration::from_millis(1);
+    /// 次のイベントまでがこの時間より短いときは休まない
+    /// （1ms の sleep が実際には少し長くなること、elastic で tick と時間の関係がずれることへの余裕）
+    const NO_WAIT_THRESHOLD_SEC: f64 = 0.003;
+
+    /// 次に periodic() を呼ぶまで休んでよい時間を返す
+    /// 再生中、次のイベント（Elapse Obj. の次のイベント、または次の拍頭）が近いときは休まない
+    pub fn next_wait(&self) -> Duration {
+        if !self.during_play {
+            return Self::MAX_WAIT;
+        }
+        let crnt_ = self.tg.get_crnt_msr_tick();
+        if crnt_.imaginary_tick.is_some() {
+            // fermata 中は tick と時間の関係が変わるため休まない
+            return Duration::ZERO;
+        }
+        let (tick_for_onemsr, tick_for_beat) = self.tg.get_beat_tick();
+        let crnt_tick = crnt_.msr as i64 * tick_for_onemsr as i64 + crnt_.tick as i64;
+
+        // 次の拍頭（拍頭・小節頭の処理があるため）
+        let mut ticks_to_next = (tick_for_beat - crnt_.tick % tick_for_beat) as i64;
+        // 各 Elapse Obj. の次のイベント
+        for elps in self.elapse_vec.iter() {
+            let (msr, tick, _floating) = elps.borrow().next();
+            let next_tick = msr as i64 * tick_for_onemsr as i64 + tick as i64;
+            ticks_to_next = ticks_to_next.min(next_tick - crnt_tick);
+        }
+        if ticks_to_next <= 0 {
+            return Duration::ZERO; // すでに処理すべきイベントがある
+        }
+
+        // 現在のテンポで時間に換算する
+        let bpm = self.tg.get_real_bpm().max(1) as f64 * self.tg.get_bpm_rate().max(1) as f64 / 100.0;
+        let sec_to_next = ticks_to_next as f64 * 60.0 / (bpm * tick_for_beat as f64);
+        if sec_to_next < Self::NO_WAIT_THRESHOLD_SEC {
+            Duration::ZERO
+        } else {
+            Self::MAX_WAIT
+        }
+    }
     pub fn periodic(&mut self, msg: Result<ElpsMsg, TryRecvError>) -> bool {
         self.crnt_time = Instant::now();
 
