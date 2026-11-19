@@ -8,9 +8,9 @@ extern crate midir;
 use crate::common::lpnlib::*;
 use crate::file::settings::Settings;
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::mpsc;
-use std::sync::mpsc::TryRecvError;
-use std::sync::{Arc, Mutex};
 
 #[cfg(feature = "raspi")]
 use rppal::uart::{Parity, Uart};
@@ -18,58 +18,37 @@ use rppal::uart::{Parity, Uart};
 use std::time::Duration;
 
 //*******************************************************************
-//          MIDI Rx Buffer
-//*******************************************************************
-pub struct MidiRxBuf {
-    buf: Vec<(u64, Vec<u8>)>,
-}
-impl MidiRxBuf {
-    pub fn new() -> Self {
-        Self { buf: Vec::new() }
-    }
-    pub fn flush(&mut self) {
-        self.buf.clear();
-    }
-    pub fn put(&mut self, tm: u64, msg: Vec<u8>) {
-        self.buf.insert(0, (tm, msg));
-    }
-    pub fn take(&mut self) -> Option<(u64, Vec<u8>)> {
-        if self.buf.is_empty() {
-            None
-        } else {
-            self.buf.pop()
-        }
-    }
-}
-
-//*******************************************************************
 //          MIDI Rx
 //*******************************************************************
+/// USB MIDI は midir のコールバックで受信し、その場で ElpsMsg に変換して Elapse に送る。
+/// MidiRxThread のスレッドは、制御用メッセージ（Quit / 再接続など）が来るまで眠っている。
+/// （raspi の UART は通知の仕組みがないため、1ms ごとに見に行く）
 pub struct MidiRxThread {
     // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
     _conn_in: [Option<MidiInputConnection<()>>; 2],
-    mdr_buf: [Option<Arc<Mutex<MidiRxBuf>>>; 2],
     rx_cnct_num: [usize; 2],
     tx_hndr: mpsc::Sender<ElpsMsg>,
     midi_stream_status: u8,
     midi_stream_data1: u8,
     keynote: u8,
-    midi_input_ch: u8,
+    midi_input_ch: Arc<AtomicU8>, // コールバックからも参照するため共有する
     #[cfg(feature = "raspi")]
     pub uart: Option<Uart>,
 }
 impl MidiRxThread {
+    #[cfg(feature = "raspi")]
+    const UART_POLLING_INTERVAL: Duration = Duration::from_millis(1);
+
     /// MidiRx のインスタンスを生成し、MIDI IN ポートに接続する
     pub fn new(tx_hndr: mpsc::Sender<ElpsMsg>) -> Option<MidiRxThread> {
         let mut this = Self {
             _conn_in: [None, None],
-            mdr_buf: [None, None],
             rx_cnct_num: [NONE_NUM, NONE_NUM],
             tx_hndr,
             midi_stream_status: INVALID,
             midi_stream_data1: INVALID,
             keynote: 0,
-            midi_input_ch: 0,
+            midi_input_ch: Arc::new(AtomicU8::new(0)),
             #[cfg(feature = "raspi")]
             uart: None,
         };
@@ -77,17 +56,14 @@ impl MidiRxThread {
     }
     fn set_connect(&mut self) -> bool {
         // USB MIDI 変数初期化
-        self.mdr_buf = [None, None];
         self.rx_cnct_num = [NONE_NUM, NONE_NUM];
 
         self.connect_uart();
         self.display_usb_midi_list();
         let mut num_to_avoid = NONE_NUM;
         for i in 0..2 {
-            let mdr_buf = Arc::new(Mutex::new(MidiRxBuf::new()));
-            match self.connect(Arc::clone(&mdr_buf), i, num_to_avoid) {
+            match self.connect(i, num_to_avoid) {
                 Ok(num) => {
-                    self.mdr_buf[i] = Some(mdr_buf);
                     self.rx_cnct_num[i] = num;
                     num_to_avoid = num;
                 }
@@ -131,12 +107,7 @@ impl MidiRxThread {
             }
         }
     }
-    fn connect(
-        &mut self,
-        mdr_buf: Arc<Mutex<MidiRxBuf>>,
-        idx_num: usize,
-        num_to_avoid: usize,
-    ) -> Result<usize, &str> {
+    fn connect(&mut self, idx_num: usize, num_to_avoid: usize) -> Result<usize, &str> {
         let midi_in = MidiInput::new("midir reading input").unwrap();
         let in_ports = midi_in.ports();
         if in_ports.is_empty() {
@@ -161,17 +132,22 @@ impl MidiRxThread {
         }
         if let Some(port) = in_port {
             let port_name = &format!("loopian_rx{}", idx_num);
+            let tx_hndr = self.tx_hndr.clone();
+            let midi_input_ch = Arc::clone(&self.midi_input_ch);
             self._conn_in[idx_num] = Some(
                 midi_in
                     .connect(
                         port,
                         port_name,
                         move |stamp, message, _| {
-                            let msg = message.iter().fold(Vec::new(), |mut s, i| {
-                                s.push(*i);
-                                s
-                            });
-                            mdr_buf.lock().unwrap().put(stamp, msg);
+                            // MIDI を受信したときに midir から呼ばれる
+                            Self::receive_midi_event(
+                                idx_num,
+                                stamp,
+                                message,
+                                &tx_hndr,
+                                midi_input_ch.load(Ordering::Relaxed),
+                            );
                         },
                         (),
                     )
@@ -182,92 +158,110 @@ impl MidiRxThread {
     }
     /// ElpsMsg を Elapse に送信する
     fn send_msg_to_elapse(&self, msg: ElpsMsg) {
-        if let Err(e) = self.tx_hndr.send(msg) {
+        Self::send_to(&self.tx_hndr, msg);
+    }
+    fn send_to(tx_hndr: &mpsc::Sender<ElpsMsg>, msg: ElpsMsg) {
+        if let Err(e) = tx_hndr.send(msg) {
             println!("Something happened on MPSC from MIDIRx! {}", e);
         }
     }
-    /// stack_elapse::gen_midirx_thread() で生成したスレッドから定期的に呼び出される
-    /// ElpsMsg::Ctrl(MsgCtrl::Quit) を受け取ったら true を返す
-    pub fn periodic(&mut self, rx_ctrlmsg: Result<ElpsMsg, TryRecvError>) -> bool {
-        self.receive_midi_event();
-        match rx_ctrlmsg {
-            // 制御用メッセージ
-            Ok(n) => {
-                if let ElpsMsg::Ctrl(m) = n {
-                    if m == MsgCtrl::Quit {
-                        return true;
-                    } else if m == MsgCtrl::Start {
-                        for i in 0..2 {
-                            if let Ok(mut mb) = self.mdr_buf[i].as_ref().unwrap().lock() {
-                                mb.flush(); // MIDI In Buffer をクリア
-                            }
-                        }
-                    } else if m == MsgCtrl::MidiReconnect {
-                        let _b = self.set_connect();
-                    }
-                } else if let ElpsMsg::Set(MsgSet::MidiInputCh(ch)) = n {
-                    println!("Set Flow MIDI Input Ch(MIDI Rx): {}", ch);
-                    self.midi_input_ch = ch as u8;
+    /// stack_elapse::gen_midirx_thread() で生成したスレッドで呼び出される
+    /// 制御用メッセージを待ち、ElpsMsg::Ctrl(MsgCtrl::Quit) を受け取るか、
+    /// 送信側がなくなったら戻る
+    pub fn run(&mut self, rx_ctrl: mpsc::Receiver<ElpsMsg>) {
+        loop {
+            #[cfg(not(feature = "raspi"))]
+            let msg = match rx_ctrl.recv() {
+                Ok(msg) => msg,
+                Err(_) => return, // 送信側がなくなった
+            };
+            #[cfg(feature = "raspi")]
+            let msg = {
+                self.receive_uart_event();
+                match rx_ctrl.recv_timeout(Self::UART_POLLING_INTERVAL) {
+                    Ok(msg) => msg,
+                    Err(mpsc::RecvTimeoutError::Timeout) => continue,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => return,
                 }
+            };
+            if self.handle_ctrl_msg(msg) {
+                return;
             }
-            Err(TryRecvError::Disconnected) => return true, // Wrong!
-            Err(TryRecvError::Empty) => return false,       // No event
+        }
+    }
+    /// 制御用メッセージの処理。Quit なら true を返す
+    fn handle_ctrl_msg(&mut self, msg: ElpsMsg) -> bool {
+        if let ElpsMsg::Ctrl(m) = msg {
+            if m == MsgCtrl::Quit {
+                return true;
+            } else if m == MsgCtrl::MidiReconnect {
+                let _b = self.set_connect();
+            }
+            // MsgCtrl::Start: 受信したものはすぐ送っているので、クリアするバッファはない
+        } else if let ElpsMsg::Set(MsgSet::MidiInputCh(ch)) = msg {
+            println!("Set Flow MIDI Input Ch(MIDI Rx): {}", ch);
+            self.midi_input_ch.store(ch as u8, Ordering::Relaxed);
         }
         false
     }
-    /// MIDI IN ポートからのイベントをチェックし、あれば ElpsMsg::MIDIRx に変換して Elapse に送信する
-    fn receive_midi_event(&mut self) {
-        for i in 0..2 {
-            if let Some(msg_ext) = self.mdr_buf[i].as_ref().unwrap().lock().unwrap().take() {
-                let msg = msg_ext.1;
-                if cfg!(feature = "verbose") {
-                    let length = msg.len();
-                    println!(
-                        "MIDI{} Received >{}: {:x}-{:x}-{:x} (len = {})",
-                        i + 1,
-                        msg_ext.0,
-                        msg[0],
-                        msg[1],
-                        if length > 2 { msg[2] } else { 0 },
-                        length
-                    );
-                } else {
-                    println!(
-                        "{:x}-{:x}-{:x} ",
-                        msg[0],
-                        msg[1],
-                        if msg.len() > 2 { msg[2] } else { 0 }
-                    );
-                }
-                // midi ch=12,13 のみ受信 (Loopian::ORBIT/CUBIT)
-                let status = msg[0] & 0xf0;
-                let input_ch = msg[0] & 0x0f;
-                if input_ch != 0x0b && input_ch != 0x0c && self.midi_input_ch != input_ch + 1 {
-                    return;
-                }
-                if status == 0xc0 || status == 0xd0 {
-                    self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], 0, 0));
-                } else if status == 0x90
-                    || status == 0x80
-                    || status == 0xa0
-                    || status == 0xb0
-                    || status == 0xe0
-                {
-                    self.send_msg_to_elapse(ElpsMsg::MIDIRx(msg[0], msg[1], msg[2], 0));
-                }
-            }
+    /// USB MIDI のイベントを ElpsMsg::MIDIRx に変換して Elapse に送信する
+    /// （midir のコールバックから呼ばれる）
+    fn receive_midi_event(
+        idx: usize,
+        stamp: u64,
+        msg: &[u8],
+        tx_hndr: &mpsc::Sender<ElpsMsg>,
+        midi_input_ch: u8,
+    ) {
+        if msg.is_empty() {
+            return;
         }
-        #[cfg(feature = "raspi")]
-        if let Some(ref mut urx) = self.uart {
+        let data1 = msg.get(1).copied().unwrap_or(0);
+        let data2 = msg.get(2).copied().unwrap_or(0);
+        if cfg!(feature = "verbose") {
+            println!(
+                "MIDI{} Received >{}: {:x}-{:x}-{:x} (len = {})",
+                idx + 1,
+                stamp,
+                msg[0],
+                data1,
+                data2,
+                msg.len()
+            );
+        } else {
+            println!("{:x}-{:x}-{:x} ", msg[0], data1, data2);
+        }
+        // midi ch=12,13 のみ受信 (Loopian::ORBIT/CUBIT)
+        let status = msg[0] & 0xf0;
+        let input_ch = msg[0] & 0x0f;
+        if input_ch != 0x0b && input_ch != 0x0c && midi_input_ch != input_ch + 1 {
+            return;
+        }
+        if status == 0xc0 || status == 0xd0 {
+            Self::send_to(tx_hndr, ElpsMsg::MIDIRx(msg[0], data1, 0, 0));
+        } else if status == 0x90
+            || status == 0x80
+            || status == 0xa0
+            || status == 0xb0
+            || status == 0xe0
+        {
+            Self::send_to(tx_hndr, ElpsMsg::MIDIRx(msg[0], data1, data2, 0));
+        }
+    }
+    /// UART MIDI のイベントをチェックし、届いているバイトをすべて処理する
+    #[cfg(feature = "raspi")]
+    fn receive_uart_event(&mut self) {
+        loop {
+            let Some(ref mut urx) = self.uart else {
+                return;
+            };
             let mut byte = [0];
             match urx.read(&mut byte) {
-                Ok(c) => {
-                    if c == 1 {
-                        self.parse_1byte_midi(byte[0]);
-                    }
-                }
+                Ok(1) => self.parse_1byte_midi(byte[0]),
+                Ok(_) => return, // 届いているバイトはもうない
                 Err(e) => {
                     println!("{}", e);
+                    return;
                 }
             }
         }

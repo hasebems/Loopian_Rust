@@ -69,12 +69,8 @@ fn gen_midirx_thread() -> (Receiver<ElpsMsg>, Sender<ElpsMsg>) {
     //  create new thread & channel
     let (txmsg, rxmsg) = mpsc::channel();
     let (txctrl, rxctrl) = mpsc::channel();
-    thread::spawn(move || match MidiRxThread::new(txmsg /* , rxctrl*/) {
-        Some(mut rx) => loop {
-            if rx.periodic(rxctrl.try_recv()) {
-                break;
-            }
-        },
+    thread::spawn(move || match MidiRxThread::new(txmsg) {
+        Some(mut rx) => rx.run(rxctrl),
         None => {
             println!("MIDI Rx thread does't work")
         }
