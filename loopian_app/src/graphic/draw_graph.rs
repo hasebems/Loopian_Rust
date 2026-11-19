@@ -117,10 +117,10 @@ impl Graphic {
 
     pub fn new(app: &App) -> Graphic {
         // フォントをロード（初期化時に一度だけ）
-        let font_nrm = Self::load_font(app, "JetBrainsMono-ExtraLight.ttf");
-        let font_bold = Self::load_font(app, "JetBrainsMono-SemiBold.ttf");
-        let font_italic = Self::load_font(app, "JetBrainsMono-ExtraLightItalic.ttf");
-        let font_title = Self::load_font(app, "JetBrainsMono-ExtraBold.ttf");
+        let font_nrm = Self::load_font(app, "JetBrainsMono-ExtraLight-Loopian.ttf");
+        let font_bold = Self::load_font(app, "JetBrainsMono-SemiBold-Loopian.ttf");
+        let font_italic = Self::load_font(app, "JetBrainsMono-ExtraLightItalic-Loopian.ttf");
+        let font_title = Self::load_font(app, "JetBrainsMono-ExtraBold-Loopian.ttf");
         let font_serif = Self::load_font(app, "Newsreader16pt-Regular.ttf");
 
         Self {
