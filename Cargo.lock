@@ -3568,7 +3568,7 @@ dependencies = [
 
 [[package]]
 name = "loopian"
-version = "0.8.0"
+version = "0.7.3"
 dependencies = [
  "bevy",
  "chrono",
@@ -3586,14 +3586,14 @@ dependencies = [
 
 [[package]]
 name = "loopian_graphic_api"
-version = "0.8.0"
+version = "0.7.3"
 dependencies = [
  "nannou",
 ]
 
 [[package]]
 name = "loopian_graphics"
-version = "0.8.0"
+version = "0.7.3"
 dependencies = [
  "loopian_graphic_api",
  "nannou",
