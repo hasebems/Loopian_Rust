@@ -137,13 +137,12 @@ impl LoadBuffer {
 
         // ここから txt_this_time に記録
         if let Some(start_idx) = idx {
-            for n in start_idx..self.loaded_text.len() {
-                let ctxt = &self.loaded_text[n];
+            for ctxt in self.loaded_text.iter().skip(start_idx) {
                 if blk_or(ctxt) || ctxt.is_empty() {
                     // 次のブロック、あるいは空行
                     break;
                 } else {
-                    txt_this_time.push(self.loaded_text[n].clone());
+                    txt_this_time.push(ctxt.clone());
                 }
             }
         }
@@ -190,8 +189,7 @@ impl LoadBuffer {
         let blk_starts = |ctxt: &str| ctxt.len() > 5 && ctxt[0..5] == *"!blk(";
         let rd_exists = |ctxt: &str| ctxt.len() > 4 && ctxt[0..4] == *"!rd(";
         let mut blk_keeps = false;
-        for n in idx..self.loaded_text.len() {
-            let ctxt = &self.loaded_text[n];
+        for ctxt in self.loaded_text.iter().skip(idx) {
             if msr_exists(ctxt) {
                 // !msr() の場合
                 let msr = extract_number_from_parentheses(ctxt).unwrap_or(0);
@@ -213,7 +211,7 @@ impl LoadBuffer {
                 }
             } else if rd_exists(ctxt) {
             } else {
-                txt_this_time.push(self.loaded_text[n].clone());
+                txt_this_time.push(ctxt.clone());
             }
         }
         // 最後まで行った場合

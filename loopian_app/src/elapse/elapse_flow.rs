@@ -241,7 +241,7 @@ impl Flow {
             self.id.sid,                                             //  loop.sid -> note.pid
             NoteParam::new(
                 &ev,
-                format!(" Pt:{} Flow:{}", &self.id.pid, &self.id.sid),
+                format!(" Pt:{} Flow:{}", self.id.pid, self.id.sid),
                 (self.keynote, evt_tick, self.inst_part, true),
             ),
             0,

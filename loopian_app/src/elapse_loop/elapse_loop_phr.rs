@@ -392,7 +392,7 @@ impl PhraseLoop {
             self.id.sid,      //  loop.sid -> note.pid
             NoteParam::new(
                 &crnt_ev,
-                nep.deb_txt + &format!(" / Pt:{} Lp:{}", &self.id.pid, &self.id.sid),
+                nep.deb_txt + &format!(" / Pt:{} Lp:{}", self.id.pid, self.id.sid),
                 (self.keynote, evt_tick, self.inst_part, false),
             ),
             self.phrase_amp,
@@ -509,10 +509,8 @@ impl PhraseLoop {
                     self.flt.turnon_floating();
                 }
             }
-            PhrEvt::ClsPtn(ev) => {
-                if ev.arpeggio > 0 {
-                    self.flt.turnon_floating();
-                }
+            PhrEvt::ClsPtn(ev) if ev.arpeggio > 0 => {
+                self.flt.turnon_floating();
             }
             _ => (),
         }

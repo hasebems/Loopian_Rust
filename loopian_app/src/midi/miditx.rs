@@ -60,15 +60,14 @@ impl MidiTx {
         let mut at_least_one = false;
         for (i, p) in out_ports.iter().enumerate() {
             let driver;
-            let drv_name;
-            match MidiOutput::new("Loopian_tx") {
+            let drv_name = match MidiOutput::new("Loopian_tx") {
                 Ok(o) => {
                     driver = o;
-                    drv_name = driver.port_name(p).unwrap();
-                    //println!("[MIDI Output] No.{}: {}", i, drv_name);
+                    //println!("[MIDI Output] No.{}: {}", i, driver.port_name(p).unwrap());
+                    driver.port_name(p).unwrap()
                 }
                 Err(_e) => continue,
-            }
+            };
             if midi_out.iter().any(|out| drv_name.contains(out)) {
                 if this.connection_tx1.is_none() {
                     match driver.connect(p, "loopian_tx") {

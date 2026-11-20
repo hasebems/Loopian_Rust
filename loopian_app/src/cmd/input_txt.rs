@@ -262,10 +262,8 @@ impl InputText {
             &KeyCode::AltRight => {}
             &KeyCode::SuperLeft => {}
             &KeyCode::SuperRight => {}
-            &KeyCode::Space => {
-                if self.shift_pressed {
-                    graphmsg.push(GraphicMsg::TextVisibleCtrl);
-                }
+            &KeyCode::Space if self.shift_pressed => {
+                graphmsg.push(GraphicMsg::TextVisibleCtrl);
             }
             _ => {}
         }

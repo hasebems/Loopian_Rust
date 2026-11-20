@@ -145,10 +145,8 @@ fn analyse_beat(phr_evts: &[PhrEvt]) -> Vec<AnaEvt> {
                     note_all = vec![e.note];
                 }
             }
-            PhrEvt::Info(i) => {
-                if i.info == RPT_HEAD as i16 {
-                    repeat_head_tick = i.tick;
-                }
+            PhrEvt::Info(i) if i.info == RPT_HEAD as i16 => {
+                repeat_head_tick = i.tick;
             }
             _ => (),
         }

@@ -517,7 +517,7 @@ impl PhraseRecombined {
         } else {
             false
         };
-        let ntext5 = format!("{}{}", oct, &ntext4); // +-の再結合
+        let ntext5 = format!("{}{}", oct, ntext4); // +-の再結合
         let notes_vec = split_notes(ntext5.clone());
 
         // 階名への変換

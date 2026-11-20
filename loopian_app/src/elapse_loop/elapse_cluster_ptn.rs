@@ -274,7 +274,7 @@ impl ClusterPattern {
             self.id.sid,              //  loop.sid -> note.pid
             NoteParam::new(
                 &crnt_ev,
-                format!(" / Pt:{} Lp:{}", &self.part, &self.id.sid),
+                format!(" / Pt:{} Lp:{}", self.part, self.id.sid),
                 (self.keynote, evt_tick, self.inst_part, false),
             ),
             self.phrase_amp,

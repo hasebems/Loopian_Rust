@@ -77,9 +77,9 @@ impl SineWave {
         let width = rs.get_full_size_x();
         let step = width / Self::NUM_POINTS as f32;
         let mut points = Vec::with_capacity(Self::NUM_POINTS + 1);
-        for i in 0..=Self::NUM_POINTS {
+        for (i, v) in self.view.iter().take(Self::NUM_POINTS + 1).enumerate() {
             let x = i as f32 * step - width / 2.0;
-            points.push(pt2(x, self.view[i] * Self::AMPLITUDE));
+            points.push(pt2(x, v * Self::AMPLITUDE));
         }
         draw.polyline().weight(2.0).points(points).color(color);
     }

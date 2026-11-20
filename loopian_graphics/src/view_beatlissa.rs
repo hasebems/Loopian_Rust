@@ -191,11 +191,10 @@ impl BeatObj for BeatLissaObj {
             let new_phase = crnt_time * DRAW_SPEED;
             let mut fine_phase = self.phase;
             while fine_phase < new_phase {
-                let mut position: Vec2 = Default::default();
-                position.x =
-                    ((fine_phase + self.phase_x) * self.ratio_x).sin() * self.size + self.center.x;
-                position.y =
-                    ((fine_phase + self.phase_y) * self.ratio_y).sin() * self.size + self.center.y;
+                let position = Vec2::new(
+                    ((fine_phase + self.phase_x) * self.ratio_x).sin() * self.size + self.center.x,
+                    ((fine_phase + self.phase_y) * self.ratio_y).sin() * self.size + self.center.y,
+                );
                 self.polyline.push(position);
                 fine_phase += 0.1;
             }

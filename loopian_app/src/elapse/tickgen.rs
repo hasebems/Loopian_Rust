@@ -768,19 +768,19 @@ impl Rit for RitSigmoid {
         let elapsed_time = crnt_time - self.base.start_time;
         let time_index = (IDX_MAX as f32 * elapsed_time.as_secs_f32()
             / self.base.total_time.as_secs_f32()) as usize;
-        let index_rate;
-        let integral_sig;
-        if time_index >= IDX_MAX {
+
+        let (index_rate, integral_sig) = if time_index >= IDX_MAX {
             self.base.crnt_tps = self.base.target_tps;
-            index_rate = 1.0;
-            integral_sig = 1.0;
+            (1.0, 1.0)
         } else {
             self.base.crnt_tps = self.base.target_tps
                 + ((self.base.original_tps - self.base.target_tps) as f32 * SIGMOID[time_index])
                     as i32;
-            index_rate = time_index as f32 / IDX_MAX as f32;
-            integral_sig = INTEGRAL_SIGMOID[time_index];
-        }
+            (
+                time_index as f32 / IDX_MAX as f32,
+                INTEGRAL_SIGMOID[time_index],
+            )
+        };
         let tps_rate = 2.0 * self.base.target_tps as f32
             / (self.base.original_tps as f32 - self.base.target_tps as f32);
         let addup_base = (integral_sig + (tps_rate * index_rate)) / (1.0 + tps_rate);
